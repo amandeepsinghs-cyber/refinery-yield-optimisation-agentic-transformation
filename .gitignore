@@ -1,0 +1,19 @@
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.env.*
+!.env.example
+sim_octave/data/
+sim_octave/octave-workspace
+cockpit/api/artifacts/
+artifacts/
+*.log
+.DS_Store
+tasks/done/*.tmp
+
+# Original simulator keeps its own git history (MIT, Santander et al. 2022); ported code lives in sim_octave/
+FCC-Fractionator/

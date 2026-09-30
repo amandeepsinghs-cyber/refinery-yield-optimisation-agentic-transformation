@@ -1,0 +1,1737 @@
+[
+  {
+    "doc_id": "INC-0419",
+    "path": "incidents/INC-0419.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "title": "LCO T98 off-spec after heavy-crude changeover",
+    "doc_type": "INC",
+    "revision": "1",
+    "effective_date": "2025-04-09",
+    "owner_role": "Operations superintendent",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "dist_feed_API",
+      "LCO_T98_F",
+      "T_tray13_F",
+      "SP_LCO_T98",
+      "MV_PA2"
+    ],
+    "related_events": [
+      "1"
+    ],
+    "related_docs": [
+      "SOP-FRAC-002",
+      "IOW-FRAC-01",
+      "MOC-0124",
+      "MOC-0118"
+    ],
+    "summary": "Incident report detailing unobserved distillation cut excursion on Light Cycle Oil following a heavy crude transition on FCC-21."
+  },
+  {
+    "doc_id": "INC-0507",
+    "path": "incidents/INC-0507.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "title": "HN endpoint excursion during ROT increase",
+    "doc_type": "INC",
+    "revision": "1",
+    "effective_date": "2025-07-02",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "HN_T98_F",
+      "SP_HN_T98",
+      "Tr_riser_F",
+      "SP_T_riser_ROT_F",
+      "T_tray06_F"
+    ],
+    "related_events": [
+      "3",
+      "6"
+    ],
+    "related_docs": [
+      "SOP-FCC-005",
+      "SOP-FRAC-004",
+      "IOW-FRAC-01"
+    ],
+    "summary": "Incident investigation of Heavy Naphtha distillation endpoint excursion following a rapid reactor riser outlet temperature increase."
+  },
+  {
+    "doc_id": "INC-0612",
+    "path": "incidents/INC-0612.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "title": "Delayed lab result led to a conservative cut-point hold",
+    "doc_type": "INC",
+    "revision": "1",
+    "effective_date": "2025-10-28",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "SP_LCO_T98",
+      "lab_sample",
+      "prod_LCO"
+    ],
+    "related_events": [
+      "5"
+    ],
+    "related_docs": [
+      "WO-25152",
+      "SOP-FRAC-003",
+      "LAB-D86-01"
+    ],
+    "summary": "Operational incident report analyzing product yield penalty resulting from conservative cut-point holds during an 8-hour laboratory testing outage."
+  },
+  {
+    "doc_id": "INC-0733",
+    "path": "incidents/INC-0733.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "title": "Tray-13 thermocouple drift masked LCO cut-point drift",
+    "doc_type": "INC",
+    "revision": "1",
+    "effective_date": "2026-03-17",
+    "owner_role": "Reliability engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "T_tray13_F",
+      "LCO_T98_F",
+      "SP_LCO_T98"
+    ],
+    "related_events": [
+      "5"
+    ],
+    "related_docs": [
+      "WO-24058",
+      "SOP-FRAC-003",
+      "IOW-FRAC-01"
+    ],
+    "summary": "Investigation of subtle sensor drift on tray 13 thermocouple masking actual distillation cut changes, leading to enhancement of soft-sensor sensor-health diagnostics."
+  },
+  {
+    "doc_id": "IOW-FCC-02",
+    "path": "iow/IOW-FCC-02.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "3.1",
+      "3.2",
+      "3.3",
+      "3.4",
+      "3.5",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Reactor and regenerator operating windows",
+    "doc_type": "IOW",
+    "revision": "2",
+    "effective_date": "2025-07-14",
+    "owner_role": "Operations superintendent",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "Tr_riser_F",
+      "SP_T_riser_ROT_F",
+      "Treg_F",
+      "fluegas_O2_pct",
+      "feed_flow_lb_s"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FRAC-01",
+      "SOP-FCC-005",
+      "REF-STD-01"
+    ],
+    "summary": "Integrity operating windows for FCC-21 reactor riser cracking severity, regenerator dense bed temperature, and catalyst circulation hydraulics."
+  },
+  {
+    "doc_id": "IOW-FRAC-01",
+    "path": "iow/IOW-FRAC-01.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "3.1",
+      "3.2",
+      "3.3",
+      "3.4",
+      "3.5",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Fractionator integrity operating windows",
+    "doc_type": "IOW",
+    "revision": "2",
+    "effective_date": "2025-10-01",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "T_tray13_F",
+      "T_tray06_F",
+      "P5_frac_psia"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-HX-03",
+      "SOP-FRAC-001",
+      "REF-STD-01"
+    ],
+    "summary": "Integrity operating windows and safe design envelopes for main fractionator column pressure, temperatures, and product distillation cut limits on FCC-21."
+  },
+  {
+    "doc_id": "IOW-HX-03",
+    "path": "iow/IOW-HX-03.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "3.1",
+      "3.2",
+      "3.3",
+      "3.4",
+      "3.5",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Overhead condenser and pumparound heat-transfer windows",
+    "doc_type": "IOW",
+    "revision": "1",
+    "effective_date": "2025-01-22",
+    "owner_role": "Reliability engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "dist_condenser_eff",
+      "MV_cw_flow",
+      "MV_PA1",
+      "MV_PA2",
+      "MV_PA3",
+      "MV_PA4"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FRAC-01",
+      "WO-24031",
+      "REF-STD-01"
+    ],
+    "summary": "Integrity operating windows for heat exchanger thermal efficiency, pumparound duty distribution, and condenser tube cooling water boundaries on FCC-21."
+  },
+  {
+    "doc_id": "LAB-D86-01",
+    "path": "lab/LAB-D86-01.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "3.1",
+      "4",
+      "4.1",
+      "5",
+      "5.1",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "LCO/HN distillation test method (D86-based)",
+    "doc_type": "LAB",
+    "revision": "2",
+    "effective_date": "2025-05-09",
+    "owner_role": "Lab supervisor",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "lab_sample",
+      "LCO_T98_F",
+      "HN_T98_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "LAB-QC-02",
+      "LAB-SMP-03",
+      "REF-STD-01"
+    ],
+    "summary": "Standard laboratory analytical test method for measuring distillation boiling profiles of light cycle oil and heavy naphtha streams using D86 procedures."
+  },
+  {
+    "doc_id": "LAB-QC-02",
+    "path": "lab/LAB-QC-02.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Lab result validation and reconciliation",
+    "doc_type": "LAB",
+    "revision": "1",
+    "effective_date": "2025-05-09",
+    "owner_role": "Lab supervisor",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "lab_sample",
+      "LCO_T98_F",
+      "HN_T98_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "LAB-D86-01",
+      "SOP-APC-007",
+      "REF-STD-01"
+    ],
+    "summary": "Quality assurance and statistical process control procedure for validating, reconciling, and screening laboratory distillation results on FCC-21."
+  },
+  {
+    "doc_id": "LAB-SMP-03",
+    "path": "lab/LAB-SMP-03.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "3.1",
+      "4",
+      "4.1",
+      "4.2",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Sample point register and chain of custody",
+    "doc_type": "LAB",
+    "revision": "1",
+    "effective_date": "2024-11-04",
+    "owner_role": "Lab supervisor",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "lab_sample",
+      "LCO_T98_F",
+      "HN_T98_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "LAB-D86-01",
+      "SOP-LAB-008",
+      "WO-25090"
+    ],
+    "summary": "Specification of physical sample points, sample cooler operating parameters, line purging requirements, and chain of custody tracking for FCC-21 streams."
+  },
+  {
+    "doc_id": "MOC-0112",
+    "path": "moc/MOC-0112.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Pumparound PA2 duty range change for LCO cut control",
+    "doc_type": "MOC",
+    "revision": "1",
+    "effective_date": "2024-09-09",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "MV_PA2",
+      "T_tray13_F",
+      "LCO_T98_F"
+    ],
+    "related_events": [
+      "5"
+    ],
+    "related_docs": [
+      "IOW-HX-03",
+      "SOP-FRAC-001"
+    ],
+    "summary": "Management of Change documentation authorizing expansion of intermediate pumparound PA2 operational duty range to improve cut-point dynamic control."
+  },
+  {
+    "doc_id": "MOC-0118",
+    "path": "moc/MOC-0118.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Introduce soft-sensor estimates as advisory (cockpit)",
+    "doc_type": "MOC",
+    "revision": "1",
+    "effective_date": "2026-04-20",
+    "owner_role": "APC / soft-sensor engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "SOP-APC-007",
+      "INC-0419"
+    ],
+    "summary": "Management of Change approving implementation and deployment of AI soft-sensor advisory cockpit for real-time cut-point recommendation."
+  },
+  {
+    "doc_id": "MOC-0124",
+    "path": "moc/MOC-0124.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Lab sampling frequency from 12 h to 8 h",
+    "doc_type": "MOC",
+    "revision": "1",
+    "effective_date": "2025-11-10",
+    "owner_role": "Lab supervisor",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "lab_sample",
+      "LCO_T98_F",
+      "HN_T98_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "INC-0419",
+      "SOP-LAB-008"
+    ],
+    "summary": "Procedural change establishing an 8-hour laboratory sampling frequency for FCC-21 product streams to enhance analytical coverage."
+  },
+  {
+    "doc_id": "MOC-0131",
+    "path": "moc/MOC-0131.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Spread-gate limit W90 = 14 \u00b0F for advisory recommendations",
+    "doc_type": "MOC",
+    "revision": "1",
+    "effective_date": "2026-05-04",
+    "owner_role": "APC / soft-sensor engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "SOP-APC-007",
+      "MOC-0118",
+      "LAB-D86-01"
+    ],
+    "summary": "Specification and formal technical justification of the 14 \u00b0F spread-gate uncertainty limit governing soft-sensor recommendation issuance."
+  },
+  {
+    "doc_id": "REF-SIM-02",
+    "path": "references/REF-SIM-02.md",
+    "sections": [
+      "1",
+      "2",
+      "2.1",
+      "2.2",
+      "2.3",
+      "2.4",
+      "3"
+    ],
+    "title": "Simulator and dataset description (provenance)",
+    "doc_type": "REF",
+    "revision": "1",
+    "effective_date": "2026-06-01",
+    "owner_role": "APC / soft-sensor engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "T_tray13_F",
+      "T_tray06_F",
+      "P5_frac_psia",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "event_code"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "REF-STD-01",
+      "SOP-APC-007"
+    ],
+    "summary": "Technical description of the FCC-21 dynamic simulator, mathematical model origin, disturbance scenarios, tag definitions, and dataset provenance."
+  },
+  {
+    "doc_id": "REF-STD-01",
+    "path": "references/REF-STD-01.md",
+    "sections": [
+      "1",
+      "2",
+      "2.1",
+      "2.2",
+      "2.3",
+      "2.4",
+      "2.5",
+      "2.6",
+      "2.7",
+      "2.8",
+      "2.9",
+      "2.10",
+      "3"
+    ],
+    "title": "Bibliography of public standards and literature",
+    "doc_type": "REF",
+    "revision": "1",
+    "effective_date": "2026-06-01",
+    "owner_role": "APC / soft-sensor engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FRAC-01",
+      "LAB-D86-01",
+      "LAB-QC-02"
+    ],
+    "summary": "Authoritative reference bibliography compiling international technical standards, engineering guidelines, and peer-reviewed scientific literature underpinning the FCC-21 knowledge corpus."
+  },
+  {
+    "doc_id": "SHIFT-S100",
+    "path": "shift_logs/SHIFT-S100.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s100",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-06-01",
+    "owner_role": "Shift supervisor (Priya Nair)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "3",
+      "5",
+      "6"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-24031"
+    ],
+    "summary": "Operational shift handover log covering Crew A surveillance, event handling, and soft-sensor tracking on campaign run random_s100."
+  },
+  {
+    "doc_id": "SHIFT-S101",
+    "path": "shift_logs/SHIFT-S101.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s101",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-06-05",
+    "owner_role": "Shift supervisor (Samuel Osei)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "4"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-24058"
+    ],
+    "summary": "Operational shift handover log covering Crew C surveillance, event handling, and soft-sensor tracking on campaign run random_s101."
+  },
+  {
+    "doc_id": "SHIFT-S102",
+    "path": "shift_logs/SHIFT-S102.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s102",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-06-11",
+    "owner_role": "Shift supervisor (Samuel Osei)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-24102"
+    ],
+    "summary": "Operational shift handover log covering Crew C surveillance, event handling, and soft-sensor tracking on campaign run random_s102."
+  },
+  {
+    "doc_id": "SHIFT-S103",
+    "path": "shift_logs/SHIFT-S103.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s103",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-06-16",
+    "owner_role": "Shift supervisor (Karan Bhatt)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "5",
+      "6"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-24133"
+    ],
+    "summary": "Operational shift handover log covering Crew B surveillance, event handling, and soft-sensor tracking on campaign run random_s103."
+  },
+  {
+    "doc_id": "SHIFT-S104",
+    "path": "shift_logs/SHIFT-S104.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s104",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-06-20",
+    "owner_role": "Shift supervisor (Hannah Clarke)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-25007"
+    ],
+    "summary": "Operational shift handover log covering Crew D surveillance, event handling, and soft-sensor tracking on campaign run random_s104."
+  },
+  {
+    "doc_id": "SHIFT-S105",
+    "path": "shift_logs/SHIFT-S105.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s105",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-06-26",
+    "owner_role": "Shift supervisor (Hannah Clarke)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "2",
+      "4",
+      "6"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-25041"
+    ],
+    "summary": "Operational shift handover log covering Crew D surveillance, event handling, and soft-sensor tracking on campaign run random_s105."
+  },
+  {
+    "doc_id": "SHIFT-S106",
+    "path": "shift_logs/SHIFT-S106.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s106",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-07-01",
+    "owner_role": "Shift supervisor (Samuel Osei)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-25066"
+    ],
+    "summary": "Operational shift handover log covering Crew C surveillance, event handling, and soft-sensor tracking on campaign run random_s106."
+  },
+  {
+    "doc_id": "SHIFT-S107",
+    "path": "shift_logs/SHIFT-S107.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s107",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-07-06",
+    "owner_role": "Shift supervisor (Karan Bhatt)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-25090"
+    ],
+    "summary": "Operational shift handover log covering Crew B surveillance, event handling, and soft-sensor tracking on campaign run random_s107."
+  },
+  {
+    "doc_id": "SHIFT-S108",
+    "path": "shift_logs/SHIFT-S108.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s108",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-07-11",
+    "owner_role": "Shift supervisor (Priya Nair)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-25118"
+    ],
+    "summary": "Operational shift handover log covering Crew A surveillance, event handling, and soft-sensor tracking on campaign run random_s108."
+  },
+  {
+    "doc_id": "SHIFT-S109",
+    "path": "shift_logs/SHIFT-S109.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s109",
+    "doc_type": "SHIFT",
+    "revision": "1",
+    "effective_date": "2026-07-16",
+    "owner_role": "Shift supervisor (Hannah Clarke)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F",
+      "dist_feed_API",
+      "feed_flow_lb_s",
+      "Tr_riser_F",
+      "lab_sample",
+      "crude_id",
+      "event_code"
+    ],
+    "related_events": [
+      "1",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "related_docs": [
+      "SOP-FRAC-001",
+      "SOP-FRAC-002",
+      "SOP-FRAC-003",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "WO-25152"
+    ],
+    "summary": "Operational shift handover log covering Crew D surveillance, event handling, and soft-sensor tracking on campaign run random_s109."
+  },
+  {
+    "doc_id": "SOP-APC-007",
+    "path": "sop/SOP-APC-007.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Using soft-sensor estimates and cockpit recommendations",
+    "doc_type": "SOP",
+    "revision": "1",
+    "effective_date": "2026-05-04",
+    "owner_role": "APC / soft-sensor engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "HN_T98_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "T_tray13_F",
+      "T_tray06_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "MOC-0118",
+      "MOC-0131",
+      "LAB-QC-02",
+      "IOW-FRAC-01"
+    ],
+    "summary": "Standard procedure governing the operator interaction with the AI soft-sensor advisory cockpit, trust levels, and recommendation validation."
+  },
+  {
+    "doc_id": "SOP-FCC-005",
+    "path": "sop/SOP-FCC-005.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Riser outlet temperature and feed-rate changes (events 2, 3)",
+    "doc_type": "SOP",
+    "revision": "3",
+    "effective_date": "2025-03-18",
+    "owner_role": "Operations superintendent",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "Tr_riser_F",
+      "SP_T_riser_ROT_F",
+      "feed_flow_lb_s",
+      "Treg_F",
+      "fluegas_O2_pct",
+      "conversion_pct"
+    ],
+    "related_events": [
+      "2",
+      "3"
+    ],
+    "related_docs": [
+      "IOW-FCC-02",
+      "SOP-FRAC-001"
+    ],
+    "summary": "Standard operating procedure for executing controlled changes to reactor riser outlet temperature and fresh feed throughput on FCC-21."
+  },
+  {
+    "doc_id": "SOP-FCC-006",
+    "path": "sop/SOP-FCC-006.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Feed preheat temperature upsets (event 4)",
+    "doc_type": "SOP",
+    "revision": "2",
+    "effective_date": "2024-12-05",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "dist_T_feed_in_F",
+      "Tr_riser_F",
+      "Treg_F",
+      "feed_flow_lb_s",
+      "valve_V8"
+    ],
+    "related_events": [
+      "4"
+    ],
+    "related_docs": [
+      "IOW-FCC-02",
+      "IOW-HX-03"
+    ],
+    "summary": "Mitigation procedure for managing upstream feed preheat temperature excursions and restoring reactor thermal equilibrium."
+  },
+  {
+    "doc_id": "SOP-FRAC-001",
+    "path": "sop/SOP-FRAC-001.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Fractionator normal operation and monitoring",
+    "doc_type": "SOP",
+    "revision": "3",
+    "effective_date": "2025-09-15",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "P5_frac_psia",
+      "T_tray01_F",
+      "T_tray06_F",
+      "T_tray13_F",
+      "T_tray20_F",
+      "MV_PA1",
+      "MV_PA2",
+      "MV_PA3",
+      "MV_PA4",
+      "MV_reflux_ratio",
+      "MV_cw_flow",
+      "LCO_T98_F",
+      "HN_T98_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FRAC-01",
+      "IOW-HX-03",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "LAB-QC-02"
+    ],
+    "summary": "Standard operating procedure for routine main fractionator monitoring, hydraulic stability, pumparound heat extraction, and product cut-point surveillance on FCC-21."
+  },
+  {
+    "doc_id": "SOP-FRAC-002",
+    "path": "sop/SOP-FRAC-002.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Crude changeover on the FCC and fractionator (event 1)",
+    "doc_type": "SOP",
+    "revision": "5",
+    "effective_date": "2025-06-02",
+    "owner_role": "Operations superintendent",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "dist_feed_API",
+      "crude_id",
+      "LCO_T98_F",
+      "HN_T98_F",
+      "T_tray13_F",
+      "T_tray06_F",
+      "SP_LCO_T98",
+      "SP_HN_T98",
+      "MV_PA2"
+    ],
+    "related_events": [
+      "1"
+    ],
+    "related_docs": [
+      "IOW-FRAC-01",
+      "SOP-FRAC-003",
+      "SOP-LAB-008",
+      "MOC-0124"
+    ],
+    "summary": "Standard procedure governing operational adjustments and fractionator stabilization during FCC fresh feed crude switches and API gravity ramps."
+  },
+  {
+    "doc_id": "SOP-FRAC-003",
+    "path": "sop/SOP-FRAC-003.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "LCO cut-point (T98) adjustment (event 5)",
+    "doc_type": "SOP",
+    "revision": "4",
+    "effective_date": "2026-02-10",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "LCO_T98_F",
+      "SP_LCO_T98",
+      "T_tray13_F",
+      "MV_PA2",
+      "prod_LCO",
+      "cutpoint_auto"
+    ],
+    "related_events": [
+      "5"
+    ],
+    "related_docs": [
+      "IOW-FRAC-01",
+      "SOP-APC-007",
+      "SOP-LAB-008",
+      "MOC-0118",
+      "MOC-0131"
+    ],
+    "summary": "Operating procedure for adjusting the Light Cycle Oil T98 distillation cut-point set point, enforcing move step limits and advisory spread gates."
+  },
+  {
+    "doc_id": "SOP-FRAC-004",
+    "path": "sop/SOP-FRAC-004.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Heavy naphtha cut-point (T98) adjustment (event 6)",
+    "doc_type": "SOP",
+    "revision": "2",
+    "effective_date": "2025-11-20",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "HN_T98_F",
+      "SP_HN_T98",
+      "T_tray06_F",
+      "MV_PA1",
+      "prod_HN",
+      "cutpoint_auto"
+    ],
+    "related_events": [
+      "6"
+    ],
+    "related_docs": [
+      "IOW-FRAC-01",
+      "SOP-APC-007",
+      "SOP-LAB-008"
+    ],
+    "summary": "Operating procedure for adjusting Heavy Naphtha T98 distillation endpoint, defining step limits and cockpit advisory interaction."
+  },
+  {
+    "doc_id": "SOP-LAB-008",
+    "path": "sop/SOP-LAB-008.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "title": "Sampling LCO and HN for distillation testing",
+    "doc_type": "SOP",
+    "revision": "3",
+    "effective_date": "2025-08-11",
+    "owner_role": "Lab supervisor",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "lab_sample",
+      "LCO_T98_F",
+      "HN_T98_F",
+      "T_tray13_F",
+      "T_tray06_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "LAB-D86-01",
+      "LAB-QC-02",
+      "LAB-SMP-03"
+    ],
+    "summary": "Standard procedure for field sampling of Light Cycle Oil and Heavy Naphtha streams for routine laboratory distillation verification."
+  },
+  {
+    "doc_id": "WO-24031",
+    "path": "work_orders/WO-24031.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Overhead condenser fouling: bundle cleaning",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2024-03-12",
+    "owner_role": "Reliability engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "dist_condenser_eff",
+      "P5_frac_psia",
+      "MV_cw_flow"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-HX-03"
+    ],
+    "summary": "Maintenance record documenting offline hydroblasting and tube-side descaling of main fractionator overhead condenser bundle following thermal efficiency decline."
+  },
+  {
+    "doc_id": "WO-24058",
+    "path": "work_orders/WO-24058.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Tray-13 thermocouple drift: replacement",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2024-05-27",
+    "owner_role": "Instrument technician",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "T_tray13_F",
+      "LCO_T98_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FRAC-01"
+    ],
+    "summary": "Work order covering corrective replacement and calibration of the dual-element thermocouple on fractionator LCO draw tray 13 following sensor drift."
+  },
+  {
+    "doc_id": "WO-24102",
+    "path": "work_orders/WO-24102.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Pumparound PA2 pump mechanical seal leak",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2024-08-19",
+    "owner_role": "Maintenance planner",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "MV_PA2",
+      "T_tray13_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-HX-03"
+    ],
+    "summary": "Repair record for replacement of inboard mechanical seal and bearing flush on fractionator intermediate pumparound pump P-102A."
+  },
+  {
+    "doc_id": "WO-24133",
+    "path": "work_orders/WO-24133.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Main air blower (CAB) inlet valve passing",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2024-10-30",
+    "owner_role": "Reliability engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "power_CAB",
+      "F_air_x29",
+      "fluegas_O2_pct"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FCC-02"
+    ],
+    "summary": "Corrective maintenance and pneumatic actuator overhaul of the main combustion air blower inlet guide vane assembly."
+  },
+  {
+    "doc_id": "WO-25007",
+    "path": "work_orders/WO-25007.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Reactor-to-fractionator differential pressure increase: investigation",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2025-01-14",
+    "owner_role": "Process engineer (fractionation)",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "P5_frac_psia",
+      "conversion_pct"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FRAC-01"
+    ],
+    "summary": "Engineering investigation and line clearing of vapor transfer line pressure tap bridging between the reactor stripper and main fractionator."
+  },
+  {
+    "doc_id": "WO-25041",
+    "path": "work_orders/WO-25041.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Feed/effluent heat exchanger fouling (UA decrease): cleaning",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2025-03-03",
+    "owner_role": "Reliability engineer",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "dist_T_feed_in_F",
+      "feed_flow_lb_s"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FCC-02"
+    ],
+    "summary": "Turnaround maintenance record for chemical cleaning and tube descaling of the fresh feed preheat exchanger train."
+  },
+  {
+    "doc_id": "WO-25066",
+    "path": "work_orders/WO-25066.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Fresh-feed flow meter drift: recalibration",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2025-04-22",
+    "owner_role": "Instrument technician",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "feed_flow_lb_s",
+      "Tr_riser_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FCC-02"
+    ],
+    "summary": "Calibration and zero-point recalibration of the primary Coriolis mass flow transmitter on the fresh feed charge line."
+  },
+  {
+    "doc_id": "WO-25090",
+    "path": "work_orders/WO-25090.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "LCO sample point: line flushing and sample cooler repair",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2025-06-16",
+    "owner_role": "Maintenance planner",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "lab_sample",
+      "LCO_T98_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "LAB-SMP-03"
+    ],
+    "summary": "Corrective maintenance on sample station SP-LCO-01 including sample cooler coil replacement and fast-loop bypass line descaling."
+  },
+  {
+    "doc_id": "WO-25118",
+    "path": "work_orders/WO-25118.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Fractionator pressure transmitter (P5) calibration",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2025-08-05",
+    "owner_role": "Instrument technician",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "P5_frac_psia",
+      "T_tray01_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-FRAC-01"
+    ],
+    "summary": "Five-point calibration and diaphragm seal inspection of the main fractionator overhead pressure transmitter."
+  },
+  {
+    "doc_id": "WO-25152",
+    "path": "work_orders/WO-25152.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Lab distillation analyser maintenance (8 h lab outage)",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2025-10-27",
+    "owner_role": "Lab supervisor",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "lab_sample"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "LAB-D86-01"
+    ],
+    "summary": "Scheduled maintenance and optical sensor overhaul on the primary automated atmospheric distillation analyzer, causing an 8-hour laboratory testing outage."
+  },
+  {
+    "doc_id": "WO-26012",
+    "path": "work_orders/WO-26012.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Condenser cooling-water valve positioner replacement",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2026-01-19",
+    "owner_role": "Instrument technician",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "MV_cw_flow",
+      "dist_condenser_eff"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-HX-03"
+    ],
+    "summary": "Replacement and smart digital tuning of the electro-pneumatic valve positioner on fractionator overhead cooling water control valve."
+  },
+  {
+    "doc_id": "WO-26049",
+    "path": "work_orders/WO-26049.md",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "title": "Pumparound PA3 control valve sticking",
+    "doc_type": "WO",
+    "revision": "1",
+    "effective_date": "2026-04-08",
+    "owner_role": "Instrument technician",
+    "unit": "FCC-21",
+    "status": "SIMULATED",
+    "related_tags": [
+      "MV_PA3",
+      "T_tray06_F"
+    ],
+    "related_events": [],
+    "related_docs": [
+      "IOW-HX-03"
+    ],
+    "summary": "Field servicing and packing adjustment of the pumparound PA3 flow control valve following mechanical stem friction."
+  }
+]

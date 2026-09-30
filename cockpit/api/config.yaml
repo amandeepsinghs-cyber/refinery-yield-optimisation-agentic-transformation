@@ -1,0 +1,92 @@
+# Cockpit API configuration (SDD §9 subset). Paths are relative to the FCC_RCC_Optimisation repo root.
+# Environment overrides: FCC_GCP_PROJECT, FCC_GCP_LOCATION, FCC_TEXT_MODEL, FCC_LIVE_MODEL, FCC_EMBED_MODEL.
+data:
+  root: sim_octave/data            # <batch>/*.csv below this folder are scanned
+  primary_batch: full_v1           # source of truth for training, evaluation and the demo
+  default_run: random_s140         # demo default (first held-out run); falls back to the first scored test run
+  fallback_batches: [frontend_sample_1h]   # TEMPORARY: used only while full_v1 has no data rows; drops out automatically
+  min_rows: 1500                   # a primary run counts as complete (usable) at >= min_rows data rows (target 1600)
+  expected_rows: 1600              # primary run length; a NaN last row is dropped only while row count < expected_rows
+  min_complete_train_runs: 4       # primary becomes active only once this many complete train runs (seed < test_seed_min)
+  min_complete_test_runs: 1        # ... and this many complete held-out runs exist; partial runs are never used
+  skip_dirs: [_staged, logs]
+  ts_base: "2026-09-01T00:00:00Z"   # synthetic wall-clock origin: ts = ts_base + time_min minutes
+artifacts_dir: cockpit/api/artifacts
+knowledge_dir: knowledge/corpus
+
+targets: [LCO_T98_F, HN_T98_F]
+specs:
+  LCO_T98_F: {max: 765.0, margin: 0.0}
+  HN_T98_F: {max: 540.0, margin: 0.0}
+lab:
+  reproducibility_F: 7.0            # R
+  lims_delay_min: [45, 75]          # DECISIONS L3: result ~60 min after draw (matches simulator operator trim)
+  gross_error_rate: 0.03
+  timestamp_error_rate: 0.05
+  seed: 42
+regimes: {heavy: [0, 22], medium: [22, 26], light: [26, 99]}
+features:
+  exclude: [LCO_T98_F, HN_T98_F, dist_condenser_eff, lab_sample, crude_id, event_code, cutpoint_auto, time_min]
+  exclude_patterns: ["*_dup", "eff_*"]
+  key_tags: [T_tray06_F, T_tray13_F, P5_frac_psia, Tr_riser_F, feed_flow_lb_s, MV_PA2, MV_PA3]
+  ewma_tau_min: 10
+  max_ridge: 25
+  max_gpr: 12
+  max_pinn: 20
+  max_abs_corr: 0.98
+lags:                              # A6 / SDD-LAG: per (target, key tag) delay, identified on training runs only
+  enabled: true
+  max_lag_min: 60                  # search 0..max_lag_min minutes (input leads target)
+  ar_order: 5                      # AR(p) prewhitening of the input's first differences (least squares)
+  min_abs_ccf: auto                # significance limit on |CCF|; auto = 2/sqrt(N); below it -> lag 0
+  rolling_mean: true               # also add the tag's mean over [t - lag, t] as a candidate feature
+training:
+  label_source: auto               # auto | lab | truth. auto = lab if >= min_labs clean labs else truth
+  min_labs: 100                    # DECISIONS L5: full_v1 has ~110 clean train labs per property -> trains on labs
+  truth_stride_min: 1              # when training on simulator truth: use every Nth minute
+  loro_max_runs: 8                 # fallback data (few short runs): leave-one-run-out
+  test_seed_min: 140               # full_v1: random_s140..s153 held out (test); s100..s139 train
+  group_kfold: 4                   # grouped K-fold by run on the train runs (admission + committee MSE)
+hybrid:
+  draw_tray: {LCO_T98_F: T_tray13_F, HN_T98_F: T_tray06_F}
+  p_ref_psia: 24.9
+gpr: {max_train: 1500, max_train_cv: 800, restarts: 2}
+pinn: {members: 5, hidden: [32, 32], epochs: 250, lr: 0.01, lambda_phys: 0.1, lambda_mono: 1.0, threads: 1,
+       max_unlabelled: 1000, max_labelled: 3000}
+admission: {rmse_ratio_max: 1.05, coverage90: [0.85, 0.95]}
+committee: {recent_n: 3}           # weights = 1/MSE over the last recent_n accepted labs (pooled over the run's scored
+                                   # history so far, plus optional prior history); fewer -> out-of-fold (training) weights
+steady_state:                      # A5 / SDD-MOD-06: transient minutes are excluded as lab training labels
+  enabled: true
+  window_min: 30                   # trailing rolling-window std of features.key_tags
+  std_ratio: 3.0                   # transient if std > std_ratio x max(median rolling std of the tag in the run, floor)
+                                   # floor = the tag's measurement-noise sigma (noise.*), so steady noise is not transient
+  event_transient: true            # event_code != 0 -> transient
+noise:                             # DECISIONS L6 process-measurement noise on model inputs (targets stay simulator truth)
+  enabled: true
+  temp_F: 0.5                      # tags ending _F (except targets and SP_*)
+  pressure_psi: 0.05               # tags containing psia (except SP_*)
+  flow_rel: 0.005                  # feed_flow_lb_s, prod_*, F_*, MV_* (relative sigma)
+  seed: 7                          # per-run deterministic: sha256(run_id|seed|tag)
+bias: {drift_per_day_F: 1.0, ramp_min: 30, max_abs_sigma: 3}
+mixture: {grid_points: 200, bimodal_d: 2.0, bimodal_min_weight: 0.2}
+gate: {w90_max_F: 14.0, hysteresis_ratio: 0.9, hysteresis_min: 10}
+trust: {s1_spread_R: 0.5, s1_severe_R: 1.0, s4_rmse_R: 1.5, s4_severe_R: 3.0, s6_min_labels: 5,
+        s7_severe_ratio: 1.5, physics_delta_F: 50, physics_severe_F: 100, gpr_sigma_ratio: 2.0}
+dq: {frozen_enabled: false, frozen_min: 30, spike_mad_k: 5.0, range_pad: 0.10}
+fallback: {hold_max_min: 60}       # C4 chain: consensus -> best single admitted model -> hold last good (<= 60 min) -> BAD
+recommend: {every_min: 5, max_move_F: 5.0, step_F: 0.5, p_on_spec_min: 0.95, valid_min: 30,
+            gain_default: 1.0, yield_sens_default: 0.0}
+gemini:
+  project: fcc-soft-sensor
+  location: us-central1
+  text_model: gemini-2.5-flash
+  live_model: gemini-live-2.5-flash-native-audio
+  live_fallbacks: [gemini-live-2.5-flash-native-audio, gemini-live-2.5-flash-preview-native-audio-09-2025,
+                   gemini-live-2.5-flash, gemini-2.0-flash-live-preview-04-09]
+  embed_model: gemini-embedding-001
+  embed_fallbacks: [gemini-embedding-001, text-embedding-005]
+  probe_on_startup: true
+  voice: Aoede
+knowledge: {min_score_embedding: 0.35, min_score_bm25: 0.35}
+cors_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
