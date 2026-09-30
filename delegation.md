@@ -66,11 +66,13 @@ Status: ☐ to do · ▶ in progress · ☑ done. Detailed per-step checks are i
 | C1 | Backend fixes: train on labs, HOLD on infeasible move, committee weights, overview per property, knowledge clock, process noise, fallback chain, steady-state filter | Large | API tests pass; retrain summary | ☑ (149 pass; retrain 108 s) |
 | C2 | Knowledge dashboard (F24), Open in Knowledge, Accept toast, 30× replay, controller-mode strip | Large | tsc + vitest (50) + build pass | ☑ |
 | C3 | HOLD status in web + knowledge sim_run fields in API | Flash | tsc + vitest + pytest | ☑ (vitest 55, pytest 165) |
+| 5.0 | Copilot golden set (Scenes 5–6) + eval harness + guardrail fixes | Large | `make copilot-eval` report | ☑ (16/16 golden PASS, pytest 178) |
+| 7.0 | Demo-window selector (M1–M3), extract_scenarios fix, knowledge tools for real-run events | Large | pytest + dry-run output | ☑ (pytest 178, check_corpus PASS) |
 | 1.0 | Monitor `full_v1` (54 runs) every 3 h; load finished runs to BigQuery | Lead (cron) | Rows per run; BQ row count | ▶ |
 | 1.4 | Regenerate knowledge events and SHIFT logs from real held-out runs (s140+), 2026-09-01 clock, `sim_batch` field; `check_corpus.py` validates sim fields | Flash + Lead review | Validator PASS | ☐ (after full_v1) |
 | 2.1 | A6 lag identification (prewhitened CCF) and lagged features | Large | Notebook + tests | ☑ code+15 tests (165 pass); lags all 0 on sample data — re-evaluate on full_v1 (on vs off, min_abs_ccf 0.05) in 3.1 |
 | 3.1 | Retrain on `full_v1`; calibrate trust/W90 on held-out runs | Lead | Calibration report | ☐ (after full_v1) |
-| 5.1 | E5 ADK packaging of the Copilot (Demo+) | Large | Golden set passes | ☐ |
+| 5.1 | E5 ADK packaging of the Copilot (Demo+) | Large | Golden set passes | ☑ (root_agent + 13 tests, pytest 191) |
 | 6.1 | Gemini Live probe in us-central1 | Lead | Probe succeeds | ☑ gemini-live-2.5-flash-native-audio OK (0.7 s); other 3 Live fallbacks 404 → demo fallback = text Copilot + recorded clip |
 | 7.1 | Demo-run selection (M1–M3), cache, fallbacks, screenshots | Lead + Flash | `config.yaml` demo block | ☐ (after full_v1) |
 | 7.2 | End-to-end rehearsal against `demoflow.md` | Lead + you | Pre-demo checklist | ☐ |

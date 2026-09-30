@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help sim-status load-full api-test api-train api-run web-dev web-test web-build corpus-check
+.PHONY: help sim-status load-full api-test api-train api-run web-dev web-test web-build corpus-check demo-select knowledge-events copilot-eval
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "%-15s %s\n", $$1, $$2}'
@@ -31,3 +31,13 @@ web-build: ## Build Next.js production frontend bundle
 
 corpus-check: ## Validate knowledge corpus formatting and integrity
 	python3 knowledge/tools/check_corpus.py knowledge/corpus
+
+demo-select: ## Scan held-out runs and rank candidate windows for demo moments M1-M3
+	cd cockpit/api && .venv/bin/python -m app.select_demo $(ARGS)
+
+knowledge-events: ## Extract events, labs, and trim windows from a simulation run CSV (e.g. make knowledge-events CSV=path)
+	python3 knowledge/tools/extract_events.py $(or $(CSV),sim_octave/data/full_v1/random_s100.csv)
+
+copilot-eval: ## Run Gemini copilot golden evaluation against Vertex AI
+	cd cockpit/api && .venv/bin/python -m app.eval_copilot $(ARGS)
+

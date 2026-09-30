@@ -570,6 +570,11 @@
       "5",
       "6"
     ],
+    "sim_run": "random_s100",
+    "sim_window": [
+      "360",
+      "840"
+    ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s100",
     "doc_type": "SHIFT",
     "revision": "1",
@@ -618,6 +623,11 @@
       "5",
       "6"
     ],
+    "sim_run": "random_s101",
+    "sim_window": [
+      "-120",
+      "360"
+    ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s101",
     "doc_type": "SHIFT",
     "revision": "1",
@@ -663,6 +673,11 @@
       "4",
       "5",
       "6"
+    ],
+    "sim_run": "random_s102",
+    "sim_window": [
+      "360",
+      "840"
     ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s102",
     "doc_type": "SHIFT",
@@ -713,6 +728,11 @@
       "5",
       "6"
     ],
+    "sim_run": "random_s103",
+    "sim_window": [
+      "360",
+      "840"
+    ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s103",
     "doc_type": "SHIFT",
     "revision": "1",
@@ -760,6 +780,11 @@
       "5",
       "6"
     ],
+    "sim_run": "random_s104",
+    "sim_window": [
+      "-120",
+      "360"
+    ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s104",
     "doc_type": "SHIFT",
     "revision": "1",
@@ -804,6 +829,11 @@
       "4",
       "5",
       "6"
+    ],
+    "sim_run": "random_s105",
+    "sim_window": [
+      "360",
+      "840"
     ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s105",
     "doc_type": "SHIFT",
@@ -852,6 +882,11 @@
       "4",
       "5",
       "6"
+    ],
+    "sim_run": "random_s106",
+    "sim_window": [
+      "360",
+      "840"
     ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s106",
     "doc_type": "SHIFT",
@@ -903,6 +938,11 @@
       "5",
       "6"
     ],
+    "sim_run": "random_s107",
+    "sim_window": [
+      "360",
+      "840"
+    ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s107",
     "doc_type": "SHIFT",
     "revision": "1",
@@ -952,6 +992,11 @@
       "5",
       "6"
     ],
+    "sim_run": "random_s108",
+    "sim_window": [
+      "360",
+      "840"
+    ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s108",
     "doc_type": "SHIFT",
     "revision": "1",
@@ -999,6 +1044,11 @@
       "4",
       "5",
       "6"
+    ],
+    "sim_run": "random_s109",
+    "sim_window": [
+      "360",
+      "840"
     ],
     "title": "FCC-21 Shift Operating Log \u2014 Campaign Run random_s109",
     "doc_type": "SHIFT",

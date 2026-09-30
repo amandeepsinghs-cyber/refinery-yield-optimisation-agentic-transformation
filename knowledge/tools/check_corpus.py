@@ -63,6 +63,31 @@ for p in sorted(ROOT.rglob("*.md")):
     if len(secs) < 2: fails.append(f"{p.name}: needs numbered section headings (## 1 ..., ### 1.1 ...)")
     for tag in meta.get("related_tags", []) or []:
         if tag not in TAGS: warns.append(f"{p.name}: unknown tag '{tag}'")
+    if pref in {"SHIFT", "WO", "INC", "MOC"}:
+        s_batch = meta.get("sim_batch")
+        s_run = meta.get("sim_run")
+        s_win = meta.get("sim_window")
+        if not s_batch:
+            warns.append(f"{p.name}: {pref} document missing optional 'sim_batch'")
+        elif s_batch not in {"full_v1", "sample_v1", "frontend_sample_1h", "test_random"}:
+            fails.append(f"{p.name}: unknown sim_batch '{s_batch}'")
+        if not s_run:
+            warns.append(f"{p.name}: {pref} document missing optional 'sim_run'")
+        elif not re.match(r"^random_s\d+$", str(s_run)):
+            fails.append(f"{p.name}: sim_run '{s_run}' must match pattern random_sNNN")
+        if s_win is None:
+            warns.append(f"{p.name}: {pref} document missing optional 'sim_window'")
+        elif not isinstance(s_win, list) or len(s_win) != 2:
+            fails.append(f"{p.name}: sim_window must be [start, end] list")
+        else:
+            try:
+                w0, w1 = int(s_win[0]), int(s_win[1])
+                if w0 >= w1:
+                    fails.append(f"{p.name}: sim_window start ({w0}) must be < end ({w1})")
+                elif w0 < 0 or w1 > 1600:
+                    warns.append(f"{p.name}: sim_window [{w0}, {w1}] outside canonical range 0..1600")
+            except (ValueError, TypeError):
+                fails.append(f"{p.name}: sim_window elements must be integers")
     for ln, line in enumerate(body.splitlines(), 1):
         if FIN.search(line): fails.append(f"{p.name}:{ln}: financial term -> {line.strip()[:80]}")
         if REAL.search(line): fails.append(f"{p.name}:{ln}: real company/vendor name -> {line.strip()[:80]}")
@@ -83,8 +108,16 @@ print(f"docs={len(docs)} by type={counts}")
 print("WARNINGS:"); [print("  -", w) for w in warns]
 print("FAILURES:"); [print("  -", f) for f in fails]
 if not fails:
-    man = [dict(doc_id=k, path=v["path"], sections=sorted(v["secs"], key=lambda s: [int(x) for x in s.split(".")]),
-                **{x: v["meta"].get(x) for x in REQ if x != "doc_id"}) for k, v in sorted(docs.items())]
+    man = []
+    for k, v in sorted(docs.items()):
+        entry = dict(doc_id=k, path=v["path"], sections=sorted(v["secs"], key=lambda s: [int(x) for x in s.split(".")]))
+        for fld in ("sim_batch", "sim_run", "sim_window"):
+            if fld in v["meta"]:
+                entry[fld] = v["meta"][fld]
+        for req_k in REQ:
+            if req_k != "doc_id":
+                entry[req_k] = v["meta"].get(req_k)
+        man.append(entry)
     (ROOT / "manifest.json").write_text(json.dumps(man, indent=2))
     print(f"manifest.json written ({len(man)} docs)")
 print("RESULT:", "PASS" if not fails else f"FAIL ({len(fails)})")

@@ -191,8 +191,8 @@ Knowledge
 - ☐ **F24 Knowledge dashboard** (`cockpit/web/src/app/knowledge/page.tsx`): document library, full document at the cited section, related records per run; fourth entry in the dashboard switch
 - ☐ **"Open in Knowledge"** link in the Gemini source preview deep-links to the cited section
 
-Copilot text (E5 ◐, F13 ☑)
-- ☑ google-genai (`vertexai=True`) function-calling loop, `gemini-2.5-flash`, us-central1 (`app/copilot/chat.py`); ADK packaging = Demo+
+Copilot text (E5 ☑, F13 ☑)
+- ☑ ADK agent definition `root_agent` with canonical tool bindings and fallback layer (`app/copilot/adk_agent.py`); `google-genai` streaming loop in `app/copilot/chat.py` — E5
 - ☑ Read-only tools incl. `search_documents`, `get_document`, `find_similar_events`; `query_sim_data` SELECT-only over `fcc_sim_minute` (local catalog) (`app/copilot/tools.py`)
 - ☑ SSE events `thought / tool_call / final / chart / citation / suggestion / error / done`
 - ☑ Floating Gemini panel on every page (`components/copilot/CopilotLauncher.tsx`)
@@ -239,7 +239,7 @@ curl -s localhost:8000/api/health | python3 -m json.tool | grep -A3 knowledge
 
 ## Demo+ (not on the critical path)
 
-- ☐ ADK packaging of the Copilot (E5)
+- ☑ ADK packaging of the Copilot (E5) — `root_agent` and canonical tools in `cockpit/api/app/copilot/adk_agent.py`
 - ☐ Lab Reconciliation agent + labs page (E2, F10)
 - ☐ Drift Sentinel, CUSUM, champion/challenger (E1)
 - ☐ What-If Explorer page (F7; API `POST /api/whatif` exists)

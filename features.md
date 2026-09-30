@@ -16,7 +16,7 @@
   - **Hybrid delta, PINN and GPR are now Must-haves.** They run side by side, and each produces a full **probability distribution**, not just a single number.
   - **Distribution Spread Gate (C7).** When the combined distribution becomes too wide, the system **withholds the recommendation** and says so: *"Distribution spread too wide — no recommendation issued."*
   - **Epic F has 25 features in four dashboards.** A clean **Decision** dashboard for decisions, a **Technical** dashboard with a full **Time-Series Explorer** (F12) over every simulated minute, a **Modelling** dashboard (F21) for a deep dive into each model's numbers, parameters and confidence, and a **Knowledge** dashboard (F24) with the document library, the full document opened at the cited section and the related records for the selected run. Cited sources first open as a compact preview inside the floating Gemini panel (H4), with an "Open in Knowledge" link to F24. Plotly charts and a **live Gemini Copilot agent** throughout. It is built step by step alongside the models (build.md), not at the end.
-  - **Stack:** Next.js (App Router, TypeScript) + React + Plotly.js in `cockpit/web`, FastAPI in `cockpit/api`, which also hosts the soft-sensor pipeline (`cockpit/api/app/`: models, mixture, gate, trust, recommendations, Copilot, knowledge index); the binding API contract is [cockpit/API_CONTRACT.md](cockpit/API_CONTRACT.md). Vertex AI in `us-central1`: `gemini-2.5-flash` (Copilot), `gemini-live-2.5-flash-native-audio` (voice), `gemini-embedding-001` embeddings with `text-embedding-005` fallback and BM25 as a last resort (H2). The Copilot (E5) is implemented today with `google-genai` function calling; packaging it as an ADK agent is a Demo+ item.
+  - **Stack:** Next.js (App Router, TypeScript) + React + Plotly.js in `cockpit/web`, FastAPI in `cockpit/api`, which also hosts the soft-sensor pipeline (`cockpit/api/app/`: models, mixture, gate, trust, recommendations, Copilot, knowledge index); the binding API contract is [cockpit/API_CONTRACT.md](cockpit/API_CONTRACT.md). Vertex AI in `us-central1`: `gemini-2.5-flash` (Copilot), `gemini-live-2.5-flash-native-audio` (voice), `gemini-embedding-001` embeddings with `text-embedding-005` fallback and BM25 as a last resort (H2). The Copilot (E5) provides an ADK `root_agent` definition with tool bindings in `cockpit/api/app/copilot/adk_agent.py` alongside the streaming `google-genai` function calling engine in `chat.py`.
   - **Dark/light theme toggle is a Must (F19):** default dark, persisted, no flash on load, every Plotly chart re-themes live. Wall mode moves to F25 (Demo+).
   - **Voice Copilot via the Gemini Live API (F23, Must):** `gemini-live-2.5-flash-native-audio` on Vertex AI (project `fcc-soft-sensor`, `us-central1`), with the same read-only tools and guardrails as the text Copilot.
   - **New Epic H: Knowledge & Records.** A Gemini-generated, SIMULATED knowledge corpus of 46 documents ([delegation.md](delegation.md)), a retrieval index, a citation contract (`[DOC-ID rN §x.y]`, "No cited source" below the relevance threshold), a source preview in the Gemini panel, similar past events on decision cards and a job-record track on the Time-Series Explorer.
@@ -28,8 +28,8 @@
 
 | Status | Count | Features |
 |---|---|---|
-| ✅ Built | 21 | A2, B2, B4, B5, B10, C1, C2, C7, F2, F3, F4, F5, F12, F13, F19, F20, F21, F23, H1, H2, H4 |
-| 🟡 Partial | 16 | A1, A3, A4, A7, B1, B6, B9, D5, E5, F1, F6, F8, F9, F22, H3, H5 (gaps in each Status cell below) |
+| ✅ Built | 22 | A2, B2, B4, B5, B10, C1, C2, C7, E5, F2, F3, F4, F5, F12, F13, F19, F20, F21, F23, H1, H2, H4 |
+| 🟡 Partial | 15 | A1, A3, A4, A7, B1, B6, B9, D5, F1, F6, F8, F9, F22, H3, H5 (gaps in each Status cell below) |
 | ⚪ Design only | 35 | A5, A6, A8, B3, B7, B8, C3, C4, C5, C6, D1–D4, E1, E2, E3, E4, E6, F7, F10, F11, F14–F18, F24, F25, G1–G5, H6 |
 
 ### Priority at a Glance (MoSCoW)
@@ -138,7 +138,7 @@ Every model returns a **predictive distribution** (mean + σ, or quantiles), not
 | E2 | **Lab / LIMS Reconciliation** | Accept / hold / reject each lab result against reproducibility, with rationale | Must | Demo+ | D1 D2 D3 | ⚪ | BDD-7 |
 | E3 | **Feed-Change Foresight** | Crude schedule and assays → predicted feed S/N shifts and arrival time; regime labels | Should | 3 | D1 | ⚪ | BDD-10 |
 | E4 | **Cross-Unit Orchestrator** | FCC quality forecasts → recommended hydrotreater targets, subject to constraints and human acceptance | Must | 3 | D1 | ⚪ | BDD-11 |
-| E5 | **Gemini Copilot agent (live)** | Gemini agent (today `google-genai` function calling; ADK packaging is Demo+), streamed into the cockpit as text (F13) and voice (F23, Gemini Live). Explains estimates and distributions, answers what-if questions via model tools, queries simulated data in BigQuery (read-only), searches and cites the knowledge corpus (Epic H), drafts handovers and demo reports. **Relays spread-gate withholds and never invents a recommendation** | Must | Demo | D3 | 🟡 `cockpit/api/app/copilot/`: `google-genai`, not ADK | BDD-12, BDD-16, BDD-18 |
+| E5 | **Gemini Copilot agent (live)** | Gemini agent with ADK packaging (`app/copilot/adk_agent.py`: `root_agent` + canonical tools + fallback layer) streamed into the cockpit as text (F13, `chat.py`) and voice (F23, Gemini Live). Explains estimates and distributions, answers what-if questions via model tools, queries simulated data in BigQuery/DuckDB (read-only), searches and cites the knowledge corpus (Epic H), drafts handovers and demo reports. **Relays spread-gate withholds and never invents a recommendation** | Must | Demo | D3 | ✅ `cockpit/api/app/copilot/`: ADK agent + `google-genai` streaming | BDD-12, BDD-16, BDD-18 |
 | E6 | **Governance Assistant** | Drafts MOC packages and validation reports; enforces the promotion approval workflow | Should | 2 | — | ⚪ | BDD-13 |
 
 ### Epic F: Cockpit (Front End): Decision, Technical, Modelling and Knowledge Dashboards
@@ -225,7 +225,7 @@ Every document is **SIMULATED** (generated by Gemini for the demo) and carries n
 | Cockpit (16) | F1, F2, F3, F4, F5, F6, F8, F9, F12, F13, F19, F20, F21, F22, F23, F24 |
 | Knowledge (5) | H1, H2, H3, H4, H5 |
 
-**Demo+ (next, still on simulated data):** A1 (BigQuery path), C5, C6, E1, E2, E5 ADK packaging, F7, F10, F11, F14, F25, H6.
+**Demo+ (next, still on simulated data):** A1 (BigQuery path), C5, C6, E1, E2, F7, F10, F11, F14, F25, H6.
 
 > [!NOTE]
 > The simulator models cut points, not sulfur. The demo covers **D2 and D3**; **D1 is site only** (DECISIONS.md S1). D1 sulfur features (A8, D2, E3, E4, and the sulfur form of B5) need site data or a sulfur surrogate.

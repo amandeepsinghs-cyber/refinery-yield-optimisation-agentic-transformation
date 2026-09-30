@@ -62,6 +62,7 @@ cockpit/api/app/
   store.py, state.py      artifacts, SQLite audit, service state
   knowledge/index.py      corpus chunking, Vertex embeddings cache, BM25 fallback, records
   copilot/tools.py        read-only tools
+  copilot/adk_agent.py    ADK root_agent + canonical tools + fallback compatibility
   copilot/chat.py         text Copilot (google-genai function calling, SSE)
   copilot/live.py         Gemini Live proxy
   routers/                meta, timeseries, modelling, decision, knowledge

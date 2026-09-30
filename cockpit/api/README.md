@@ -30,6 +30,21 @@ curl -X POST localhost:8010/api/admin/reload            # running server picks u
 automatically. `POST /api/admin/reload` rescans CSVs, reloads artifacts and the knowledge index, and re-scores runs
 that are new or have grown since training (with the final model; labelled `scored_by` in `provenance`).
 
+## Demo Selection (`app.select_demo`)
+
+```bash
+cd cockpit/api && .venv/bin/python -m app.select_demo
+# or from root:
+make demo-select
+```
+
+Scans held-out test runs (`random_s140..s153`, seed >= 140) using the same pipeline scoring the API uses (`app.pipeline` / `state`). Identifies and ranks candidate windows for demoflow data moments:
+- **M1 (Scene 2):** Blind drift between labs on manual cut point, tracked by soft sensor and confirmed by subsequent lab.
+- **M2 (Scene 1):** Safe recommendation (GREEN/AMBER trust, P(on-spec) >= 0.95) safe in hindsight.
+- **M3 (Scene 3):** Prudent withholding (W90 > 14 °F or bimodality/novelty).
+
+Outputs a proposed `demo:` YAML block to stdout and writes a structured candidate report to `artifacts/demo_candidates.md` without modifying `config.yaml`. Degrades gracefully on partial runs (< `data.min_rows`, 1500).
+
 **Data source.** `full_v1` (`random_s100..s153`, 1600 min each) is the only source of truth. While it has no data rows,
 the catalog falls back to `frontend_sample_1h` (4 × 60-min fixed scenarios, legacy 108-column schema) as a clearly
 labelled **temporary fallback** (`/api/health → data.source = "fallback"`, note in `data.note` and `/api/models eval.note`).
@@ -126,6 +141,23 @@ BigQuery. The system instruction enforces SDD-COP-05 (gate message verbatim, no 
 from tools, simulator truth labelled, `[DOC-ID rN §x.y]` citations or "No cited source", no financial content).
 Live (`WS /api/live`) proxies to `client.aio.live.connect` (AUDIO out, input/output transcription on), executes the
 same tools server-side, and relays `ready/audio/transcript/tool_call/citation/interrupted/turn_complete/error`.
+
+### Golden Evaluation Harness & Guardrails
+
+The golden test set (`golden/golden.yaml`) contains 16 evaluation cases spanning demo Scenes 5 & 6 (verbatim and paraphrased questions) and strict guardrail verifications:
+- **Refuse DCS writes**: Rejects write commands and states advisory-only governance (DECISIONS S3).
+- **Gate discipline**: Prohibits recommendations and set-point suggestions while WITHHELD (DECISIONS T5, SDD-COP-05).
+- **Decline financial figures**: Rejects dollar figures, savings, ROI, or NPV requests per DECISIONS S2; reports technical metrics only (°F margin, P(on-spec), yield shift %).
+- **Sulfur scope (D1)**: Clarifies that the simulator has no sulfur chemistry and D1 is evaluated site-phase only (DECISIONS S1).
+- **Unknown tags / numbers**: Declines to hallucinate unmeasured parameters (e.g. ambient humidity or cooling water temps).
+- **Prompt injection resistance**: Retains safety and advisory constraints under simulated override prompts.
+
+Run the evaluation harness and offline test suite:
+```bash
+make copilot-eval                                # run all 16 cases against Vertex AI
+.venv/bin/python -m pytest tests/test_golden_offline.py -q  # offline structural suite
+```
+Results and latency metrics are written to `artifacts/copilot_eval.md` and `artifacts/copilot_eval.json`.
 
 ## Known simplifications vs SDD
 
