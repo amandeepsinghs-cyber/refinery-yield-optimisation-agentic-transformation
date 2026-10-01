@@ -359,10 +359,11 @@ curl -s localhost:8010/api/health | python3 -m json.tool | grep -A3 knowledge
 
 ### Phase 18: Screens (Step 18 · J6, J7 · BDD-28)
 - ☑ L0 `/twin` — hybrid PFD (6 live units + boundary blocks, 3 loops), crude-slate banner, KPI vs plan, counts, "Needs attention", 12-h shift timeline (drag / arrow-key scrub, ▶ replay); zero charts (`plotly:0` verified by CDP screenshot)
-- ☐ L1 `/twin/unit/[unit_id]` — U4 first: I/O strip, chart stack on one cursor, event ribbon, right rail
-- ☐ U1, U3, U6, U5, U2 workbenches; `?uc=` entry
+- ☑ L1 `/twin/unit/[unit_id]` — U4 to the mockup: header + I/O strip, 5-panel chart stack on one shared x-range and one cursor (hover guide broadcast), event ribbon, analysis strip (trilingual briefing), rail = regime & adaptation · model evidence · optimisation (what-if sliders + P(on-spec)/Δ-yield curve) · decision (Accept / Decline → `/api/twin/decision`) · Ask Gemini; `?uc=` scroll + highlight; `time_min` optional on the API (fresh browser works)
+- ◐ U1, U3, U6, U5, U2 workbenches render through the same data-driven component (5 panels · 5 rail cards · 0 grey · no h-scroll, verified by CDP) — per-unit visual review and unit-specific panel kinds (`tray_profile`, `combustion`) still to polish; `?uc=` entry from L0 attention rail pending
 - ☑ Light default + persisted dark toggle (`layout.tsx` `data-theme="light"`, `fcc-theme` localStorage); `/` → `/twin` redirect; EN / Hinglish / हिंदी toggle persisted in store (`lang`)
-- ☐ Named trace palette; no grey curves (L1 scope); Phase-13 catalogue + old dashboards retired from nav (after L1 per D3)
+- ☑ Named trace palette on L1 (`lib/l1.ts → traceColor`, contract §8; payload greys rejected via `isGrey`; vitest + CDP `greyTraces:0` on all 6 units)
+- ☐ Phase-13 catalogue + old dashboards (Decision / Technical / Modelling / Knowledge) retired from nav; topbar brand → `/twin` (after L1 per D3)
 - ☐ Playwright `e2e/twin.spec.ts` green — spec rewritten with real BDD-28 asserts; runner not installed (`@playwright/test` absent, ~300 MB; deferred until disk is resized)
 
 ### Phase 19: Gemini scope, Hindi-first, director script (Step 19 · J8 · BDD-28)

@@ -6,7 +6,62 @@ this file records what actually happened and the state things were left in.
 
 ---
 
-## 2026-10-01 17:50 — L0 Pass B: `/twin` Refinery Digital Twin home built to the mockup (uncommitted at time of writing)
+## 2026-10-01 18:20 — L1 Pass C: U4 Unit Workbench built to the mockup; all six units render from one component (uncommitted at time of writing)
+
+Plan agreed with the user ([L1 build plan](../../.gemini/jetski/brain/d627c2de-d6ce-4d3a-9669-df0b312f1591/L1_build_plan.md), recommendations
+accepted): 5 primary panels + "More panels ▾"; keep Plotly, restyle + synchronise; client-side what-if sweep for the optimisation curve.
+
+### Found on the way in (both blocking, both fixed)
+- The L1 scaffold crashed on any fresh browser: Next 16 delivers `params` as a Promise, so the page fetched
+  `/api/unit/undefined/workbench` (422); and the API required `time_min` while the store starts `null`.
+  `page.tsx` now awaits `params`; `GET /api/unit/{id}/workbench` accepts no `time_min` (→ default run's last minute,
+  echoes `run_id`) and the client persists what the API chose, so L0 and L1 agree (contract §5 updated; route test added).
+- `yaxis2: undefined` in a Plotly layout silently blanks the chart — four of five panels were empty until the key was made
+  conditional. `Chart.tsx` now wires `onError` to `console.error` so this class of failure is visible.
+
+### Built — `cockpit/web/src/components/twin/l1/`
+| File | Role |
+|---|---|
+| `L1Header.tsx` | breadcrumb → `/twin`, title `<unit> · Unit Workbench — <property> · <regime>`, status pill, clock, next-lab, shared `LangToggle` |
+| `UnitIOStrip.tsx` | IN feeds/disturbances → unit → OUT products, headline KPI with plan ± tol (MVs stay in the chart) |
+| `ChartStack.tsx` (rewrite) | data-driven panels on one shared x-range; solid cursor at `store.timeMin` + dotted hover guide broadcast to every panel; click sets `timeMin`; ±3σ as dashed limits, CUSUM on y2, yields → % feed when feed flow present, change-point markers (labels thinned), §8 palette via `traceColor`, `fixedrange` so panels never de-align |
+| `AnalysisStrip.tsx` | residual / σ / CUSUM / breach, root-cause ranking, briefing in the store language |
+| `EventRibbon.tsx` | chronological chips; click → cursor |
+| `RegimeCard.tsx` | p(regime) bars, declared-vs-detected, detection delay, novelty, physics weight / bias reset (E1 + E2) |
+| `ModelEvidenceCard.tsx` | member table with regime-specific weight column, PINN checks, spread-gate banner with per-property committee gate, surrogate provenance |
+| `OptimisationCard.tsx` | recipe moves as what-if sliders (debounced `POST /api/recipe/whatif`), P(on-spec) · Δ-yield curve over the primary SP's limit box (≤ 11 points, parallel); works in WITHHELD state via the open decision's SP, labelled "exploration only" |
+| `DecisionCard.tsx` | action line, rationale, systems ripple, citations, Accept / Decline / Note → `POST /api/twin/decision` → shows audit # |
+| `AskGeminiCard.tsx` | input + mic → copilot (screen-scoped by `usePageContext`), Hindi-first suggestion chips, live-tag + doc chips |
+| `L1Workbench.tsx` (rewrite) | composes the above; labelled Data / Analysis / Models / Decisions zones (SDD-L1-07); `?uc=` resolves the owning panel via `use_case_ids` (old code looked up a non-existent id), scrolls + highlights |
+| `lib/l1.ts` + `tests/l1.test.ts` | pure helpers (panel selection, palette, sweep points, primary move, decision line, strip filter) — 13 tests |
+| deleted | `AnalysisZone.tsx`, `ModelsZone.tsx`, `RecipeCard.tsx` |
+
+Also: `twin/LangToggle.tsx` shared by L0 and L1; `twinTypes.ts` typed to the real payload (no more `any` for regime / decisions / citations); `.l1-*` CSS.
+
+### Verification
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `vitest` | 71 / 71 (10 files) |
+| `pytest tests/test_workbench.py tests/test_twin_l0.py` | 10 passed |
+| CDP, fresh browser, `/twin/unit/unit_4_fractionator` | no 422; API default run `random_s144` @ 1260 (= L0's Shift B · 21:00) |
+| CDP, all 6 units (`random_s144` @ 600) | each: `plotly:5 · railCards:5 · greyTraces:0 · hscroll:false`, cursor shape in every panel |
+| CDP, U4 `random_s107` @ 600 (recipe ISSUED) | 3 sliders, spread gate PASS, Decision GREEN with Accept / Decline; light + dark |
+| CDP, `?uc=UC-03` + Hinglish | briefing renders in Hinglish; owning panel resolved |
+| Playwright `e2e/twin.spec.ts` | 7 L1 scenarios written (one cursor per panel, rail cards, `?uc=`, language, evidence/decision, sober register, all units) — **not run**, runner still not installed |
+
+As-built: `docs/ui/L1_u4_workbench_asbuilt_{light,dark}.png` (U4, `random_s107` @ 600) vs `design/L1_fcc_fractionator_workbench_mockup.jpg`.
+
+### Left open (Pass D)
+- Per-unit visual review of U1 / U2 / U3 / U5 / U6; dedicated renderers for `tray_profile` (x = tray) and `combustion` (CO on y2) if wanted.
+- Retire old dashboards from the nav, brand link → `/twin` (**D3**).
+- `?uc=` deep links from the L0 attention rail; the audit log view of accepted decisions.
+- Playwright install + green run after the Cloudtop resize.
+- Known data caveat: `random_s144` is still being simulated — NaN tails are tolerated (null gaps) but numbers will move.
+
+---
+
+## 2026-10-01 17:50 — L0 Pass B: `/twin` Refinery Digital Twin home built to the mockup
 
 ### Done — `cockpit/web/src/components/twin/l0/`
 - `RefineryPFD.tsx` — SVG (viewBox 1180×540) hybrid plant map per **D1**: 6 live blocks keyed by `unit_id`

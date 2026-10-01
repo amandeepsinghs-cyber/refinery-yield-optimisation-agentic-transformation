@@ -2,19 +2,12 @@
 
 /** L0 header strip: title · shift · clock, language switch (EN / Hinglish / हिंदी) and the Gemini Live entry. */
 
-import { useCockpit, type Lang } from "@/lib/store";
+import { useCockpit } from "@/lib/store";
 import { IconMic } from "@/components/ui/icons";
 import type { TwinPlantStrip } from "@/lib/twinTypes";
-
-const LANGS: { id: Lang; label: string; title: string }[] = [
-  { id: "en", label: "EN", title: "English" },
-  { id: "hinglish", label: "Hinglish", title: "Hinglish (control-room phrasing)" },
-  { id: "hi", label: "हिंदी", title: "Hindi" },
-];
+import LangToggle from "@/components/twin/LangToggle";
 
 export default function L0Header({ plant }: { plant: TwinPlantStrip }) {
-  const lang = useCockpit((s) => s.lang);
-  const setLang = useCockpit((s) => s.setLang);
   const setCopilotOpen = useCockpit((s) => s.setCopilotOpen);
   const setCopilotTab = useCockpit((s) => s.setCopilotTab);
   return (
@@ -24,13 +17,7 @@ export default function L0Header({ plant }: { plant: TwinPlantStrip }) {
         <span className="mono">{plant.clock}</span>
       </h1>
       <div className="l0-header-actions">
-        <div className="seg" role="group" aria-label="Briefing language" data-testid="lang-toggle">
-          {LANGS.map((l) => (
-            <button key={l.id} type="button" title={l.title} aria-pressed={lang === l.id} onClick={() => setLang(l.id)} lang={l.id === "hi" ? "hi" : undefined}>
-              {l.label}
-            </button>
-          ))}
-        </div>
+        <LangToggle />
         <button
           type="button"
           className="btn l0-live"

@@ -78,7 +78,9 @@ Regimes: `R1..R4` from `app/regimes.py` (API bands, labels). Train runs: seed < 
 
 ## 5. `GET /api/unit/{unit_id}/workbench?run_id&time_min&window_min=720&step=2` — L1 aggregate
 
-One call renders the whole workbench (Data · Analysis · Models · Decisions):
+One call renders the whole workbench (Data · Analysis · Models · Decisions). `run_id` and `time_min` are optional: omitted,
+the server uses the default run and that run's last minute (same convention as §6 `/api/twin`) and echoes `run_id` in the
+payload so a fresh browser can persist it.
 
 ```json
 {"unit":{"unit_id":"unit_4_fractionator","seq":4,"name":"...","short_name":"Fractionator","status":"WATCH","status_label":"...",

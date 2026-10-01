@@ -93,10 +93,91 @@ test.describe("Level 0 — Refinery Twin home", () => {
   });
 });
 
-test.describe("Level 1 — Unit workbench (smoke until Step 18 L1 lands)", () => {
-  test("U4 workbench renders panels on one axis", async ({ page }) => {
-    await page.goto(`${BASE}/twin/unit/unit_4_fractionator`);
-    await page.waitForSelector(".js-plotly-plot", { timeout: 30_000 });
-    expect(await page.locator(".js-plotly-plot").count()).toBeGreaterThanOrEqual(4);
+async function openUnit(page: Page, unit = "unit_4_fractionator", query = "") {
+  await page.goto(`${BASE}/twin/unit/${unit}${query}`);
+  await expect(page.getByTestId("l1-root")).toBeVisible();
+  await expect(page.locator(".l1-loading")).toHaveCount(0, { timeout: 30_000 });
+  await expect(page.locator(".js-plotly-plot .cartesianlayer").first()).toBeVisible({ timeout: 30_000 });
+}
+
+test.describe("Level 1 — Unit workbench (SDD-L1-01..07)", () => {
+  test("U4 renders header, I/O strip, five primary panels and a labelled right rail", async ({ page }) => {
+    await openUnit(page);
+    await expect(page.locator(".l1-title")).toContainText(/Unit Workbench — LCO T98/);
+    await expect(page.getByTestId("unit-io-strip")).toContainText(/IN/);
+    await expect(page.getByTestId("headline-kpi")).toContainText(/plan/);
+    const panels = page.getByTestId("chart-panel");
+    await expect(panels).toHaveCount(5);
+    expect(await panels.evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")))).toEqual(["measured_vs_expected", "residual", "mv", "disturbance", "yield"]);
+    for (const id of ["rail-regime", "rail-evidence", "rail-optimisation", "rail-decision", "rail-gemini"]) await expect(page.getByTestId(id)).toBeVisible();
+    await expect(page.locator(".l1-section-label", { hasText: "Data" })).toBeVisible();
+    await expect(page.locator(".l1-section-label", { hasText: "Analysis" })).toBeVisible();
+    await expect(page.locator(".l1-section-label", { hasText: "Models" })).toBeVisible();
+    await expect(page.locator(".l1-section-label", { hasText: "Decisions" })).toBeVisible();
+  });
+
+  test("one cursor at the store minute appears in every panel and an event chip moves it", async ({ page }) => {
+    await openUnit(page);
+    const minuteOf = async () => Number(await page.evaluate(() => JSON.parse(sessionStorage.getItem("fcc-cockpit-context") ?? "{}")?.state?.timeMin ?? NaN));
+    const before = await minuteOf();
+    expect(Number.isFinite(before)).toBe(true);
+    // every panel carries at least one shape (the cursor); panels without hlines/markers carry exactly one
+    const shapeCounts = await page.getByTestId("chart-panel").evaluateAll((els) => els.map((e) => e.querySelectorAll(".shapelayer path").length));
+    for (const n of shapeCounts) expect(n).toBeGreaterThanOrEqual(1);
+    const chip = page.getByTestId("event-ribbon").locator(".l1-chip").first();
+    const chipMin = await chip.locator(".mono").textContent();
+    await chip.click();
+    await expect.poll(minuteOf).not.toBe(before);
+    await expect(page.locator(".l1-clock")).toHaveText(chipMin!.trim());
+  });
+
+  test("?uc= entry scrolls to and highlights the owning panel and lists its citations", async ({ page }) => {
+    await openUnit(page, "unit_4_fractionator", "?uc=UC-03");
+    const panel = page.locator("#panel-quality");
+    await expect(panel).toHaveClass(/twin-panel-highlight/, { timeout: 10_000 });
+    expect(await panel.evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; })).toBe(true);
+    await expect(page.getByTestId("decision-citations").locator(".l1-cite").first()).toBeVisible();
+  });
+
+  test("language toggle changes the analysis briefing; Gemini card offers Hindi-first prompts", async ({ page }) => {
+    await openUnit(page);
+    const en = await page.getByTestId("analysis-summary").textContent();
+    await page.getByTestId("lang-toggle").getByRole("button", { name: "हिंदी" }).click();
+    await expect(page.getByTestId("analysis-summary")).not.toHaveText(en!);
+    await expect(page.getByTestId("analysis-summary")).toHaveAttribute("lang", "hi");
+    await expect(page.getByTestId("rail-gemini").locator(".l1-chip[lang=hi]").first()).toBeVisible();
+  });
+
+  test("model evidence shows members, physics checks and the spread gate; decision card has Accept / Decline", async ({ page }) => {
+    await openUnit(page);
+    await expect(page.getByTestId("rail-evidence").locator("table tbody tr")).toHaveCount(4);
+    await expect(page.getByTestId("spread-gate")).toHaveText(/Spread gate (PASS|WITHHELD) · W90/);
+    await expect(page.getByTestId("rail-evidence")).toContainText(/mass closure/);
+    const decision = page.getByTestId("rail-decision");
+    await expect(decision.getByTestId("decision-line")).toHaveText(/^(RAISE|LOWER|HOLD) \S+ [+−]?\d+\.\d °F \(\d+\.\d → \d+\.\d\)$/);
+    await expect(decision.getByTestId("decision-accept")).toBeVisible();
+    await expect(decision.getByTestId("decision-decline")).toBeVisible();
+    await expect(page.getByTestId("optimisation-curve")).toBeVisible();
+    await expect(page.getByTestId("rail-optimisation").locator("input[type=range]").first()).toBeVisible();
+  });
+
+  test("sober register: no grey data traces, light/dark both render, no horizontal scroll at 1440", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openUnit(page);
+    const strokes = await page.locator(".js-plotly-plot .scatterlayer .lines path").evaluateAll((els) => els.map((e) => getComputedStyle(e).stroke));
+    expect(strokes.length).toBeGreaterThan(0);
+    for (const s of strokes) expect(s, `grey trace ${s}`).not.toMatch(/^rgb\((\d+), \1, \1\)$/);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+    await page.locator("#theme-toggle").click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator(".js-plotly-plot .cartesianlayer").first()).toBeVisible();
+  });
+
+  test("every simulator unit opens its workbench from one call", async ({ page }) => {
+    for (const u of ["unit_1_furnace", "unit_2_riser", "unit_3_regenerator", "unit_5_condenser", "unit_6_stabiliser"]) {
+      await openUnit(page, u);
+      expect(await page.getByTestId("chart-panel").count()).toBeGreaterThanOrEqual(3);
+      await expect(page.getByTestId("rail-evidence")).toBeVisible();
+    }
   });
 });

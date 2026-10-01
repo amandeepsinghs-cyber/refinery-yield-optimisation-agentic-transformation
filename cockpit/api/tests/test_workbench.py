@@ -81,3 +81,23 @@ def test_scope_snapshot_is_small():
         s = scope_snapshot(RUN, T, unit_id)
         assert len(json.dumps(s)) <= 2048, unit_id
         assert "regime" in s
+
+
+def test_workbench_route_time_min_optional_defaults_to_last_minute():
+    """A fresh browser (empty store) opens L1 without time_min; the route picks the default run's last minute and echoes run_id."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.state import get_state
+    from app.routers.common import default_run
+
+    client = TestClient(app)
+    r = client.get("/api/unit/unit_4_fractionator/workbench")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    rid = default_run()
+    assert body["run_id"] == rid
+    last = int(round(float(get_state().catalog.load(rid)["time_min"].iloc[-1])))
+    assert body["time"]["time_min"] == last
+    # explicit time_min still honoured
+    r2 = client.get("/api/unit/unit_4_fractionator/workbench", params={"time_min": 300, "run_id": RUN})
+    assert r2.status_code == 200 and r2.json()["time"]["time_min"] == 300 and r2.json()["run_id"] == RUN

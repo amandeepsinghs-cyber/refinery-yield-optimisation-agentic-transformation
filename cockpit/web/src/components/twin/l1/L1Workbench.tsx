@@ -1,170 +1,120 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+/**
+ * L1 Unit Workbench (SDD-L1-01..07, BDD-28). One call — GET /api/unit/{unit_id}/workbench — renders:
+ *   header · I/O strip · [Data] chart stack on one cursor · [Analysis] strip + event ribbon
+ *   rail: [Models] regime, evidence · [Decisions] optimisation, decision · Gemini
+ * `?uc=UC-05` scrolls to that use case's signature panel and highlights it (SDD-L1-04).
+ */
+
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useCockpit } from "@/lib/store";
 import { getTwinWorkbench } from "@/lib/twinApi";
-import { TwinWorkbench } from "@/lib/twinTypes";
+import type { TwinWorkbench } from "@/lib/twinTypes";
+import { citationChips, openDecision, selectPanels } from "@/lib/l1";
+import L1Header from "./L1Header";
+import UnitIOStrip from "./UnitIOStrip";
 import ChartStack from "./ChartStack";
-import RecipeCard from "./RecipeCard";
-import AnalysisZone from "./AnalysisZone";
-import ModelsZone from "./ModelsZone";
-import { clock } from "@/lib/format";
+import AnalysisStrip from "./AnalysisStrip";
+import EventRibbon from "./EventRibbon";
+import RegimeCard from "./RegimeCard";
+import OptimisationCard from "./OptimisationCard";
+import ModelEvidenceCard from "./ModelEvidenceCard";
+import DecisionCard from "./DecisionCard";
+import AskGeminiCard from "./AskGeminiCard";
 
 function L1Content({ unitId }: { unitId: string }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const uc = searchParams?.get("uc");
+  const uc = searchParams?.get("uc") ?? null;
   const runId = useCockpit((s) => s.runId);
   const timeMin = useCockpit((s) => s.timeMin);
-  
+  const setRun = useCockpit((s) => s.setRun);
+
   const [data, setData] = useState<TwinWorkbench | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    let active = true;
+    let live = true;
+    setLoading(true);
+    // On a fresh browser the store is empty; the API then picks its default run and the run's last minute.
     getTwinWorkbench(unitId, runId, timeMin)
-      .then((d) => { if (active) { setData(d); setLoading(false); } })
-      .catch((e) => { 
-        console.error(e);
-        if (active) setLoading(false); 
-      });
-    return () => { active = false; };
-  }, [unitId, runId, timeMin]);
+      .then((d) => {
+        if (!live) return;
+        if (!d || !d.unit) { setError(`unknown unit '${unitId}'`); return; }
+        setData(d);
+        setError(null);
+        if (runId == null || timeMin == null) setRun(d.run_id ?? d.regime?.run_id ?? runId, d.time.time_min);
+      })
+      .catch((e: unknown) => { if (live) setError(e instanceof Error ? e.message : "workbench unavailable"); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [unitId, runId, timeMin, setRun]);
 
+  const resolvedRun = data?.run_id ?? data?.regime?.run_id ?? runId ?? null;
+  const resolvedMin = data?.time.time_min ?? timeMin ?? null;
+
+  // Shared hover guide across panels (rAF-throttled).
+  const [hoverMin, setHoverMin] = useState<number | null>(null);
+  const raf = useRef<number | null>(null);
+  const onHover = useCallback((m: number | null) => {
+    if (raf.current) cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(() => setHoverMin(m));
+  }, []);
+
+  const [showMore, setShowMore] = useState(false);
+  const { primary, more } = useMemo(() => selectPanels(data?.panels ?? []), [data?.panels]);
+  const panels = showMore ? [...primary, ...more] : primary;
+
+  // ?uc= entry: scroll to the owning panel and highlight it.
   useEffect(() => {
-    if (uc && data) {
-      setTimeout(() => {
-        const el = document.getElementById(`panel-${uc}`);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          el.classList.add("twin-panel-highlight");
-          setTimeout(() => el.classList.remove("twin-panel-highlight"), 3000);
-        }
-      }, 500);
-    }
-  }, [uc, data]);
+    if (!uc || !data) return;
+    const owning = data.panels.find((p) => p.use_case_ids?.includes(uc)) ?? data.panels.find((p) => p.panel_id === data.unit.use_cases.find((u) => u.id === uc)?.panel_id);
+    if (!owning) return;
+    if (!primary.some((p) => p.panel_id === owning.panel_id)) setShowMore(true);
+    const t = setTimeout(() => {
+      const el = document.getElementById(`panel-${owning.panel_id}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("twin-panel-highlight");
+      setTimeout(() => el.classList.remove("twin-panel-highlight"), 6000);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [uc, data, primary]);
 
-  if (loading) return <div className="twin-container p-4">Loading unit workbench...</div>;
-  if (!data) return <div className="twin-container p-4">Engine not available yet</div>;
+  if (error) return <div className="twin-container l1-root l1-error" data-testid="l1-root" role="alert">Workbench unavailable: {error}</div>;
+  if (loading && !data) return <div className="twin-container l1-root l1-loading" data-testid="l1-root"><div className="skeleton" style={{ height: 48 }} /><div className="skeleton" style={{ height: 420, marginTop: 12 }} /></div>;
+  if (!data || !resolvedRun || resolvedMin == null) return null;
 
-  const { unit, time, analysis } = data;
+  const decision = openDecision(data.decisions);
+  const ucCites = uc ? data.citations : [];
+  const docChips = citationChips(data.recipe?.citations, decision?.citations, data.citations);
 
   return (
-    <div className="twin-container p-4 stack" style={{ gap: 24 }}>
-      {/* Header */}
-      <div className="row gap-2 muted" style={{ fontSize: 12 }}>
-        <button className="btn text" onClick={() => router.push("/twin")}>← Back to L0</button>
-        <span>/</span>
-        <span>{unit.name}</span>
-      </div>
-      
-      <div className="twin-card row between" style={{ alignItems: "center", padding: "12px 24px" }}>
-        <div className="row gap-4" style={{ alignItems: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>{unit.name}</div>
-          <div className="row gap-2" style={{ padding: "4px 8px", background: "var(--canvas)", borderRadius: 12, border: "1px solid var(--border)", alignItems: "center" }}>
-            <span style={{ fontSize: 12, fontWeight: 500 }}>{data.regime?.regime_label ?? data.models.surrogate.regime_id}</span>
-          </div>
-          <div className={`twin-pill-${unit.status}`}>{unit.status_label}</div>
+    <div className="twin-container l1-root" data-testid="l1-root" data-unit={data.unit.unit_id} data-uc={uc ?? undefined}>
+      <L1Header data={data} />
+      <UnitIOStrip unit={data.unit} />
+      <div className="l1-body">
+        <div className="l1-main">
+          <div className="l1-zone-label"><span className="l1-section-label">Data</span><span className="muted">{data.series.time_min.length} pts · window {data.time.window_start}–{data.time.window_end} min · one cursor</span></div>
+          <ChartStack data={data} panels={panels} hoverMin={hoverMin} onHover={onHover} />
+          {more.length > 0 && (
+            <button type="button" className="btn text l1-more" onClick={() => setShowMore((v) => !v)} aria-expanded={showMore} data-testid="more-panels">
+              {showMore ? "Fewer panels ▴" : `More panels (${more.length}) ▾`}
+            </button>
+          )}
+          <AnalysisStrip analysis={data.analysis} unit={data.unit.headline_kpi?.unit} />
+          <EventRibbon events={data.analysis.events} />
         </div>
-        
-        <div className="row gap-4" style={{ alignItems: "center" }}>
-          <div className="mono" style={{ fontSize: 14 }}>t = {time.time_min} ({time.ts.slice(11,16)})</div>
-          <div style={{ borderLeft: "1px solid var(--border)", height: 24 }} />
-          <div>Next lab: <strong>{analysis.minutes_before_next_lab}</strong>m</div>
-        </div>
-      </div>
-
-      <div className="twin-layout">
-        <div className="twin-main stack" style={{ gap: 24 }}>
-          {/* ZONE 1: Data */}
-          <div className="twin-zone">
-            <div className="twin-zone-header">Data</div>
-            
-            {/* I/O Strip */}
-            <div className="twin-card row between" style={{ marginBottom: 16, alignItems: 'center', padding: "16px" }}>
-              <div className="stack gap-2" style={{ flex: 1 }}>
-                <div className="muted" style={{ fontSize: 11 }}>INPUTS</div>
-                {unit.io.inputs.map(i => <div key={i.tag}>{i.label}: <strong>{i.value}</strong> {i.unit}</div>)}
-              </div>
-              
-              <div style={{ padding: "0 16px" }}>
-                <svg width="40" height="20"><path d="M0,10 L35,10 M30,5 L35,10 L30,15" stroke="var(--borderStrong)" strokeWidth="2" fill="none"/></svg>
-              </div>
-
-              <div style={{ padding: "16px 24px", border: "1px solid var(--borderStrong)", borderRadius: 6, background: "var(--canvas)", fontWeight: 500 }}>
-                {unit.short_name}
-              </div>
-
-              <div style={{ padding: "0 16px" }}>
-                <svg width="40" height="20"><path d="M0,10 L35,10 M30,5 L35,10 L30,15" stroke="var(--borderStrong)" strokeWidth="2" fill="none"/></svg>
-              </div>
-
-              <div className="stack gap-2" style={{ flex: 1, alignItems: 'flex-end' }}>
-                <div className="muted" style={{ fontSize: 11 }}>OUTPUTS</div>
-                {unit.io.outputs.map(i => <div key={i.tag}>{i.label}: <strong>{i.value}</strong> {i.unit}</div>)}
-              </div>
-            </div>
-
-            {/* Chart Stack */}
-            <ChartStack data={data} />
-            
-            {/* Tag Table */}
-            {unit.tag_table && unit.tag_table.length > 0 && (
-              <div className="twin-card mt-4 p-4" style={{ overflowX: "auto" }}>
-                <div className="twin-zone-header" style={{ borderBottom: "none", paddingBottom: 0, marginBottom: 8 }}>Process Tags</div>
-                <table style={{ width: "100%", fontSize: 12, textAlign: "left", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                      <th className="muted font-normal py-2">Tag</th>
-                      <th className="muted font-normal py-2">Role</th>
-                      <th className="muted font-normal py-2">Current</th>
-                      <th className="muted font-normal py-2">Min / Mean / Max</th>
-                      <th className="muted font-normal py-2">Limit / SP</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {unit.tag_table.map((t) => (
-                      <tr key={t.tag} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td className="py-2">{t.tag}</td>
-                        <td className="py-2"><span className="badge neutral mono" style={{ fontSize: 10 }}>{t.role}</span></td>
-                        <td className="py-2 mono"><strong>{t.current}</strong></td>
-                        <td className="py-2 mono muted">{t.min} / {t.mean} / {t.max}</td>
-                        <td className="py-2 mono">{t.limit ?? t.sp ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* ZONE 2: Analysis */}
-          <div className="twin-zone">
-            <div className="twin-zone-header">Analysis</div>
-            <AnalysisZone analysis={data.analysis} />
-          </div>
-        </div>
-
-        <div className="twin-rail stack" style={{ gap: 24 }}>
-          {/* ZONE 3: Models */}
-          <div className="twin-zone">
-            <div className="twin-zone-header">Models</div>
-            <ModelsZone models={data.models} />
-          </div>
-
-          {/* ZONE 4: Decisions */}
-          <div className="twin-zone">
-            <div className="twin-zone-header">Decisions</div>
-            <RecipeCard 
-              recipe={data.recipe} 
-              decisions={data.decisions}
-              unitId={unitId}
-              runId={runId}
-              timeMin={timeMin ?? 0}
-            />
-          </div>
-        </div>
+        <aside className="l1-rail" data-testid="l1-rail">
+          <div className="l1-zone-label"><span className="l1-section-label">Models</span></div>
+          <RegimeCard regime={data.regime} committee={data.models.committee} />
+          <ModelEvidenceCard models={data.models} />
+          <div className="l1-zone-label"><span className="l1-section-label">Decisions</span></div>
+          <OptimisationCard recipe={data.recipe} decision={decision} inputs={data.unit.io.inputs} unitId={data.unit.unit_id} runId={resolvedRun} timeMin={resolvedMin} />
+          <DecisionCard decision={decision} recipe={data.recipe} citations={ucCites.length ? ucCites : data.citations} runId={resolvedRun} timeMin={resolvedMin} />
+          <AskGeminiCard liveTags={Object.keys(data.series.keys).length} docChips={docChips} unitLabel={data.unit.short_name.replace(/^\d+\.\s*/, "")} />
+        </aside>
       </div>
     </div>
   );
@@ -172,7 +122,7 @@ function L1Content({ unitId }: { unitId: string }) {
 
 export default function L1Workbench({ unitId }: { unitId: string }) {
   return (
-    <Suspense fallback={<div className="twin-container p-4">Loading workbench...</div>}>
+    <Suspense fallback={<div className="twin-container l1-root l1-loading" data-testid="l1-root" />}>
       <L1Content unitId={unitId} />
     </Suspense>
   );

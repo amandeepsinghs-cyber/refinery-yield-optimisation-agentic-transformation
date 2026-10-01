@@ -85,6 +85,26 @@ export interface TwinEvent {
   kind: string;
   severity: "info" | "warn" | "alarm";
   message?: string;
+  event_id?: string;
+  unit_id?: string;
+  use_case_id?: string | null;
+  status?: string;
+  residual?: number | null;
+  sigma?: number | null;
+  cusum?: number | null;
+  expected?: number | null;
+  measured?: number | null;
+  recipe_gate?: string | null;
+  recipe_id?: string | null;
+  briefing?: { en: string; hinglish: string; hi: string };
+}
+
+export interface TwinRootCause {
+  tag: string;
+  label?: string;
+  contrib: number;
+  direction: "up" | "down" | "flat";
+  d_input?: number;
 }
 
 export interface TwinAnalysis {
@@ -94,14 +114,10 @@ export interface TwinAnalysis {
   sigma_now: number;
   cusum_now: number;
   breach_open: boolean;
-  first_breach_min: number;
+  first_breach_min: number | null;
   minutes_before_next_lab: number;
-  root_cause: {
-    tag: string;
-    label?: string;
-    contrib: number;
-    direction: "up" | "down" | "flat";
-  }[];
+  next_lab_min?: number;
+  root_cause: TwinRootCause[];
   events: TwinEvent[];
   summary: {
     en: string;
@@ -110,21 +126,38 @@ export interface TwinAnalysis {
   };
 }
 
+export interface TwinCommitteeWeight {
+  member: string;
+  label: string;
+  weight: number;
+  by_regime?: Record<string, number>;
+}
+
 export interface TwinModels {
   committee: {
-    members?: { name: string; weight: number; p_regimes?: Record<string, number> }[];
-    physics_weight?: number;
+    property?: string;
     regime_id?: string;
-    p_regimes?: Record<string, number>;
     novelty?: number;
+    physics_weight?: number;
+    weights?: TwinCommitteeWeight[];
+    bias_reset_at_min?: number | null;
+    reason?: string;
+    /** Legacy shape kept for older payloads. */
+    members?: { name: string; weight: number; p_regimes?: Record<string, number> }[];
+    p_regimes?: Record<string, number>;
   } | null;
   surrogate: {
     name: string;
     regime_id: string;
+    kind?: string;
     inputs: string[];
+    unsupported_inputs?: string[];
     outputs: string[];
-    r2: Record<string, number>;
+    r2: Record<string, number | null>;
+    r2_holdout?: number | null;
+    resid_sd?: Record<string, number>;
     n_train_minutes: number;
+    source?: Record<string, string>;
   };
   pinn_checks: {
     name: string;
@@ -134,11 +167,59 @@ export interface TwinModels {
     unit: string;
   }[];
   gate: {
-    status: "ISSUED" | "WITHHELD";
+    status: "ISSUED" | "WITHHELD" | "PASS";
     reason: string | null;
     w90: number;
     w90_limit: number;
+    committee_gate?: Record<string, string>;
   };
+}
+
+export interface TwinRegime {
+  run_id: string;
+  time_min: number;
+  regime_id: string;
+  regime_label: string;
+  p_regime: Record<string, number>;
+  novelty: number;
+  transition_pct: number;
+  declared_api: number;
+  declared_regime_id: string;
+  declared_vs_detected: string;
+  detected_at_min: number | null;
+  detection_delay_min: number | null;
+  fingerprint?: Record<string, number>;
+  segments?: { crude_id: string; regime_id: string; t_start_min: number; t_end_min: number }[];
+}
+
+export interface TwinCitation {
+  doc_id: string;
+  revision?: string | number | null;
+  section?: string | null;
+  title?: string;
+  snippet?: string;
+}
+
+export interface TwinDecision {
+  rec_id: string;
+  run_id: string;
+  time_min: number;
+  target_id: string;
+  unit_id: string;
+  use_case_id?: string;
+  status: "OPEN" | "ACCEPTED" | "DECLINED" | string;
+  action: string;
+  parameter: string;
+  sp_before: number;
+  sp_after: number;
+  delta: number;
+  unit: string;
+  gate_status?: string;
+  trust?: string;
+  rationale?: string;
+  systems_ripple?: Record<string, string>;
+  citations?: TwinCitation[];
+  recipe_id?: string | null;
 }
 
 export interface TwinRecipe {
@@ -164,19 +245,33 @@ export interface TwinRecipe {
   d_power_MW: number;
   d_coke_pct: number;
   p_on_spec: Record<string, number>;
-  objective_before: number;
-  objective_after: number;
+  objective_before: number | null;
+  objective_after: number | null;
   predicted: Record<string, number>;
-  citations: {
-    doc_id: string;
-    revision: string;
-    section: string;
-    title: string;
-  }[];
+  citations: TwinCitation[];
   explanation: string;
+  data_support?: {
+    searched: string[];
+    unsupported: string[];
+    model_source: Record<string, string>;
+    note: string;
+  };
+}
+
+export interface TwinWhatIf {
+  predicted: Record<string, number>;
+  d_yield_pct_feed: Record<string, number>;
+  p_on_spec: Record<string, number>;
+  within_limits: boolean;
+  limits?: Record<string, { supported: boolean; box_lo: number; box_hi: number }>;
+  d_fuel_lb_s?: number;
+  d_power_MW?: number;
+  d_coke_pct?: number;
+  objective?: number | null;
 }
 
 export interface TwinWorkbench {
+  run_id?: string;
   unit: TwinUnit;
   time: {
     time_min: number;
@@ -187,15 +282,15 @@ export interface TwinWorkbench {
   };
   series: {
     time_min: number[];
-    keys: Record<string, number[]>;
+    keys: Record<string, (number | null)[]>;
   };
   panels: TwinPanel[];
   analysis: TwinAnalysis;
   models: TwinModels;
-  regime: any;
+  regime: TwinRegime | null;
   recipe: TwinRecipe | null;
-  decisions: any[];
-  citations: any[];
+  decisions: TwinDecision[];
+  citations: TwinCitation[];
 }
 
 export type KpiState = "OK" | "WATCH" | "ACT";

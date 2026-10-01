@@ -34,12 +34,22 @@ def get_twin_use_case(use_case_id: str, run_id: str | None = None, time_min: int
 
 
 @router.get("/unit/{unit_id}/workbench")
-def get_unit_workbench(unit_id: str, time_min: int, run_id: str | None = None,
+def get_unit_workbench(unit_id: str, time_min: int | None = None, run_id: str | None = None,
                        window_min: int = 720, step: int = 2):
-    """L1 workbench aggregate for one unit: Data · Analysis · Models · Decisions (SDD-L1-01..07, contract §5)."""
+    """L1 workbench aggregate for one unit: Data · Analysis · Models · Decisions (SDD-L1-01..07, contract §5).
+
+    `time_min` defaults to the run's last minute (same convention as `/api/twin`) so a fresh browser can open L1."""
     from ..engines.workbench import workbench
     rid = check_run(run_id)
-    return workbench(unit_id, rid, time_min, window_min, step)
+    if time_min is None:
+        df = get_state().catalog.load(rid)
+        if df.empty:
+            raise HTTPException(404, detail=f"run '{rid}' has no rows")
+        time_min = int(round(float(df["time_min"].iloc[-1])))
+    out = workbench(unit_id, rid, time_min, window_min, step)
+    if out:
+        out.setdefault("run_id", rid)
+    return out
 
 
 class TwinDecisionRequest(BaseModel):

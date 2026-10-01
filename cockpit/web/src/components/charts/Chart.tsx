@@ -38,6 +38,7 @@ export default function Chart({ height = 280, config, ariaLabel, layout, ...rest
   return (
     <div className="chart" role="img" aria-label={ariaLabel} style={{ height }}>
       <PlotlyPlot
+        onError={(err: unknown) => { console.error("[Chart]", ariaLabel, err); }}
         {...rest}
         layout={lay}
         config={merged}

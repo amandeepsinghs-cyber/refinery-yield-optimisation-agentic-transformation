@@ -1,5 +1,5 @@
 import { fetchJson } from "./api";
-import { TwinOverview, TwinWorkbench } from "./twinTypes";
+import { TwinOverview, TwinWorkbench, TwinWhatIf } from "./twinTypes";
 
 export async function getTwinOverview(runId?: string | null, timeMin?: number | null): Promise<TwinOverview> {
   const params = new URLSearchParams();
@@ -36,12 +36,7 @@ export async function postWhatIf(
   timeMin: number,
   unitId: string,
   moves: Record<string, number>
-): Promise<{
-  predicted: Record<string, number>;
-  d_yield_pct_feed: Record<string, number>;
-  p_on_spec: Record<string, number>;
-  within_limits: boolean;
-}> {
+): Promise<TwinWhatIf> {
   return fetchJson("/api/recipe/whatif", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

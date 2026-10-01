@@ -1,224 +1,168 @@
 "use client";
 
-import { useCockpit } from "@/lib/store";
-import { TwinWorkbench } from "@/lib/twinTypes";
-import Chart from "@/components/charts/Chart";
-import { baseLayout, axisStyle, timeAxis, cursorShape } from "@/lib/plotTheme";
-import { getRoleColor } from "@/lib/palette";
+/**
+ * L1 chart stack (SDD-L1-02): panels share one x-range and ONE cursor (store.timeMin); hover is broadcast so a
+ * dotted guide moves in every panel together. Trace colours come from contract §8 (never grey). Click sets timeMin.
+ */
 
-export default function ChartStack({ data }: { data: TwinWorkbench }) {
-  const timeMin = useCockpit((s) => s.timeMin) ?? 0;
+import { useMemo } from "react";
+import type { Layout, PlotData, Shape, Annotations } from "plotly.js";
+import { useCockpit } from "@/lib/store";
+import Chart from "@/components/charts/Chart";
+import { baseLayout, axisStyle, timeAxis, cursorShape, hexA } from "@/lib/plotTheme";
+import { TOKENS } from "@/lib/theme";
+import { minToX, xToMin } from "@/lib/format";
+import { traceColor } from "@/lib/l1";
+import type { TwinPanel, TwinWorkbench } from "@/lib/twinTypes";
+
+const HEIGHT: Record<string, number> = { measured_vs_expected: 200, residual: 180, mv: 150, disturbance: 150, yield: 150, tray_profile: 150, combustion: 150 };
+const MARGIN = { l: 56, r: 56, t: 8, b: 24 };
+
+export interface ChartStackProps {
+  data: TwinWorkbench;
+  panels: TwinPanel[];
+  hoverMin: number | null;
+  onHover: (min: number | null) => void;
+}
+
+type Series = (number | null)[];
+
+export default function ChartStack({ data, panels, hoverMin, onHover }: ChartStackProps) {
+  const timeMin = useCockpit((s) => s.timeMin) ?? data.time.time_min;
   const setTimeMin = useCockpit((s) => s.setTimeMin);
   const theme = useCockpit((s) => s.theme);
 
-  const xData = data.series.time_min;
+  const x = useMemo(() => data.series.time_min.map(minToX), [data.series.time_min]);
+  const range = useMemo(() => [minToX(data.time.window_start), minToX(data.time.window_end)], [data.time.window_start, data.time.window_end]);
+  const feedLbMin = useMemo<Series | null>(() => {
+    const f = data.series.keys["feed_flow_lb_s"];
+    return f ? f.map((v) => (v == null ? null : v * 60)) : null;
+  }, [data.series.keys]);
 
   return (
-    <div className="twin-panel-strip">
-      {data.panels.map((panel) => {
-        const plotData: any[] = [];
-        
-        // Custom Handling for tray_profile
-        if (panel.kind === "tray_profile") {
-          const meas = panel.traces?.find(t => t.role === "measured");
-          const exp = panel.traces?.find(t => t.role === "expected");
-          
-          if (meas && data.series.keys[meas.key]) {
-             plotData.push({
-               y: data.series.keys[meas.key], // Trays usually y-axis? Or x? "x = tray number, y = temperature". Wait, if x = tray number:
-               x: data.series.keys[meas.key].map((_, i) => i + 1),
-               type: "scatter",
-               mode: "lines+markers",
-               line: { color: getRoleColor("measured") },
-               name: "Measured"
-             });
-          }
-          if (exp && data.series.keys[exp.key]) {
-             plotData.push({
-               y: data.series.keys[exp.key],
-               x: data.series.keys[exp.key].map((_, i) => i + 1),
-               type: "scatter",
-               mode: "lines+markers",
-               line: { color: getRoleColor("expected"), dash: "dot" },
-               name: "Expected"
-             });
-          }
-
-          const layout = {
-            ...baseLayout(theme),
-            height: 170,
-            margin: { l: 40, r: 40, t: 30, b: 20 },
-            title: { text: "", font: { size: 12 }, x: 0 },
-            showlegend: true,
-            legend: { orientation: "h" as const, y: -0.2, font: { size: 10 } },
-            xaxis: { ...axisStyle(theme), title: "Tray Number" },
-            yaxis: { ...axisStyle(theme), title: panel.unit },
-          };
-
-          return (
-            <div key={panel.panel_id} id={`panel-${panel.panel_id}`} className="twin-card row" style={{ padding: 0 }}>
-              <div style={{ width: 150, padding: 16, borderRight: "1px solid var(--border)", background: "var(--canvas)", display: "flex", alignItems: "center" }}>
-                <div style={{ fontSize: 12, fontWeight: 500 }}>{panel.title}</div>
-              </div>
-              <div style={{ flex: 1, padding: 8 }}>
-                <Chart data={plotData} layout={layout} height={170} ariaLabel={panel.title} />
-              </div>
-            </div>
-          );
+    <div className="l1-stack" data-testid="chart-stack">
+      {panels.map((panel) => {
+        const built = buildPanel(panel, data, x, feedLbMin, theme);
+        const shapes: Partial<Shape>[] = [...built.shapes, cursorShape(timeMin, theme)];
+        if (hoverMin != null && hoverMin !== timeMin) {
+          shapes.push({ ...cursorShape(hoverMin, theme), line: { color: TOKENS[theme].muted, width: 1, dash: "dot" }, opacity: 0.8 });
         }
-
-        // Add bands
-        const loTrace = panel.traces?.find(t => t.role === "band_lo");
-        const hiTrace = panel.traces?.find(t => t.role === "band_hi");
-        if (loTrace && hiTrace) {
-          const c = getRoleColor("band_lo");
-          plotData.push({
-            x: xData,
-            y: data.series.keys[loTrace.key],
-            type: "scatter",
-            mode: "lines",
-            line: { width: 0 },
-            showlegend: false,
-            hoverinfo: "skip"
-          });
-          plotData.push({
-            x: xData,
-            y: data.series.keys[hiTrace.key],
-            type: "scatter",
-            mode: "lines",
-            fill: "tonexty",
-            fillcolor: `${c}26`, // ~15% alpha
-            line: { width: 0 },
-            name: "5-95% band",
-            hoverinfo: "skip"
-          });
-        }
-
-        // Residual ±3σ symmetric band
-        if (panel.kind === "residual") {
-          const sigTrace = panel.traces?.find(t => t.role === "sigma3");
-          if (sigTrace && data.series.keys[sigTrace.key]) {
-             const c = getRoleColor("sigma3");
-             const sigValues = data.series.keys[sigTrace.key];
-             plotData.push({
-               x: xData, y: sigValues.map(v => -v),
-               type: "scatter", mode: "lines", line: { width: 0 }, showlegend: false, hoverinfo: "skip"
-             });
-             plotData.push({
-               x: xData, y: sigValues,
-               type: "scatter", mode: "lines", fill: "tonexty", fillcolor: `${c}26`, line: { width: 0 },
-               name: "±3σ band", hoverinfo: "skip"
-             });
-          }
-        }
-
-        // Regular traces
-        panel.traces?.forEach((t, i) => {
-          if (t.role === "band_lo" || t.role === "band_hi" || (panel.kind === "residual" && t.role === "sigma3")) return;
-          
-          let y = data.series.keys[t.key];
-          if (!y) return;
-          let mode = "lines";
-          let line = {
-            color: getRoleColor(t.role, i),
-            width: 2,
-            dash: (t.role === "plan" || t.role === "spec") ? "dash" : "solid"
-          };
-          
-          let yaxis = "y1";
-          if (t.role === "cusum") yaxis = "y2";
-          if (panel.kind === "combustion" && t.key.includes("CO")) yaxis = "y2";
-
-          plotData.push({
-            x: xData,
-            y: y,
-            type: "scatter",
-            mode,
-            line,
-            name: t.label ?? t.key,
-            yaxis
-          });
-        });
-
-        // Hlines
-        const shapes: any[] = [];
-        panel.hlines?.forEach(h => {
-          shapes.push({
-            type: "line",
-            x0: xData[0],
-            x1: xData[xData.length - 1],
-            y0: h.value,
-            y1: h.value,
-            line: {
-              color: getRoleColor(h.role),
-              dash: h.role === "plan" || h.role === "spec" ? "dash" : "solid",
-              width: 1
-            }
-          });
-        });
-
-        // Cursor shape
-        shapes.push(cursorShape(timeMin, theme));
-
-        // Annotations for markers
-        const annotations: any[] = [];
-        panel.markers?.forEach(m => {
-          annotations.push({
-            x: m.time_min,
-            y: 0,
-            yref: "paper",
-            text: m.label,
-            showarrow: true,
-            arrowhead: 2,
-            ax: 0,
-            ay: -30,
-            font: { size: 10, color: "var(--text)" },
-            arrowcolor: "var(--text)"
-          });
-        });
-
-        let y2 = undefined;
-        if (plotData.some(d => d.yaxis === "y2")) {
-           y2 = { ...axisStyle(theme), overlaying: "y", side: "right", title: panel.kind === "combustion" ? "CO ppm" : "CUSUM" };
-        }
-
-        const layout = {
-          ...baseLayout(theme),
-          height: 170,
-          margin: { l: 40, r: 40, t: 10, b: 20 },
-          title: { text: "", font: { size: 12 }, x: 0 },
+        const base = baseLayout(theme);
+        const layout: Partial<Layout> = {
+          ...base,
+          height: HEIGHT[panel.kind] ?? 150,
+          margin: MARGIN,
           showlegend: true,
-          legend: { orientation: "h" as const, y: -0.2, font: { size: 10 } },
-          xaxis: { ...timeAxis, gridcolor: axisStyle(theme).gridcolor, tickfont: axisStyle(theme).tickfont },
-          yaxis: { ...axisStyle(theme), title: panel.kind === "combustion" ? "O2 %" : panel.unit },
-          yaxis2: y2,
+          legend: { ...base.legend, orientation: "h", x: 1, xanchor: "right", y: 1, yanchor: "bottom", font: { size: 10.5, color: TOKENS[theme].muted } },
+          xaxis: { ...base.xaxis, ...timeAxis, range, fixedrange: true, showspikes: false },
+          yaxis: { ...base.yaxis, title: { ...axisStyle(theme).title, text: built.yTitle }, fixedrange: true },
+          ...(built.hasY2
+            ? { yaxis2: { ...axisStyle(theme), overlaying: "y" as const, side: "right" as const, title: { ...axisStyle(theme).title, text: built.y2Title }, fixedrange: true, showgrid: false } }
+            : {}),
+          dragmode: false,
+          hovermode: "x unified",
           shapes,
-          annotations
+          annotations: built.annotations,
         };
-
-        const ucs = panel.use_case_ids ? panel.use_case_ids.map(id => `panel-${id}`).join(" ") : "";
-
         return (
-          <div key={panel.panel_id} id={`panel-${panel.panel_id}`} className={`twin-card row ${ucs}`} style={{ padding: 0 }}>
-            <div style={{ width: 150, padding: "16px 12px", borderRight: "1px solid var(--border)", background: "var(--canvas)", display: "flex", alignItems: "center" }}>
-              <div style={{ fontSize: 12, fontWeight: 500 }}>{panel.title}</div>
+          <section
+            key={panel.panel_id}
+            id={`panel-${panel.panel_id}`}
+            className="l1-panel"
+            data-testid="chart-panel"
+            data-panel-id={panel.panel_id}
+            data-kind={panel.kind}
+          >
+            <div className="l1-panel-head">
+              <span className="l1-panel-title">{panel.title}</span>
+              {panel.use_case_ids?.length ? <span className="l1-panel-uc muted">{panel.use_case_ids.join(" · ")}</span> : null}
             </div>
-            <div style={{ flex: 1, padding: 8 }}>
-              <Chart
-                data={plotData}
-                layout={layout}
-                height={170}
-                onClick={(e: any) => {
-                  if (e.points && e.points.length > 0) {
-                    setTimeMin(e.points[0].x);
-                  }
-                }}
-                ariaLabel={panel.title}
-              />
-            </div>
-          </div>
+            <Chart
+              data={built.traces}
+              layout={layout}
+              height={HEIGHT[panel.kind] ?? 150}
+              ariaLabel={panel.title}
+              onHover={(e) => { const px = e?.points?.[0]?.x; if (px != null) onHover(xToMin(px as string | number)); }}
+              onUnhover={() => onHover(null)}
+              onClick={(e) => { const px = e?.points?.[0]?.x; if (px != null) setTimeMin(xToMin(px as string | number)); }}
+            />
+          </section>
         );
       })}
     </div>
   );
+}
+
+function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMin: Series | null, theme: "light" | "dark") {
+  const keys = data.series.keys;
+  const traces: Partial<PlotData>[] = [];
+  const shapes: Partial<Shape>[] = [];
+  const annotations: Partial<Annotations>[] = [];
+  const t = TOKENS[theme];
+  let yTitle = panel.unit ?? "";
+  let y2Title = "";
+  let hasY2 = false;
+
+  const lo = panel.traces?.find((tr) => tr.role === "band_lo");
+  const hi = panel.traces?.find((tr) => tr.role === "band_hi");
+  if (lo && hi && keys[lo.key] && keys[hi.key]) {
+    const c = traceColor("band_lo", lo.key, 0, lo.color);
+    traces.push({ x, y: keys[lo.key], type: "scatter", mode: "lines", line: { width: 0, color: c }, showlegend: false, hoverinfo: "skip", name: "band" });
+    traces.push({ x, y: keys[hi.key], type: "scatter", mode: "lines", fill: "tonexty", fillcolor: hexA(c, 0.14), line: { width: 0, color: c }, name: hi.label ?? lo.label ?? "5–95 % band", hoverinfo: "skip" });
+  }
+
+  let mvIdx = 0, distIdx = 0, yieldIdx = 0, trayIdx = 0;
+  panel.traces?.forEach((tr) => {
+    if (tr.role === "band_lo" || tr.role === "band_hi") return;
+    let y: Series | undefined = keys[tr.key];
+    if (!y) return;
+    const idx = tr.role === "mv" ? mvIdx++ : tr.role === "disturbance" ? distIdx++ : tr.role === "yield" ? yieldIdx++ : tr.role === "tray_profile" ? trayIdx++ : 0;
+    const color = traceColor(tr.role, tr.key, idx, tr.color);
+
+    if (tr.role === "sigma3") {
+      traces.push({ x, y, type: "scatter", mode: "lines", line: { color, width: 1, dash: "dash" }, name: tr.label ?? "±3σ", hoverinfo: "skip" });
+      traces.push({ x, y: y.map((v) => (v == null ? null : -v)), type: "scatter", mode: "lines", line: { color, width: 1, dash: "dash" }, showlegend: false, hoverinfo: "skip" });
+      return;
+    }
+    if (panel.kind === "yield" && feedLbMin) {
+      y = y.map((v, i) => (v == null || feedLbMin[i] == null || !feedLbMin[i] ? null : (v / (feedLbMin[i] as number)) * 100));
+      yTitle = "% feed";
+    }
+    const onY2 = tr.role === "cusum" || (panel.kind === "combustion" && tr.key.includes("CO"));
+    if (onY2) { hasY2 = true; y2Title = tr.role === "cusum" ? "CUSUM" : "CO ppm"; }
+    traces.push({
+      x, y, type: "scatter", mode: "lines",
+      line: { color, width: tr.role === "measured" || tr.role === "residual" ? 1.8 : 1.4, dash: tr.role === "expected" ? "solid" : "solid" },
+      name: tr.label ?? tr.key,
+      yaxis: onY2 ? "y2" : "y",
+      hovertemplate: `%{y:.2f}<extra>${tr.label ?? tr.key}</extra>`,
+    });
+  });
+
+  panel.hlines?.forEach((h) => {
+    const color = traceColor(h.role, "", 0, h.color);
+    shapes.push({ type: "line", xref: "paper", x0: 0, x1: 1, yref: "y", y0: h.value, y1: h.value, line: { color, width: 1, dash: h.role === "plan" ? "dash" : "dot" } });
+    if (h.label && h.label !== "0") {
+      annotations.push({ xref: "paper", x: 1, xanchor: "right", yref: "y", y: h.value, yanchor: "bottom", text: h.label, showarrow: false, font: { size: 10, color }, yshift: 1 });
+    }
+  });
+
+  const seen = new Set<number>();
+  const minGap = Math.max(45, (data.time.window_end - data.time.window_start) / 7);
+  let lastLabelAt = -Infinity;
+  let labels = 0;
+  const sortedMarkers = [...(panel.markers ?? [])].sort((a, b) => a.time_min - b.time_min);
+  sortedMarkers.forEach((m) => {
+    if (seen.has(m.time_min)) return;
+    seen.add(m.time_min);
+    const color = m.kind === "regime_change" ? "#6d28d9" : "#b91c1c";
+    shapes.push({ type: "line", xref: "x", x0: minToX(m.time_min), x1: minToX(m.time_min), yref: "paper", y0: 0, y1: 1, line: { color, width: 1, dash: "dot" }, opacity: 0.7 });
+    if (m.time_min - lastLabelAt >= minGap && labels < 3) {
+      lastLabelAt = m.time_min;
+      labels += 1;
+      annotations.push({ xref: "x", x: minToX(m.time_min), yref: "paper", y: 0.02, yanchor: "bottom", xanchor: "left", text: `◆ ${m.label}`, showarrow: false, font: { size: 10, color }, xshift: 3, bgcolor: hexA(t.card, 0.75) });
+    }
+  });
+
+  return { traces, shapes, annotations, yTitle, y2Title, hasY2 };
 }
