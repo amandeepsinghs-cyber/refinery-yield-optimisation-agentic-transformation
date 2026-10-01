@@ -44,7 +44,7 @@ export const TOKENS: Record<ThemeName, ThemeTokens> = {
     zeroline: "rgba(9,9,11,0.22)",
     band95: "rgba(37,99,235,0.15)",
     band50: "rgba(37,99,235,0.30)",
-    withheldFill: "rgba(217,119,6,0.16)",
+    withheldFill: "rgba(100,116,139,0.06)",
     eventFill: "rgba(113,113,122,0.14)",
   },
   dark: {
@@ -64,7 +64,7 @@ export const TOKENS: Record<ThemeName, ThemeTokens> = {
     zeroline: "rgba(250,250,250,0.22)",
     band95: "rgba(59,130,246,0.15)",
     band50: "rgba(59,130,246,0.30)",
-    withheldFill: "rgba(217,119,6,0.20)",
+    withheldFill: "rgba(148,163,184,0.06)",
     eventFill: "rgba(161,161,170,0.12)",
   },
 };
@@ -82,6 +82,13 @@ export const MODEL_COLORS: Record<string, string> = {
   bayes_ridge_v1: "#64748b",
 };
 
+export const DARK_MODEL_COLORS: Record<string, string> = {
+  hybrid_delta_v1: "#60a5fa",
+  pinn_ens_v1: "#2dd4bf",
+  gpr_v1: "#fb923c",
+  bayes_ridge_v1: "#c084fc",
+};
+
 export const MODEL_LABELS: Record<string, string> = {
   hybrid_delta_v1: "Hybrid delta",
   pinn_ens_v1: "PINN ensemble",
@@ -94,7 +101,11 @@ export const MODEL_LABELS: Record<string, string> = {
 export const MODEL_ORDER = ["hybrid_delta_v1", "pinn_ens_v1", "gpr_v1", "bayes_ridge_v1"];
 
 export const modelColor = (id: string, theme: ThemeName): string =>
-  id === "mixture" ? TOKENS[theme].text : (MODEL_COLORS[id] ?? TOKENS[theme].muted);
+  id === "mixture"
+    ? TOKENS[theme].text
+    : theme === "dark"
+      ? (DARK_MODEL_COLORS[id] ?? MODEL_COLORS[id] ?? TOKENS[theme].muted)
+      : (MODEL_COLORS[id] ?? TOKENS[theme].muted);
 
 export const modelLabel = (id: string): string => MODEL_LABELS[id] ?? id;
 

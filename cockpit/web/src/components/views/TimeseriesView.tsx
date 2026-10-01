@@ -401,7 +401,7 @@ export default function TimeseriesView() {
         if (!ser) continue;
         const m = tagMeta.get(tag);
         data.push({
-          type: "scattergl",
+          type: "scatter",
           mode: "lines",
           x,
           y: ser,
@@ -440,10 +440,10 @@ export default function TimeseriesView() {
       const mix = sel.models.includes("mixture");
       if (mix) {
         data.push(
-          { type: "scattergl", x, y: est.mixture.q05, yaxis: ya, mode: "lines", line: { width: 0, color: t.accent }, hoverinfo: "skip", showlegend: false, name: "P5" },
-          { type: "scattergl", x, y: est.mixture.q95, yaxis: ya, mode: "lines", line: { width: 0, color: t.accent }, fill: "tonexty", fillcolor: theme === "dark" ? "rgba(250,250,250,0.08)" : "rgba(9,9,11,0.07)", name: "P5–P95", hovertemplate: "P95 %{y:.1f}<extra></extra>" },
-          { type: "scattergl", x, y: est.mixture.q25, yaxis: ya, mode: "lines", line: { width: 0, color: t.accent }, hoverinfo: "skip", showlegend: false, name: "P25" },
-          { type: "scattergl", x, y: est.mixture.q75, yaxis: ya, mode: "lines", line: { width: 0, color: t.accent }, fill: "tonexty", fillcolor: theme === "dark" ? "rgba(250,250,250,0.14)" : "rgba(9,9,11,0.12)", name: "P25–P75", hoverinfo: "skip" },
+          { type: "scatter", x, y: est.mixture.q05, yaxis: ya, mode: "lines", line: { width: 0, color: t.accent }, hoverinfo: "skip", showlegend: false, name: "P5" },
+          { type: "scatter", x, y: est.mixture.q95, yaxis: ya, mode: "lines", line: { width: 0, color: t.accent }, fill: "tonexty", fillcolor: theme === "dark" ? "rgba(250,250,250,0.08)" : "rgba(9,9,11,0.07)", name: "P5–P95", hovertemplate: "P95 %{y:.1f}<extra></extra>" },
+          { type: "scatter", x, y: est.mixture.q25, yaxis: ya, mode: "lines", line: { width: 0, color: t.accent }, hoverinfo: "skip", showlegend: false, name: "P25" },
+          { type: "scatter", x, y: est.mixture.q75, yaxis: ya, mode: "lines", line: { width: 0, color: t.accent }, fill: "tonexty", fillcolor: theme === "dark" ? "rgba(250,250,250,0.14)" : "rgba(9,9,11,0.12)", name: "P25–P75", hoverinfo: "skip" },
         );
       }
       const selectedModels = sel.models.filter((m) => m !== "mixture");
@@ -455,36 +455,36 @@ export default function TimeseriesView() {
           const lo = mm.mu.map((v, i) => (v === null || mm.sigma[i] === null ? null : v - 1.645 * (mm.sigma[i] as number)));
           const hi = mm.mu.map((v, i) => (v === null || mm.sigma[i] === null ? null : v + 1.645 * (mm.sigma[i] as number)));
           data.push(
-            { type: "scattergl", x, y: lo, yaxis: ya, mode: "lines", line: { width: 0, color }, hoverinfo: "skip", showlegend: false },
-            { type: "scattergl", x, y: hi, yaxis: ya, mode: "lines", line: { width: 0, color }, fill: "tonexty", fillcolor: hexA(color, 0.12), hoverinfo: "skip", showlegend: false },
+            { type: "scatter", x, y: lo, yaxis: ya, mode: "lines", line: { width: 0, color }, hoverinfo: "skip", showlegend: false },
+            { type: "scatter", x, y: hi, yaxis: ya, mode: "lines", line: { width: 0, color }, fill: "tonexty", fillcolor: hexA(color, 0.12), hoverinfo: "skip", showlegend: false },
           );
         }
         data.push({
-          type: "scattergl",
+          type: "scatter",
           x,
           y: mm.mu,
           yaxis: ya,
           mode: "lines",
-          line: { width: 1.5, color },
+          line: { width: 1.2, color },
           name: modelLabel(id),
           hovertemplate: `${modelLabel(id)} %{y:.1f}<extra></extra>`,
         });
       }
       if (mix) {
         data.push({
-          type: "scattergl",
+          type: "scatter",
           x,
           y: est.mixture.mean,
           yaxis: ya,
           mode: "lines",
-          line: { width: 3, color: t.text },
+          line: { width: 1.65, color: t.text },
           name: "Mixture",
           hovertemplate: "Mixture %{y:.1f}<extra></extra>",
         });
       }
       if (sel.truth) {
         data.push({
-          type: "scattergl",
+          type: "scatter",
           x,
           y: est.truth,
           yaxis: ya,
@@ -496,7 +496,7 @@ export default function TimeseriesView() {
       }
       if (sel.labs && est.labs?.length) {
         data.push({
-          type: "scattergl",
+          type: "scatter",
           x: est.labs.map((l) => minToX(l.time_min)),
           y: est.labs.map((l) => l.value),
           yaxis: ya,
@@ -525,7 +525,7 @@ export default function TimeseriesView() {
       const ya = panelAxis.w90;
       const x = est.time_min.map(minToX);
       data.push({
-        type: "scattergl",
+        type: "scatter",
         x,
         y: est.w90,
         yaxis: ya,

@@ -140,6 +140,8 @@ export function Countdown({ rec }: { rec: Recommendation }) {
 }
 
 export function RecCard({ rec, compact = false }: { rec: Recommendation; compact?: boolean }) {
+  const setProperty = useCockpit((s) => s.setProperty);
+  const setTimeMin = useCockpit((s) => s.setTimeMin);
   return (
     <article className="rec" aria-label={recTitle(rec)}>
       <div className="rec-head">
@@ -170,18 +172,25 @@ export function RecCard({ rec, compact = false }: { rec: Recommendation; compact
         </dd>
         <dt>Yield shift</dt>
         <dd>{signed(rec.yield_shift_pct)}%</dd>
-        {!compact ? (
-          <>
-            <dt>W90 at issue</dt>
-            <dd>{num(rec.gate?.w90)} °F</dd>
-            <dt>Issued</dt>
-            <dd>t {rec.time_min}</dd>
-          </>
-        ) : null}
+        <dt>W90 at t {rec.time_min}</dt>
+        <dd>{num(rec.gate?.w90)} °F</dd>
       </dl>
-      {!compact && rec.rationale ? <p className="rec-rationale">{rec.rationale}</p> : null}
+      {rec.rationale ? <p className="rec-rationale">{rec.rationale}</p> : null}
+      <div className="row between" style={{ gap: 8, flexWrap: "wrap", fontSize: 11.5 }}>
+        <Countdown rec={rec} />
+        <Link
+          href="/decision/whatif"
+          className="mono"
+          style={{ fontSize: 11.5 }}
+          onClick={() => {
+            setProperty(rec.property as "LCO_T98_F" | "HN_T98_F");
+            setTimeMin(rec.time_min);
+          }}
+        >
+          Simulate in What-If →
+        </Link>
+      </div>
       <Citations items={compact ? rec.citations?.slice(0, 2) : rec.citations} />
-      {!compact ? <Countdown rec={rec} /> : null}
       <DecisionButtons rec={rec} />
     </article>
   );
@@ -193,7 +202,7 @@ export function WithheldCard({ rec, compact = false }: { rec: Recommendation; co
   return (
     <article className="rec withheld" aria-label={`Withheld ${propLabel(rec.property)}`}>
       <div className="rec-head">
-        <div className="row" style={{ gap: 6, color: "var(--amber)", fontWeight: 600, fontSize: 12.5 }}>
+        <div className="row" style={{ gap: 6, color: "var(--muted)", fontWeight: 600, fontSize: 12.5 }}>
           <IconAlert width={15} height={15} /> Withheld · {propLabel(rec.property)} · t {rec.time_min}
         </div>
         <TrustBadge level={rec.trust} short />

@@ -148,6 +148,54 @@ export default function CalibrationView() {
         </Card>
       ) : (
         <div className="grid">
+          <Card className="s-12" title="Drift Sentinel & Model Lifecycle (E1 / BDD-8)">
+            {(d as any).drift_sentinel ? (
+              <div className="grid">
+                <Card className="s-4 s-md-12">
+                  <div className="kpi-v" style={{ marginBottom: 8 }}>
+                    <span className={`badge ${(d as any).drift_sentinel.cusum_alert ? "red" : "green"}`}>
+                      {(d as any).drift_sentinel.cusum_alert ? "ALERT" : "NOMINAL"}
+                    </span>
+                  </div>
+                  <div className="kpi-l">CUSUM Structural-Break Detector</div>
+                  <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                    Peak CUSUM: {(d as any).drift_sentinel.max_cusum.toFixed(2)} (Threshold h = 5.0 σ)
+                  </div>
+                </Card>
+                <Card className="s-4 s-md-12">
+                  <div className="kpi-v" style={{ marginBottom: 8 }}>
+                    <span className={`badge ${(d as any).drift_sentinel.retrain_proposed ? "amber" : "green"}`}>
+                      {(d as any).drift_sentinel.retrain_proposed ? "RETRAIN PROPOSED" : "NOMINAL"}
+                    </span>
+                  </div>
+                  <div className="kpi-l">Residual Bias Monitor</div>
+                  {(d as any).drift_sentinel.bias_reason && (
+                    <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                      {(d as any).drift_sentinel.bias_reason}
+                    </div>
+                  )}
+                </Card>
+                <Card className="s-4 s-md-12">
+                  <div className="kpi-v" style={{ marginBottom: 8 }}>
+                    <span className={`badge ${(d as any).drift_sentinel.promotion_status === "pending_approval" ? "amber" : "green"}`}>
+                      {(d as any).drift_sentinel.promotion_status === "pending_approval" ? "PENDING APPROVAL" : "CHAMPION ACTIVE"}
+                    </span>
+                  </div>
+                  <div className="kpi-l">Champion–Challenger Promotion Gate</div>
+                  <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                    Dual validation (Time-blocked + LORO)
+                    {(d as any).drift_sentinel.moc_required && (
+                      <div style={{ marginTop: 4 }}>
+                        <span className="badge amber">Advisory / MOC approval required</span>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            ) : (
+              <EmptyState title="No drift sentinel data" />
+            )}
+          </Card>
           <Card
             className="s-12"
             title="Live Run W90 Spread & Kalman Bias History"

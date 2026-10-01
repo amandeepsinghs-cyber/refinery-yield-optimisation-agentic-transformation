@@ -47,7 +47,23 @@ MWp1=120.941794467086; MWc5=85.1347950005991; MWb=58.12; MWp=44.1; MWe=30.07; MW
 MWT=[MWm,MWe,MWp,MWb,MWc5,MWp1,MWp2,MWp3,MWp4,MWp5];
 
 header = csv_header();
-fid = fopen(out_csv, 'w'); fprintf(fid, '%s\n', strjoin(header, ',')); fclose(fid);
+existing_max_min = 0;
+if exist(out_csv, 'file')
+  try
+    raw_existing = dlmread(out_csv, ',', 1, 0);
+    if ~isempty(raw_existing)
+      existing_max_min = max(raw_existing(:, 1));
+    end
+  catch
+    existing_max_min = 0;
+  end
+end
+if existing_max_min == 0
+  fid = fopen(out_csv, 'w'); fprintf(fid, '%s\n', strjoin(header, ',')); fclose(fid);
+else
+  printf('[%s] preserving %d existing rows in %s; fast-resuming at minute %d...\n', scenario_name, existing_max_min, out_csv, existing_max_min + 1);
+  fflush(stdout);
+end
 buf = [];
 base = struct('ufcc', ufcc, 'dist', dist, 'SP', SP, 'MV', MV);
 sstate = struct();
@@ -58,6 +74,10 @@ for minute=1:ST
   % labels / controller mode (defaults = original model: cut-point controllers in auto)
   lbl = [getf(sstate, 'cut_auto', 1), getf(sstate, 'lab', 0), getf(sstate, 'crude_id', 0), getf(sstate, 'event', 0)];
   FCC_CUTPOINT_AUTO = lbl(1);
+  if minute < max(1, existing_max_min - 1)
+    T = T + 60;
+    continue;
+  end
 
   % Keep a backup of the last valid state in case lsode/fsolve hits a stiff transient
   T_bak = T; xfcc_bak = xfcc; yp_bak = yp; Flpg_bak = Flpg; Tcond_bak = Tcondenser;
@@ -88,6 +108,12 @@ for minute=1:ST
       else
         [Temperatureout,Vaporout,xcout,Liqout,Holdout,EnthalLout,EnthalVout,LN,HN,LCO,ELC2,ETC4,ETC5,ETC6,Ttrack1,Ttrack2,yout,Valvesf]=Fractionatori(xfra,ufra,xc,MV,SP,products,errord,yout,Xfilin,dist,minute);
       end
+      t1_sub = (real(Ttrack1)-273.15)*9/5+32;
+      t2_sub = (real(Ttrack2)-273.15)*9/5+32;
+      if any(~isfinite(Temperatureout)) || any(~isfinite(Vaporout)) || t1_sub < 350 || t1_sub > 700 || t2_sub < 550 || t2_sub > 900
+        step_ok = false;
+        break;
+      end
       xfra=real([Holdout;EnthalLout;EnthalVout;Liqout]);
       ufra=real([Vaporout;Temperatureout]);
       xc=real(xcout);
@@ -106,10 +132,12 @@ for minute=1:ST
       TMB=real((ufcc(1)-(yp(35)/60+LPGMB+LNMB+HNMB+LCOMB+SMB))*(100/ufcc(1)));
       Conversion=real(((LPGMB+LNMB+HNMB+LCOMB)/ufcc(1))*100);
     end
-    t1_F = (Ttrack1-273.15)*9/5+32;
-    t2_F = (Ttrack2-273.15)*9/5+32;
-    if any(~isfinite(xfcc)) || any(~isfinite(Temperatureout)) || t1_F < 350 || t1_F > 700 || t2_F < 550 || t2_F > 900
-      step_ok = false;
+    if step_ok
+      t1_F = (Ttrack1-273.15)*9/5+32;
+      t2_F = (Ttrack2-273.15)*9/5+32;
+      if any(~isfinite(xfcc)) || any(~isfinite(Temperatureout)) || t1_F < 350 || t1_F > 700 || t2_F < 550 || t2_F > 900
+        step_ok = false;
+      end
     end
   catch
     step_ok = false;
@@ -142,7 +170,10 @@ for minute=1:ST
   end
   buf = [buf; row];
   if mod(minute,60)==0 || minute==ST
-    dlmwrite(out_csv, buf, '-append', 'precision', '%.8g');
+    new_rows = buf(buf(:, 1) > existing_max_min, :);
+    if ~isempty(new_rows)
+      dlmwrite(out_csv, new_rows, '-append', 'precision', '%.8g');
+    end
     buf = [];
     printf('[%s] minute %d/%d  elapsed %.1f s  LCO_T98=%.2f F  API=%.2f\n', scenario_name, minute, ST, toc, (Ttrack2-273.15)*9/5+32, dist(2));
     fflush(stdout);

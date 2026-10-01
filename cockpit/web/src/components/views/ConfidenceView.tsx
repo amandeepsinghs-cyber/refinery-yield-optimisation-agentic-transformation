@@ -28,7 +28,7 @@ function orderedMembers(d: Distribution) {
   return [...MODEL_ORDER.filter((k) => keys.includes(k)), ...keys.filter((k) => !MODEL_ORDER.includes(k))];
 }
 
-function DistributionOverlay({ d }: { d: Distribution }) {
+export function DistributionOverlay({ d, height = 400 }: { d: Distribution; height?: number }) {
   const theme = useCockpit((s) => s.theme);
   const { data, layout } = useMemo(() => {
     const t = TOKENS[theme];
@@ -36,16 +36,17 @@ function DistributionOverlay({ d }: { d: Distribution }) {
     for (const id of orderedMembers(d)) {
       const m = d.members[id];
       const inactive = m.shadow || !m.admitted;
-      const color = inactive ? t.subtle : modelColor(id, theme);
+      const color = modelColor(id, theme);
       data.push({
         type: "scatter",
         mode: "lines",
         x: d.grid,
         y: m.pdf,
         name: `${modelLabel(id)} · w ${m.weight.toFixed(2)}${inactive ? " (shadow)" : ""}`,
-        line: { width: 1.8, color, dash: inactive ? "dash" : "solid" },
-        fill: inactive ? "none" : "tozeroy",
-        fillcolor: hexA(inactive ? "#71717a" : (modelColor(id, theme) as string), 0.12),
+        line: { width: 1.3, color, dash: inactive ? "dot" : "solid", shape: "spline" },
+        opacity: inactive ? 0.72 : 0.92,
+        fill: "tozeroy",
+        fillcolor: hexA(color, inactive ? 0.035 : 0.075),
         hovertemplate: `${modelLabel(id)} μ ${m.mu.toFixed(1)} σ ${m.sigma.toFixed(1)}<extra></extra>`,
       });
     }
@@ -55,7 +56,7 @@ function DistributionOverlay({ d }: { d: Distribution }) {
       x: d.grid,
       y: d.mixture.pdf,
       name: "Mixture",
-      line: { width: 3, color: t.text },
+      line: { width: 1.85, color: t.text, shape: "spline" },
       hovertemplate: "Mixture %{x:.1f} °F: %{y:.3f}<extra></extra>",
     });
     const shapes: Partial<Shape>[] = [
@@ -67,7 +68,7 @@ function DistributionOverlay({ d }: { d: Distribution }) {
         x1: d.mixture.q95,
         y0: 0,
         y1: 1,
-        fillcolor: theme === "dark" ? "rgba(250,250,250,0.06)" : "rgba(9,9,11,0.05)",
+        fillcolor: theme === "dark" ? "rgba(250,250,250,0.04)" : "rgba(9,9,11,0.04)",
         line: { width: 0 },
         layer: "below",
       },
@@ -79,7 +80,7 @@ function DistributionOverlay({ d }: { d: Distribution }) {
         x1: d.spec_max,
         y0: 0,
         y1: 1,
-        line: { color: STATUS.RED, width: 1.4, dash: "dash" },
+        line: { color: STATUS.RED, width: 1.2, dash: "dash" },
       },
     ];
     const g0 = d.grid[0] ?? 0;
@@ -100,15 +101,14 @@ function DistributionOverlay({ d }: { d: Distribution }) {
     ];
     for (const id of orderedMembers(d)) {
       const m = d.members[id];
-      if (m.shadow || !m.admitted) continue;
       const peak = Math.max(...m.pdf);
       annotations.push({
         x: m.mu,
         y: peak,
-        text: m.mu.toFixed(0),
+        text: m.mu.toFixed(1),
         showarrow: false,
         yanchor: "bottom",
-        font: { size: 10.5, color: modelColor(id, theme), family: FONT_MONO },
+        font: { size: 10, color: modelColor(id, theme), family: FONT_MONO },
       });
     }
     if (d.truth !== null && d.truth !== undefined) {
@@ -147,7 +147,7 @@ function DistributionOverlay({ d }: { d: Distribution }) {
     });
     return { data, layout };
   }, [d, theme]);
-  return <Chart data={data} layout={layout} height={400} ariaLabel="Overlaid member predictive distributions and mixture with spec line and P5–P95 interval" />;
+  return <Chart data={data} layout={layout} height={height} ariaLabel="Overlaid member predictive distributions and mixture with spec line and P5–P95 interval" />;
 }
 
 function SpreadGauge({ w90, limit }: { w90: number; limit: number }) {

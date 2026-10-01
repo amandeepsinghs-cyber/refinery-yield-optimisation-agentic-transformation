@@ -12,19 +12,24 @@ from ..config import get_settings
 from ..knowledge.index import CITE_RE
 from ..state import get_state
 from .tools import ToolBox, declarations, model_labels
+from .ui_guide import page_guide_for
 
 MAX_TOOL_ROUNDS = 6
 
 
 def system_instruction(ctx: dict) -> str:
     s = get_settings()
+    ui_context = page_guide_for(ctx.get("page"))
     return f"""You are the FCC soft-sensor Decision Cockpit copilot for a TECHNICAL DEMO on SIMULATED data (Octave FCC +
 fractionator simulator). You help operators and engineers understand LCO T98 (LCO_T98_F) and heavy-naphtha T98 (HN_T98_F)
-estimates, their uncertainty, the Distribution Spread Gate and cut-point recommendations.
+estimates, their uncertainty, the Distribution Spread Gate, cut-point recommendations, and every screen, graph, curve, button, and scene in this application.
 
 Page context: page={ctx.get('page')}, run_id={ctx.get('run_id')}, property={ctx.get('property')}, time_min={ctx.get('time_min')}.
 Models: {model_labels()}. Spec (placeholders): LCO T98 <= {s.spec_max('LCO_T98_F'):.0f} °F, HN T98 <= {s.spec_max('HN_T98_F'):.0f} °F;
 R = {s.R:.0f} °F; W90 limit = {s.w90_max:.0f} °F.
+
+APPLICATION UI, GRAPHS, CURVES, BUTTONS & DEMO FLOW REFERENCE:
+{ui_context}
 
 GUARDRAILS (mandatory):
 1. Read-only advisor (DECISIONS S3). You have no write tools. Accept/Decline is a human action in the UI. Refuse any request to write to,
@@ -32,7 +37,7 @@ GUARDRAILS (mandatory):
 2. Gate and set-point discipline (DECISIONS T5, SDD-COP-05). Before giving any advice or set-point suggestion, call get_gate_status for the property.
    If the gate status is WITHHELD (or if asked for a set point anyway while WITHHELD), quote the gate `message` VERBATIM (exactly as returned,
    in its own paragraph) and do NOT propose, suggest, or provide any set point or set-point move.
-3. Grounding and unknown values. Every number you state must come from a tool result in this same turn. Never estimate, guess, or invent numbers.
+3. Grounding and unknown values. Every live process number you state must come from a tool result in this same turn (standard fixed thresholds in the UI guide above such as 765 °F, 540 °F, R = 7 °F, W90 = 14 °F may be explained directly when describing UI elements). Never estimate, guess, or invent numbers.
    If a tool or simulator data does not provide a requested tag, property, or value, state clearly that it is not available or unknown rather than inventing a number.
 4. Values of LCO_T98_F / HN_T98_F columns and `truth` fields are SIMULATOR TRUTH: always label them "simulator truth".
 5. Citations & Similar Past Events (demoflow Scene 5, Epic H): Cite documents from search_documents/get_document as [DOC-ID rN §x.y] (e.g. [SOP-FRAC-003 r4 §4.2])
@@ -56,15 +61,17 @@ def _sse(event: str, data) -> str:
 
 def suggestions(ctx: dict) -> list[str]:
     page = (ctx.get("page") or "")
-    base = ["Is the gate PASS right now, and why?", "Explain what drives the current estimate",
-            "How do the four models compare on held-out data?"]
+    base = ["Explain the graphs, curves & buttons on this page", "Walk me through the 7-scene demo flow",
+            "Is the gate PASS right now, and why?"]
     if "decision" in page:
-        base = ["Should we move the cut point now?", "Why was the last recommendation withheld?", "Draft a shift handover"]
+        base = ["Explain the graphs, curves & buttons on this page", "Should we move the cut point now?",
+                "Why was the last recommendation withheld?", "Walk me through the 7-scene demo flow"]
     elif "technical" in page:
-        base = ["What happened around the last event?", "Show T_tray13_F and the LCO estimate over the last 60 min",
+        base = ["Explain the graphs, curves & buttons on this page", "What happened around the last event?",
                 "Which inputs are outside the training envelope?"]
     elif "modelling" in page:
-        base = ["Which models are admitted and why?", "Are the distributions calibrated?", "Show GPR feature relevance"]
+        base = ["Explain the graphs, curves & buttons on this page", "Which models are admitted and why?",
+                "Are the distributions calibrated?"]
     return base
 
 

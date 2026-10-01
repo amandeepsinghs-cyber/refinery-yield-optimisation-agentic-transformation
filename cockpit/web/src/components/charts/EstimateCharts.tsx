@@ -15,7 +15,7 @@ import {
   timeAxis,
   trustStrip,
 } from "@/lib/plotTheme";
-import { FONT_MONO, STATUS, TOKENS } from "@/lib/theme";
+import { FONT_MONO, MODEL_ORDER, STATUS, TOKENS, modelColor, modelLabel } from "@/lib/theme";
 import type { EstimatesTimeseries } from "@/lib/types";
 
 export function clickToMinute(e: Readonly<PlotMouseEvent>): number | null {
@@ -33,6 +33,7 @@ interface FanProps {
   height?: number;
   withStrips?: boolean;
   unitLabel?: string;
+  highlightMode?: "none" | "align" | "diverge";
   ariaLabel: string;
 }
 
@@ -48,6 +49,7 @@ export function FanChart({
   height = 380,
   withStrips = false,
   unitLabel = "°F",
+  highlightMode = "none",
   ariaLabel,
 }: FanProps) {
   const theme = useCockpit((s) => s.theme);
@@ -103,24 +105,40 @@ export function FanChart({
         legendgroup: "b50",
         hovertemplate: "P75 %{y:.1f}<extra></extra>",
       },
-      {
-        type: "scatter",
-        x,
-        y: m.q50,
-        mode: "lines",
-        line: { width: 2, color: t.text },
-        name: "median",
-        customdata: hoverTrust,
-        hovertemplate: "median %{y:.1f} °F · trust %{customdata}<extra></extra>",
-      },
     ];
+    if (est.members) {
+      for (const id of MODEL_ORDER) {
+        const mem = est.members[id];
+        if (!mem?.mu?.length) continue;
+        traces.push({
+          type: "scatter",
+          x,
+          y: mem.mu,
+          mode: "lines",
+          line: { width: 1.05, color: modelColor(id, theme) },
+          opacity: 0.72,
+          name: modelLabel(id),
+          hovertemplate: `${modelLabel(id)} %{y:.1f} °F<extra></extra>`,
+        });
+      }
+    }
+    traces.push({
+      type: "scatter",
+      x,
+      y: m.q50,
+      mode: "lines",
+      line: { width: 1.55, color: t.text },
+      name: "Mixture median",
+      customdata: hoverTrust,
+      hovertemplate: "Mixture median %{y:.1f} °F · trust %{customdata}<extra></extra>",
+    });
     if (showTruth && est.truth?.some((v) => v !== null)) {
       traces.push({
         type: "scatter",
         x,
         y: est.truth,
         mode: "lines",
-        line: { width: 1.5, color: t.muted, dash: "dot" },
+        line: { width: 1.25, color: t.muted, dash: "dot" },
         name: "simulator truth",
         hovertemplate: "simulator truth %{y:.1f}<extra></extra>",
       });
@@ -157,6 +175,73 @@ export function FanChart({
     const gb = gateBands(est.time_min, est.gate, theme, mainDomain[0], mainDomain[1]);
     shapes.push(...ev.shapes, ...gb.shapes);
     annotations.push(...ev.annotations, ...gb.annotations);
+
+    if (highlightMode !== "none" && est.members) {
+      const n = est.time_min.length;
+      const flags: boolean[] = [];
+      for (let i = 0; i < n; i++) {
+        const mus: number[] = [];
+        for (const id of MODEL_ORDER) {
+          const v = est.members[id]?.mu?.[i];
+          if (v !== null && v !== undefined && Number.isFinite(v)) mus.push(v);
+        }
+        const diff = mus.length >= 2 ? Math.max(...mus) - Math.min(...mus) : 0;
+        if (highlightMode === "align") {
+          flags.push(diff <= 1.5 && est.gate[i] === "PASS");
+        } else {
+          flags.push(diff >= 3.8 || est.gate[i] === "WITHHELD");
+        }
+      }
+      const isAlign = highlightMode === "align";
+      const fill = isAlign ? "rgba(16,185,129,0.11)" : "rgba(244,63,94,0.11)";
+      const border = isAlign ? "rgba(16,185,129,0.45)" : "rgba(244,63,94,0.45)";
+      const labelTxt = isAlign ? "MODELS ALIGN (Δμ ≤ 1.5°F)" : "MODELS DIVERGE (Δμ ≥ 3.8°F)";
+      const labelColor = isAlign ? STATUS.GREEN : STATUS.RED;
+      let startIdx: number | null = null;
+      let labelled = false;
+      for (let i = 0; i <= n; i++) {
+        const active = i < n && flags[i];
+        if (active && startIdx === null) {
+          startIdx = i;
+        } else if (!active && startIdx !== null) {
+          const endIdx = Math.max(startIdx, i - 1);
+          const tStart = est.time_min[startIdx];
+          const tEnd = est.time_min[endIdx];
+          if (tEnd - tStart >= 10) {
+            shapes.push({
+              type: "rect",
+              xref: "x",
+              yref: "paper",
+              x0: minToX(tStart),
+              x1: minToX(tEnd),
+              y0: mainDomain[0],
+              y1: mainDomain[1],
+              fillcolor: fill,
+              line: { width: 1, color: border, dash: "dot" },
+              layer: "below",
+            });
+            if (!labelled) {
+              annotations.push({
+                xref: "x",
+                yref: "paper",
+                x: minToX(Math.round((tStart + tEnd) / 2)),
+                y: mainDomain[1] - 0.02,
+                yanchor: "top",
+                xanchor: "center",
+                text: labelTxt,
+                showarrow: false,
+                font: { size: 10, color: labelColor, family: FONT_MONO },
+                bgcolor: t.elevated,
+                bordercolor: border,
+                borderpad: 2,
+              });
+              labelled = true;
+            }
+          }
+          startIdx = null;
+        }
+      }
+    }
 
     const t0 = est.time_min[0] ?? 0;
     const t1 = est.time_min.at(-1) ?? t0 + 1;
@@ -239,7 +324,7 @@ export function FanChart({
     lay.shapes = shapes;
     lay.annotations = annotations;
     return { data: traces, layout: lay };
-  }, [est, showTruth, cursor, theme, withStrips, unitLabel]);
+  }, [est, showTruth, cursor, theme, withStrips, unitLabel, highlightMode]);
 
   return (
     <Chart

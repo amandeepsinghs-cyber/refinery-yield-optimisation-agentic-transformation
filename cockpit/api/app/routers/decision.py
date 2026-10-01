@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api")
 
 
 @router.get("/overview")
-def overview(run_id: str | None = None, property: str = "LCO_T98_F"):
+def overview(run_id: str | None = None, property: str = "LCO_T98_F", time_min: int | None = None):
     """KPIs for one property (default LCO_T98_F): lab/truth RMSE, coverage, trust mix, availability, recommendations."""
     st = get_state()
     run_id, prop = check_run(run_id), check_prop(property)
@@ -37,7 +37,10 @@ def overview(run_id: str | None = None, property: str = "LCO_T98_F"):
     le = [l["value"] - mean[idx[l["time_min"]]] for l in labs if l["time_min"] in idx]
     trust = P("trust")
     gate = P("gate")
-    recs = st.recommendations(run_id, prop)
+    j = st.index_of(arrs, time_min)
+    t_ref = int(arrs["time_min"][j]) if len(arrs["time_min"]) else None
+    recs_all = st.recommendations(run_id, prop)
+    recs_at = st.recommendations(run_id, prop, time_min=t_ref)
     kpis = {"rmse_vs_lab": round(float(np.sqrt(np.mean(np.square(le)))), 3) if le else None,
             "n_labs_accepted": len(le),
             "rmse_vs_truth": round(float(np.sqrt(np.nanmean((mean - y) ** 2))), 3),
@@ -45,13 +48,14 @@ def overview(run_id: str | None = None, property: str = "LCO_T98_F"):
             "coverage90": round(float(np.nanmean((y >= P("q05")) & (y <= P("q95")))), 4),
             "trust_mix": {k: round(float(np.mean(trust == k)), 4) for k in ("GREEN", "AMBER", "RED")},
             "availability": round(float(np.mean((gate == "PASS") & (trust != "RED"))), 4),
-            "recs_accepted": sum(r["status"] == "ACCEPTED" for r in recs),
-            "recs_total": sum(r["status"] not in ("WITHHELD", "HOLD") for r in recs),
-            "withheld": sum(r["status"] == "WITHHELD" for r in recs),
-            "held_no_feasible_move": sum(r["status"] == "HOLD" for r in recs),
-            "w90_now": round(float(P("w90")[-1]), 2), "gate_now": str(gate[-1]), "trust_now": str(trust[-1])}
-    needed = [r for r in recs if r["status"] == "OPEN"]
-    needed += [r for r in recs if r["status"] == "WITHHELD" and r["time_min"] >= int(arrs["time_min"][-1]) - 30][-1:]
+            "recs_accepted": sum(r["status"] == "ACCEPTED" for r in recs_all),
+            "recs_total": sum(r["status"] not in ("WITHHELD", "HOLD") for r in recs_all),
+            "withheld": sum(r["status"] == "WITHHELD" for r in recs_all),
+            "held_no_feasible_move": sum(r["status"] == "HOLD" for r in recs_all),
+            "w90_now": round(float(P("w90")[j]), 2), "gate_now": str(gate[j]), "trust_now": str(trust[j])}
+    needed = [r for r in recs_at if r["status"] == "OPEN"][::-1]
+    if t_ref is not None:
+        needed += [r for r in recs_at if r["status"] == "WITHHELD" and r["time_min"] >= t_ref - 30][-1:]
     note = None
     if not le:
         note = ("rmse_vs_lab is null: no accepted synthetic labs in this run (legacy scenario files carry no lab_sample "
@@ -61,10 +65,11 @@ def overview(run_id: str | None = None, property: str = "LCO_T98_F"):
 
 
 @router.get("/recommendations")
-def recommendations(run_id: str | None = None, status: str | None = None, property: str | None = None, limit: int = 500):
+def recommendations(run_id: str | None = None, status: str | None = None, property: str | None = None,
+                    time_min: int | None = None, limit: int = 500):
     st = get_state()
     run_id = check_run(run_id)
-    recs = st.recommendations(run_id, property)
+    recs = st.recommendations(run_id, property, time_min=time_min)
     if status:
         want = {x.strip().upper() for x in status.split(",")}
         recs = [r for r in recs if r["status"] in want]
@@ -86,7 +91,8 @@ def decide(rec_id: str, body: Decision):
     run_id = "-".join(parts[1:-2]) if len(parts) >= 4 else None
     if not run_id or run_id not in st.catalog.runs:
         raise HTTPException(404, detail=f"unknown recommendation '{rec_id}'")
-    rec = next((r for r in st.recommendations(run_id) if r["rec_id"] == rec_id), None)
+    rec_t = int(parts[-1]) if len(parts) >= 4 and parts[-1].isdigit() else None
+    rec = next((r for r in st.recommendations(run_id, time_min=rec_t) if r["rec_id"] == rec_id), None)
     if rec is None:
         raise HTTPException(404, detail=f"unknown recommendation '{rec_id}'")
     if rec["status"] != "OPEN":

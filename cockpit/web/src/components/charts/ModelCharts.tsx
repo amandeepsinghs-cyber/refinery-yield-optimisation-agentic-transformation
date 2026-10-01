@@ -45,7 +45,7 @@ export function ParityPlot({ cal, R }: { cal: CalibrationResponse; R: number }) 
           }
         }
         return {
-          type: "scattergl",
+          type: "scatter",
           mode: "markers",
           x: p.truth,
           y: p.pred,
@@ -91,7 +91,7 @@ export function ResidualsChart({ cal, R }: { cal: CalibrationResponse; R: number
       const t = TOKENS[theme];
       const ids = modelsIn(cal.residuals, ["time_idx"]);
       const data: Data[] = ids.map((id) => ({
-        type: "scattergl",
+        type: "scatter",
         mode: "lines",
         x: cal.residuals.time_idx,
         y: cal.residuals[id] as (number | null)[],

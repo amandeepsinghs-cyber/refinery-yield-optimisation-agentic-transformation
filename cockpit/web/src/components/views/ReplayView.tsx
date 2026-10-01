@@ -76,9 +76,9 @@ function LiveFan({ buf, spec }: { buf: Buf; spec: number | null }) {
     const t = TOKENS[theme];
     const x = buf.t.map(minToX);
     const data: Data[] = [
-      { type: "scattergl", x, y: buf.q05, mode: "lines", line: { width: 0, color: t.accent }, hoverinfo: "skip", name: "P5" },
+      { type: "scatter", x, y: buf.q05, mode: "lines", line: { width: 0, color: t.accent }, hoverinfo: "skip", name: "P5" },
       {
-        type: "scattergl",
+        type: "scatter",
         x,
         y: buf.q95,
         mode: "lines",
@@ -93,7 +93,7 @@ function LiveFan({ buf, spec }: { buf: Buf; spec: number | null }) {
       const arr = buf.members[id];
       if (!arr) continue;
       data.push({
-        type: "scattergl",
+        type: "scatter",
         x,
         y: arr,
         mode: "lines",
@@ -104,27 +104,27 @@ function LiveFan({ buf, spec }: { buf: Buf; spec: number | null }) {
     }
     data.push(
       {
-        type: "scattergl",
+        type: "scatter",
         x,
         y: buf.mean,
         mode: "lines",
-        line: { width: 3, color: t.text },
+        line: { width: 1.65, color: t.text },
         name: "Mixture",
         hovertemplate: "Mixture %{y:.1f}<extra></extra>",
       },
       {
-        type: "scattergl",
+        type: "scatter",
         x,
         y: buf.truth,
         mode: "lines",
-        line: { width: 1.4, color: t.muted, dash: "dot" },
+        line: { width: 1.3, color: t.muted, dash: "dot" },
         name: "simulator truth",
         hovertemplate: "simulator truth %{y:.1f}<extra></extra>",
       },
     );
     if (buf.labs.length)
       data.push({
-        type: "scattergl",
+        type: "scatter",
         x: buf.labs.map((l) => minToX(l.t)),
         y: buf.labs.map((l) => l.v),
         mode: "markers",

@@ -130,6 +130,15 @@ def add_measurement_noise(df: pd.DataFrame, run_id: str, s: Settings) -> pd.Data
         z = np.random.default_rng(int(h[:16], 16)).standard_normal(span)[t - tmin]
         v = df[c].to_numpy(dtype=float)
         out[c] = v + (z * sig[k] * np.abs(v) if k == "flow" else z * sig[k])
+        
+    drift_run = N.get("drift_run", "random_s152")
+    drift_tag = N.get("drift_tag", "T_tray13_F")
+    drift_start_min = int(N.get("drift_start_min", 300))
+    drift_per_day_F = float(N.get("drift_per_day_F", 4.0))
+    
+    if N.get("enabled", False) and run_id == drift_run and drift_tag in out.columns and drift_per_day_F != 0:
+        out[drift_tag] += np.maximum(0.0, (t - drift_start_min) / 1440.0) * drift_per_day_F
+
     return out
 
 

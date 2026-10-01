@@ -177,7 +177,7 @@ export function gateBands(
       y0,
       y1,
       fillcolor: t.withheldFill,
-      line: { width: 1, color: "rgba(217,119,6,0.55)", dash: "dot" },
+      line: { width: 1, color: "rgba(148,163,184,0.32)", dash: "dot" },
       layer: "below",
     });
     if (label) {
@@ -190,7 +190,7 @@ export function gateBands(
         yanchor: "top",
         text: "WITHHELD",
         showarrow: false,
-        font: { size: 10, color: STATUS.AMBER, family: FONT_MONO },
+        font: { size: 10, color: t.muted, family: FONT_MONO },
         xshift: 3,
         yshift: -2,
       });

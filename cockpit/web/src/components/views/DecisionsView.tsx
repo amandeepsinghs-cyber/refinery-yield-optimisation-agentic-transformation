@@ -182,8 +182,9 @@ function History({ rows }: { rows: Recommendation[] }) {
 export default function DecisionsView() {
   const runId = useCockpit((s) => s.runId);
   const property = useCockpit((s) => s.property);
+  const timeMin = useCockpit((s) => s.timeMin);
   const [allProps, setAllProps] = useState(true);
-  const q = useRecommendations(runId);
+  const q = useRecommendations(runId, undefined, timeMin);
   const kRecords = useRunRecords(runId);
   const records = kRecords.data ?? [];
 

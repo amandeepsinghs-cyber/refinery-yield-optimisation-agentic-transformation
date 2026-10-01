@@ -149,23 +149,33 @@ class State:
         cur = self.db.execute("SELECT rec_id, decision, user, note, ts, audit_id FROM decisions")
         return {r[0]: {"decision": r[1], "user": r[2], "note": r[3], "ts": r[4], "audit_id": r[5]} for r in cur.fetchall()}
 
-    def recommendations(self, run_id: str, prop: str | None = None) -> list[dict]:
+    def recommendations(self, run_id: str, prop: str | None = None, time_min: int | None = None) -> list[dict]:
         v = self.run(run_id)
         if not v:
             return []
         arrs, meta = v
         tmax = int(arrs["time_min"][-1]) if len(arrs["time_min"]) else 0
+        t_ref = int(time_min) if time_min is not None else tmax
         dec = self.decisions()
+        last_block: dict[str, int] = {}
+        for r in meta["recs"]:
+            rt = int(r["time_min"])
+            if rt <= t_ref and r["status"] in ("WITHHELD", "HOLD"):
+                p = r["property"]
+                if rt > last_block.get(p, -1):
+                    last_block[p] = rt
         out = []
         for r in meta["recs"]:
             if prop and r["property"] != prop:
+                continue
+            if time_min is not None and int(r["time_min"]) > t_ref:
                 continue
             r = dict(r)
             if r["status"] == "OPEN":
                 if r["rec_id"] in dec:
                     r["status"] = "ACCEPTED" if dec[r["rec_id"]]["decision"] == "accepted" else "DECLINED"
                     r["decision"] = dec[r["rec_id"]]
-                elif r["valid_until_min"] <= tmax:
+                elif r["valid_until_min"] <= t_ref or int(r["time_min"]) < last_block.get(r["property"], -1):
                     r["status"] = "EXPIRED"
             r["citations"] = self.citations_for(r["property"], "WITHHELD" if r["status"] == "WITHHELD" else r["action"])
             out.append(r)

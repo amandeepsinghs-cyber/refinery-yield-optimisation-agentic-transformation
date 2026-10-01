@@ -21,7 +21,7 @@
   --zeroline: rgba(250,250,250,0.22);
   --band95: rgba(59,130,246,0.15);
   --band50: rgba(59,130,246,0.30);
-  --withheld-fill: rgba(217,119,6,0.20);
+  --withheld-fill: rgba(148,163,184,0.06);
   --event-fill: rgba(161,161,170,0.12);
 
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -47,7 +47,7 @@
   --zeroline: rgba(9,9,11,0.22);
   --band95: rgba(37,99,235,0.15);
   --band50: rgba(37,99,235,0.30);
-  --withheld-fill: rgba(217,119,6,0.16);
+  --withheld-fill: rgba(100,116,139,0.06);
   --event-fill: rgba(113,113,122,0.14);
 
   --shadow-card: 0 1px 2px rgba(9, 9, 11, 0.04), 0 1px 1px rgba(9, 9, 11, 0.02);
@@ -717,6 +717,7 @@ details.params dd {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -786,6 +787,8 @@ details.params dd {
   flex-direction: column;
   gap: 6px;
   min-height: 96px;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 .kpi-top {
   display: flex;
@@ -881,8 +884,14 @@ details.params dd {
   background: color-mix(in srgb, var(--green) var(--status-soft-alpha), transparent);
 }
 .badge.amber {
-  color: var(--amber);
-  background: color-mix(in srgb, var(--amber) var(--status-soft-alpha), transparent);
+  color: #fbbf24;
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+[data-theme="light"] .badge.amber {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.10);
+  border-color: rgba(217, 119, 6, 0.28);
 }
 .badge.red {
   color: var(--red);
@@ -939,12 +948,14 @@ details.params dd {
   margin-top: 1px;
 }
 .banner.withheld {
-  background: color-mix(in srgb, var(--amber) 14%, var(--card));
-  border-color: color-mix(in srgb, var(--amber) 55%, transparent);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%), var(--elevated);
+  border-color: var(--border-strong);
+  border-left: 3px solid #3b82f6;
+  box-shadow: var(--shadow-card);
   color: var(--text);
 }
 .banner.withheld svg {
-  color: var(--amber);
+  color: var(--accent);
 }
 .banner .banner-title {
   font-weight: 600;
@@ -1117,8 +1128,10 @@ table.t th button {
   gap: 8px;
 }
 .rec.withheld {
-  background: color-mix(in srgb, var(--amber) 9%, var(--elevated));
-  border-color: color-mix(in srgb, var(--amber) 45%, transparent);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.005) 100%), var(--elevated);
+  border-color: var(--border-strong);
+  border-left: 3px solid #64748b;
+  box-shadow: var(--shadow-card);
 }
 .rec-head {
   display: flex;

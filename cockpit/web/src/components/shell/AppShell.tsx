@@ -10,6 +10,7 @@ import { useCockpit } from "@/lib/store";
 import type { PropertyId } from "@/lib/types";
 import type { ThemeName } from "@/lib/theme";
 import CopilotLauncher from "@/components/copilot/CopilotLauncher";
+import DemoGuideModal from "@/components/shell/DemoGuideModal";
 import Toaster from "@/components/ui/Toaster";
 import { IconMoon, IconSun } from "@/components/ui/icons";
 
@@ -174,6 +175,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="topbar-spacer" />
         <div className="topbar-ctx">
+          <DemoGuideModal />
           <Provenance />
           <RunPropertySelect />
           <ThemeToggle />

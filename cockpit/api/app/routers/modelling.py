@@ -22,6 +22,64 @@ def _ds(n, max_points=2000):
     return np.arange(n) if n <= max_points else np.linspace(0, n - 1, max_points).astype(int)
 
 
+
+def evaluate_drift_sentinel(residuals: np.ndarray, lab_residuals: list[float] | np.ndarray,
+                            R: float = 7.0, k: float = 0.5, h: float = 5.0,
+                            challenger_metrics: dict | None = None,
+                            champion_metrics: dict | None = None) -> dict:
+    residuals = np.asarray(residuals, dtype=float)
+    valid_res = residuals[np.isfinite(residuals)]
+    sig = float(np.std(valid_res)) if len(valid_res) else 1.0
+    if sig == 0.0:
+        sig = 1.0
+    zs = np.nan_to_num(residuals / sig)
+    n = len(zs)
+    sp = np.zeros(n)
+    sn = np.zeros(n)
+    for i in range(1, n):
+        sp[i] = max(0.0, sp[i - 1] + zs[i] - k)
+        sn[i] = max(0.0, sn[i - 1] - zs[i] - k)
+    cus = np.maximum(sp, sn)
+    max_cusum = float(np.max(cus)) if n > 0 else 0.0
+    cusum_alert = bool(max_cusum > h)
+    first_breach_idx = int(np.argmax(cus > h)) if cusum_alert else None
+
+    lab_residuals = np.asarray(lab_residuals, dtype=float)
+    valid_lab = lab_residuals[np.isfinite(lab_residuals)]
+    if len(valid_lab) >= 5:
+        mean_last_5 = float(np.mean(valid_lab[-5:]))
+    elif len(valid_res) >= 5:
+        mean_last_5 = float(np.mean(valid_res[-5:]))
+    else:
+        mean_last_5 = 0.0
+
+    retrain_proposed = False
+    bias_reason = None
+    if abs(mean_last_5) >= 0.5 * R:
+        retrain_proposed = True
+        bias_reason = f"Sustained residual bias ({mean_last_5:+.2f} °F >= 0.5R over last 5 labs) — challenger job proposed"
+
+    promotion_status = "champion_active"
+    if retrain_proposed and challenger_metrics and champion_metrics:
+        cha_time = challenger_metrics.get("time_blocked_rmse", float('inf'))
+        cha_loro = challenger_metrics.get("loro_rmse", float('inf'))
+        champ_time = champion_metrics.get("time_blocked_rmse", 0.0)
+        champ_loro = champion_metrics.get("loro_rmse", 0.0)
+        
+        if cha_time < champ_time and cha_loro < champ_loro:
+            promotion_status = "pending_approval"
+
+    return {
+        "cusum_alert": cusum_alert,
+        "max_cusum": max_cusum,
+        "first_breach_idx": first_breach_idx,
+        "retrain_proposed": retrain_proposed,
+        "bias_reason": bias_reason,
+        "promotion_status": promotion_status,
+        "moc_required": promotion_status == "pending_approval"
+    }
+
+
 @router.get("/models")
 def models(property: str | None = None):
     st = get_state()
@@ -82,6 +140,7 @@ def calibration(property: str | None = None):
                 "coverage_over_time": {"time_idx": [], "mixture": []}, "gpr_relevance": [],
                 "hybrid_decomposition": {"time_idx": [], "physics": [], "delta": []},
                 "pinn_members": {"time_idx": [], "members": []}, "cusum": {"time_idx": [], "value": [], "h": None},
+                "drift_sentinel": evaluate_drift_sentinel(np.array([]), np.array([])),
                 "note": "not trained yet"}
     z = np.load(f)
     y = z["truth"]
@@ -115,6 +174,10 @@ def calibration(property: str | None = None):
         sn[i] = max(0.0, sn[i - 1] - zs[i] - 0.5)
     cus = np.maximum(sp, sn)
     pm = z["pinn_members"]
+    
+    # We pass e (mixture residual) as residuals. lab_residuals is empty for now (since calibration is on test minutes)
+    drift_sentinel = evaluate_drift_sentinel(e, np.array([]), R=st.s.R)
+    
     return {"parity": parity, "residuals": resid, "pit": pit, "reliability": rel,
             "coverage_over_time": {"time_idx": idx.tolist(), "mixture": [round(float(v), 4) for v in roll[idx]], "window": win},
             "gpr_relevance": st.bundle["cards"][prop].get("gpr_relevance", [])[:15],
@@ -123,6 +186,7 @@ def calibration(property: str | None = None):
             "pinn_members": {"time_idx": idx.tolist(), "members": [[round(float(v), 3) for v in row[idx]] for row in pm]},
             "cusum": {"time_idx": idx.tolist(), "value": [round(float(v), 3) for v in cus[idx]], "h": 5.0, "k": 0.5,
                       "units": "sigma of mixture residual"},
+            "drift_sentinel": drift_sentinel,
             "index": {"run_id": z["run_id"][idx].tolist(), "time_min": z["time_min"][idx].tolist()},
             "crps": {mid: st.bundle["evaluation"][prop]["members"][mid]["crps"] for mid in MODEL_IDS} |
                     {"mixture": st.bundle["evaluation"][prop]["mixture"]["crps"]},

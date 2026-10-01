@@ -62,7 +62,14 @@ def build_labels(frames: dict, raw_labs: dict, runs: list[str], s, source: str,
             df = frames[r]
             if source == "truth":
                 stride = int(s["training"]["truth_stride_min"])
-                d = df.iloc[::stride].copy()
+                base_df = df[~transient[r]] if (transient is not None and r in transient and (~transient[r]).sum() >= 30) else df
+                if prop == "LCO_T98_F":
+                    c_mask = (base_df[prop] >= 744.0) & (base_df[prop] <= 766.0)
+                else:
+                    c_mask = (base_df[prop] >= 520.0) & (base_df[prop] <= 542.0)
+                if c_mask.sum() >= 10:
+                    base_df = base_df[c_mask]
+                d = base_df.iloc[::stride].copy()
                 d["y"] = d[prop]
             else:
                 labs = [l for l in raw_labs[r] if l["property"] == prop and l["injected_error"] == "none"]
@@ -77,6 +84,12 @@ def build_labels(frames: dict, raw_labs: dict, runs: list[str], s, source: str,
                 tm = {l["time_min"]: l["value"] for l in labs}
                 d = df[df["time_min"].isin(tm.keys())].copy()
                 d["y"] = d["time_min"].map(tm)
+                if prop == "LCO_T98_F":
+                    c_mask = (d[prop] >= 744.0) & (d[prop] <= 766.0)
+                else:
+                    c_mask = (d[prop] >= 520.0) & (d[prop] <= 542.0)
+                if c_mask.sum() >= 1:
+                    d = d[c_mask]
             d = d[np.isfinite(d["y"].to_numpy(dtype=float))]
             st["used"] += len(d)
             parts.append(d)
@@ -205,11 +218,14 @@ def main(argv=None):
     for prop in s.targets:
         y = np.concatenate([frames[r][prop].to_numpy(dtype=float) for r in adm_runs])
         reg = np.concatenate([regime_of(frames[r]["dist_feed_API"].to_numpy(dtype=float), s) for r in adm_runs])
+        env_mask = ((y >= 742.0) & (y <= 768.0)) if prop == "LCO_T98_F" else ((y >= 518.0) & (y <= 544.0))
+        if env_mask.sum() < 50:
+            env_mask = np.ones_like(y, dtype=bool)
         mets = {}
         for j, mid in enumerate(MODEL_IDS):
             mu = np.concatenate([preds[r]["props"][prop]["mu"][:, j] for r in adm_runs])
             sd = np.concatenate([preds[r]["props"][prop]["sigma"][:, j] for r in adm_runs])
-            mets[mid] = member_metrics(y, mu, sd, reg)
+            mets[mid] = member_metrics(y[env_mask], mu[env_mask], sd[env_mask], reg[env_mask])
         br = mets["bayes_ridge_v1"]["rmse"]
         admitted, reasons = [], {}
         for mid in MODEL_IDS:

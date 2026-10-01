@@ -15,10 +15,10 @@ import { useCopilotChat, usePageContext } from "./useCopilotChat";
 import { useLiveVoice, type LiveVoice } from "./useLiveVoice";
 
 const STARTERS = [
+  "Explain all graphs, curves & buttons on this page",
+  "Walk me through the 7-scene demo flow",
   "Is the soft sensor trustworthy right now?",
-  "Why did the estimate move in the last hour?",
   "Can we raise the LCO cut point now?",
-  "Summarise model agreement at this minute.",
 ];
 
 function InlineChart({ figure }: { figure: unknown }) {

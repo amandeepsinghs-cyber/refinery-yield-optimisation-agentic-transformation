@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from ..config import Settings
-from .catalog import assert_no_excluded, feature_candidates
+from .catalog import assert_no_excluded, feature_candidates, noise_kind
 from .lags import apply_lags
 
 
@@ -15,6 +15,10 @@ def add_ewma(df: pd.DataFrame, s: Settings) -> pd.DataFrame:
     tau = float(s["features"]["ewma_tau_min"])
     alpha = 1.0 - np.exp(-1.0 / tau)
     out = df.copy()
+    if len(out) > 1:
+        for c in out.columns:
+            if noise_kind(c, s) is not None and pd.api.types.is_numeric_dtype(out[c]):
+                out[c] = out[c].ewm(alpha=alpha, adjust=False).mean()
     for k in s["features"]["key_tags"]:
         if k in out.columns:
             out[k + "__ewma"] = out[k].ewm(alpha=alpha, adjust=False).mean()   # causal

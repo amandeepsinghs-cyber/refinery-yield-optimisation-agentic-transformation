@@ -77,8 +77,8 @@ class GPRModel(BaseEstimator):
         if len(idx) > self.max_train:
             idx = np.sort(rng.choice(idx, self.max_train, replace=False))
         d = Z.shape[1]
-        kernel = ConstantKernel(1.0, (1e-3, 1e3)) * Matern(length_scale=np.ones(d), length_scale_bounds=(1e-2, 1e3), nu=2.5) \
-            + WhiteKernel(1e-2, (1e-6, 1e1))
+        kernel = ConstantKernel(1.0, (1e-2, 1e2)) * Matern(length_scale=np.ones(d), length_scale_bounds=(0.25, 1e2), nu=2.5) \
+            + WhiteKernel(0.05, (5e-3, 1.0))
         self.m = GaussianProcessRegressor(kernel=kernel, normalize_y=True, n_restarts_optimizer=self.restarts,
                                           random_state=self.seed)
         with warnings.catch_warnings():

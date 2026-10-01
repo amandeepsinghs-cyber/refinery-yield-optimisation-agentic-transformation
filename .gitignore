@@ -1,19 +1,48 @@
+# Node / Next.js
 node_modules/
 .next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Python / Virtualenvs / Caches
 .venv/
+venv/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environment & Secrets
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+
+# Octave Simulator Data & Runtime
 sim_octave/data/
 sim_octave/octave-workspace
+sim_octave/*.mat
+FCC-Fractionator/
+
+# Trained Model Artifacts & Local Databases
 cockpit/api/artifacts/
 artifacts/
+*.pkl
+*.npz
+*.sqlite
+*.sqlite3
+*.db
+*.parquet
+
+# Logs & Temp Files
 *.log
+*.tmp
+*.bak
+*~
 .DS_Store
 tasks/done/*.tmp
-
-# Original simulator keeps its own git history (MIT, Santander et al. 2022); ported code lives in sim_octave/
-FCC-Fractionator/

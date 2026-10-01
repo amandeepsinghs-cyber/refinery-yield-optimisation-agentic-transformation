@@ -174,19 +174,21 @@ export const useCalibration = (property: string) =>
     ...STATIC,
   });
 
-export const useOverview = (runId: string | null, property: string = "LCO_T98_F") =>
+export const useOverview = (runId: string | null, property: string = "LCO_T98_F", timeMin?: number | null) =>
   useQuery({
-    queryKey: ["overview", runId, property],
-    queryFn: () => fetchJson<Overview>(`/api/overview${qs({ run_id: runId, property })}`),
+    queryKey: ["overview", runId, property, timeMin ?? null],
+    queryFn: () => fetchJson<Overview>(`/api/overview${qs({ run_id: runId, property, time_min: timeMin })}`),
     enabled: !!runId,
+    placeholderData: keepPreviousData,
   });
 
-export const useRecommendations = (runId: string | null, status?: string) =>
+export const useRecommendations = (runId: string | null, status?: string, timeMin?: number | null) =>
   useQuery({
-    queryKey: ["recs", runId, status ?? null],
+    queryKey: ["recs", runId, status ?? null, timeMin ?? null],
     queryFn: () =>
-      fetchJson<Recommendation[]>(`/api/recommendations${qs({ run_id: runId, status })}`),
+      fetchJson<Recommendation[]>(`/api/recommendations${qs({ run_id: runId, status, time_min: timeMin })}`),
     enabled: !!runId,
+    placeholderData: keepPreviousData,
   });
 
 export const useAudit = (q: string) =>
