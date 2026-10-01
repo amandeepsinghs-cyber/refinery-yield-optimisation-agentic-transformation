@@ -6,6 +6,49 @@ this file records what actually happened and the state things were left in.
 
 ---
 
+## 2026-10-01 17:50 — L0 Pass B: `/twin` Refinery Digital Twin home built to the mockup (uncommitted at time of writing)
+
+### Done — `cockpit/web/src/components/twin/l0/`
+- `RefineryPFD.tsx` — SVG (viewBox 1180×540) hybrid plant map per **D1**: 6 live blocks keyed by `unit_id`
+  (`data-unit`, `data-state`, class `.pfd-live`; keyboard-focusable; hover "Open workbench →"; click → `/twin/unit/[id]`),
+  9 muted `.pfd-boundary` blocks (CDU/VDU, HDT, Alky, …), three loops drawn as dashed lines — hydrocarbon `#1d4ed8`,
+  catalyst `#ea580c`, heat `#047857`. State captions: OK → "IN ENVELOPE", WATCH → "DRIFT", ACT → "ACT NOW".
+- `L0Header.tsx` — "Refinery Digital Twin · Shift X · HH:MM", EN / Hinglish / हिंदी segmented toggle
+  (`data-testid="lang-toggle"`, persisted as `lang` in the zustand store; `usePageContext()` now forwards it to the copilot),
+  Gemini Live button → copilot voice tab.
+- `PlantStatusStrip.tsx` (`plant-strip`, `crude-banner`), `NeedsAttentionRail.tsx` (`.l0-attn-item` with horizon,
+  consequence and loop chip), `ShiftTimeline.tsx` (12-h SVG; `role="slider"` + `aria-valuenow`; drag and ←/→ scrub,
+  Shift = 60 min, via `setTimeMin`; ▶ replay 1 sim-min / 400 ms).
+- `L0Home.tsx` rewritten to compose the above (`data-testid="l0-root"`); `PFDSvg.tsx` and `TimelineStrip.tsx` deleted.
+- `layout.tsx` default theme → light (dark persisted under `fcc-theme`); `.l0-*` / `.pfd-*` styles appended to `globals.css`.
+- `e2e/twin.spec.ts` rewritten with real BDD-28 assertions (zero Plotly on L0, 6 live units, attention rail ≤ 5,
+  slider keyboard scrub, theme persistence, `/` redirect).
+- As-built screenshots: `docs/ui/L0_refinery_twin_asbuilt_{light,dark}.png` (compare with `design/L0_refinery_twin_mockup.jpg`).
+
+### Verification
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `vitest` | 58 / 58 |
+| CDP screenshot metrics on `http://localhost:3001/twin` | `plotly:0 · live:6 · attn:5 · hscroll:false · theme=light default, dark via localStorage OK` |
+| Playwright `e2e/twin.spec.ts` | **not run** — `@playwright/test` is not installed (≈300 MB; disk at 90 %). Spec kept behind `// @ts-nocheck`. |
+
+Screenshot method (reusable): `node --experimental-websocket shot.mjs <url> <out.png> [waitMs] [w] [h] [light|dark]`
+against the Next dev server on :3001 (API on :8010). Use `localhost`, not `127.0.0.1` — Next dev blocks cross-origin
+dev resources and the page never hydrates.
+
+### Left open
+- Playwright install + green run (after Cloudtop resize).
+- Old dashboards remain in the nav and the topbar brand still links to `/decision/overview` — retire after L1 (**D3**).
+- Hinglish / हिंदी copy is a toggle only; the strings are still English until Phase 19.
+
+### Next — L1 Unit Workbench (U4 first)
+Per `BUILD_PLAN_v3` Step 18 / `design/L1_fcc_fractionator_workbench_mockup.jpg` / `API_CONTRACT_v3 §5`: I/O strip, aligned
+chart stack on one cursor, event ribbon, right rail (regime & adaptation, recipe card, evidence, decision, Gemini); then
+U1 / U3 / U6 / U5 / U2 and the `?uc=` entry.
+
+---
+
 ## 2026-10-01 17:30 — L0 Pass A: `/api/twin` now honours the L0 contract; Systems Agent consequence rules
 
 Decisions taken with the user ([L0 build plan](L0_BUILD_PLAN.md)):

@@ -5,6 +5,9 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { Citation, PropertyId } from "./types";
 import { THEME_STORAGE_KEY, type ThemeName } from "./theme";
 
+/** Operator language for briefings and Copilot (SDD-GEM-03): English, Hinglish control-room phrasing, or Hindi. */
+export type Lang = "en" | "hinglish" | "hi";
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -25,6 +28,7 @@ interface CockpitState {
   property: PropertyId;
   timeMin: number | null;
   theme: ThemeName;
+  lang: Lang;
   copilotOpen: boolean;
   copilotTab: "text" | "voice";
   copilotExpanded: boolean;
@@ -35,6 +39,7 @@ interface CockpitState {
   setTimeMin: (t: number | null) => void;
   setTheme: (t: ThemeName) => void;
   toggleTheme: () => void;
+  setLang: (l: Lang) => void;
   setCopilotOpen: (o: boolean) => void;
   setCopilotTab: (t: "text" | "voice") => void;
   setMessages: (fn: (m: ChatMessage[]) => ChatMessage[]) => void;
@@ -64,6 +69,7 @@ export const useCockpit = create<CockpitState>()(
       property: "LCO_T98_F",
       timeMin: null,
       theme: "light",
+      lang: "en",
       copilotOpen: false,
       copilotTab: "text",
       copilotExpanded: false,
@@ -82,6 +88,7 @@ export const useCockpit = create<CockpitState>()(
         set({ theme });
       },
       toggleTheme: () => get().setTheme(get().theme === "dark" ? "light" : "dark"),
+      setLang: (lang) => set({ lang }),
       setCopilotOpen: (copilotOpen) => set({ copilotOpen }),
       setCopilotTab: (copilotTab) => set({ copilotTab }),
       setMessages: (fn) => set({ messages: fn(get().messages) }),
@@ -91,7 +98,7 @@ export const useCockpit = create<CockpitState>()(
     {
       name: "fcc-cockpit-context",
       storage: createJSONStorage(() => sessionStorage),
-      partialize: (s) => ({ runId: s.runId, property: s.property, timeMin: s.timeMin }),
+      partialize: (s) => ({ runId: s.runId, property: s.property, timeMin: s.timeMin, lang: s.lang }),
       skipHydration: true,
     },
   ),

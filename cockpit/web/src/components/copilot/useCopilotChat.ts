@@ -13,7 +13,8 @@ export function usePageContext() {
   const runId = useCockpit((s) => s.runId);
   const property = useCockpit((s) => s.property);
   const timeMin = useCockpit((s) => s.timeMin);
-  
+  const lang = useCockpit((s) => s.lang);
+
   let screen: { level: 'L0' | 'L1' | 'other', unit_id?: string, window_min: 720 } = { level: 'other', window_min: 720 };
   if (pathname === '/twin') {
     screen.level = 'L0';
@@ -22,7 +23,7 @@ export function usePageContext() {
     screen.unit_id = pathname.split('/twin/unit/')[1];
   }
 
-  return { page: pathname, run_id: runId, property, time_min: timeMin, screen };
+  return { page: pathname, run_id: runId, property, time_min: timeMin, screen, lang };
 }
 
 /** Streams POST /api/copilot/chat (SDD-COP-03) into the shared session. */

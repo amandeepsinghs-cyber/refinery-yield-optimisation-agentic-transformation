@@ -358,11 +358,12 @@ curl -s localhost:8010/api/health | python3 -m json.tool | grep -A3 knowledge
 - ☐ ADK extras (`get_scope_snapshot`, `get_regime`, `get_recipe`) in `ALL_TOOLS`; `root_agent.tools` still 8
 
 ### Phase 18: Screens (Step 18 · J6, J7 · BDD-28)
-- ☐ L0 `/twin` — PFD, crude-slate banner, KPI vs plan, counts, "Needs attention", timeline; zero charts
+- ☑ L0 `/twin` — hybrid PFD (6 live units + boundary blocks, 3 loops), crude-slate banner, KPI vs plan, counts, "Needs attention", 12-h shift timeline (drag / arrow-key scrub, ▶ replay); zero charts (`plotly:0` verified by CDP screenshot)
 - ☐ L1 `/twin/unit/[unit_id]` — U4 first: I/O strip, chart stack on one cursor, event ribbon, right rail
 - ☐ U1, U3, U6, U5, U2 workbenches; `?uc=` entry
-- ☐ Light default + persisted dark toggle; named trace palette; no grey curves; Phase-13 catalogue retired from nav
-- ☐ Playwright `e2e/twin.spec.ts` green
+- ☑ Light default + persisted dark toggle (`layout.tsx` `data-theme="light"`, `fcc-theme` localStorage); `/` → `/twin` redirect; EN / Hinglish / हिंदी toggle persisted in store (`lang`)
+- ☐ Named trace palette; no grey curves (L1 scope); Phase-13 catalogue + old dashboards retired from nav (after L1 per D3)
+- ☐ Playwright `e2e/twin.spec.ts` green — spec rewritten with real BDD-28 asserts; runner not installed (`@playwright/test` absent, ~300 MB; deferred until disk is resized)
 
 ### Phase 19: Gemini scope, Hindi-first, director script (Step 19 · J8 · BDD-28)
 - ☐ Screen-scoped Gemini: `context.screen` → server-side scope snapshot (plant on L0, unit on L1); can still answer about the whole refinery; tools `get_scope_snapshot` / `get_regime` / `get_recipe` in `ALL_TOOLS` (canonical 8 unchanged)
