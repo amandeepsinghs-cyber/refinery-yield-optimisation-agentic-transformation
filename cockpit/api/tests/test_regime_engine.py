@@ -29,4 +29,4 @@ def test_regime_detection_accuracy():
             
     rate = correct / max(1, total)
     print(f"\nRegime detection rate on held-out switches: {rate*100:.1f}%")
-    assert rate >= 0.6, f"Detection rate {rate*100:.1f}% is below 80%"
+    assert rate >= 0.8, f"Detection rate {rate*100:.1f}% is below 80%"

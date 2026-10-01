@@ -90,20 +90,34 @@ gemini:
   voice: Aoede
 knowledge: {min_score_embedding: 0.35, min_score_bm25: 0.35}
 cors_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
-recipe:
-  w_LCO: 1.0
-  w_HN: 0.8
-  w_LPG: 0.4
-  p_F5_fuel: 0.1
-  p_power: 0.1
-  p_coke: 0.1
-iow:
+recipe:                               # E4 (SDD-RCP-02..06) — advisory recipe search; effects in % of feed, penalties per training sd
+  weights: {LCO: 1.0, HN: 0.8, LPG: 0.4}
+  penalties: {F5_fuel: 0.1, power: 0.1, F_coke: 0.1}
+  p_on_spec_min: 0.95
+  novelty_max: 0.7
+  min_gain_pct_feed: 0.02             # below this the engine says "hold" (gate_reason no_gain)
+  step_limits:                        # max move per recipe
+    SP_T_riser_ROT_F: 5.0
+    SP_T_preheat_F: 5.0
+    SP_LCO_T98: 10.0
+    SP_HN_T98: 10.0
+    SP_T_overhead: 5.0
+    Fair: {rel: 0.05}
+    MV_reflux_ratio: 0.1
+    MV_cw_flow: {rel: 0.05}
+  unit_inputs:                        # set points a unit's recipe may move (own SPs + the coordinated upstream move)
+    unit_1_furnace: [SP_T_preheat_F]
+    unit_2_riser: [SP_T_riser_ROT_F, SP_LCO_T98]   # ROT + the coordinated fractionator cut point
+    unit_3_regenerator: [Fair, SP_T_riser_ROT_F]
+    unit_4_fractionator: [SP_LCO_T98, SP_HN_T98, SP_T_riser_ROT_F]
+    unit_5_condenser: [MV_reflux_ratio, SP_T_overhead, MV_cw_flow]
+    unit_6_stabiliser: [MV_reflux_ratio, SP_T_overhead]
+iow:                                  # integrity operating windows (engineering limits); {rel: x} = ± x of current value
   SP_T_riser_ROT_F: [955, 985]
   SP_T_preheat_F: [590, 640]
-  MV_PA1: [20, 60]
-  MV_PA2: [20, 60]
-  MV_PA3: [20, 60]
-  MV_PA4: [20, 60]
-  MV_reflux_ratio: [0.5, 1.2]
   SP_LCO_T98: [735, 765]
   SP_HN_T98: [515, 540]
+  SP_T_overhead: [230, 260]
+  Fair: {rel: 0.08}
+  MV_reflux_ratio: [0.5, 1.2]
+  MV_cw_flow: {rel: 0.15}

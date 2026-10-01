@@ -1,4 +1,11 @@
-"""Regime engine E1."""
+"""Regime engine E1 — crude-regime fingerprint classifier (SDD §1A E1, API_CONTRACT_v3 §1).
+
+Per-minute EWMA fingerprint → Gaussian class posteriors per regime (fit on train seeds, `regime_fit.json`) → a
+**settled** regime label: the detected regime only changes once the new regime has held the posterior argmax with
+p ≥ `enter_posterior` for `dwell_min` consecutive minutes (default 15 min / 0.6). Without this the raw argmax flaps
+~20× per run on ramps and noise; with it a real crude switch produces one `regime_change` and detection delay is the
+dwell plus the fingerprint lag.
+"""
 import json
 import logging
 from functools import lru_cache
@@ -9,6 +16,33 @@ from app.state import get_state
 from app.regimes import REGIME_IDS, REGIMES, regime_by_id, regime_segments
 
 logger = logging.getLogger(__name__)
+
+REGIME_FIT_VERSION = 2          # bump when the fingerprint, the fit or the settler changes
+DEFAULT_DWELL_MIN, DEFAULT_ENTER_P = 15, 0.6
+
+
+def _settings():
+    st = get_state()
+    cfg = dict(st.s.get("regime_engine", {}) or {})
+    return int(cfg.get("dwell_min", DEFAULT_DWELL_MIN)), float(cfg.get("enter_posterior", DEFAULT_ENTER_P))
+
+
+def settle_regimes(p_regime: np.ndarray, dwell_min: int, enter_p: float) -> list[str]:
+    """Dwell + hysteresis filter over per-minute posteriors (n × len(REGIME_IDS)) → settled regime id per minute."""
+    raw = p_regime.argmax(axis=1)
+    cur, cand, count, out = int(raw[0]), None, 0, []
+    for i in range(len(raw)):
+        best = int(raw[i])
+        if best == cur or p_regime[i, best] < enter_p:
+            cand, count = None, 0
+        else:
+            count = count + 1 if best == cand else 1
+            cand = best
+            if count >= dwell_min:
+                cur, cand, count = best, None, 0
+        out.append(REGIME_IDS[cur])
+    return out
+
 
 def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     """Extract EWMA (tau=10 min) fingerprint features."""
@@ -159,13 +193,17 @@ def get_run_regimes(run_id: str):
     
     # transition_pct, declared_vs_detected, etc.
     segs = regime_segments(df, run_id)
-    detected_regime = [REGIME_IDS[i] for i in p_regime.argmax(axis=1)]
-    
+    dwell, enter_p = _settings()
+    raw_regime = [REGIME_IDS[i] for i in p_regime.argmax(axis=1)]
+    detected_regime = settle_regimes(p_regime, dwell, enter_p)
+
     res = {
         "time_min": df["time_min"].tolist(),
         "p_regime": p_regime,
         "novelties": novelties,
         "detected_regime": detected_regime,
+        "raw_regime": raw_regime,
+        "settler": {"dwell_min": dwell, "enter_posterior": enter_p, "version": REGIME_FIT_VERSION},
         "features": feats,
         "segs": segs,
         "df": df

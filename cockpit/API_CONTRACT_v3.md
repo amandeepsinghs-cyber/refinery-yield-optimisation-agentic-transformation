@@ -72,7 +72,7 @@ Regimes: `R1..R4` from `app/regimes.py` (API bands, labels). Train runs: seed < 
  "citations":[{"doc_id":"SOP-FRAC-003","revision":"r4","section":"4.2","title":"..."}],
  "explanation":"..." }
 ```
-`gate ∈ {ISSUED, WITHHELD}`; when WITHHELD `moves=[]` and `gate_reason ∈ {spread_gate, novelty, infeasible, insufficient_data}`.
+`gate ∈ {ISSUED, WITHHELD}`; when WITHHELD `moves=[]` and `gate_reason ∈ {spread_gate, novelty, infeasible, insufficient_data, no_gain}`. Each move also carries `label`, `unit`, `box_lo`/`box_hi` (IOW ∩ step limit ∩ training envelope) and `binding ∈ {iow, step_limit, envelope, interior}`; `data_support` lists `searched` / `unsupported` set points and the `model_source` per searched tag.
 `POST /api/recipe/whatif` body `{"run_id","time_min","unit_id","moves":{"SP_LCO_T98":752.0}}` → `{"predicted":{...},"d_yield_pct_feed":{},"p_on_spec":{},"within_limits":true}`.
 `POST /api/twin/decision` (existing) accepts optional `recipe_id`; status becomes `ACCEPTED|DECLINED` and an `accepted|declined` agent event is written.
 

@@ -93,21 +93,50 @@ def test_agent_stream_replays_events():
 
 
 # --- §4 recipe -------------------------------------------------------------------------------------------------------------
-@pytest.mark.xfail(strict=True, reason="E4 gap (build Step 16): IOW limits assume MV_PA in % but simulator PA duties "
-                                       "are constant in other units; search extrapolates outside limits")
-def test_recipe_issued_or_withheld_with_reason():
-    d = _get("/api/recipe", run_id=RUN, time_min=T, unit_id=U4)
+GATE_REASONS = {"spread_gate", "novelty", "infeasible", "insufficient_data", "no_gain"}
+
+
+def _check_recipe_shape(d: dict) -> None:
     for k in ("recipe_id", "run_id", "time_min", "unit_id", "regime_id", "gate", "moves", "d_yield_pct_feed",
-              "p_on_spec"):
+              "p_on_spec", "data_support", "explanation"):
         assert k in d, k
     if d["gate"] == "ISSUED":
-        assert len(d["moves"]) >= 2
+        assert d["gate_reason"] is None and len(d["moves"]) >= 2
         for m in d["moves"]:
-            assert {"sp_tag", "current", "recommended", "delta", "limit_lo", "limit_hi"} <= set(m)
+            assert {"sp_tag", "label", "current", "recommended", "delta", "unit", "limit_lo", "limit_hi",
+                    "binding"} <= set(m)
             assert m["limit_lo"] - 1e-6 <= m["recommended"] <= m["limit_hi"] + 1e-6
+            assert m["binding"] in {"iow", "step_limit", "envelope", "interior"}
+            assert m["sp_tag"] in d["data_support"]["searched"]
+        assert all(0.0 <= v <= 1.0 for v in d["p_on_spec"].values())
+        assert d["objective_after"] > d["objective_before"]
     else:
         assert d["gate"] == "WITHHELD" and d["moves"] == []
-        assert d["gate_reason"] in {"spread_gate", "novelty", "infeasible", "insufficient_data"}
+        assert d["gate_reason"] in GATE_REASONS and d["explanation"]
+
+
+def test_recipe_issued_or_withheld_with_reason():
+    _check_recipe_shape(_get("/api/recipe", run_id=RUN, time_min=T, unit_id=U4))
+
+
+def test_recipe_issues_when_committee_passes():
+    """At a committee-PASS minute the fractionator recipe must be a real coordinated recipe (BDD-27)."""
+    d = _get("/api/recipe", run_id=RUN, time_min=200, unit_id=U4)
+    _check_recipe_shape(d)
+    assert d["gate"] == "ISSUED", d.get("explanation")
+    tags = {m["sp_tag"] for m in d["moves"] if m["delta"] != 0}
+    assert tags & {"SP_LCO_T98", "SP_HN_T98"}, "a fractionator recipe must move a cut point"
+    assert min(d["p_on_spec"].values()) >= 0.95
+    assert d["d_yield_pct_feed"]["LCO"] + d["d_yield_pct_feed"]["HN"] > 0
+
+
+def test_recipe_withheld_honestly_without_data():
+    """Units whose set points never had designed moves get an honest WITHHELD, not a fabricated recipe."""
+    for unit in ("unit_1_furnace", "unit_3_regenerator", "unit_5_condenser", "unit_6_stabiliser"):
+        d = _get("/api/recipe", run_id=RUN, time_min=200, unit_id=unit)
+        _check_recipe_shape(d)
+        assert d["gate"] == "WITHHELD" and d["gate_reason"] == "insufficient_data", unit
+        assert d["data_support"]["unsupported"]
 
 
 def test_recipe_whatif():
@@ -123,8 +152,6 @@ def test_recipe_whatif():
 GREYS = re.compile(r"#808080|#999|#9ca3af|#6b7280|#64748b|#94a3b8|#cbd5e1|\bgr[ae]y\b", re.I)
 
 
-@pytest.mark.xfail(strict=True, reason="workbench gap (build Step 16): engines/workbench.py still emits placeholder "
-                                       "panels without traces/expected/residual series")
 @pytest.mark.parametrize("unit_id", UNITS)
 def test_workbench_four_zones_every_unit(unit_id):
     d = _get(f"/api/unit/{unit_id}/workbench", run_id=RUN, time_min=T)
