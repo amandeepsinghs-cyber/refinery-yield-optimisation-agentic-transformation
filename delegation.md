@@ -66,15 +66,18 @@ Status: ☐ to do · ▶ in progress · ☑ done. Detailed per-step checks are i
 | C1 | Backend fixes: train on labs, HOLD on infeasible move, committee weights, overview per property, knowledge clock, process noise, fallback chain, steady-state filter | Large | API tests pass; retrain summary | ☑ (149 pass; retrain 108 s) |
 | C2 | Knowledge dashboard (F24), Open in Knowledge, Accept toast, 30× replay, controller-mode strip | Large | tsc + vitest (50) + build pass | ☑ |
 | C3 | HOLD status in web + knowledge sim_run fields in API | Flash | tsc + vitest + pytest | ☑ (vitest 55, pytest 165) |
+| C4 | What-If Explorer UI (`F7` `/technical/whatif` + sliders + PDFs) | Flash | `tsc --noEmit` | ☑ (`WhatIfView.tsx`, 0 TS errors) |
+| C5 | Labs & Data Quality (`F10/E2` `/api/labs` + `LabsView`, `F11` `/api/dq` + `DataQualityView`) | Pro | `pytest` + `tsc` | ☑ (`test_labs_dq.py` 4 pass, 0 TS errors) |
+| C6 | MVP & Demo+ UI Polish (`F6` 7-signal hover, `H5` similar events, `F9` W90/bias history, `F25` wall mode) | Flash | `vitest` + `tsc` | ☑ (55/55 vitest, 0 TS errors) |
 | 5.0 | Copilot golden set (Scenes 5–6) + eval harness + guardrail fixes | Large | `make copilot-eval` report | ☑ (16/16 golden PASS, pytest 178) |
 | 7.0 | Demo-window selector (M1–M3), extract_scenarios fix, knowledge tools for real-run events | Large | pytest + dry-run output | ☑ (pytest 178, check_corpus PASS) |
-| 1.0 | Monitor `full_v1` (54 runs) every 3 h; load finished runs to BigQuery | Lead (cron) | Rows per run; BQ row count | ▶ |
-| 1.4 | Regenerate knowledge events and SHIFT logs from real held-out runs (s140+), 2026-09-01 clock, `sim_batch` field; `check_corpus.py` validates sim fields | Flash + Lead review | Validator PASS | ☐ (after full_v1) |
-| 2.1 | A6 lag identification (prewhitened CCF) and lagged features | Large | Notebook + tests | ☑ code+15 tests (165 pass); lags all 0 on sample data — re-evaluate on full_v1 (on vs off, min_abs_ccf 0.05) in 3.1 |
-| 3.1 | Retrain on `full_v1`; calibrate trust/W90 on held-out runs | Lead | Calibration report | ☐ (after full_v1) |
+| 1.0 | Monitor `full_v1` (54 runs) every 3 h; load finished runs to BigQuery | Lead (cron) | Rows per run; BQ row count | ▶ 03:25Z (Oct 1): 54/54 alive (45 @ 600–660/1600 min healed to contiguous rows + `min 360` lab restored; 9 relaunched with hardened `run_sim.m`), 7.6 GB free, cron active — see [tasks/done/T1.0_report.md](tasks/done/T1.0_report.md) |
+| 1.4 | Regenerate knowledge events and SHIFT logs from real held-out runs (s140+), 2026-09-01 clock, `sim_batch` field; `check_corpus.py` validates sim fields | Flash + Lead review | Validator PASS | ◐ Pre-verified on 660-min `random_s141` (`360` lab + `607` crude switch); final run after `full_v1` hits 1600m |
+| 2.1 | A6 lag identification (prewhitened CCF) and lagged features | Large | Notebook + tests | ☑ Pre-verified on 34 `full_v1` 600-min train runs (`n=18,947` min; `T_tray13→LCO` CCF 0.51, `T_tray06→HN` CCF 0.59, `Tr_riser→LCO` lag 60m) |
+| 3.1 | Retrain on `full_v1`; calibrate trust/W90 on held-out runs | Lead | Calibration report | ☐ (after `full_v1` hits 1600m) |
 | 5.1 | E5 ADK packaging of the Copilot (Demo+) | Large | Golden set passes | ☑ (root_agent + 13 tests, pytest 191) |
 | 6.1 | Gemini Live probe in us-central1 | Lead | Probe succeeds | ☑ gemini-live-2.5-flash-native-audio OK (0.7 s); other 3 Live fallbacks 404 → demo fallback = text Copilot + recorded clip |
-| 7.1 | Demo-run selection (M1–M3), cache, fallbacks, screenshots | Lead + Flash | `config.yaml` demo block | ☐ (after full_v1) |
+| 7.1 | Demo-run selection (M1–M3), cache, fallbacks, screenshots | Lead + Flash | `config.yaml` demo block | ☐ (after `full_v1` hits 1600m) |
 | 7.2 | End-to-end rehearsal against `demoflow.md` | Lead + you | Pre-demo checklist | ☐ |
 
 ---

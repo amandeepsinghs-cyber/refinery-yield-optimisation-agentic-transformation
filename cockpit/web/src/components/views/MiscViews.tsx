@@ -1,6 +1,7 @@
 "use client";
 
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAudit, useHealth, useConfig } from "@/lib/api";
 import { Card, EmptyState, PageHeader, PlannedState, QueryView } from "@/components/ui/primitives";
 import { IconSearch } from "@/components/ui/icons";
@@ -62,18 +63,119 @@ export function AuditView() {
   );
 }
 
+const ROLES = [
+  { name: "Operator", path: "/decision/overview", desc: "Actionable recommendations, live KPIs & fan charts" },
+  { name: "Process Engineer", path: "/technical/timeseries", desc: "Multi-panel time series, truth overlay & lab draws" },
+  { name: "Data Scientist", path: "/modelling/models", desc: "Model comparison, CRPS, coverage & weights" },
+  { name: "Shift Lead", path: "/knowledge", desc: "Shift handover logs, incident records & work orders" },
+] as const;
+
 export function SettingsView() {
+  const router = useRouter();
   const health = useHealth();
   const cfg = useConfig();
+  const [wallMode, setWallMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("fcc_wall_mode") === "true";
+    setWallMode(saved);
+    document.documentElement.dataset.wallMode = saved ? "true" : "false";
+    document.documentElement.style.fontSize = saved ? "118%" : "";
+  }, []);
+
+  const toggleWallMode = () => {
+    const next = !wallMode;
+    setWallMode(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fcc_wall_mode", next ? "true" : "false");
+      document.documentElement.dataset.wallMode = next ? "true" : "false";
+      document.documentElement.style.fontSize = next ? "118%" : "";
+    }
+  };
+
+  const handleRoleSelect = (path: string, roleName: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fcc_user_role", roleName);
+    }
+    router.push(path);
+  };
+
   return (
     <div className="page">
       <PageHeader title="Settings" question="How is the cockpit configured, and is every service healthy?" />
-      <PlannedState
-        feature="F18"
-        title="Editable settings"
-        bullets={["Role switcher and default landing dashboard (F17)", "Wall mode for ≥ 2560 px displays (F19)", "Threshold review via /api/config/thresholds"]}
-      />
       <div className="grid">
+        <Card
+          className="s-12"
+          title="Display & Control-Room Mode (F25)"
+          sub="Layout scaling for control-room wall displays & role-based landing views"
+        >
+          <div className="stack" style={{ gap: 20 }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+              <div className="stack" style={{ gap: 4, maxWidth: 580 }}>
+                <div style={{ fontWeight: 600, fontSize: "var(--fs-md, 14px)" }}>Control-Room Wall Mode</div>
+                <div className="muted" style={{ fontSize: "var(--fs-xs, 12px)", lineHeight: 1.4 }}>
+                  Optimizes display zoom and visual contrast for large overhead wall displays and control-room monitors (≥ 2560 px).
+                  Enlarges root font size by 118% for distant legibility across the room.
+                </div>
+              </div>
+              <div className="row" style={{ gap: 10, alignItems: "center" }}>
+                <span className={`badge ${wallMode ? "green" : "neutral"}`}>
+                  {wallMode ? "Active (118% Zoom)" : "Standard (100%)"}
+                </span>
+                <button
+                  type="button"
+                  className={`btn ${wallMode ? "primary" : ""}`}
+                  onClick={toggleWallMode}
+                >
+                  {wallMode ? "Disable Wall Mode" : "Enable Wall Mode"}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+              <div className="stack" style={{ gap: 8 }}>
+                <div style={{ fontWeight: 600, fontSize: "var(--fs-md, 14px)" }}>Role Switcher &amp; Default Dashboard</div>
+                <div className="muted" style={{ fontSize: "var(--fs-xs, 12px)" }}>
+                  Select an operational role to navigate to that role&apos;s primary dashboard:
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: 10,
+                    marginTop: 4,
+                  }}
+                >
+                  {ROLES.map((r) => (
+                    <button
+                      key={r.name}
+                      type="button"
+                      className="btn"
+                      style={{
+                        height: "auto",
+                        padding: "12px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        textAlign: "left",
+                        gap: 4,
+                        whiteSpace: "normal",
+                      }}
+                      onClick={() => handleRoleSelect(r.path, r.name)}
+                    >
+                      <div className="row" style={{ width: "100%", justifyContent: "space-between", alignItems: "center" }}>
+                        <strong>{r.name}</strong>
+                        <span className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>{r.path}</span>
+                      </div>
+                      <div className="muted" style={{ fontSize: 11 }}>{r.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
         <Card className="s-6 s-md-12" title="Service health" sub="GET /api/health · read-only">
           <QueryView q={health} height={140}>
             {(h) => (

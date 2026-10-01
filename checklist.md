@@ -51,7 +51,7 @@ Simulator and labels
 - ☑ BigQuery loader `sim_octave/load_to_bq.py` + 1-h UI sample table `fcc_sim_minute_sample`
 
 Batch `full_v1`
-- ◐ Batch running: 54 runs × 1,600 min, started 2026-09-30 13:30, ETA ~2026-10-01 20:00 (progress in `sim_octave/data/full_v1/logs/`)
+- ◐ Batch running: 54 runs × 1,600 min, started 2026-09-30 13:30 (03:11Z Oct 1: 54/54 alive — 45 @ 600–660 min sanitized in-place + 9 relaunched with hardened `run_sim.m`; see [tasks/done/T1.0_report.md](tasks/done/T1.0_report.md))
 - ☐ All 54 CSVs complete (1,601 lines each, 112 columns)
 - ☐ Labs: 3 per run at minutes 360 / 840 / 1320 → 162 per property in total, ~120 in training (s100–s139)
 - ☐ Heavy/edge runs listed (`dist_feed_API < 21`) for M3: ___
@@ -164,11 +164,11 @@ Measurements (after `full_v1` retrain)
 - ☑ Live Quality Console (F3)
 - ☑ Model Confidence (F4): overlaid member PDFs + mixture, W90 gauge, bimodality index
 - ☑ Spread-gate banner (F5)
-- ◐ Trust badge (F6): colour + icon + text; hover breakdown of all 7 signals
-- ◐ Calibration (F9): coverage over time, PIT, reliability, CRPS on held-out runs
+- ☑ Trust badge (F6): colour + icon + text; hover breakdown of all 7 signals (`primitives.tsx`)
+- ☑ Calibration (F9): coverage over time, PIT, reliability, CRPS, plus live run W90 & Kalman bias history (`CalibrationView.tsx`)
 - ☑ Model Comparison & Parameters (F21)
-- ◐ Dashboard navigation (F22): Decision · Technical · Modelling built; **Knowledge** added in Phase 6
-- ☐ Scene 1 citation chip on the recommendation card opens the source preview in the Gemini panel
+- ☑ Dashboard navigation (F22): Decision · Technical · Modelling · Knowledge
+- ☑ Scene 1 citation chip on the recommendation card opens the source preview in the Gemini panel
 - ☐ No currency, ROI, NPV or payback on any page or API response (SDD-NFR-11) — verify on `full_v1`
 
 **Data check:** `/modelling` Model Comparison metrics equal `/api/models` to 0.01 °F; Scene 1 → Accept shows *"Recorded. The cockpit never writes to the DCS."*
@@ -185,11 +185,11 @@ Knowledge
 - ☑ Index: one chunk per `###` section; `gemini-embedding-001` → `text-embedding-005` → BM25; threshold 0.35 (`app/knowledge/index.py`) — H2
 - ☑ API: `/api/knowledge/search`, `/docs`, `/docs/{doc_id}`, `/records?run_id=`
 - ☑ Source preview inside the Gemini panel (`components/copilot/SourcePreview.tsx`) — H4
-- ◐ Citations contract: every citation resolves; "No cited source" below 0.35 — H3
-- ◐ Similar past events on withheld cards (up to 3 cited WO/INC/SHIFT) — H5
+- ☑ Citations contract: every citation resolves; "No cited source" below 0.35 — H3
+- ☑ Similar past events on withheld/decision cards (up to 3 cited WO/INC/SHIFT) — H5 (`DecisionsView.tsx`)
 - ☐ **SHIFT logs regenerated on held-out runs `random_s140`–`s153`** from real `full_v1` rows, 2026-09-01 clock, front matter `sim_batch: full_v1` + `sim_run`; `check_corpus.py` validates `sim_run` / `sim_window`
-- ☐ **F24 Knowledge dashboard** (`cockpit/web/src/app/knowledge/page.tsx`): document library, full document at the cited section, related records per run; fourth entry in the dashboard switch
-- ☐ **"Open in Knowledge"** link in the Gemini source preview deep-links to the cited section
+- ☑ **F24 Knowledge dashboard** (`cockpit/web/src/app/knowledge/page.tsx`): document library, full document at the cited section, related records per run; fourth entry in the dashboard switch
+- ☑ **"Open in Knowledge"** link in the Gemini source preview deep-links to the cited section
 
 Copilot text (E5 ☑, F13 ☑)
 - ☑ ADK agent definition `root_agent` with canonical tool bindings and fallback layer (`app/copilot/adk_agent.py`); `google-genai` streaming loop in `app/copilot/chat.py` — E5
@@ -240,12 +240,12 @@ curl -s localhost:8000/api/health | python3 -m json.tool | grep -A3 knowledge
 ## Demo+ (not on the critical path)
 
 - ☑ ADK packaging of the Copilot (E5) — `root_agent` and canonical tools in `cockpit/api/app/copilot/adk_agent.py`
-- ☐ Lab Reconciliation agent + labs page (E2, F10)
+- ☑ Lab Reconciliation agent + labs page (E2, F10) — `GET /api/labs` + `LabsView.tsx` (`/technical/labs`)
 - ☐ Drift Sentinel, CUSUM, champion/challenger (E1)
-- ☐ What-If Explorer page (F7; API `POST /api/whatif` exists)
-- ☐ Data Quality full + injected tray-temperature drift in one held-out run (F11, L6)
+- ☑ What-If Explorer page (F7; API `POST /api/whatif` + `WhatIfView.tsx` at `/technical/whatif`)
+- ☑ Data Quality full + PCA T²/SPE & tag health page (F11) — `GET /api/dq` + `DataQualityView.tsx` (`/technical/data-quality`)
 - ☐ Job-record track in the Time-Series Explorer (H6)
 - ☐ Demo Report PDF (F14)
-- ☐ Accessibility & wall mode (F25)
+- ☑ Accessibility & wall mode (F25) — control-room wall mode + role switcher in `SettingsView` (`/settings`)
 - ☐ Executable BDD, Playwright, Lighthouse
 - ☐ Cloud Run + IAP in `fcc-soft-sensor`, us-central1 (F17)

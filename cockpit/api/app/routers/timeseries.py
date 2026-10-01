@@ -8,6 +8,7 @@ from ..config import MODEL_IDS
 from ..dist import mix_cdf, mix_pdf_grid
 from ..lttb import lttb_indices
 from ..state import get_state, r2, r3
+from ..pipeline import prepare
 from .common import check_prop, check_run, window_mask
 
 router = APIRouter(prefix="/api")
@@ -154,3 +155,109 @@ def distribution(run_id: str | None = None, property: str | None = None, time_mi
             "spec_max": spec, "w90_limit": st.s.w90_max,
             "truth": None if not np.isfinite(truth) else round(truth, 2), "truth_label": "simulator truth",
             "note": "member pdfs include the Kalman bias b and its variance P (SDD §5.7)"}
+
+
+@router.get("/labs")
+def api_labs(run_id: str | None = None, property: str | None = None):
+    st = get_state()
+    run_id = check_run(run_id)
+    prop = check_prop(property) if property else None
+    
+    labs = _labs(st, run_id, prop)
+    v = st.run(run_id)
+    
+    if v:
+        arrs, _ = v
+        for l in labs:
+            p = l["property"]
+            try:
+                idx = st.index_of(arrs, l["time_min"])
+                est = float(arrs[f"{p}|mean"][idx])
+                l["estimate_at_draw"] = round(est, 2)
+                l["residual_F"] = round(l["value"] - est, 2)
+            except KeyError:
+                pass
+            
+    summary = {
+        "total": len(labs),
+        "accepted": sum(1 for l in labs if l["status"] == "ACCEPT"),
+        "held": sum(1 for l in labs if l["status"] == "HOLD"),
+        "rejected": sum(1 for l in labs if l["status"] == "REJECT"),
+        "injected_errors": sum(1 for l in labs if l.get("injected_error", "none") != "none")
+    }
+    
+    return {
+        "run_id": run_id,
+        "reproducibility_F": st.s.R,
+        "labs": labs,
+        "summary": summary,
+        "provenance": {"source": "simulated", "batch_id": st.catalog.get(run_id).batch, "run_id": run_id}
+    }
+
+@router.get("/dq")
+def api_dq(run_id: str | None = None):
+    st = get_state()
+    run_id = check_run(run_id)
+    df = st.catalog.load(run_id)
+    df_prep = prepare(df, st.s)
+    
+    if st.final is None:
+        raise HTTPException(500, "Model not trained")
+        
+    df_lagged = st.final.lagged(df_prep)
+    t2_ratio, spe_ratio = st.final.novelty.evaluate(df_lagged)
+    
+    t2_limit = st.final.novelty.t2_lim
+    spe_limit = st.final.novelty.spe_lim
+    
+    t2 = t2_ratio * t2_limit
+    spe = spe_ratio * spe_limit
+    
+    tags_out = []
+    for tag in st.final.dq.tags:
+        if tag not in df_lagged.columns:
+            continue
+        x = df_lagged[tag].to_numpy(dtype=float)
+        lo, hi, thr, span = st.final.dq.lims[tag]
+        
+        missing = int(np.sum(~np.isfinite(x)))
+        bad = (x < lo) | (x > hi)
+        out_of_range = int(np.sum(bad & np.isfinite(x)))
+        d = np.abs(np.diff(x, prepend=x[0]))
+        spikes = int(np.sum((d > thr) & np.isfinite(x)))
+        
+        missing_pct = round(missing / len(x) * 100, 1) if len(x) > 0 else 0
+        
+        status = "OK"
+        if missing_pct > 10 or spikes > 10 or out_of_range > 10:
+            status = "FAIL"
+        elif missing_pct > 0 or spikes > 0 or out_of_range > 0:
+            status = "WARN"
+            
+        group = "Process"
+        if "T_" in tag or "_T" in tag:
+            group = "Temperature"
+        elif "P_" in tag or "_P" in tag:
+            group = "Pressure"
+        elif "F_" in tag or "_F" in tag:
+            group = "Flow"
+            
+        tags_out.append({
+            "tag": tag,
+            "group": group,
+            "missing_pct": missing_pct,
+            "spike_count": spikes,
+            "out_of_range_count": out_of_range,
+            "status": status
+        })
+        
+    return {
+        "run_id": run_id,
+        "time_min": df["time_min"].tolist(),
+        "t2": _clean(t2),
+        "t2_limit": round(float(t2_limit), 2),
+        "spe": _clean(spe),
+        "spe_limit": round(float(spe_limit), 2),
+        "tags": tags_out,
+        "provenance": {"source": "simulated", "batch_id": st.catalog.get(run_id).batch, "run_id": run_id}
+    }

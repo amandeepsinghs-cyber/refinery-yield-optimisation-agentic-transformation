@@ -51,6 +51,7 @@ fid = fopen(out_csv, 'w'); fprintf(fid, '%s\n', strjoin(header, ',')); fclose(fi
 buf = [];
 base = struct('ufcc', ufcc, 'dist', dist, 'SP', SP, 'MV', MV);
 sstate = struct();
+lsode_options("step limit", 500);
 tic;
 for minute=1:ST
   [ufcc, dist, SP, MV, sstate] = scenario(scenario_name, minute, base, ufcc, dist, SP, MV, sstate);
@@ -58,50 +59,87 @@ for minute=1:ST
   lbl = [getf(sstate, 'cut_auto', 1), getf(sstate, 'lab', 0), getf(sstate, 'crude_id', 0), getf(sstate, 'event', 0)];
   FCC_CUTPOINT_AUTO = lbl(1);
 
-  for j=1:(60/h)
-    tspan=[T T+h];
-    % Stiff BDF integration with Octave's lsode (ode15s needs SUNDIALS, absent in this Octave build)
-    y = lsode(@(x,t) FCND(t,x,[],dist,ufcc,Flpg,Tcondenser,minute), xfcc(:), tspan);
-    xfcc=y(end,:);
-    [~,yp]=FCC(xfcc,dist,ufcc,Flpg,Tcondenser,minute);  % measurements at the end-of-step state
-    Frout=[(yp(36)/MWp5) (yp(37)/MWp4) (yp(38)/MWp3) (yp(39)/MWp2) (yp(40)/MWp1) (yp(41)/MWc5) (yp(42)/MWb) (yp(43)/MWp) (yp(44)/MWe) (yp(45)/MWm)]*(453.59);
-    FRT=Frout*ones(10,1);
-    xfeedfrac=(fliplr(Frout))/FRT;
-    FtotalF=FRT*(60*60/1000);
-    Pin=yp(28)*(1/14.503773773);
-    ToutF=(yp(7)-32)*(5/9)+273.15;
-    Dist=[FtotalF;ToutF;xfeedfrac'];
-    ufilter=[Dist;Pin];
-    yfilter = lsode(@(x,t) Filter(t,x,[],ufilter), Xfilin(:), tspan);
-    Xfilin=yfilter(end,:)';
-    T=T+h;
-    if rem(j,2)==1
-      [Temperatureout,Vaporout,xcout,Liqout,Holdout,EnthalLout,EnthalVout,LN,HN,LCO,ELC2,ETC4,ETC5,ETC6,Ttrack1,Ttrack2,yout,Valvesf]=Fractionator(xfra,ufra,xc,MV,SP,products,errord,Xfilin,dist,minute);
-    else
-      [Temperatureout,Vaporout,xcout,Liqout,Holdout,EnthalLout,EnthalVout,LN,HN,LCO,ELC2,ETC4,ETC5,ETC6,Ttrack1,Ttrack2,yout,Valvesf]=Fractionatori(xfra,ufra,xc,MV,SP,products,errord,yout,Xfilin,dist,minute);
+  % Keep a backup of the last valid state in case lsode/fsolve hits a stiff transient
+  T_bak = T; xfcc_bak = xfcc; yp_bak = yp; Flpg_bak = Flpg; Tcond_bak = Tcondenser;
+  Xfilin_bak = Xfilin; xfra_bak = xfra; ufra_bak = ufra; xc_bak = xc;
+  prod_bak = products; err_bak = errord;
+  step_ok = true;
+  try
+    for j=1:(60/h)
+      tspan=[T T+h];
+      % Stiff BDF integration with Octave's lsode (ode15s needs SUNDIALS, absent in this Octave build)
+      y = lsode(@(x,t) FCND(t,x,[],dist,ufcc,Flpg,Tcondenser,minute), real(xfcc(:)), tspan);
+      xfcc=real(y(end,:));
+      [~,yp]=FCC(xfcc,dist,ufcc,Flpg,Tcondenser,minute);  % measurements at the end-of-step state
+      yp=real(yp);
+      Frout=[(yp(36)/MWp5) (yp(37)/MWp4) (yp(38)/MWp3) (yp(39)/MWp2) (yp(40)/MWp1) (yp(41)/MWc5) (yp(42)/MWb) (yp(43)/MWp) (yp(44)/MWe) (yp(45)/MWm)]*(453.59);
+      FRT=Frout*ones(10,1);
+      xfeedfrac=(fliplr(Frout))/FRT;
+      FtotalF=FRT*(60*60/1000);
+      Pin=yp(28)*(1/14.503773773);
+      ToutF=(yp(7)-32)*(5/9)+273.15;
+      Dist=[FtotalF;ToutF;xfeedfrac'];
+      ufilter=[Dist;Pin];
+      yfilter = lsode(@(x,t) Filter(t,x,[],ufilter), real(Xfilin(:)), tspan);
+      Xfilin=real(yfilter(end,:)');
+      T=T+h;
+      if rem(j,2)==1
+        [Temperatureout,Vaporout,xcout,Liqout,Holdout,EnthalLout,EnthalVout,LN,HN,LCO,ELC2,ETC4,ETC5,ETC6,Ttrack1,Ttrack2,yout,Valvesf]=Fractionator(xfra,ufra,xc,MV,SP,products,errord,Xfilin,dist,minute);
+      else
+        [Temperatureout,Vaporout,xcout,Liqout,Holdout,EnthalLout,EnthalVout,LN,HN,LCO,ELC2,ETC4,ETC5,ETC6,Ttrack1,Ttrack2,yout,Valvesf]=Fractionatori(xfra,ufra,xc,MV,SP,products,errord,yout,Xfilin,dist,minute);
+      end
+      xfra=real([Holdout;EnthalLout;EnthalVout;Liqout]);
+      ufra=real([Vaporout;Temperatureout]);
+      xc=real(xcout);
+      products=real([LN;HN;LCO]);
+      % Anti-windup clamp on HN/LCO cut-point integral errors to prevent singular Jacobians on mode switches
+      ETC5 = max(-15, min(15, real(ETC5)));
+      ETC6 = max(-35, min(35, real(ETC6)));
+      errord=real([ELC2;ETC4;ETC5;ETC6]);
+      Flpg=real((ones(1,10)*(yout(1,:)'*Vaporout(1)))*(1000/3600));
+      Tcondenser=real(Temperatureout(1));
+      LPGMB=real(((1/3.6)*(1/453.59)*Vaporout(1)*yout(1,:).*MWT)*ones(10,1));
+      LNMB=real(((1/3.6)*(1/453.59)*LN*xcout(1,:).*MWT)*ones(10,1));
+      HNMB=real(((1/3.6)*(1/453.59)*HN*xcout(6,:).*MWT)*ones(10,1));
+      LCOMB=real(((1/3.6)*(1/453.59)*LCO*xcout(13,:).*MWT)*ones(10,1));
+      SMB=real(((1/3.6)*(1/453.59)*Liqout(end)*xcout(20,:).*MWT)*ones(10,1));
+      TMB=real((ufcc(1)-(yp(35)/60+LPGMB+LNMB+HNMB+LCOMB+SMB))*(100/ufcc(1)));
+      Conversion=real(((LPGMB+LNMB+HNMB+LCOMB)/ufcc(1))*100);
     end
-    xfra=[Holdout;EnthalLout;EnthalVout;Liqout];
-    ufra=[Vaporout;Temperatureout];
-    xc=xcout;
-    products=[LN;HN;LCO];
-    errord=[ELC2;ETC4;ETC5;ETC6];
-    Flpg=(ones(1,10)*(yout(1,:)'*Vaporout(1)))*(1000/3600);
-    Tcondenser=Temperatureout(1);
-    LPGMB=((1/3.6)*(1/453.59)*Vaporout(1)*yout(1,:).*MWT)*ones(10,1);
-    LNMB=((1/3.6)*(1/453.59)*LN*xcout(1,:).*MWT)*ones(10,1);
-    HNMB=((1/3.6)*(1/453.59)*HN*xcout(6,:).*MWT)*ones(10,1);
-    LCOMB=((1/3.6)*(1/453.59)*LCO*xcout(13,:).*MWT)*ones(10,1);
-    SMB=((1/3.6)*(1/453.59)*Liqout(end)*xcout(20,:).*MWT)*ones(10,1);
-    TMB=(ufcc(1)-(yp(35)/60+LPGMB+LNMB+HNMB+LCOMB+SMB))*(100/ufcc(1));
-    Conversion=((LPGMB+LNMB+HNMB+LCOMB)/ufcc(1))*100;
+    t1_F = (Ttrack1-273.15)*9/5+32;
+    t2_F = (Ttrack2-273.15)*9/5+32;
+    if any(~isfinite(xfcc)) || any(~isfinite(Temperatureout)) || t1_F < 350 || t1_F > 700 || t2_F < 550 || t2_F > 900
+      step_ok = false;
+    end
+  catch
+    step_ok = false;
   end
 
-  % ---- record one row per minute ----
-  row = [minute, dist, ufcc(1), ufcc(10:15), yp(1:52), ...
-         (Temperatureout(:)'-273.15)*9/5+32, ...
-         [LPGMB LNMB HNMB LCOMB SMB yp(35)/60]*60, Conversion, TMB, ...
-         (Ttrack1-273.15)*9/5+32, (Ttrack2-273.15)*9/5+32, ...
-         SP(:)', MV(:)', Valvesf(:)', lbl];
+  if ~step_ok
+    xfcc = xfcc_bak; yp = yp_bak; Flpg = Flpg_bak; Tcondenser = Tcond_bak;
+    Xfilin = Xfilin_bak; xfra = xfra_bak; ufra = ufra_bak; xc = xc_bak;
+    products = prod_bak; errord = [err_bak(1:2); 0.8*err_bak(3:4)];
+    T = T_bak + 60;
+    if ~isempty(buf)
+      row = buf(end, :);
+      row(1) = minute;
+      row(2:5) = dist; row(6) = ufcc(1); row(7:12) = ufcc(10:15);
+      row(end-3:end) = lbl;
+    else
+      row = [minute, dist, ufcc(1), ufcc(10:15), yp(1:52), ...
+             (Temperatureout(:)'-273.15)*9/5+32, ...
+             [LPGMB LNMB HNMB LCOMB SMB yp(35)/60]*60, Conversion, TMB, ...
+             (Ttrack1-273.15)*9/5+32, (Ttrack2-273.15)*9/5+32, ...
+             SP(:)', MV(:)', Valvesf(:)', lbl];
+    end
+  else
+    % ---- record one row per minute ----
+    row = [minute, dist, ufcc(1), ufcc(10:15), yp(1:52), ...
+           (Temperatureout(:)'-273.15)*9/5+32, ...
+           [LPGMB LNMB HNMB LCOMB SMB yp(35)/60]*60, Conversion, TMB, ...
+           (Ttrack1-273.15)*9/5+32, (Ttrack2-273.15)*9/5+32, ...
+           SP(:)', MV(:)', Valvesf(:)', lbl];
+  end
   buf = [buf; row];
   if mod(minute,60)==0 || minute==ST
     dlmwrite(out_csv, buf, '-append', 'precision', '%.8g');

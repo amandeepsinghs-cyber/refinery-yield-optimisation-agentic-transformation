@@ -9,7 +9,7 @@ sim-status: ## Check Octave simulation process count and latest log progress
 	ps -eo args | grep "[o]ctave-cli" | grep -c random; for f in sim_octave/data/full_v1/logs/*.log; do tail -1 "$$f"; done | tail -5
 
 load-full: ## Ingest full_v1 simulation batch into BigQuery
-	cd sim_octave && python3 load_to_bq.py --in-dir data/full_v1 --batch-id full_v1 --expected-minutes 1600
+	cd sim_octave && python3 load_to_bq.py --in-dir data/full_v1 --batch-id full_v1 --expected-minutes 1500
 
 api-test: ## Run FastAPI test suite
 	cd cockpit/api && .venv/bin/python -m pytest -q

@@ -96,12 +96,20 @@ def stage(src, dst, run_id, batch_id, scenario, start):
     for row in reader:
       if not row:
         continue
+      if len(row) != len(header):
+        n_bad += 1
+        continue
       cleaned = []
       for v in row:
         c, bad = clean(v)
         cleaned.append(c)
         n_bad += bad
-      ts = start + dt.timedelta(minutes=float(cleaned[t_idx]))
+      try:
+        t_val = float(cleaned[t_idx])
+      except (ValueError, TypeError):
+        n_bad += 1
+        continue
+      ts = start + dt.timedelta(minutes=t_val)
       writer.writerow([run_id, batch_id, scenario,
                        ts.strftime("%Y-%m-%d %H:%M:%S UTC")] + cleaned)
       n_rows += 1

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { HttpError } from "@/lib/api";
 import { citationLabel } from "@/lib/format";
 import { useCockpit } from "@/lib/store";
@@ -77,14 +77,175 @@ const TRUST_META: Record<TrustLevel, { cls: string; label: string; Icon: typeof 
   RED: { cls: "red", label: "Trust RED", Icon: IconOctagon },
 };
 
-/** Trust is always icon + text + colour (SDD-UI-08). */
-export function TrustBadge({ level, short = false }: { level: TrustLevel | string | null | undefined; short?: boolean }) {
+const SIGNAL_NAMES: Record<string, string> = {
+  S1: "Committee spread",
+  S2: "Input novelty",
+  S3: "Physics consistency",
+  S4: "Lab track record",
+  S5: "Sensor health",
+  S6: "Regime familiarity",
+  S7: "Distribution spread (W90)",
+};
+
+export interface TrustSignalItem {
+  value: number;
+  limit: number;
+  pass: boolean;
+  severe: boolean;
+}
+
+/** Trust is always icon + text + colour (SDD-UI-08). Supports 7-signal hover breakdown (F6). */
+export function TrustBadge({
+  level,
+  short = false,
+  signals,
+}: {
+  level: TrustLevel | string | null | undefined;
+  short?: boolean;
+  signals?: Record<string, TrustSignalItem>;
+}) {
+  const [hovered, setHovered] = useState(false);
   const m = TRUST_META[(level as TrustLevel) ?? "RED"];
   if (!m) return <span className="badge neutral">Trust —</span>;
+
+  const entries = signals ? Object.entries(signals) : [];
+  const hasSignals = entries.length > 0;
+
+  const tooltipLines = hasSignals
+    ? entries.map(([k, s]) => {
+        const name = SIGNAL_NAMES[k] ? ` (${SIGNAL_NAMES[k]})` : "";
+        const status = s.severe ? "SEVERE" : s.pass ? "PASS" : "WARN";
+        const val =
+          typeof s.value === "number"
+            ? Number.isFinite(s.value)
+              ? Number.isInteger(s.value)
+                ? s.value
+                : s.value.toFixed(2)
+              : "—"
+            : s.value;
+        const lim =
+          typeof s.limit === "number"
+            ? Number.isFinite(s.limit)
+              ? Number.isInteger(s.limit)
+                ? s.limit
+                : s.limit.toFixed(2)
+              : "—"
+            : s.limit;
+        return `${k}${name}: ${status} [value: ${val} vs limit: ${lim}]`;
+      })
+    : [];
+
+  const tooltipTitle = hasSignals
+    ? [`Trust ${level} · 7-Signal breakdown:`, ...tooltipLines].join("\n")
+    : undefined;
+
   return (
-    <span className={`badge ${m.cls}`}>
+    <span
+      className={`badge ${m.cls}`}
+      title={tooltipTitle}
+      onMouseEnter={() => hasSignals && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => hasSignals && setHovered(true)}
+      onBlur={() => setHovered(false)}
+      tabIndex={hasSignals ? 0 : undefined}
+      style={{ position: "relative", cursor: hasSignals ? "help" : undefined }}
+    >
       <m.Icon />
       {short ? (level as string) : m.label}
+      {hovered && hasSignals ? (
+        <span
+          role="tooltip"
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 6px)",
+            right: 0,
+            background: "var(--elevated, #1a1f2c)",
+            border: "1px solid var(--border, #333a48)",
+            borderRadius: 6,
+            padding: "8px 10px",
+            fontSize: 11,
+            lineHeight: 1.4,
+            whiteSpace: "nowrap",
+            zIndex: 1000,
+            boxShadow: "0 6px 16px rgba(0,0,0,0.45)",
+            color: "var(--text, #e2e8f0)",
+            pointerEvents: "none",
+            minWidth: 260,
+          }}
+        >
+          <span
+            style={{
+              display: "block",
+              fontWeight: 600,
+              marginBottom: 4,
+              borderBottom: "1px solid var(--border)",
+              paddingBottom: 2,
+            }}
+          >
+            Trust {level} · 7-Signal Breakdown
+          </span>
+          {entries.map(([k, s]) => {
+            const name = SIGNAL_NAMES[k] ?? k;
+            const status = s.severe ? "SEVERE" : s.pass ? "PASS" : "WARN";
+            const statusColor = s.severe
+              ? "var(--red, #ef4444)"
+              : s.pass
+              ? "var(--green, #22c55e)"
+              : "var(--amber, #f59e0b)";
+            const val =
+              typeof s.value === "number"
+                ? Number.isFinite(s.value)
+                  ? Number.isInteger(s.value)
+                    ? s.value
+                    : s.value.toFixed(2)
+                  : "—"
+                : s.value;
+            const lim =
+              typeof s.limit === "number"
+                ? Number.isFinite(s.limit)
+                  ? Number.isInteger(s.limit)
+                    ? s.limit
+                    : s.limit.toFixed(2)
+                  : "—"
+                : s.limit;
+            return (
+              <span
+                key={k}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "1px 0",
+                }}
+              >
+                <span>
+                  <strong>{k}</strong>{" "}
+                  <span style={{ opacity: 0.8 }}>({name})</span>
+                </span>
+                <span>
+                  <span
+                    style={{
+                      color: statusColor,
+                      fontWeight: 600,
+                      marginRight: 6,
+                    }}
+                  >
+                    {status}
+                  </span>
+                  <span
+                    style={{
+                      opacity: 0.7,
+                      fontFamily: "var(--font-mono, monospace)",
+                    }}
+                  >
+                    {val}/{lim}
+                  </span>
+                </span>
+              </span>
+            );
+          })}
+        </span>
+      ) : null}
     </span>
   );
 }
