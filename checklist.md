@@ -244,8 +244,8 @@ curl -s localhost:8000/api/health | python3 -m json.tool | grep -A3 knowledge
 - ☐ Drift Sentinel, CUSUM, champion/challenger (E1)
 - ☑ What-If Explorer page (F7; API `POST /api/whatif` + `WhatIfView.tsx` at `/technical/whatif`)
 - ☑ Data Quality full + PCA T²/SPE & tag health page (F11) — `GET /api/dq` + `DataQualityView.tsx` (`/technical/data-quality`)
-- ☐ Job-record track in the Time-Series Explorer (H6)
-- ☐ Demo Report PDF (F14)
+- ☑ Job-record track in the Time-Series Explorer (H6) — `SHIFT` timeline spans + date-listed `WO/INC/MOC` in `TimeseriesView.tsx`
+- ☑ Demo Report PDF & Markdown export (F14) — print-ready report card + `.md` download in `OverviewView.tsx`
 - ☑ Accessibility & wall mode (F25) — control-room wall mode + role switcher in `SettingsView` (`/settings`)
 - ☐ Executable BDD, Playwright, Lighthouse
 - ☐ Cloud Run + IAP in `fcc-soft-sensor`, us-central1 (F17)

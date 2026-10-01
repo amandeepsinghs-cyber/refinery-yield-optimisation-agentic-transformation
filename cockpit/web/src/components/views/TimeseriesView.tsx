@@ -2,15 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Annotations, Data, Layout, LayoutAxis, PlotRelayoutEvent, Shape } from "plotly.js";
+import Link from "next/link";
 import Chart from "@/components/charts/Chart";
 import { clickToMinute } from "@/components/charts/EstimateCharts";
 import {
   useEstimatesTimeseries,
   useKnowledgeRecords,
+  useRuns,
   useRunTimeseries,
   useTags,
   type TimeWindow,
 } from "@/lib/api";
+import { useRunRecords, type KnowledgeRecordFull } from "@/lib/knowledgeApi";
 import { clock, minToX, propLabel, xToMin, yAxisFit } from "@/lib/format";
 import {
   axisStyle,
@@ -29,6 +32,18 @@ import { FONT_MONO, MODEL_ORDER, STATUS, TOKENS, modelColor, modelLabel } from "
 import type { EstimatesTimeseries, RunTimeseries, TagGroup, TagInfo } from "@/lib/types";
 import { Card, EmptyState, ErrorState, LoadingBlock, NoRun, PageHeader } from "@/components/ui/primitives";
 import { IconRefresh } from "@/components/ui/icons";
+
+function getSimWindow(rec: KnowledgeRecordFull): [number, number] | null {
+  const w = (rec as unknown as { sim_window?: number[] }).sim_window ?? rec.window;
+  if (Array.isArray(w) && w.length >= 2 && typeof w[0] === "number" && typeof w[1] === "number") {
+    return [w[0], w[1]];
+  }
+  return null;
+}
+
+function getEffectiveDate(rec: KnowledgeRecordFull): string {
+  return (rec as unknown as { effective_date?: string }).effective_date ?? rec.date ?? "—";
+}
 
 const MAX_PANELS = 6;
 /** Simulator meta columns behind the controller-mode strip (Scene 2). */
@@ -263,6 +278,28 @@ export default function TimeseriesView() {
   const estQ = useEstimatesTimeseries(runId, property, win, 2000, needEst);
   const recQ = useKnowledgeRecords(sel?.records ? runId : null);
   const modeQ = useRunTimeseries(sel?.mode ? runId : null, MODE_COLS, win, 2000);
+  const records = useRunRecords(runId);
+  const runsQ = useRuns();
+  const currentRun = runsQ.data?.find((r) => r.run_id === runId);
+
+  const maxMinute = useMemo(() => {
+    if (currentRun?.n_minutes && currentRun.n_minutes > 0) return currentRun.n_minutes;
+    if (rawQ.data?.time_min?.length) return Math.max(...rawQ.data.time_min);
+    if (estQ.data?.time_min?.length) return Math.max(...estQ.data.time_min);
+    return 1440;
+  }, [currentRun, rawQ.data, estQ.data]);
+
+  const placedRecords = useMemo(() => {
+    const list = records.data ?? [];
+    return list
+      .filter((r) => getSimWindow(r) !== null)
+      .sort((a, b) => getSimWindow(a)![0] - getSimWindow(b)![0]);
+  }, [records.data]);
+
+  const dateRecords = useMemo(() => {
+    const list = records.data ?? [];
+    return list.filter((r) => getSimWindow(r) === null).slice(0, 8);
+  }, [records.data]);
 
   useEffect(() => () => {
     if (debounce.current) clearTimeout(debounce.current);
@@ -755,7 +792,8 @@ export default function TimeseriesView() {
           <NoRun />
         </Card>
       ) : (
-        <div className="ts-layout">
+        <>
+          <div className="ts-layout">
           {tagsQ.data && sel ? (
             <TagPicker tags={tagsQ.data} sel={sel} setSel={setSel} panelCount={new Set(Object.values(sel.raw)).size} property={property} />
           ) : (
@@ -808,6 +846,246 @@ export default function TimeseriesView() {
             </div>
           </section>
         </div>
+        <Card
+          className="s-12"
+          title="Job & Shift Record Track (H6)"
+          sub="SHIFT logs placed at sim_window · WO / INC / MOC listed by date (never at an invented minute)"
+        >
+          {records.isLoading ? (
+            <LoadingBlock height={140} label="Loading job and shift records" />
+          ) : records.isError ? (
+            <ErrorState error={records.error} onRetry={() => records.refetch()} />
+          ) : (
+            <div className="stack" style={{ gap: 16 }}>
+              {/* Timeline-placed records */}
+              <div className="stack" style={{ gap: 6 }}>
+                <div className="row between">
+                  <span style={{ fontWeight: 600, fontSize: "var(--fs-sm)" }}>
+                    Shift Handover Logs on Timeline (sim_window)
+                  </span>
+                  <span className="muted mono" style={{ fontSize: "var(--fs-xs)" }}>
+                    0 to {maxMinute} min ({clock(0)} to {clock(maxMinute)}) · {placedRecords.length} log(s)
+                  </span>
+                </div>
+
+                {placedRecords.length === 0 ? (
+                  <div className="muted" style={{ fontSize: "var(--fs-sm)", padding: "8px 0" }}>
+                    No shift logs placed on this run&apos;s timeline.
+                  </div>
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        minHeight: 76,
+                        background: "var(--elevated)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-sm)",
+                        padding: "8px 6px",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {/* Cursor line */}
+                      {timeMin !== null && timeMin >= 0 && timeMin <= maxMinute ? (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: `${(timeMin / maxMinute) * 100}%`,
+                            top: 0,
+                            bottom: 0,
+                            width: 2,
+                            background: "var(--accent)",
+                            zIndex: 10,
+                            pointerEvents: "none",
+                            boxShadow: "0 0 6px var(--accent)",
+                          }}
+                        />
+                      ) : null}
+
+                      {placedRecords.map((rec) => {
+                        const win = getSimWindow(rec)!;
+                        const start = win[0];
+                        const end = win[1];
+                        const leftPct = Math.max(0, Math.min(100, (start / maxMinute) * 100));
+                        const widthPct = Math.max(8, Math.min(100 - leftPct, ((end - start) / maxMinute) * 100));
+                        const isCurrent = timeMin !== null && timeMin >= start && timeMin <= end;
+
+                        return (
+                          <div
+                            key={rec.doc_id}
+                            onClick={() => setTimeMin(start)}
+                            title={`Click to move time cursor to t = ${start} (${clock(start)})`}
+                            style={{
+                              position: "absolute",
+                              left: `${leftPct}%`,
+                              width: `${widthPct}%`,
+                              top: 8,
+                              bottom: 8,
+                              background: isCurrent
+                                ? "color-mix(in srgb, var(--accent) 30%, var(--card))"
+                                : "var(--card)",
+                              border: isCurrent ? "1.5px solid var(--accent)" : "1px solid var(--border-strong)",
+                              borderRadius: 6,
+                              padding: "6px 8px",
+                              cursor: "pointer",
+                              display: "flex",
+                              flexDirection: "column",
+                              justifyContent: "space-between",
+                              minWidth: 120,
+                              zIndex: isCurrent ? 5 : 2,
+                              transition: "border-color 0.15s ease, background 0.15s ease",
+                            }}
+                          >
+                            <div className="row between" style={{ gap: 4 }}>
+                              <span className="badge blue" style={{ fontSize: 9.5, padding: "1px 5px" }}>
+                                {rec.doc_type}
+                              </span>
+                              <Link
+                                href={`/knowledge/${encodeURIComponent(rec.doc_id)}`}
+                                className="mono"
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  color: "var(--accent)",
+                                  textDecoration: "none",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                title={`Open ${rec.doc_id} in Knowledge`}
+                              >
+                                {rec.doc_id} ↗
+                              </Link>
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 500,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {rec.title}
+                            </div>
+                            <div className="muted mono" style={{ fontSize: 10 }}>
+                              t {start}–{end} ({clock(start)}–{clock(end)})
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Time scale ticks */}
+                    <div style={{ position: "relative", height: 16, width: "100%" }}>
+                      {[0, 240, 480, 720, 960, 1200, 1440]
+                        .filter((t) => t <= maxMinute)
+                        .map((t) => {
+                          const pct = (t / maxMinute) * 100;
+                          return (
+                            <span
+                              key={t}
+                              className="mono muted"
+                              style={{
+                                position: "absolute",
+                                left: `${pct}%`,
+                                transform:
+                                  pct > 85
+                                    ? "translateX(-100%)"
+                                    : pct < 15
+                                      ? "translateX(0)"
+                                      : "translateX(-50%)",
+                                fontSize: 10,
+                              }}
+                            >
+                              {clock(t)}
+                            </span>
+                          );
+                        })}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Date-listed records */}
+              <div className="stack" style={{ gap: 8, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                <div className="row between">
+                  <span style={{ fontWeight: 600, fontSize: "var(--fs-sm)" }}>
+                    Historical Records by Date (WO · INC · MOC)
+                  </span>
+                  <span className="muted" style={{ fontSize: "var(--fs-xs)" }}>
+                    Showing up to 8 records listed by date (no simulated minute)
+                  </span>
+                </div>
+
+                {dateRecords.length === 0 ? (
+                  <div className="muted" style={{ fontSize: "var(--fs-sm)" }}>
+                    No date-listed records found.
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {dateRecords.map((rec) => {
+                      const typeCls =
+                        rec.doc_type === "INC"
+                          ? "amber"
+                          : rec.doc_type === "MOC"
+                            ? "red"
+                            : rec.doc_type === "WO"
+                              ? "blue"
+                              : "neutral";
+                      return (
+                        <Link
+                          key={rec.doc_id}
+                          href={`/knowledge/${encodeURIComponent(rec.doc_id)}`}
+                          style={{
+                            padding: "8px 10px",
+                            background: "var(--elevated)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "var(--radius-sm)",
+                            textDecoration: "none",
+                            color: "inherit",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 3,
+                            transition: "border-color 0.15s ease",
+                          }}
+                        >
+                          <div className="row between" style={{ gap: 6 }}>
+                            <span className={`badge ${typeCls}`} style={{ fontSize: 10, padding: "1px 5px" }}>
+                              {rec.doc_type}
+                            </span>
+                            <span className="mono" style={{ fontWeight: 600, fontSize: 11.5 }}>
+                              {rec.doc_id}
+                            </span>
+                            <span className="muted mono" style={{ fontSize: 10.5, marginLeft: "auto" }}>
+                              {getEffectiveDate(rec)}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 11.5,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {rec.title}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+        </>
       )}
     </div>
   );

@@ -69,6 +69,7 @@ Status: ☐ to do · ▶ in progress · ☑ done. Detailed per-step checks are i
 | C4 | What-If Explorer UI (`F7` `/technical/whatif` + sliders + PDFs) | Flash | `tsc --noEmit` | ☑ (`WhatIfView.tsx`, 0 TS errors) |
 | C5 | Labs & Data Quality (`F10/E2` `/api/labs` + `LabsView`, `F11` `/api/dq` + `DataQualityView`) | Pro | `pytest` + `tsc` | ☑ (`test_labs_dq.py` 4 pass, 0 TS errors) |
 | C6 | MVP & Demo+ UI Polish (`F6` 7-signal hover, `H5` similar events, `F9` W90/bias history, `F25` wall mode) | Flash | `vitest` + `tsc` | ☑ (55/55 vitest, 0 TS errors) |
+| C7 | Job-Record Track (`H6` `TimeseriesView`) & Demo Report PDF/MD Export (`F14` `OverviewView`) | Flash (×2) | `vitest` + `tsc` | ☑ (55/55 vitest, 0 TS errors) |
 | 5.0 | Copilot golden set (Scenes 5–6) + eval harness + guardrail fixes | Large | `make copilot-eval` report | ☑ (16/16 golden PASS, pytest 178) |
 | 7.0 | Demo-window selector (M1–M3), extract_scenarios fix, knowledge tools for real-run events | Large | pytest + dry-run output | ☑ (pytest 178, check_corpus PASS) |
 | 1.0 | Monitor `full_v1` (54 runs) every 3 h; load finished runs to BigQuery | Lead (cron) | Rows per run; BQ row count | ▶ 03:25Z (Oct 1): 54/54 alive (45 @ 600–660/1600 min healed to contiguous rows + `min 360` lab restored; 9 relaunched with hardened `run_sim.m`), 7.6 GB free, cron active — see [tasks/done/T1.0_report.md](tasks/done/T1.0_report.md) |
