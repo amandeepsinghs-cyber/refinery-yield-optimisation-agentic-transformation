@@ -61,6 +61,40 @@ export function traceColor(role: string, key: string, index: number, explicit?: 
   }
 }
 
+/**
+ * Scale rule for `yield`-kind traces (contract §5 "Yields / products" differs per unit: U4 product flows, U3 coke /
+ * carbon / blower power, U5 compressor power, U6 flows + recoveries, U1 fuel per feed).
+ *  - `feed`  mass flow (lb/min) → % of feed on the left axis
+ *  - `pct`   already a percentage (recoveries, `*_pct`) → left axis
+ *  - `wtpct` mass fraction (carbon on catalyst) → ×100, left axis
+ *  - `raw`   anything else (power …) → right axis in its own units
+ */
+export type YieldScale = "feed" | "pct" | "wtpct" | "raw";
+export function yieldAxis(key: string, unit?: string | null): { scale: YieldScale; title: string } {
+  const u = (unit ?? "").trim();
+  if (u === "lb/min" || /^prod_/.test(key) || key === "F_coke" || key === "F5_fuel") return { scale: "feed", title: "% feed" };
+  if (u === "%" || /^eff_/.test(key) || /_pct$/.test(key)) return { scale: "pct", title: "%" };
+  if (/^C_/.test(key) || /_frac$/.test(key)) return { scale: "wtpct", title: /_frac$/.test(key) ? "%" : "wt %" };
+  if (/^power_/i.test(key)) return { scale: "raw", title: "power" };
+  return { scale: "raw", title: u || "value" };
+}
+
+/** `T_tray07_F` → 7 ; null when the key is not a tray temperature. */
+export function trayNumber(key: string): number | null {
+  const m = /^T_tray(\d{1,2})_F$/.exec(key);
+  return m ? Number(m[1]) : null;
+}
+
+/** Index of the last sample at or before `min` (series are ascending); −1 when none. */
+export function indexAtMin(timeMin: number[], min: number): number {
+  let lo = 0, hi = timeMin.length - 1, ans = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (timeMin[mid] <= min) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+  }
+  return ans;
+}
+
 /** Short event-ribbon caption: "breach" / "change-point" / "declined" … */
 export function eventCaption(e: TwinEvent): string {
   const k = e.kind.toLowerCase();

@@ -17,7 +17,7 @@ export default function NeedsAttentionRail({ items }: { items: TwinAttention[] }
         <ul className="l0-attn">
           {items.map((n) => (
             <li key={n.event_id} className="l0-attn-item" data-severity={n.severity}>
-              <Link href={`/twin/unit/${n.unit_id}`} className="l0-attn-link">
+              <Link href={n.tag ? `/twin/unit/${n.unit_id}?tag=${encodeURIComponent(n.tag)}` : `/twin/unit/${n.unit_id}`} className="l0-attn-link" data-testid="attention-link">
                 <span className="l0-attn-dot" style={{ background: SEV_COLOUR[n.severity] }} aria-label={n.severity} />
                 <span className="l0-attn-body">
                   <span className="l0-attn-line">

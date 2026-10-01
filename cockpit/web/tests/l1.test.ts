@@ -9,6 +9,9 @@ import {
   stripInputs,
   sweepPoints,
   traceColor,
+  yieldAxis,
+  trayNumber,
+  indexAtMin,
 } from "@/lib/l1";
 import { isGrey } from "@/lib/palette";
 import type { TwinDecision, TwinPanel, TwinRecipe } from "@/lib/twinTypes";
@@ -118,5 +121,37 @@ describe("decisionLine / openDecision / strip / chips / captions", () => {
     expect(eventCaption({ tag: "LCO_T98_F", time_min: 1, kind: "cusum", severity: "warn" })).toBe("LCO T98 change-point");
     expect(eventCaption({ tag: "LCO_T98_F", time_min: 1, kind: "breach", severity: "alarm", residual: 4.8, sigma: 3.1 })).toBe("LCO T98 residual breach +4.8 (3.1σ)");
     expect(eventCaption({ tag: "", time_min: 1, kind: "declined", severity: "info" })).toBe("recommendation declined");
+  });
+});
+
+describe("yieldAxis (per-unit 'Yields / products' scale rule)", () => {
+  it("puts product mass flows, coke and fuel on % feed", () => {
+    expect(yieldAxis("prod_LCO", "lb/min")).toEqual({ scale: "feed", title: "% feed" });
+    expect(yieldAxis("F_coke", "")).toEqual({ scale: "feed", title: "% feed" });
+    expect(yieldAxis("F5_fuel", "")).toEqual({ scale: "feed", title: "% feed" });
+  });
+  it("keeps recoveries and wt-fractions on the percent axis and sends power to the right axis", () => {
+    expect(yieldAxis("eff_C3", "%")).toEqual({ scale: "pct", title: "%" });
+    expect(yieldAxis("conversion_pct", "")).toEqual({ scale: "pct", title: "%" });
+    expect(yieldAxis("C_regen_cat", "")).toEqual({ scale: "wtpct", title: "wt %" });
+    expect(yieldAxis("power_CAB", "")).toEqual({ scale: "raw", title: "power" });
+    expect(yieldAxis("power_WGC", "")).toEqual({ scale: "raw", title: "power" });
+    expect(yieldAxis("something_else", "kg")).toEqual({ scale: "raw", title: "kg" });
+  });
+});
+
+describe("trayNumber / indexAtMin (tray-profile renderer)", () => {
+  it("parses tray keys and rejects others", () => {
+    expect(trayNumber("T_tray01_F")).toBe(1);
+    expect(trayNumber("T_tray20_F")).toBe(20);
+    expect(trayNumber("T2_preheat_F")).toBeNull();
+  });
+  it("finds the last sample at or before a minute", () => {
+    const t = [0, 2, 4, 6, 8];
+    expect(indexAtMin(t, 5)).toBe(2);
+    expect(indexAtMin(t, 8)).toBe(4);
+    expect(indexAtMin(t, 100)).toBe(4);
+    expect(indexAtMin(t, -1)).toBe(-1);
+    expect(indexAtMin([], 3)).toBe(-1);
   });
 });

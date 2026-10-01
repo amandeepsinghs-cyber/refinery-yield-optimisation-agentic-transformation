@@ -32,18 +32,37 @@ export interface Dashboard {
   pages: NavPage[];
 }
 
-export const DASHBOARDS: Dashboard[] = [
-  {
-    id: "twin",
-    label: "Refinery Twin",
-    href: "/twin",
-    pages: [
-      { href: "/twin", label: "Overview", Icon: IconGauge },
-    ],
-  },
+/** The six connected units in flow order (API_CONTRACT_v3 §5) — the L0 → L1 rail. */
+export const TWIN_UNITS: { unit_id: string; short: string; label: string }[] = [
+  { unit_id: "unit_1_furnace", short: "U1", label: "Furnace" },
+  { unit_id: "unit_2_riser", short: "U2", label: "Riser" },
+  { unit_id: "unit_3_regenerator", short: "U3", label: "Regenerator" },
+  { unit_id: "unit_4_fractionator", short: "U4", label: "Fractionator" },
+  { unit_id: "unit_5_condenser", short: "U5", label: "Condenser" },
+  { unit_id: "unit_6_stabiliser", short: "U6", label: "Stabiliser" },
+];
+
+export const TWIN_DASHBOARD: Dashboard = {
+  id: "twin",
+  label: "Refinery Twin",
+  href: "/twin",
+  pages: [
+    { href: "/twin", label: "Refinery", Icon: IconGauge },
+    ...TWIN_UNITS.map((u) => ({ href: `/twin/unit/${u.unit_id}`, label: `${u.short} · ${u.label}`, Icon: IconLines })),
+  ],
+};
+
+/**
+ * Navigation shows the Refinery Twin only (SDD-L1-05, D3: Phase-13 catalogue and the Decision / Technical /
+ * Modelling / Knowledge dashboards are retired from nav once L0/L1 ship). Their routes still resolve — see
+ * LEGACY_DASHBOARDS — so deep links from Gemini citations and the audit log keep working.
+ */
+export const DASHBOARDS: Dashboard[] = [TWIN_DASHBOARD];
+
+export const LEGACY_DASHBOARDS: Dashboard[] = [
   {
     id: "decision",
-    label: "Decision",
+    label: "Decision (legacy)",
     href: "/decision/overview",
     pages: [
       { href: "/decision/overview", label: "Overview & Twin", Icon: IconGauge },
@@ -53,7 +72,7 @@ export const DASHBOARDS: Dashboard[] = [
   },
   {
     id: "technical",
-    label: "Technical",
+    label: "Technical (legacy)",
     href: "/technical/timeseries",
     pages: [
       { href: "/technical/timeseries", label: "Time-Series Explorer", Icon: IconLines },
@@ -65,7 +84,7 @@ export const DASHBOARDS: Dashboard[] = [
   },
   {
     id: "modelling",
-    label: "Modelling",
+    label: "Modelling (legacy)",
     href: "/modelling/models",
     pages: [
       { href: "/modelling/models", label: "Model comparison", Icon: IconTable },
@@ -75,15 +94,17 @@ export const DASHBOARDS: Dashboard[] = [
   },
   {
     id: "knowledge",
-    label: "Knowledge",
+    label: "Knowledge (legacy)",
     href: "/knowledge",
     pages: [{ href: "/knowledge", label: "Library", Icon: IconBook }],
   },
 ];
 
-/** Rail highlight: exact match, plus /knowledge/{docId} under the Library entry. */
+/** Rail highlight: exact match, unit workbench prefix, plus /knowledge/{docId} under the Library entry. */
 export function isRailActive(pageHref: string, pathname: string): boolean {
-  return pathname === pageHref || (pageHref === "/knowledge" && pathname.startsWith("/knowledge/"));
+  if (pathname === pageHref) return true;
+  if (pageHref.startsWith("/twin/unit/")) return pathname.startsWith(pageHref);
+  return pageHref === "/knowledge" && pathname.startsWith("/knowledge/");
 }
 
 export const SHARED_PAGES: NavPage[] = [
@@ -93,5 +114,5 @@ export const SHARED_PAGES: NavPage[] = [
 
 export function dashboardFor(pathname: string): Dashboard {
   const seg = pathname.split("/")[1] ?? "";
-  return DASHBOARDS.find((d) => d.id === seg) ?? DASHBOARDS[0];
+  return DASHBOARDS.find((d) => d.id === seg) ?? LEGACY_DASHBOARDS.find((d) => d.id === seg) ?? TWIN_DASHBOARD;
 }

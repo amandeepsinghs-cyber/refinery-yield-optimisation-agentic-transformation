@@ -6,7 +6,23 @@ this file records what actually happened and the state things were left in.
 
 ---
 
-## 2026-10-01 18:20 — L1 Pass C: U4 Unit Workbench built to the mockup; all six units render from one component (uncommitted at time of writing)
+## 2026-10-01 18:35 — L1 Pass D: other units polished, nav retired to the Twin, L0 → L1 deep links (commit follows this entry)
+
+**What changed**
+- **Per-unit yield axes** (`cockpit/web/src/lib/l1.ts → yieldAxis`, used by `ChartStack`): the Pass-C rule divided *every* "Yields / products" trace by feed, which was wrong outside U4 (U3 blower power and carbon-on-catalyst, U5 compressor power, U6 recoveries were all shown as "% feed"). Now mass flows (`prod_*`, `F_coke`, `F5_fuel`, unit `lb/min`) → % feed; recoveries / `*_pct` → %; `C_*` and `*_frac` → ×100 (wt % / %); everything else (power) → right axis in its own units, promoted to the left axis when nothing else is plotted. Verified by CDP axis titles: U3 `% feed · wt %` / `power`, U5 `power`, U6 `% feed · %`, U2 `%` / `%`.
+- **Tray profile renderer** (`ChartStack → buildTrayProfile`): `tray_profile` panels now plot temperature vs tray number at the cursor minute (solid) with the window-start profile dashed; x axis "Tray (1 = top)" pinned 0.5–20.5; no time cursor / hover broadcast on this panel. Lives under "More panels ▾"; `?more=1` opens it on load.
+- **Nav retirement (D3, SDD-L1-05)** (`lib/nav.ts`, `AppShell.tsx`): topbar shows one tab — Refinery Twin; rail = Refinery + U1…U6 + Audit log + Settings; brand → `/twin`. Decision / Technical / Modelling / Knowledge moved to `LEGACY_DASHBOARDS` (not in nav; routes still resolve a rail when opened from a Gemini citation or old link).
+- **L0 → L1 deep link**: "Needs attention" lines link `/twin/unit/{id}?tag={tag}`; the workbench resolves the measured-vs-expected panel plotting that tag (falls back to any panel with the trace), opens "more" if needed, scrolls and highlights 6 s. `?uc=` unchanged.
+- **Live voice language** (`api/app/copilot/live.py`): `SpeechConfig.language_code` = `hi-IN` for Hindi / Hinglish operators, `en-IN` otherwise (SDD-GEM-04). Unit test added to `tests/test_gemini_scope.py`.
+- Playwright spec: four new scenarios (nav retired, attention deep link, `?more=1` tray/combustion, per-unit yield axes). **Still not executed** — runner not installed.
+
+**Verification**: `tsc --noEmit` 0 errors · vitest 75/75 (10 files; +4 helper tests) · pytest `test_workbench + test_twin_l0 + test_gemini_scope` 16 passed · CDP (random_s107 @ 600, light, 1440 px): L0 `plotly:0 · tabs:[Refinery Twin] · brand:/twin · attnHrefs ?tag=…`; all six units `plotly:5 · railCards:5 · greyTraces:0 · hscroll:false · 0 console errors`; U4 `?more=1` → 8 panels incl. `tray_profile:Tray (1 = top):°F`; U1 `?more=1` → `combustion … CO ppm`. As-built: `docs/ui/L1_u3_workbench_asbuilt_light.png`, `docs/ui/L1_u4_all_panels_asbuilt_light.png`, `docs/ui/L0_nav_retired_asbuilt_light.png`.
+
+**Known / deferred**: Playwright run (disk); tag units for `power_*` / `F5_fuel` are not in the simulator tag dictionary (`unit: '-'`) so the right axis is titled "power" without a unit — fix at the data dictionary when `full_v1` lands; `DemoGuideModal` scenes still point at legacy routes (Phase 19 director script will replace them).
+
+---
+
+## 2026-10-01 18:20 — L1 Pass C: U4 Unit Workbench built to the mockup; all six units render from one component (committed as `8c0fe12`)
 
 Plan agreed with the user ([L1 build plan](../../.gemini/jetski/brain/d627c2de-d6ce-4d3a-9669-df0b312f1591/L1_build_plan.md), recommendations
 accepted): 5 primary panels + "More panels ▾"; keep Plotly, restyle + synchronise; client-side what-if sweep for the optimisation curve.

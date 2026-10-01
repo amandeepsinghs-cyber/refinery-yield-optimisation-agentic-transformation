@@ -28,6 +28,14 @@ def _client():
     return genai.Client(vertexai=True, project=g["project"], location=g["location"])
 
 
+LIVE_LANGUAGE = {"hi": "hi-IN", "hindi": "hi-IN", "hinglish": "hi-IN", "en": "en-IN"}
+
+
+def live_language_code(ctx: dict) -> str:
+    """Speech language for the Live session (SDD-GEM-04): Hindi / Hinglish → hi-IN, otherwise Indian English."""
+    return LIVE_LANGUAGE.get(str(ctx.get("lang") or "en").lower(), "en-IN")
+
+
 def live_config(ctx: dict, with_tools: bool = True):
     from google.genai import types
     g = get_settings()["gemini"]
@@ -35,9 +43,10 @@ def live_config(ctx: dict, with_tools: bool = True):
               system_instruction=system_instruction(ctx) + VOICE_EXTRA,
               input_audio_transcription=types.AudioTranscriptionConfig(),
               output_audio_transcription=types.AudioTranscriptionConfig())
+    speech = {"language_code": live_language_code(ctx)}
     if g.get("voice"):
-        kw["speech_config"] = types.SpeechConfig(voice_config=types.VoiceConfig(
-            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=g["voice"])))
+        speech["voice_config"] = types.VoiceConfig(prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=g["voice"]))
+    kw["speech_config"] = types.SpeechConfig(**speech)
     if with_tools:
         kw["tools"] = declarations()
     return types.LiveConnectConfig(**kw)

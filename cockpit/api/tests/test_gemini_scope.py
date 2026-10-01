@@ -65,3 +65,12 @@ def test_adk_canonical_count_unchanged_and_extras_registered():
     assert len(adk_agent.root_agent.tools) == 8
     extra = {f.__name__ for f in adk_agent.ALL_TOOLS}
     assert {"get_scope_snapshot", "get_regime", "get_recipe"} <= extra
+
+
+def test_live_language_follows_operator_lang():
+    """SDD-GEM-04: Hindi / Hinglish operators get a hi-IN Live session; English defaults to en-IN."""
+    from app.copilot.live import live_language_code
+    assert live_language_code({"lang": "hi"}) == "hi-IN"
+    assert live_language_code({"lang": "hinglish"}) == "hi-IN"
+    assert live_language_code({"lang": "en"}) == "en-IN"
+    assert live_language_code({}) == "en-IN"

@@ -155,7 +155,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </a>
       <ContextBootstrap />
       <header className="topbar">
-        <Link href="/decision/overview" className="brand" aria-label="FCC Decision Cockpit home">
+        <Link href="/twin" className="brand" aria-label="FCC Decision Cockpit home">
           <BrandMark />
           <span>
             FCC <span className="brand-sub">Decision Cockpit</span>

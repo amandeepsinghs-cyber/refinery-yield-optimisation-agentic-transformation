@@ -53,6 +53,7 @@ export interface TwinPanelTrace {
   label?: string;
   role: string;
   color?: string;
+  unit?: string;
 }
 
 export interface TwinPanelHLine {

@@ -181,3 +181,49 @@ test.describe("Level 1 — Unit workbench (SDD-L1-01..07)", () => {
     }
   });
 });
+
+test.describe("Navigation and deep links after L1 (SDD-L1-05, D3)", () => {
+  test("nav shows the Refinery Twin only; brand returns home; the six units sit in the rail", async ({ page }) => {
+    await page.goto(`${BASE}/twin`);
+    await expect(page.locator("nav.tabs .tab")).toHaveCount(1);
+    await expect(page.locator("nav.tabs .tab")).toHaveText(/Refinery Twin/);
+    await expect(page.locator("a.brand")).toHaveAttribute("href", "/twin");
+    const rail = page.locator("nav.rail .rail-link");
+    await expect(rail.filter({ hasText: "U4 · Fractionator" })).toBeVisible();
+    await expect(rail.filter({ hasText: "Audit log" })).toBeVisible();
+    for (const legacy of ["Decision", "Technical", "Modelling", "Knowledge"]) {
+      await expect(page.locator("nav.tabs .tab", { hasText: legacy })).toHaveCount(0);
+    }
+  });
+
+  test("a needs-attention line opens the unit workbench on the panel that plots its tag", async ({ page }) => {
+    await page.goto(`${BASE}/twin`);
+    const link = page.getByTestId("attention-link").first();
+    await expect(link).toBeVisible();
+    const href = await link.getAttribute("href");
+    expect(href).toMatch(/^\/twin\/unit\/unit_\d_[a-z]+\?tag=/);
+    await link.click();
+    await expect(page.getByTestId("l1-root")).toBeVisible();
+    await expect(page.locator(".twin-panel-highlight")).toHaveCount(1, { timeout: 5000 });
+  });
+
+  test("?more=1 reveals the unit-specific panels: fractionator tray profile, furnace combustion", async ({ page }) => {
+    await openUnit(page, "unit_4_fractionator", "?more=1");
+    const tray = page.locator("[data-testid=chart-panel][data-kind=tray_profile]");
+    await expect(tray).toBeVisible();
+    await expect(tray.locator(".g-xtitle")).toHaveText(/Tray/);
+    await openUnit(page, "unit_1_furnace", "?more=1");
+    const comb = page.locator("[data-testid=chart-panel][data-kind=combustion]");
+    await expect(comb).toBeVisible();
+    await expect(comb.locator(".g-y2title")).toHaveText(/CO ppm/);
+  });
+
+  test("yield panels keep engineering units per unit: % feed on the left, power on the right", async ({ page }) => {
+    await openUnit(page, "unit_3_regenerator");
+    const y = page.locator("[data-testid=chart-panel][data-kind=yield]");
+    await expect(y.locator(".g-ytitle")).toHaveText(/% feed/);
+    await expect(y.locator(".g-y2title")).toHaveText(/power/);
+    await openUnit(page, "unit_5_condenser");
+    await expect(page.locator("[data-testid=chart-panel][data-kind=yield] .g-ytitle")).toHaveText(/power/);
+  });
+});

@@ -27,6 +27,7 @@ import AskGeminiCard from "./AskGeminiCard";
 function L1Content({ unitId }: { unitId: string }) {
   const searchParams = useSearchParams();
   const uc = searchParams?.get("uc") ?? null;
+  const tag = searchParams?.get("tag") ?? null;
   const runId = useCockpit((s) => s.runId);
   const timeMin = useCockpit((s) => s.timeMin);
   const setRun = useCockpit((s) => s.setRun);
@@ -62,14 +63,17 @@ function L1Content({ unitId }: { unitId: string }) {
     raf.current = requestAnimationFrame(() => setHoverMin(m));
   }, []);
 
-  const [showMore, setShowMore] = useState(false);
+  const [showMore, setShowMore] = useState(searchParams?.get("more") === "1");
   const { primary, more } = useMemo(() => selectPanels(data?.panels ?? []), [data?.panels]);
   const panels = showMore ? [...primary, ...more] : primary;
 
-  // ?uc= entry: scroll to the owning panel and highlight it.
+  // ?uc= / ?tag= entry (L0 attention rail → L1): scroll to the owning panel and highlight it.
   useEffect(() => {
-    if (!uc || !data) return;
-    const owning = data.panels.find((p) => p.use_case_ids?.includes(uc)) ?? data.panels.find((p) => p.panel_id === data.unit.use_cases.find((u) => u.id === uc)?.panel_id);
+    if ((!uc && !tag) || !data) return;
+    const owning =
+      (uc && (data.panels.find((p) => p.use_case_ids?.includes(uc)) ?? data.panels.find((p) => p.panel_id === data.unit.use_cases.find((u) => u.id === uc)?.panel_id))) ||
+      (tag && (data.panels.find((p) => p.kind === "measured_vs_expected" && p.traces?.some((tr) => tr.key === tag)) ?? data.panels.find((p) => p.traces?.some((tr) => tr.key === tag)))) ||
+      null;
     if (!owning) return;
     if (!primary.some((p) => p.panel_id === owning.panel_id)) setShowMore(true);
     const t = setTimeout(() => {
@@ -80,7 +84,7 @@ function L1Content({ unitId }: { unitId: string }) {
       setTimeout(() => el.classList.remove("twin-panel-highlight"), 6000);
     }, 400);
     return () => clearTimeout(t);
-  }, [uc, data, primary]);
+  }, [uc, tag, data, primary]);
 
   if (error) return <div className="twin-container l1-root l1-error" data-testid="l1-root" role="alert">Workbench unavailable: {error}</div>;
   if (loading && !data) return <div className="twin-container l1-root l1-loading" data-testid="l1-root"><div className="skeleton" style={{ height: 48 }} /><div className="skeleton" style={{ height: 420, marginTop: 12 }} /></div>;
