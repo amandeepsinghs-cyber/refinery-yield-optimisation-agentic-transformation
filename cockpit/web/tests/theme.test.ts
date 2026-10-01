@@ -55,7 +55,7 @@ describe("theme tokens", () => {
     expect(d.paper_bgcolor).toBe("rgba(0,0,0,0)");
   });
 
-  it("boot script defaults to dark and honours a stored choice", () => {
+  it("boot script defaults to light and honours a stored choice", () => {
     const run = (stored: string | null) => {
       const attrs: Record<string, string> = {};
       const document = { documentElement: { setAttribute: (k: string, v: string) => (attrs[k] = v), style: {} as Record<string, string> } };
@@ -63,9 +63,9 @@ describe("theme tokens", () => {
       new Function("document", "localStorage", "window", THEME_BOOT_SCRIPT)(document, localStorage, {});
       return attrs["data-theme"];
     };
-    expect(run(null)).toBe("dark");
+    expect(run(null)).toBe("light");
     expect(run("light")).toBe("light");
-    expect(run("garbage")).toBe("dark");
+    expect(run("garbage")).toBe("light");
   });
 
   it("no financial wording in UI tokens / labels", () => {

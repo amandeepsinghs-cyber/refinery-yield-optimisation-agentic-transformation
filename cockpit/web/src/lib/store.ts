@@ -63,7 +63,7 @@ export const useCockpit = create<CockpitState>()(
       runId: null,
       property: "LCO_T98_F",
       timeMin: null,
-      theme: "dark",
+      theme: "light",
       copilotOpen: false,
       copilotTab: "text",
       copilotExpanded: false,

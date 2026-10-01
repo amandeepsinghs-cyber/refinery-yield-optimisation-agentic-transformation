@@ -1,0 +1,23 @@
+[project]
+name = "fcc-cockpit-api"
+version = "3.0.0"
+description = "FCC crude-adaptive refinery twin — FastAPI backend (simulated data, advisory only)"
+requires-python = ">=3.12"
+# Runtime dependencies are pinned in requirements.txt (uv pip freeze); this file carries tool configuration only.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+addopts = "-p no:cacheprovider"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv", "artifacts", "golden"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E731", "B008", "B905"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

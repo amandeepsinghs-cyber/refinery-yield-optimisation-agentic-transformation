@@ -1,6 +1,6 @@
 # Specification-Driven Design (SDD): Agent-Managed FCC Soft Sensors & Decision Cockpit
 
-> **Companion documents:** [Demo case](BCC.md) · [Features](features.md) · [Behaviour spec](BDD.md) · [Build guide](build.md) · [Checklist](checklist.md) · [Solution design](fcc_ai_driven_soft_sensor_solutions.md)
+> **Companion documents:** [Demo case](BCC.md) · [Features](features.md) · [Behaviour spec](BDD.md) · [Build guide](build.md) · [Checklist](checklist.md) · [Solution design](fcc_ai_driven_soft_sensor_solutions.md) · **[Build plan v3 (governing)](BUILD_PLAN_v3.md)**
 >
 > **How the documents fit together:**
 > - `features.md` says **what** is built.
@@ -26,6 +26,31 @@
 - **SHALL / SHOULD / MAY** follow RFC 2119.
 - Requirement IDs: `SDD-<area>-<nn>`. Feature IDs (A1…H6) are defined in features.md. `BDD-n` means Feature n in BDD.md.
 - °F, UTC, one process row = one simulated minute.
+
+## 1A. Problem Re-anchor (v3, 2026-10-01) — Crude-Adaptive, Unit-by-Unit Optimisation
+
+> Governing plan: [BUILD_PLAN_v3.md](BUILD_PLAN_v3.md). Where §13 (Epic I) presentation conflicts with this section, **this section wins**; the §13 backend engines (twin state, PINN residuals, ripple matrix, decisions, agent fleet, trilingual briefings) are retained and re-used.
+
+**The problem.** The refinery changes its crude slate / tank blend every 12–48 h. Models trained on historical averages, and lab results that lag 4–12 h, leave every unit running on sub-optimal parameters through and after each switch — losing high-value yield (LCO, naphtha, LPG/C5) and wasting fuel, blower power, coke and quality giveaway. In the simulator this is `event_code = 1` (`crude_id` increments, `dist_feed_API` ramps over 60 min to a new value in [20, 29] °API); `full_v1` already contains **50 labelled crude switches across 54 runs** (SDD-DATA-11).
+
+**What the system SHALL do, unit by unit (engines):**
+
+| Engine | Requirement | Output contract |
+|---|---|---|
+| **E1 Regime** (`SDD-REG-*`) | Recognise the active crude regime from the unit's own response — not only from the declared `dist_feed_API` | `regime_id`, `regime_label`, `p_regime[]`, `novelty ∈ [0,1]`, `transition_pct`, `declared_vs_detected` |
+| **E2 Adaptation** (`SDD-ADP-*`) | Re-weight the model committee per regime; raise the physics weight as novelty rises; expose which specialist is in charge | per-member `weight` by regime, `physics_weight`, `adaptation_reason` |
+| **E3 Detection** (`SDD-DET-*`) | Say *when* and *how we know* a unit is off: residual (measured − expected) with ±3σ band, CUSUM / change-point, and ranked MV contributions | `events[] {time_min, unit_id, tag, kind, severity, root_cause[], briefing{en,hinglish,hi}}` |
+| **E4 Recipe** (`SDD-RCP-*`) | Prescribe the **coordinated multi-set-point recipe** that restores plan under P(on-spec) ≥ 95 % and IOW limits, from yield / fuel / power / coke surrogates — never a single-knob trim | `recipe {moves[] {sp_tag, current, recommended, delta, unit}, d_yield_pct_feed{}, d_fuel_lb_s, d_power_MW, d_coke, p_on_spec, gate}` |
+
+**UX contract (two levels only).**
+
+- **L0 Refinery Twin** (`/twin`, home, always): whole-plant flat ISA-style flow, per-block KPI vs plan, status pill, decision / agent-flag counts, **crude-slate banner (declared vs detected, transition %)**, "Needs attention" with systemic consequence lines, shift timeline. **No charts and no model outputs at L0.**
+- **L1 Unit Workbench** (`/twin/unit/[unit_id]`, opens only on click): unit I/O strip → aligned time series on **one shared x-axis and one global cursor** (measured vs PINN-expected with committee band, plan ± tolerance, spec; **residual chart with ±3σ / CUSUM breach marker**; MVs; disturbances; yield row) → event ribbon (breach → agent flag → root cause → recipe → accepted) → right rail: regime & model-adaptation panel, multi-SP recipe card, model evidence (4 members, physics checks, spread gate), Accept / Decline with citations, Gemini scoped to the visible window (Hindi-first).
+- A use case from `refinery_optimisation.md` is **not a screen**: it opens the owning unit's workbench scrolled to that use case's signature chart (mapping in BUILD_PLAN_v3 §2).
+
+**Visual register.** Sober engineering (PI-Vision / Seeq style). Light default with persisted dark toggle (supersedes the "dark by default" wording in §1 for the v3 screens). Colour only for state; no glow, isometric or holographic effects; **no grey data curves** — every trace has a distinct named colour.
+
+**Non-negotiables (unchanged).** Advisory only, no control writes (SDD-SAF-*). Engineering units only, zero financial wording (SDD-NFR-11). ADK `root_agent.tools` stays at the 8 canonical tools.
 
 ---
 
@@ -749,3 +774,198 @@ cockpit: {sse_window_points: 720, default_speed: 10, ts_max_points: 2000, defaul
 | OD-7 | Demo spec limits | LCO T98 ≤ 765 °F, HN T98 ≤ 540 °F (placeholders) | Process SME |
 | OD-8 | Embedding model | `text-embedding-005` (alternative `gemini-embedding-001`); threshold 0.35, re-tuned on the golden set | Engineering |
 | OD-9 | Live fallback model | None configured; set `gemini.live_fallback_models` if the startup probe fails | Engineering |
+
+
+---
+
+## 13. v2 Expansion Specification: Systems-Thinking Digital Twin, PINN Residuals & 11-Use-Case Catalogue (Epic I)
+
+> **Architectural Principle:** One unified backend engine (`cockpit/api/app/twin.py`, exposed via `GET /api/twin` and `GET /api/overview`) computes the live state of all **6 sequential physical units**, all **11 core refinery use cases**, the **PINN conservation & equipment degradation residuals**, and the **4-Domain Systems Ripple Matrix** at any `(run_id, time_min)` cursor. Both UI modes (**Mode A: Connected Digital Twin Schematic** and **Mode B: Use-Case-by-Use-Case Catalogue Explorer**) consume this single source of truth. All metrics are reported in **technical engineering units only** (`°F`, `% of feed`, `lb/s`, `ppm`, `%`, `psig`, `MW`, dimensionless efficiency) in strict compliance with `SDD-NFR-11`.
+
+### 13.1 The 6-Unit Sequential Process Digital Twin Contract (`SDD-TWIN-01..06`)
+
+- **SDD-TWIN-01 (Sequential Unit Topology):** The Digital Twin SHALL represent the coupled FCC-Fractionator-Light-Ends complex as **6 sequential physical equipment nodes** connected by **3 closed-loop material/energy couplings**:
+  1. `unit_1_furnace` — **Crude/VGO Feed & Fired Preheat Furnace** (solves Use Cases **#5** & **#10a**)
+  2. `unit_2_riser` — **Riser Reactor, Standpipe & Transfer Line** (solves Use Cases **#8** & **#10b**)
+  3. `unit_3_regenerator` — **Catalyst Regenerator, Cyclones & Main Air Blower `CAB`** (solves Use Cases **#4** & **#9a**)
+  4. `unit_4_fractionator` — **20-Tray Main Fractionator, 4 Pumparounds (`PA1–PA4`) & Control Valves** (solves Use Cases **#1**, **#3b**, **#6**, **#9b**, **#11**)
+  5. `unit_5_condenser` — **Overhead Condenser, Reflux Drum & Wet Gas Compressor `WGC`** (solves Use Cases **#7** & **#9c**)
+  6. `unit_6_stabiliser` — **Stabiliser Overhead & Light-Ends Gas Plant ($C_1–C_5$)** (solves Use Cases **#2** & **#3a**)
+- **SDD-TWIN-02 (3 Closed-Loop System Couplings):** The `GET /api/twin` response SHALL include `system_loops` quantifying the 3 physical feedback loops at `time_min`:
+  - `loop_1_yield_plan`: Plan target alignment across `LCO_T98_F` vs `SP_LCO_T98`, `HN_T98_F` vs `SP_HN_T98`, and Stabiliser $C_5$ recovery `c5_recovery_pct = 100 * eff_C5 / max(eff_C4 + eff_C5, 1e-6)`.
+  - `loop_2_energy_pumparound`: Coupled thermal balance between Preheat Furnace fuel firing (`F5_fuel`), Pumparound heat recovery (`MV_PA1..MV_PA4`), and Overhead Condenser duty (`dist_condenser_eff`, `MV_cw_flow`).
+  - `loop_3_catalyst_regen`: Coupled reaction-regeneration loop between Riser conversion (`conversion_pct`), Spent/Regenerated catalyst carbon (`C_spent_cat`, `C_regen_cat`), Coke burn (`F_coke`), Main Air Blower load (`power_CAB`), and Cyclone Afterburn (`dT_cyc_reg_F = Tcyc_F - Treg_F`).
+- **SDD-TWIN-03 (Per-Unit 3-Zone Operating Envelope):** Every unit and every use case (`#1`–`#11`) SHALL return a standardised 3-zone operating envelope object:
+  ```json
+  {
+    "metric_name": "c5_recovery_pct",
+    "metric_label": "Stabiliser C5 Recovery Share",
+    "unit": "%",
+    "current_value": 43.4,
+    "target_value": 43.0,
+    "low_bound": 41.5,
+    "high_bound": 44.5,
+    "hard_iow_limit": 46.0,
+    "zone": "SWEET_SPOT",
+    "left_zone_label": "Excess Reflux / Energy Loss",
+    "center_zone_label": "Optimal C5 Recovery Window",
+    "right_zone_label": "C5 Slippage to LPG / Condenser Limit"
+  }
+  ```
+- **SDD-TWIN-04 (Interactive 2D ISA-101 Schematic):** `cockpit/web/src/components/twin/RefineryTwinSchematic.tsx` SHALL render a clean, high-contrast 2D Process Flow Diagram of `unit_1_furnace` through `unit_6_stabiliser` with live tag callouts, animated hydrocarbon/heat/catalyst flow connectors, status badges (`SWEET_SPOT`, `GIVEAWAY`, `WATCH`, `WITHHELD`, `FAULT`), and click-to-select unit inspection.
+
+### 13.2 PINN Conservation Laws & Equipment Residual Engine (`SDD-PINN-01..04`)
+
+- **SDD-PINN-01 (Mass Balance Conservation Residual):** Computes `mass_balance_err_pct` directly from simulator/plant streams (`|ΣF_products - F_feed| / F_feed * 100`). Pass threshold: `≤ 0.50%`.
+- **SDD-PINN-02 (First-Law Enthalpy Conservation Residual):** Evaluates normalized thermal balance between heat inputs (`F5_fuel` furnace firing + `F_coke` regenerator combustion) and heat sinks (`Tr_riser_out_F` cracking endotherm + `MV_PA1..MV_PA4` pumparound removal + `MV_cw_flow * dist_condenser_eff` overhead condensation + `fluegas_O2_pct` stack loss).
+- **SDD-PINN-03 (Thermodynamic Tray Boiling Monotonicity):** Verifies that fractionator tray temperatures decrease monotonically from bottom to top (`T_tray01_F ≥ T_tray06_F ≥ T_tray13_F ≥ T_tray20_F`) and that `HN_T98_F ≤ LCO_T98_F - 50 °F`.
+- **SDD-PINN-04 (Equipment Degradation & Sensor Residuals vs Clean Twin Baseline):**
+  - `condenser_ua_residual = dist_condenser_eff - 0.900` (flags condenser fouling when `< -0.015`, citing `[IOW-HX-03]` & `[WO-24031]`).
+  - `furnace_coking_residual_F = (T3_furnace_F - T2_preheat_F) - 955.0` (flags tube coking when `> +20.0 °F`, citing `[SOP-FCC-006]`).
+  - `hydraulic_dp_norm = dP_reactor_frac` (flags hydraulic/filter $\Delta P$ constraint when `> 0.68`, citing `[WO-25007]`).
+  - `sensor_drift_matrix`: 5-pair redundant transmitter deltas (`|T2_preheat_F - T2_dup|`, `|Tr_riser_out_F - Tr_dup|`, `|Treg_F - Treg_dup|`, `|P5_frac_top_psig - P5_dup|`, `|P6_regen_psig - P6_dup|`), flagging instrument drift when any temperature delta exceeds `2.0 °F` or pressure delta exceeds `0.5 psig` (`[WO-24058]`, `[INC-0733]`, `[SOP-APC-008]`).
+
+### 13.3 Systems-Thinking Jacobian & 4-Domain Ripple Matrix (`SDD-RIP-01..03`)
+
+- **SDD-RIP-01 (4-Domain Ripple Evaluation):** Every recommendation or selected use case SHALL include a `systems_ripple` array with 4 entries (`domain`: `yield`, `energy`, `regeneration`, `reliability`) showing how the recommended setpoint adjustment (`ΔMV`) affects the coupled refinery system:
+  1. `yield`: Effect on `LCO_T98_F` (`°F`), `HN_T98_F` (`°F`), `c5_recovery_pct` (`%`), and `lco_yield_shift_pct` (`% of feed`).
+  2. `energy`: Effect on Pumparound heat recovery (`MV_PA1..4` duty share `%`), Preheat Furnace firing (`F5_fuel` delta `%`), and Overhead Condenser load (`dist_condenser_eff` margin).
+  3. `regeneration`: Effect on Regenerator bed temperature (`Treg_F`), Cyclone Afterburn margin (`dT_cyc_reg_F` vs `12.0 °F` IOW), and Catalyst carbon (`C_regen_cat`).
+  4. `reliability`: Effect on Wet Gas Compressor (`power_WGC`), Main Air Blower (`power_CAB`), Hydraulic $\Delta P$ (`dP_reactor_frac`), and Redundant Sensor alignment (`max_dup_delta_F`).
+
+### 13.4 Explicit 11-Use-Case Catalogue Contract (`SDD-CAT-01..04`)
+
+- **SDD-CAT-01 (`GET /api/twin?run_id=&time_min=`):** Returns:
+  - `provenance`: `{source, batch_id, run_id, time_min}`
+  - `system_summary`: Global plan alignment, PINN conservation status, net energy index, active gate status
+  - `units`: Array of the 6 sequential physical units (`SDD-TWIN-01`)
+  - `use_cases`: Array of all **11 Core Use Cases (`UC-01` through `UC-11`)** from `refinery_optimisation.md`, each containing:
+    - `id` (`"UC-01"` .. `"UC-11"`), `number` (`1`..`11`), `title`, `unit_id`, `category` (`"Yield & Quality"` | `"Energy"` | `"Reliability"`), `status` (`"OPTIMAL"` | `"GIVEAWAY"` | `"WATCH"` | `"WITHHELD"` | `"FAULT"`)
+    - `envelope` (`SDD-TWIN-03` 3-zone operating envelope)
+    - `kpis`: 4 live tag readouts with technical units from the current `time_min` row
+    - `recommendation`: Gated action (`action`, `mv_tag`, `delta_sp`, `rationale`, `gate_status`)
+    - `systems_ripple`: 4-domain ripple summary (`SDD-RIP-01`)
+    - `citations`: Resolved `[DOC-ID rN §x.y]` chips from `knowledge/corpus/manifest.json`
+  - `pinn_residuals`: Conservation & equipment degradation residuals (`SDD-PINN-01..04`)
+  - `downstream_cases_summary`: Status mapping for all 23 downstream cases in `refinery_optimisation.md` §2.
+- **SDD-CAT-02 (Copilot & Gemini Live Tool Extensions):** Add read-only tools `get_systems_twin_state(run_id, time_min)` and `get_use_case_detail(use_case_id, run_id, time_min)` to `cockpit/api/app/copilot/tools.py` and `adk_agent.py` so both text Copilot and Gemini Live voice can answer cross-unit systems-thinking and use-case-specific questions with zero fabricated numbers.
+
+### 13.5 Full Unit & Use-Case Operational Workspaces & Actionable Decisions (`SDD-TWIN-05..06`, `SDD-CAT-03`)
+
+- **SDD-TWIN-05 (Engineered SVG Process Flowsheet + Dynamic Full-Unit Workspace):**
+  - `RefineryTwinSchematic.tsx` SHALL render an engineered 2D ISA-101 SVG Process Flow Diagram with distinct vessel silhouettes (Cabin Furnace, Riser & Disengager Dome, Fluidized Regenerator + CAB, 20-Tray Main Fractionator Tower + PA1–PA4 Exchangers, Overhead Fin-Fan Condenser + Reflux Drum + WGC, and Stabiliser Tower + Light-Ends Split) connected by animated hydrocarbon, catalyst, and heat-recovery pipes, plus interactive Use-Case Callout Pins (`#1`–`#11`).
+  - Clicking any of the **6 Units** (`unit_1_furnace`..`unit_6_stabiliser`) SHALL dynamically switch the entire Unit Digital Twin Workspace below to load:
+    1. `chart_panels`: 2–3 dedicated multi-trace Plotly time-series chart panels (`Primary Controlled Variables & Setpoints`, `Manipulated Variables & Valve Travel`, `Disturbances & PINN Residuals`) fetched from `/api/runs/{run_id}/timeseries` over the active window (`3h / 6h / 12h / 24h`) with click-to-move time cursor synchronization.
+    2. `tag_table`: The complete tag inventory for that unit (10–25 tags) with `tag`, `label`, `role` (`CV` | `MV` | `SP` | `DISTURBANCE` | `DUP_SENSOR` | `VALVE` | `PRODUCT`), `unit`, `current`, `window_min`, `window_mean`, `window_max`, `limit_or_sp`, and `status`.
+    3. `decisions_needed`: Actionable unit-level decision cards with `Accept` and `Decline` buttons wired to `POST /api/twin/decision`.
+- **SDD-CAT-03 (Full Use-Case Operational Workspace & Actionable Decisions):**
+  - Selecting any of the **11 Core Use Cases (`UC-01`..`UC-11`)** in `UseCaseCatalogueView.tsx` SHALL dynamically render that use case's dedicated multi-trace Plotly time-series charts (`chart_panels`), complete relevant tag table (`tag_table` with shift `min`/`mean`/`max`), domain-specific engineering visual, 3-zone operating envelope, 4-domain `systems_ripple`, and actionable `decisions_needed` cards (`Accept` / `Decline`).
+- **SDD-TWIN-06 (`POST /api/twin/decision` Audit-Only Decision Recording):**
+  - Accepts `{rec_id, decision: "accepted" | "declined", user, note, unit_id?, use_case_id?}`, validates against the active run's unit/use-case recommendations, records the operator decision in the SQLite `decisions` and `audit` tables (`control_system_write: false`), and immediately updates the recommendation's `status` (`ACCEPTED` or `DECLINED`) in subsequent `GET /api/twin` calls.
+
+### 13.6 Proactive Multi-Agent Sentinel Fleet & Multilingual Gemini Live (`EN` / `Hinglish` / `Hindi` — `SDD-AGENT-01..03`)
+
+- **SDD-AGENT-01 (Hierarchical 6-Sentinel + 1-Orchestrator Multi-Agent Architecture):**
+  - To provide proactive early warning without audio collision, `GET /api/twin` SHALL evaluate a **7-Agent Hierarchy (`agent_fleet`)** at every minute `time_min`:
+    1. `agent_supervisor` — **Shift Supervisor Orchestrator Agent** (synthesizes the top plant-wide priority alert and coordinates voice output so agents never talk over each other).
+    2. `agent_furnace` — **Unit 1 Fired Heater & Thermal Coking Sentinel** (monitors `UC-05`, `UC-10`: `T3_furnace_F`, `T2_preheat_F`, `fluegas_O2_pct`, `fluegas_CO_ppm`, `F5_fuel`).
+    3. `agent_riser` — **Unit 2 Riser Kinetics & Hydraulic Flooding Sentinel** (monitors `UC-08`, `UC-10`: `Tr_riser_F`, `conversion_pct`, `dP_reactor_frac`, `V3`).
+    4. `agent_regenerator` — **Unit 3 Regenerator Coke-Burn & Cyclone Afterburn Sentinel** (monitors `UC-04`, `UC-09`: `Treg_F`, `Tcyc_F`, `dT_cyc_reg_F`, `C_regen_cat`, `power_CAB`).
+    5. `agent_fractionator` — **Unit 4 Distillation Committee & Pumparound Pinch Agent** (monitors `UC-01`, `UC-03`, `UC-06`, `UC-11`: `LCO_T98_F`, `HN_T98_F`, `W90`, `MV_PA1..4`).
+    6. `agent_condenser` — **Unit 5 Condenser Fouling & Wet Gas Compressor Sentinel** (monitors `UC-07`, `UC-09`: `dist_condenser_eff`, `MV_cw_flow`, `power_WGC`, `valve_V9`).
+    7. `agent_stabiliser_instr` — **Unit 6 Light-Ends & Redundant Instrumentation Sentinel** (monitors `UC-02`, `UC-09`, `UC-11`: `c5_recovery_pct`, `T2_dup..P6_dup`, `valve_V8..V11`).
+- **SDD-AGENT-02 (Trilingual Real-Time Proactive Briefings — `English`, `Hinglish`, `Hindi`):**
+  - Every agent in `agent_fleet` SHALL expose grounded, number-exact proactive alerts and decision briefings in three languages:
+    - `en`: Standard international refinery control-room English.
+    - `hinglish`: Natural Indian refinery shift-engineer Hinglish (Roman script mixing Hindi operational phrasing with exact English technical tags and numbers, e.g., *"Sir, Unit 4 Fractionator mein LCO_T98_F P95 abhi 758.2 °F hai — 765 °F spec se 6.8 °F niche quality giveaway chal raha hai..."*).
+    - `hi`: Clean Hindi (Devanagari script) with exact technical tag numbers and units.
+- **SDD-AGENT-03 (Gemini Live & Copilot Multilingual & Proactive Alert Integration):**
+  - Both `/api/copilot/chat` and `/api/live` (and the UI's **Proactive Multi-Agent Sentinel Bar**) SHALL support a live language selector (`en` | `hinglish` | `hi`), 1-click browser/Gemini voice readout of any Sentinel Agent's proactive alert, and 1-click handoff to Gemini Live or Copilot in the selected language.
+
+
+---
+
+## 14. v3 Specification: Crude-Adaptive Engines E1–E4, Regime Data & L0/L1 Screens (Epic J)
+
+> Problem statement and UX contract: §1A. Use-case → data mapping: [BUILD_PLAN_v3.md §2](BUILD_PLAN_v3.md). Acceptance: BDD-24 … BDD-28.
+
+### 14.1 Regime data contract (`SDD-DATA-11..13`)
+
+- **SDD-DATA-11** Crude regimes SHALL be defined as **API bands** (the simulator characterises crude by `dist_feed_API` only). Canonical definition lives in `cockpit/api/app/regimes.py` and is the single source for staging, training and UI labels:
+
+| `regime_id` | `regime_label` (illustrative family) | API band (°API) | Signature expected at the units |
+|---|---|---|---|
+| `R1` | Heavy (Basrah-Heavy-type) | 20.0 ≤ API < 22.5 | ↑ coke/feed, ↑ `Treg`, ↑ `Fair`, ↓ conversion, ↑ LCO T98 drift at fixed PA duty |
+| `R2` | Medium-heavy (Urals-type) | 22.5 ≤ API < 24.5 | moderate ↑ coke, slight ↑ tray ΔT in the LCO section |
+| `R3` | Base / medium (Arab-Light-type) | 24.5 ≤ API < 26.5 | training baseline (simulator start value 25.0) |
+| `R4` | Light (Bonny-Light-type) | 26.5 ≤ API ≤ 29.0 | ↓ coke, ↓ `Treg`, ↑ LPG/LN make, HN T98 falls below plan |
+
+- **SDD-DATA-12** Staging (`sim_octave/stage_regimes.py`) SHALL write, per batch, `data/<batch>/_staged/regimes.csv` with columns `run_id, batch_id, crude_id, regime_id, regime_label, api_target, t_start_min, t_end_min, transition_start_min, transition_end_min, transition_complete, n_minutes, n_labs`, and `data/<batch>/_staged/lab_results.csv` with `run_id, time_min, crude_id, regime_id, LCO_T98_F, HN_T98_F`. `transition_start_min` is the first minute labelled `event_code = 1`; `transition_end_min` is the first minute at which `dist_feed_API` has settled (the simulator overwrites `event_code` when another event starts inside the ramp, so the end is derived from the API profile). `_staged` folders are never scanned as runs (existing catalog rule). Files are BigQuery-loadable as-is (same shape as `fcc_soft_sensor.regimes` / `lab_results`). Measured on `full_v1` (2026-10-01): 54 runs, 104 segments, **50 switches** (post-switch R1 21 · R2 7 · R4 22), 98 labs.
+- **SDD-DATA-13** The simulator SHALL offer a `crude_campaign` scenario (`scenario.m`) that walks through the four regimes with tank-switch (60 min) and blend-ramp (180 min) transitions and 8–16 h dwell, keeping the 112-column schema. Generating it is **optional for the demo**: `full_v1` already contains 50 labelled switches. New batches go to `sim_octave/data/crude_v1/` and are picked up by the catalog automatically.
+
+### 14.2 E1 Regime engine (`SDD-REG-01..05`)
+
+- **SDD-REG-01** Inputs per minute: `dist_feed_API` (declared), and the **response fingerprint** `[F_coke/feed_flow_lb_s, (Tr_riser_F − T2_preheat_F), F5_fuel/feed_flow_lb_s, Treg_F, conversion_pct, mean(T_tray13..T_tray20) − mean(T_tray01..T_tray06)]`, EWMA-smoothed (τ = 10 min, as features).
+- **SDD-REG-02** Classifier: per-regime Gaussian class model on the fingerprint fitted on train runs (seed < 140), using `regimes.csv` labels from minute `transition_end_min` onward; `p_regime[]` = posterior; `regime_id = argmax`. `novelty` = min Mahalanobis distance mapped to [0,1] by `1 − exp(−d²/2k)` with `k` = fingerprint dimension.
+- **SDD-REG-03** `transition_pct` = position of the declared API ramp between the previous and new regime centres, clipped to [0,100]; `declared_vs_detected` ∈ {`match`, `lagging`, `mismatch`}: `lagging` while the fingerprint still votes the previous regime during a ramp; `mismatch` if the detected regime differs for > 30 min after the ramp ends.
+- **SDD-REG-04** Acceptance: detected regime equals the labelled regime within **≤ 45 min** after `transition_end_min` on ≥ 90 % of held-out switches (seed ≥ 140).
+- **SDD-REG-05** API: `GET /api/regime?run_id&time_min` → `{regime_id, regime_label, p_regime, novelty, transition_pct, declared_vs_detected, declared_api, fingerprint{}}`; also embedded in `GET /api/twin` as `crude_slate`.
+
+### 14.3 E2 Adaptation engine (`SDD-ADP-01..04`)
+
+- **SDD-ADP-01** Per-regime committee weights: the existing four members (ridge, hybrid, PINN ensemble, GPR) are scored per regime on train labs; `weight[member][regime]` ∝ exp(−CRPS) normalised. The live weight is the `p_regime`-blend of the per-regime weights.
+- **SDD-ADP-02** Physics weight: `physics_weight = clip(w_hybrid + w_pinn + novelty·(1 − w_hybrid − w_pinn), 0, 1)`; i.e. as novelty → 1 the committee leans on the physics-anchored members. The adaptation reason string SHALL name the regime and novelty value.
+- **SDD-ADP-03** The online bias correction (existing) SHALL reset its memory at `transition_end_min` of a detected switch, so the previous crude's bias does not contaminate the new regime.
+- **SDD-ADP-04** API: `GET /api/adaptation?run_id&time_min` → `{weights[{member, weight, by_regime{}}], physics_weight, novelty, reason}`. The Modelling dashboard reads the same payload.
+
+### 14.4 E3 Detection engine (`SDD-DET-01..05`)
+
+- **SDD-DET-01** For every unit a **primary quality tag** and expected value: U1 `T2_preheat_F` (vs SP), U2 `conversion_pct` (vs regime expectation), U3 `dT_cyc_reg_F` (afterburn), U4 `LCO_T98_F`/`HN_T98_F` (vs committee), U5 `dist_condenser_eff` proxy via `SP_T_overhead` tracking, U6 `eff_C5` (vs regime expectation). Residual `r = measured − expected`.
+- **SDD-DET-02** Breach detection: (a) `|r| > 3σ_r` where σ_r is the trailing 240-min robust σ (MAD·1.4826); (b) two-sided CUSUM with `k = 0.5σ`, `h = 5σ`; (c) change-point = first minute the CUSUM crosses `h`. The **earlier** of (a)/(b) opens an event.
+- **SDD-DET-03** Root cause ranking: standardised contribution of each MV / disturbance over the last 60 min, `contrib_j = β_j · Δx_j / σ_r`, using the ridge coefficients of the active regime; top-3 reported with sign and tag.
+- **SDD-DET-04** Event record: `{event_id, run_id, time_min, unit_id, use_case_id?, tag, kind ∈ {breach, cusum, drift, flooding_pattern, combustion}, severity ∈ {info, warn, alarm}, residual, sigma, root_cause[{tag, contrib}], briefing{en, hinglish, hi}, next_lab_min}`; persisted in SQLite `agent_events`, streamed on `GET /api/agents/stream` (SSE).
+- **SDD-DET-05** Acceptance: for the U4 quality tags the "off" event opens **before the next lab sample** on ≥ 80 % of held-out crude switches whose post-switch steady state leaves the plan band.
+
+### 14.5 E4 Recipe engine (`SDD-RCP-01..06`)
+
+- **SDD-RCP-01** Surrogates (one per output, ridge + quadratic terms fitted on train minutes, per regime): outputs `prod_LCO, prod_HN, prod_LN, prod_LPG, F_coke, F5_fuel, power_CAB, power_WGC, LCO_T98_F, HN_T98_F`; inputs `SP_T_preheat_F, SP_T_riser_ROT_F, Fair, MV_PA1..MV_PA4, MV_reflux_ratio, SP_LCO_T98, SP_HN_T98` plus `dist_feed_API, feed_flow_lb_s`.
+- **SDD-RCP-02** Objective (engineering units only): maximise `Σ_k w_k · yield_k(%feed)` for the plan's priority products (default LCO 1.0, HN 0.8, LPG 0.4) **minus** normalised penalties on `F5_fuel`, `power_CAB + power_WGC`, `F_coke` (weights from `config.yaml: recipe`). No monetary terms exist in the objective or outputs.
+- **SDD-RCP-03** Constraints: `P(LCO_T98 ≤ spec) ≥ 0.95` and `P(HN_T98 ≤ spec) ≥ 0.95` from the committee σ at the proposed point; IOW limits per SP (`config.yaml: iow`); per-move step limits (≤ 5 °F ROT, ≤ 10 °F cut-point SP, ≤ 5 % PA/air per hour); `Treg_F` ≤ limit; afterburn `dT_cyc_reg_F` ≤ limit.
+- **SDD-RCP-04** Solver: bounded coordinate search + random restarts on the surrogates (≤ 200 ms per call); result is a **recipe of ≥ 2 coordinated moves** or an explicit `gate = WITHHELD` with cause (spread gate, novelty > 0.7, or infeasible constraints).
+- **SDD-RCP-05** API: `GET /api/recipe?run_id&time_min&unit_id` → `{recipe_id, regime_id, moves[{sp_tag, current, recommended, delta, unit, limit_lo, limit_hi}], d_yield_pct_feed{LCO,HN,LN,LPG}, d_fuel_lb_s, d_power_MW, d_coke_pct, p_on_spec{LCO,HN}, gate, gate_reason, citations[]}`; `POST /api/twin/decision` (existing) records Accept / Decline with `recipe_id`.
+- **SDD-RCP-06** Acceptance: on held-out switches, applying the recipe's set-points in the simulator (replay) yields ≥ the hold-SP baseline on priority yield at equal or better `p_on_spec`; the card never shows a single-knob move when ≥ 2 inputs have non-zero sensitivity.
+
+### 14.6 L0 / L1 screens (`SDD-L0-01..04`, `SDD-L1-01..06`)
+
+- **SDD-L0-01** Route `/twin` is the application home. It renders the flat PFD (6 units, 3 loops), one **crude-slate banner** (`declared_api`, `regime_label`, `transition_pct`, `declared_vs_detected`, `novelty`), per-unit KPI vs plan with status pill, decision and agent-flag counts, "Needs attention" list with systemic consequence lines from the Systems Agent, and a shift timeline of events.
+- **SDD-L0-02** L0 SHALL contain **no Plotly chart and no model output** (no μ/σ, members, residuals). Clicking a unit navigates to `/twin/unit/[unit_id]`.
+- **SDD-L0-03** Theme: light default, persisted dark toggle (`data-theme`), tokens from `theme.ts` / `globals.css` kept in sync (existing theme test).
+- **SDD-L0-04** Palette: data traces use the named distinct palette (`measured` blue, `expected` green, `plan` violet, `spec` red, `MV` orange/teal/brown, `disturbance` magenta); grey is reserved for grid and borders.
+- **SDD-L1-01** Route `/twin/unit/[unit_id]` renders, top to bottom: I/O strip (feeds in, products out, current regime chip) → chart stack on one shared x-axis with **one global cursor** (store `timeMin`) → event ribbon → right rail.
+- **SDD-L1-02** Chart stack (U4 first; other units follow the same shape with their primary tags): (1) measured vs expected with committee band, plan ± tol and spec; (2) **residual** with ±3σ band, CUSUM line and breach marker; (3) manipulated variables; (4) disturbances (`dist_feed_API`, `feed_flow_lb_s`, `dist_T_feed_in_F`); (5) yield row (`prod_*` as % feed).
+- **SDD-L1-03** Right rail cards: Regime & adaptation (E1 + E2 payloads), Recipe (E4, with what-if slider bound to the surrogates), Model evidence (members, physics checks, spread gate), Decision (Accept / Decline → `POST /api/twin/decision`), Gemini scoped to the visible window (`get_scope_snapshot` tool, Hindi-first prompts).
+- **SDD-L1-04** Use-case entry: `?uc=UC-05` scrolls to and highlights that use case's signature chart; the rail shows the use-case's citations.
+- **SDD-L1-05** The Phase-13 card/catalogue components (`UseCaseCatalogueView`, Phase-13 unit workspace) are **retired from navigation** once L0/L1 ship; their backend payloads (`tag_table`, `chart_panels`, `decisions_needed`, `agent_fleet`) feed L1.
+- **SDD-L1-06** Visual acceptance by Playwright screenshots: zero grey curves, one cursor, light/dark both render, no horizontal scroll at 1440 px.
+- **SDD-L1-07 Section contract.** Clicking any section (unit) SHALL show, for that section only, all four zones served by one call `GET /api/unit/{unit_id}/workbench` (API_CONTRACT_v3 §5): **Data** (I/O strip, aligned time series, tag table), **Analysis** (residual, ±3σ, CUSUM, change-point, root-cause ranking, open events, trilingual summary), **Models** (committee members and regime-adapted weights, physics weight, regime surrogate card with R², PINN conservation checks, spread gate), **Decisions** (recipe card with what-if, Accept / Decline, audit, citations). Each zone SHALL be visibly labelled so a plant head can see *data → analysis → model → decision* in one scroll.
+
+### 14.6A Screen-scoped Gemini (`SDD-GEM-01..04`)
+
+- **SDD-GEM-01** Every Copilot / Live request carries `context.screen = {level: "L0"|"L1"|"other", unit_id?, window_min}` in addition to `page`, `run_id`, `time_min`, `property`, `lang`.
+- **SDD-GEM-02** The system instruction SHALL state the open screen and embed a **scope snapshot** fetched server-side at request time: on L1 the unit's regime, residual / breach state, recipe moves, open decisions and top tags; on L0 and all other pages the plant snapshot (crude slate, needs-attention lines, unit statuses). Gemini answers **about the open screen first**, but MAY answer about any unit or the whole refinery when asked (the plant context is always available through tools).
+- **SDD-GEM-03** Tools: `get_scope_snapshot(run_id, time_min, unit_id|null)`, `get_regime(run_id, time_min)`, `get_recipe(run_id, time_min, unit_id)` are added to `ALL_TOOLS` / `DECLS`. `root_agent.tools` remains the 8 canonical tools. Gate discipline (quote WITHHELD verbatim, no set-points) applies to recipe moves as it does to cut-point recommendations.
+- **SDD-GEM-04** Suggested prompts are screen-specific and Hindi-first when `lang = hi`; the Copilot drawer shows the screen chip (e.g. "Fractionator · t 600 · R2").
+
+### 14.7 Traceability (Epic J)
+
+| Feature | SDD | BDD |
+|---|---|---|
+| J1 Regime data & staging | SDD-DATA-11..13 | BDD-24 |
+| J2 E1 Regime engine | SDD-REG-01..05 | BDD-24 |
+| J3 E2 Adaptation | SDD-ADP-01..04 | BDD-25 |
+| J4 E3 Detection + events | SDD-DET-01..05 | BDD-26 |
+| J5 E4 Recipe | SDD-RCP-01..06 | BDD-27 |
+| J6 L0 Refinery Twin | SDD-L0-01..04 | BDD-28 |
+| J7 L1 Unit Workbench | SDD-L1-01..06 | BDD-28 |
+| J8 Screen-scoped Gemini + Hindi + director script | SDD-GEM-01..04, SDD-L1-03, §7.9–7.10 | BDD-28 |
+| J9 Unit workbench aggregate API (`/api/unit/{id}/workbench`) | SDD-L1-07, API_CONTRACT_v3 §5 | BDD-28 |

@@ -1,0 +1,67 @@
+"""BDD-28 'Gemini knows which screen is open' (SDD-GEM-01..04) — no live Gemini call needed."""
+from __future__ import annotations
+
+import re
+
+from app.copilot import adk_agent
+from app.copilot.chat import screen_of, suggestions, system_instruction
+from app.copilot.tools import DECLS, ToolBox
+
+FIN = re.compile(r"[$€£₹]\s?\d|USD|EUR|NPV|ROI|payback|\bcost|budget|price|revenue|profit|savings?|monetary", re.I)
+
+
+def test_screen_inference_from_route():
+    assert screen_of({"page": "/twin"}) == {"level": "L0", "unit_id": None, "window_min": 720}
+    assert screen_of({"page": "/twin/unit/unit_4_fractionator"})["unit_id"] == "unit_4_fractionator"
+    assert screen_of({"page": "/twin/unit/unit_4_fractionator"})["level"] == "L1"
+    assert screen_of({"page": "/modelling/models"})["level"] == "other"
+    # explicit screen wins, unknown unit degrades to L0
+    assert screen_of({"page": "/x", "screen": {"level": "L1", "unit_id": "unit_9_bogus"}})["level"] == "L0"
+    assert screen_of({"page": "/x", "screen": {"level": "L1", "unit_id": "unit_1_furnace", "window_min": 240}}) == \
+        {"level": "L1", "unit_id": "unit_1_furnace", "window_min": 240}
+
+
+def test_system_instruction_states_open_screen_and_embeds_snapshot():
+    l0 = system_instruction({"page": "/twin", "time_min": 600})
+    assert "OPEN SCREEN: Level 0 Refinery Twin" in l0
+    assert "SCOPE SNAPSHOT" in l0
+    l1 = system_instruction({"page": "/twin/unit/unit_4_fractionator", "time_min": 600})
+    assert "OPEN SCREEN: Level 1 Unit Workbench for Main fractionator (unit_4_fractionator)" in l1
+    assert "unit_4_fractionator" in l1.split("SCOPE SNAPSHOT")[1][:3000]
+    # whole-refinery questions stay allowed on L1
+    assert "any other unit or the whole refinery" in l1
+    for txt in (l0, l1):
+        body = txt.split("GUARDRAILS")[0]
+        assert not FIN.search(body.replace("No financial content", "")), "no financial wording in the scope block"
+
+
+def test_suggestions_are_screen_specific_and_hindi_first():
+    en_l1 = suggestions({"page": "/twin/unit/unit_3_regenerator"})
+    assert any("regenerator" in s.lower() for s in en_l1)
+    hi_l1 = suggestions({"page": "/twin/unit/unit_3_regenerator", "lang": "hi"})
+    assert any("\u0915" <= ch <= "\u097f" for ch in "".join(hi_l1)), "Hindi suggestions in Devanagari"
+    l0 = suggestions({"page": "/twin"})
+    assert any("attention" in s.lower() for s in l0)
+    assert suggestions({"page": "/decision/overview"})[1] == "Should we move the cut point now?"
+
+
+def test_tools_declared_and_callable_with_fallback():
+    names = {d[0] for d in DECLS}
+    assert {"get_scope_snapshot", "get_regime", "get_recipe"} <= names
+    tb = ToolBox({"page": "/twin", "time_min": 600})
+    snap = tb.call("get_scope_snapshot", {})
+    assert "error" not in snap and snap["screen"]["level"] == "L0"
+    unit = tb.call("get_scope_snapshot", {"unit_id": "unit_4_fractionator"})
+    assert unit["screen"]["unit_id"] == "unit_4_fractionator"
+    reg = tb.call("get_regime", {})
+    assert isinstance(reg, dict)   # engine payload or a clear error string
+    rec = tb.call("get_recipe", {"unit_id": "unit_4_fractionator"})
+    assert isinstance(rec, dict)
+    if "gate" in rec and rec["gate"] == "WITHHELD":
+        assert rec.get("moves") == [] and rec.get("gate_reason")
+
+
+def test_adk_canonical_count_unchanged_and_extras_registered():
+    assert len(adk_agent.root_agent.tools) == 8
+    extra = {f.__name__ for f in adk_agent.ALL_TOOLS}
+    assert {"get_scope_snapshot", "get_regime", "get_recipe"} <= extra

@@ -284,6 +284,69 @@ def make_chart(figure_json: str) -> dict:
     return tb.t_make_chart(figure_json=figure_json)
 
 
+def get_systems_twin_state(
+    run_id: str | None = None,
+    time_min: int | None = None,
+) -> dict:
+    """Evaluate the 6-unit Connected Refinery Digital Twin, 3 system loops, PINN residuals, and 4-domain ripple matrix."""
+    ctx: dict[str, Any] = {}
+    if run_id:
+        ctx["run_id"] = run_id
+    if time_min is not None:
+        ctx["time_min"] = int(time_min)
+    tb = ToolBox(ctx)
+    return tb.t_get_systems_twin_state(run_id=run_id, time_min=time_min)
+
+
+def get_use_case_detail(
+    use_case_id: str,
+    run_id: str | None = None,
+    time_min: int | None = None,
+) -> dict:
+    """Evaluate a specific refinery optimisation use case (UC-01 through UC-11) with live KPIs, envelope, and ripple."""
+    ctx: dict[str, Any] = {}
+    if run_id:
+        ctx["run_id"] = run_id
+    if time_min is not None:
+        ctx["time_min"] = int(time_min)
+    tb = ToolBox(ctx)
+    return tb.t_get_use_case_detail(use_case_id=use_case_id, run_id=run_id, time_min=time_min)
+
+
+def get_scope_snapshot(
+    unit_id: str | None = None,
+    run_id: str | None = None,
+    time_min: int | None = None,
+) -> dict:
+    """Snapshot of what is on screen: unit scope (regime, residual/breach, recipe moves, open decisions) or the whole plant when unit_id is None."""
+    ctx: dict[str, Any] = {}
+    if run_id:
+        ctx["run_id"] = run_id
+    if time_min is not None:
+        ctx["time_min"] = int(time_min)
+    return ToolBox(ctx).t_get_scope_snapshot(unit_id=unit_id, run_id=run_id, time_min=time_min)
+
+
+def get_regime(run_id: str | None = None, time_min: int | None = None) -> dict:
+    """Crude regime recognised from the unit response (E1): regime, p_regime, novelty, declared vs detected."""
+    ctx: dict[str, Any] = {}
+    if run_id:
+        ctx["run_id"] = run_id
+    if time_min is not None:
+        ctx["time_min"] = int(time_min)
+    return ToolBox(ctx).t_get_regime(run_id=run_id, time_min=time_min)
+
+
+def get_recipe(unit_id: str, run_id: str | None = None, time_min: int | None = None) -> dict:
+    """Coordinated multi-set-point recipe for a unit (E4) or gate=WITHHELD with reason."""
+    ctx: dict[str, Any] = {}
+    if run_id:
+        ctx["run_id"] = run_id
+    if time_min is not None:
+        ctx["time_min"] = int(time_min)
+    return ToolBox(ctx).t_get_recipe(unit_id=unit_id, run_id=run_id, time_min=time_min)
+
+
 # Canonical aliases
 get_current_state = get_run_snapshot
 get_timeseries = query_timeseries
@@ -311,6 +374,11 @@ ALL_TOOLS: list[Callable] = ADK_CANONICAL_TOOLS + [
     get_lab_history,
     draft_handover,
     make_chart,
+    get_systems_twin_state,
+    get_use_case_detail,
+    get_scope_snapshot,
+    get_regime,
+    get_recipe,
 ]
 
 

@@ -16,7 +16,7 @@ import {
   IconBook,
 } from "@/components/ui/icons";
 
-export type DashboardId = "decision" | "technical" | "modelling" | "knowledge";
+export type DashboardId = "twin" | "decision" | "technical" | "modelling" | "knowledge";
 
 export interface NavPage {
   href: string;
@@ -34,11 +34,19 @@ export interface Dashboard {
 
 export const DASHBOARDS: Dashboard[] = [
   {
+    id: "twin",
+    label: "Refinery Twin",
+    href: "/twin",
+    pages: [
+      { href: "/twin", label: "Overview", Icon: IconGauge },
+    ],
+  },
+  {
     id: "decision",
     label: "Decision",
     href: "/decision/overview",
     pages: [
-      { href: "/decision/overview", label: "Overview", Icon: IconGauge },
+      { href: "/decision/overview", label: "Overview & Twin", Icon: IconGauge },
       { href: "/decision/decisions", label: "Decisions", Icon: IconListCheck },
       { href: "/decision/quality", label: "Quality", Icon: IconFan },
     ],

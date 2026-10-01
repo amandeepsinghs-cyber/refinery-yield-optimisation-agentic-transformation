@@ -1,5 +1,6 @@
-"""Decision endpoints (contract §5): overview KPIs, recommendations, decisions (audit only), audit, SSE replay, what-if.
+"""Soft-sensor decision endpoints (contract §5): overview KPIs, recommendations, decisions (audit only), audit, SSE replay, what-if.
 
+Digital-twin endpoints (`/api/twin*`, `/api/unit/*`) live in `routers/twin.py`.
 Advisory only — there is no write path to any control system; decisions are stored in the SQLite audit log."""
 from __future__ import annotations
 

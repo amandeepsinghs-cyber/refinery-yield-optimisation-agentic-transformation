@@ -125,10 +125,19 @@ app/pipeline.py        fold bundle + per-run assembly: weights → Kalman bias �
 app/gate.py            spread gate, hysteresis, exact SDD-GATE-04 messages
 app/recommend.py       SDD-REC engine; gain / yield sensitivity from event-5/6 windows
 app/train.py           training + precompute (`python -m app.train`)
-app/store.py, state.py artifacts (npz/json per run), SQLite audit, service state, estimate message (SDD §6.2)
+app/select_demo.py     demo-window ranking (`python -m app.select_demo`)
+app/store.py, state.py artifacts (npz/json per run), SQLite audit + agent_events, service state, estimate message
 app/knowledge/index.py corpus chunking, Vertex embeddings cache, BM25 fallback, records
-app/copilot/           tools.py (read-only tools), chat.py (text, SSE), live.py (Gemini Live proxy)
-app/routers/           meta, timeseries, modelling, decision, knowledge
+app/copilot/           tools.py (read-only tools), chat.py (text, SSE), live.py (Gemini Live proxy), adk_agent.py
+app/regimes.py         canonical crude regimes R1–R4 (API bands, labels, segment extraction)
+app/twin.py            6-unit twin state, use-case detail, decisions (SDD §13, §14 L0 additions)
+app/engines/           v3 crude-adaptive engines (SDD §14): regime.py (E1), surrogates.py + adapt.py (E2),
+                       detect.py (E3 → agent_events), recipe.py (E4), workbench.py (L1 aggregate + Gemini scope)
+app/routers/           soft-sensor: meta, timeseries, modelling, decision, knowledge
+                       twin v3:     twin (/twin*, /unit/{id}/workbench), regime (/regime*, /adaptation),
+                                    agents (/agents/events, /agents/stream), recipe (/recipe, /recipe/whatif)
+scripts/               CLI harnesses that are not imported by the app: eval_copilot.py, eval_recipe.py
+tests/                 pytest suite (config in pyproject.toml)
 ```
 
 ## Copilot

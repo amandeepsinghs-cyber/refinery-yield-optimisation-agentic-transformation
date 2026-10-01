@@ -43,10 +43,13 @@ switch name
 
   % ---------------- randomised campaigns (full dataset) ----------------
   % Seeded by run_sim (seed argument), so every run is reproducible.
-  case {'random', 'random_test'}
+  case {'random', 'random_test', 'crude_campaign'}
     if ~isfield(s, 'prof')
       if strcmp(name, 'random')
         s.prof = build_random(base, 1, 360, 480);    % labs at 06:00, 14:00, 22:00
+      elseif strcmp(name, 'crude_campaign')
+        % Regime walk R1..R4 (SDD-DATA-11/13): tank switch (60 min) or blend ramp (180 min), 8-16 h dwell.
+        s.prof = build_random(base, 1, 360, 480, 'campaign');
       else
         s.prof = build_random(base, 0.1, 20, 60);    % compressed schedule for testing
       end
@@ -62,22 +65,41 @@ switch name
 end
 end
 
-function p = build_random(base, tscale, lab_first, lab_period)
+function p = build_random(base, tscale, lab_first, lab_period, mode)
 % Builds per-minute profiles of disturbances and set points for one randomised campaign.
 %   tscale      multiplies all event intervals (1 = realistic, <1 = compressed for tests)
 %   lab_first   minute of the first lab sample; lab_period minutes between samples
+%   mode        'random' (default): new API anywhere in [20, 29] every 8-30 h with a 60-min ramp
+%               'campaign': walk through the four API-band regimes (R1 20-22.5, R2 22.5-24.5,
+%                           R3 24.5-26.5, R4 26.5-29); first switch after 4-8 h, dwell 8-16 h,
+%                           transition 60 min (tank switch) or 180 min (blend ramp), 50/50
 % Moves are ramped and spaced >= 30 min apart (after the previous ramp ends), as recommended
 % for this model. Cut-point controllers are in manual except for 60 min starting 60 min after
 % each lab sample (result arrives, operator trims the draw back towards the set point).
+if nargin < 5, mode = 'random'; end
 Tmax = 6000;
 u = @(a, b) a + (b - a) * rand();
 % event list rows: [time, code, target, ramp]; codes 1 crude 2 feed 3 ROT 4 feed T 5 LCO SP 6 HN SP
 ev = [];
-t = u(4, 12) * 60 * tscale; api = base.dist(2);
-while t < Tmax
-  new = api; while abs(new - api) < 1.5, new = u(20, 29); end
-  api = new; ev = [ev; t, 1, api, 60]; t = t + u(8, 30) * 60 * tscale;
+if strcmp(mode, 'campaign')
+  bands = [20.0 22.5; 22.5 24.5; 24.5 26.5; 26.5 29.0];
+  reg = 3;                                   % simulator starts at 25.0 API = R3
+  t = u(4, 8) * 60 * tscale;
+  while t < Tmax
+    nxt = reg; while nxt == reg, nxt = 1 + floor(4 * rand()); end
+    reg = min(nxt, 4);
+    lo = bands(reg, 1) + 0.3; hi = bands(reg, 2) - 0.3;   % stay inside the band after noise
+    if rand() < 0.5, rmp = 60; else, rmp = 180; end
+    ev = [ev; t, 1, u(lo, hi), rmp]; t = t + rmp + u(8, 16) * 60 * tscale;
+  end
+else
+  t = u(4, 12) * 60 * tscale; api = base.dist(2);
+  while t < Tmax
+    new = api; while abs(new - api) < 1.5, new = u(20, 29); end
+    api = new; ev = [ev; t, 1, api, 60]; t = t + u(8, 30) * 60 * tscale;
+  end
 end
+
 specs = { % code, first(h), min(h), max(h), sampler, ramp
   2, [3 12], [6 24], @() base.ufcc(1) * u(0.95, 1.05), 30;
   3, [3 12], [6 24], @() base.ufcc(15) + u(-5, 5), 10;

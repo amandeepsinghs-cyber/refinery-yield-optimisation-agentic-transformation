@@ -1,13 +1,14 @@
-# Node / Next.js
+# --- Node / Next.js ---
 node_modules/
 .next/
 out/
-build/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
+playwright-report/
+test-results/
 
-# Python / Virtualenvs / Caches
+# --- Python ---
 .venv/
 venv/
 __pycache__/
@@ -16,22 +17,22 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
-# Environment & Secrets
+# --- Environment & secrets ---
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
-# Octave Simulator Data & Runtime
+# --- Octave simulator data & runtime (regenerate with sim_octave/run_*.sh) ---
 sim_octave/data/
 sim_octave/octave-workspace
 sim_octave/*.mat
 FCC-Fractionator/
 
-# Trained Model Artifacts & Local Databases
+# --- Trained model artifacts, caches, local databases ---
 cockpit/api/artifacts/
-artifacts/
+cockpit/api/scratch/
 *.pkl
 *.npz
 *.sqlite
@@ -39,7 +40,7 @@ artifacts/
 *.db
 *.parquet
 
-# Logs & Temp Files
+# --- Logs & temp ---
 *.log
 *.tmp
 *.bak

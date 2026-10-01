@@ -145,3 +145,33 @@ flowchart LR
 - [ ] Both Copilot scripted questions return cited answers; voice probe passes
 - [ ] Theme set (dark for the room, light for projectors if needed)
 - [ ] Provenance chip visible in every screenshot
+
+
+---
+
+## 9. v2 Expansion Scenes: Systems-Thinking Digital Twin ("The Whole Elephant") & 11-Use-Case Catalogue
+
+> **Why These Two Scenes Complete the Plant Head Pitch:**
+> Scenes 0–7 prove deep statistical rigour on cut points (`LCO_T98_F` and `HN_T98_F`). Scenes 8 and 9 show that **the exact same 112-column simulator, PINN/ML committee, safety gate, and RAG corpus operate as a holistic Refinery Digital Twin** that solves **all 11 core requirements** in [`refinery_optimisation.md`](refinery_optimisation.md) without siloed sub-optimisation.
+
+### Scene 8: Systems-Thinking Digital Twin — "The Whole Elephant" (2.5 min)
+- **Screen:** Decision Overview (`🌐 Systems Twin` mode) showing the **Interactive 6-Unit Connected Refinery Digital Twin Schematic**:
+  `[Unit 1: Preheat Furnace] ──► [Unit 2: Riser Reactor] ◄──► [Unit 3: Regenerator & Main Air Blower] ──► [Unit 4: 20-Tray Main Fractionator & PA1–4] ──► [Unit 5: Overhead Condenser & WGC] ──► [Unit 6: Stabiliser & Light-Ends Gas Plant]`
+- **Say:** *"Your requirement list has 11 use cases across Yield, Regeneration, Energy, and Reliability. If you build 11 separate point models, they fight each other—because in a real refinery, Energy is dictated by the optimal Yield targets chosen by the Plan, and both are bounded by Regenerator coke burn, Condenser UA fouling, and Compressor headroom. Here is the whole elephant on one connected first-principles + PINN Digital Twin."*
+- **Click:** **Unit 6 (Stabiliser & Light-Ends)** or **Unit 4 (Main Fractionator)** at a steady minute (`t = 125`), then inspect the **4-Domain Systems Ripple Matrix** on the Recommendation Card:
+  1. **Yield & Cutpoint Impact (`#1, #2, #3, #11`):** Shows `LCO_T98_F` margin to spec, `HN_T98_F` split, and **Stabiliser $C_5$ recovery (`eff_C5 / (eff_C4 + eff_C5)`)**.
+  2. **Plan-Coupled Energy & Fouling Impact (`#5, #6, #7`):** Shows how the reflux/cutpoint move changes **Pumparound heat recovery (`MV_PA1..4`)**, **Preheat Furnace firing (`F5_fuel`, `fluegas_O2_pct`, `fluegas_CO_ppm`)**, and **Overhead Condenser duty (`dist_condenser_eff`)**.
+  3. **Catalyst & Regeneration Impact (`#4`):** Shows **Spent/Regen carbon (`C_spent_cat`, `C_regen_cat`)**, **Coke burn (`F_coke`)**, and **Cyclone Afterburn margin (`dT_cyc_reg_F = Tcyc_F - Treg_F < 12 °F` IOW)**.
+  4. **Rotating Equipment, Valves & Sensor Integrity (`#8, #9, #10`):** Shows **Main Air Blower (`power_CAB`)**, **Wet Gas Compressor (`power_WGC`)**, **Hydraulic $\Delta P$ (`dP_reactor_frac`)**, **Valve positions (`valve_V8..11`)**, and **Dual-Sensor Drift (`|T - T_dup|`)**.
+- **Features:** I1, I2, I3 · **Backend:** `GET /api/twin`
+
+### Scene 9: Use-Case-by-Use-Case Catalogue Explorer — "All 11 Requirements Live" (2.5 min)
+- **Screen:** Click the **`📋 Use-Case Catalogue (#1–#11)`** mode/tab (or use the 11-pill selector bar).
+- **Say:** *"Under the hood, the exact same data and PINN/Agentic engine powers every single item on your requirement list. Let's step through them use-case by use-case."*
+- **Click through the 4 Value Pillars (all technical units, zero currency):**
+  1. **Use Case #2 (Stabiliser Overhead $C_5$ Recovery):** Show `c5_recovery_pct` (`eff_C5` vs `eff_C4`), the 3-Zone Operating Envelope (`Excess Reflux Energy Loss` ↔ `Optimal C5 Recovery Window` ↔ `C5 Slippage to LPG`), and the gated `SP_T_overhead` / `MV_reflux_ratio` recommendation citing `[SOP-FRAC-002]`.
+  2. **Use Case #4 (Reactor Regeneration & Cyclone Afterburn):** Show `dT_cyc_reg_F`, `C_spent_cat`, `C_regen_cat`, and `F_coke` against `[IOW-FCC-02]` and `[SOP-FCC-005]`.
+  3. **Use Case #5 & #7 (Fired Heater $CO/O_2$ Combustion & Condenser UA Fouling):** Show `fluegas_O2_pct`, `fluegas_CO_ppm`, `T3_furnace_F`, and `dist_condenser_eff` degradation citing `[SOP-FCC-006]`, `[IOW-HX-03]`, and Bundle Cleaning Work Order `[WO-24031]`.
+  4. **Use Case #8 & #9 (Hydraulic $\Delta P / F^2$, Compressors `CAB`/`WGC`, Valve Stiction & Sensor Drift):** Show the Dual-Sensor Drift Matrix (`|T2 - T2_dup|`, `|Tr - Tr_dup|`, `|Treg - Treg_dup|`, `|P5 - P5_dup|`), compressor loads (`power_CAB`, `power_WGC`), and valve stiction surveillance citing `[WO-24133]`, `[WO-26049]`, `[WO-24058]`, and `[INC-0733]`.
+- **Ask Gemini Live / Copilot:** *"Give me a systems-thinking summary across all 6 units and tell me if any exchanger fouling, afterburn, or sensor drift is constraining our yield plan right now."*
+- **Features:** I4–I12, E5, F23 · **Backend:** `GET /api/twin`, `POST /api/copilot/chat`, `WS /api/live`

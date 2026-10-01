@@ -321,3 +321,281 @@ export interface CopilotContext {
   property: string;
   time_min: number | null;
 }
+
+// ---------- Connected Refinery Digital Twin & Use-Case Catalogue (SDD §13) ----------
+export interface TwinUnitEnvelope {
+  parameter: string;
+  label: string;
+  unit: string;
+  current_value: number;
+  p50: number;
+  p95: number;
+  sweet_spot_min: number;
+  sweet_spot_max: number;
+  spec_limit: number;
+  scale_min: number;
+  scale_max: number;
+  zone: "OVER_TREATING" | "SWEET_SPOT" | "UNDER_TREATING" | "TRANSITION_LOCK";
+  zone_label: string;
+  advice: string;
+}
+
+export interface TwinUnitKpi {
+  tag: string;
+  label: string;
+  value: number | string;
+  unit: string;
+  status: TrustLevel;
+}
+
+export interface TwinUnitRecommendation {
+  action: "RAISE" | "LOWER" | "HOLD";
+  parameter: string;
+  sp_before: number;
+  sp_after: number;
+  delta: number;
+  unit: string;
+  gate_status: GateStatus;
+  rationale: string;
+  citations: Citation[];
+}
+
+export interface TwinTagRow {
+  tag: string;
+  label: string;
+  role: string;
+  unit: string;
+  current: number;
+  window_min: number;
+  window_mean: number;
+  window_max: number;
+  limit_or_sp: string;
+  status: TrustLevel;
+}
+
+export interface TwinChartTrace {
+  tag: string;
+  label: string;
+  color?: string;
+  dash?: string;
+}
+
+export interface TwinChartPanel {
+  panel_id: string;
+  title: string;
+  subtitle: string;
+  unit: string;
+  traces: TwinChartTrace[];
+  spec_limit?: number | null;
+  sweet_spot?: [number, number] | null;
+}
+
+export interface TwinDecisionCard {
+  rec_id: string;
+  run_id: string;
+  time_min: number;
+  target_id: string;
+  unit_id: string;
+  use_case_id: string;
+  status: RecStatus;
+  action: "RAISE" | "LOWER" | "HOLD";
+  parameter: string;
+  sp_before: number;
+  sp_after: number;
+  delta: number;
+  unit: string;
+  gate_status: GateStatus;
+  trust: TrustLevel;
+  rationale: string;
+  systems_ripple: Record<string, string>;
+  citations: Citation[];
+}
+
+export interface TwinSentinelAgent {
+  agent_id: string;
+  name: string;
+  role: string;
+  unit_id: string;
+  use_case_ids: string[];
+  status: TrustLevel;
+  priority_rank: number;
+  proactive_alert: string;
+  briefings: {
+    en: string;
+    hinglish: string;
+    hi: string;
+  };
+}
+
+export interface TwinUnit {
+  unit_id: string;
+  seq: number;
+  name: string;
+  short_name: string;
+  subtitle: string;
+  use_case_ids: string[];
+  use_case_numbers: number[];
+  status: TrustLevel;
+  status_label: string;
+  headline_kpi: {
+    label: string;
+    value: number | string;
+    unit: string;
+    target: string;
+  };
+  tags: Record<string, number>;
+  kpis: TwinUnitKpi[];
+  tag_table: TwinTagRow[];
+  chart_panels: TwinChartPanel[];
+  envelope: TwinUnitEnvelope;
+  recommendation: TwinUnitRecommendation;
+  decisions_needed: TwinDecisionCard[];
+}
+
+export interface TwinSystemLoop {
+  loop_id: string;
+  name: string;
+  path: string[];
+  flow_label: string;
+  conservation_metric: string;
+  status: TrustLevel;
+}
+
+export interface TwinRippleMetric {
+  label: string;
+  before: number;
+  after: number;
+  delta: number;
+  unit: string;
+  direction: "up" | "down";
+}
+
+export interface TwinRippleDomain {
+  title: string;
+  summary: string;
+  metrics: TwinRippleMetric[];
+}
+
+export interface TwinSystemsRipple {
+  rec_id: string;
+  time_min: number;
+  gate_status: GateStatus;
+  primary_move: {
+    unit_id: string;
+    parameter: string;
+    action: "RAISE" | "LOWER" | "HOLD";
+    sp_before: number;
+    sp_after: number;
+    delta_F: number;
+  };
+  domains: {
+    yield: TwinRippleDomain;
+    energy: TwinRippleDomain;
+    regeneration: TwinRippleDomain;
+    reliability: TwinRippleDomain;
+  };
+}
+
+export interface TwinSensorDriftRow {
+  tag: string;
+  dup_tag: string;
+  label: string;
+  unit_name: string;
+  unit: string;
+  primary_val: number;
+  dup_val: number;
+  abs_drift: number;
+  threshold: number;
+  status: TrustLevel;
+}
+
+export interface TwinValveHealthRow {
+  tag: string;
+  label: string;
+  unit_name: string;
+  position_pct: number;
+  operating_band_pct: [number, number];
+  status: TrustLevel;
+}
+
+export interface TwinPinnResiduals {
+  mass_balance_err_pct: number;
+  reactor_mb_lb_min: number;
+  mass_closure_ok: boolean;
+  tray_monotonicity_ok: boolean;
+  tray_violations_count: number;
+  tray_profile_F: Record<string, number>;
+  cutpoint_gap_F: number;
+  cutpoint_gap_ok: boolean;
+  condenser_eff: number;
+  condenser_ua_residual: number;
+  condenser_fouling_status: TrustLevel;
+  furnace_coking_residual_F: number;
+  furnace_coking_status: TrustLevel;
+  hydraulic_dp_frac: number;
+  hydraulic_dp_norm: number;
+  flooding_status: TrustLevel;
+  sensor_drift_matrix: TwinSensorDriftRow[];
+  valve_health_matrix: TwinValveHealthRow[];
+}
+
+export interface TwinUseCase {
+  id: string;
+  number: number;
+  title: string;
+  category: string;
+  unit_id: string;
+  unit_name: string;
+  status: TrustLevel;
+  badge_text: string;
+  problem_statement: string;
+  solution_summary: string;
+  kpis: {
+    label: string;
+    tag: string;
+    value: number | string;
+    unit: string;
+    target: string;
+  }[];
+  tag_table: TwinTagRow[];
+  chart_panels: TwinChartPanel[];
+  envelope: TwinUnitEnvelope;
+  recommendation: TwinUnitRecommendation;
+  decisions_needed: TwinDecisionCard[];
+  systems_ripple: {
+    yield_impact: string;
+    energy_impact: string;
+    regeneration_impact: string;
+    reliability_impact: string;
+  };
+  citations: Citation[];
+}
+
+export interface DownstreamCaseItem {
+  number: number;
+  title: string;
+  tier: "BOUNDARY_LINKED" | "ARCHITECTURE_READY" | "PLANT_WIDE_ROADMAP";
+  boundary_tag: string;
+  boundary_value: string;
+  integration_note: string;
+}
+
+export interface TwinState {
+  schema_version: string;
+  provenance: {
+    source: string;
+    batch_id: string;
+    run_id: string;
+    time_min: number;
+    advisory_only: boolean;
+  };
+  units: TwinUnit[];
+  system_loops: TwinSystemLoop[];
+  systems_ripple: TwinSystemsRipple;
+  pinn_residuals: TwinPinnResiduals;
+  use_cases: TwinUseCase[];
+  agent_fleet: TwinSentinelAgent[];
+  downstream_cases_summary: DownstreamCaseItem[];
+}
+
+

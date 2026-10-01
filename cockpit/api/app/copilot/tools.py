@@ -114,6 +114,17 @@ DECLS = [
      {"doc_id": ("STRING", "e.g. SOP-FRAC-003"), "section": ("STRING", "optional section id, e.g. 4.2")}, ["doc_id"]),
     ("find_similar_events", "Find simulated events of the same type across runs (event_code 1 crude change, 2 feed rate, 3 ROT, 4 feed temperature, 5 LCO SP move, 6 HN SP move, 7 condenser fouling) and related incident/shift documents.",
      {"event_code": ("INTEGER", "event code"), "description": ("STRING", "free text for document search")}, []),
+    ("get_systems_twin_state", "Evaluate the 6-unit Connected Refinery Digital Twin, 3 thermodynamic loops, PINN conservation residuals, and 4-domain Systems Ripple Matrix at the current or specified minute.",
+     {"run_id": ("STRING", "optional run_id"), "time_min": ("INTEGER", "optional simulated minute")}, []),
+    ("get_use_case_detail", "Evaluate a specific refinery optimisation use case (UC-01 through UC-11) with live KPIs, 3-zone operating envelope, recommendation, and 4-domain ripple impact.",
+     {"use_case_id": ("STRING", "UC-01 through UC-11, or 1 through 11"), "run_id": ("STRING", "optional run_id"), "time_min": ("INTEGER", "optional simulated minute")}, ["use_case_id"]),
+    ("get_scope_snapshot", "Compact snapshot of what is on screen: for a unit_id the unit's crude regime, residual/breach state (how we know it is off), recipe moves, open decisions and top tags; with unit_id omitted the whole-plant snapshot (crude slate declared vs detected, needs-attention lines, unit statuses).",
+     {"unit_id": ("STRING", "optional: unit_1_furnace, unit_2_riser, unit_3_regenerator, unit_4_fractionator, unit_5_condenser, unit_6_stabiliser"),
+      "run_id": ("STRING", "optional run_id"), "time_min": ("INTEGER", "optional simulated minute; default = page minute")}, []),
+    ("get_regime", "Crude regime recognised from the unit response (E1): regime_id R1-R4 with label, p_regime, novelty, transition_pct, declared vs detected, fingerprint and switch segments.",
+     {"run_id": ("STRING", "optional run_id"), "time_min": ("INTEGER", "optional simulated minute")}, []),
+    ("get_recipe", "Coordinated multi-set-point recipe for a unit (E4): moves (current -> recommended with limits), predicted yield % feed, fuel lb/s, power MW, coke and P(on-spec), or gate=WITHHELD with gate_reason. Never a single-knob trim.",
+     {"unit_id": ("STRING", "unit id, e.g. unit_4_fractionator"), "run_id": ("STRING", "optional run_id"), "time_min": ("INTEGER", "optional simulated minute")}, ["unit_id"]),
 ]
 
 
@@ -308,6 +319,57 @@ class ToolBox:
             for dt in ("INC", "SHIFT"):
                 docs += st.knowledge.search(q, dt, 3)
         return {"events": evs[:25], "n_events": len(evs), "documents": docs}
+
+    def t_get_systems_twin_state(self, run_id=None, time_min=None):
+        from ..twin import evaluate_twin_state
+        r = run_id if run_id in get_state().catalog.runs else self.run_id
+        tm = int(time_min) if time_min is not None else self.time_min
+        return evaluate_twin_state(run_id=r, time_min=tm)
+
+    def t_get_use_case_detail(self, use_case_id, run_id=None, time_min=None):
+        from ..twin import get_use_case_detail
+        r = run_id if run_id in get_state().catalog.runs else self.run_id
+        tm = int(time_min) if time_min is not None else self.time_min
+        return get_use_case_detail(use_case_id=str(use_case_id), run_id=r, time_min=tm)
+
+    # ---- Epic J (SDD-GEM-03): screen scope, regime, recipe
+    def _rt(self, run_id, time_min):
+        r = run_id if run_id in get_state().catalog.runs else self.run_id
+        tm = int(time_min) if time_min is not None else self.time_min
+        return r, tm
+
+    def t_get_scope_snapshot(self, unit_id=None, run_id=None, time_min=None):
+        from .chat import scope_snapshot_for
+        r, tm = self._rt(run_id, time_min)
+        uid = unit_id if unit_id else None
+        ctx = {"run_id": r, "time_min": tm, "page": f"/twin/unit/{uid}" if uid else "/twin",
+               "screen": {"level": "L1" if uid else "L0", "unit_id": uid}}
+        snap = scope_snapshot_for(ctx)
+        if not snap:
+            return {"error": "scope snapshot unavailable for this run/minute"}
+        try:
+            return {"screen": snap["screen"], "snapshot": json.loads(snap["snapshot_json"])}
+        except ValueError:
+            return {"screen": snap["screen"], "snapshot_text": snap["snapshot_json"]}
+
+    def t_get_regime(self, run_id=None, time_min=None):
+        r, tm = self._rt(run_id, time_min)
+        try:
+            from ..engines.regime import regime_at
+        except Exception as e:  # noqa: BLE001
+            return {"error": f"regime engine unavailable: {str(e)[:120]}"}
+        return regime_at(r, tm)
+
+    def t_get_recipe(self, unit_id, run_id=None, time_min=None):
+        r, tm = self._rt(run_id, time_min)
+        try:
+            from ..engines.recipe import recipe_for
+        except Exception as e:  # noqa: BLE001
+            return {"error": f"recipe engine unavailable: {str(e)[:120]}"}
+        out = recipe_for(r, tm, str(unit_id))
+        if isinstance(out, dict) and out.get("gate") == "WITHHELD":
+            out = {**out, "instruction": "Gate is WITHHELD: report gate_reason and do not propose any set-point move."}
+        return out
 
 
 def model_labels() -> str:

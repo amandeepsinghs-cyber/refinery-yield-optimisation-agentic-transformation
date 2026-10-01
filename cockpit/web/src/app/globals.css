@@ -2166,3 +2166,150 @@ button.cite {
     animation: none;
   }
 }
+
+/* ===== Epic J twin ===== */
+.twin-container {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  max-width: 1440px;
+  margin: 0 auto;
+  overflow-x: hidden;
+}
+.twin-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 16px;
+  box-shadow: none;
+  background-image: none;
+}
+.twin-pill-OK {
+  background: transparent;
+  color: #16a34a;
+  border: 1px solid #16a34a;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 12px;
+}
+.twin-pill-WATCH {
+  background: transparent;
+  color: #d97706;
+  border: 1px solid #d97706;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 12px;
+}
+.twin-pill-ACT {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 12px;
+}
+.twin-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 1280px) {
+  .twin-layout {
+    flex-direction: row;
+  }
+  .twin-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .twin-rail {
+    width: 320px;
+    flex-shrink: 0;
+  }
+}
+.twin-zone {
+  margin-bottom: 24px;
+}
+.twin-zone-header {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--borderStrong);
+  padding-bottom: 4px;
+}
+.twin-panel-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.twin-panel-highlight {
+  outline: 2px solid var(--accent);
+}
+
+/* Full fidelity adjustments */
+.twin-panel-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.twin-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 16px;
+  box-shadow: none;
+  background-image: none;
+}
+.pfd-block rect {
+  transition: stroke 0.15s ease;
+}
+.twin-pill-OK {
+  background: transparent;
+  color: #16a34a;
+  border: 1px solid #16a34a;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 11px;
+}
+.twin-pill-WATCH {
+  background: transparent;
+  color: #d97706;
+  border: 1px solid #d97706;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 11px;
+}
+.twin-pill-ACT {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 11px;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  margin-top: -6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: var(--borderStrong);
+  border-radius: 2px;
+}

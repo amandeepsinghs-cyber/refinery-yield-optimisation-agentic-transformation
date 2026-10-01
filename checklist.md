@@ -259,3 +259,111 @@ curl -s localhost:8010/api/health | python3 -m json.tool | grep -A3 knowledge
 - ☑ In-App Interactive 7-Scene Demo & UI/Graph Guide (`DemoGuideModal.tsx` + `ui_guide.py`)
 - ☑ Executable BDD acceptance suite (`cockpit/api/tests/test_bdd_acceptance.py` covering `BDD-1` through `BDD-17`)
 - ☐ *(Optional)* Cloud Run + IAP in `fcc-soft-sensor`, us-central1 (F17)
+
+
+---
+
+## v2 Expansion Checklist (Phases 9–12): Systems-Thinking Digital Twin & 11-Use-Case Catalogue (Epic I)
+
+> **Reference:** [`expansion_plan_recommendation.md`](docs/archive/expansion_plan_recommendation.md) · [`features.md` §8 (Epic I)](features.md) · [`SDD.md` §13](SDD.md) · [`BDD.md` §6 (`BDD-19..22`)](BDD.md) · [`build.md` Steps 9–12](build.md) · [`demoflow.md` Scenes 8–9](demoflow.md)
+
+| Phase | build.md | Scope | Unlocks | Status |
+|---|---|---|---|:-:|
+| **9 Systems Twin & Yield Suite (`v0.2`)** | Step 9 | `app/twin.py`, `GET /api/twin`, `RefineryTwinSchematic.tsx` (6-Unit PFD), 4-Domain Ripple Matrix, `UC-01`, `UC-02`, `UC-03`, `UC-11` | Scene 8 (Systems Twin) | ☑ |
+| **10 Regen, Heaters & Fouling (`v0.3`)** | Step 10 | `UC-04` (Regen Coke & Afterburn), `UC-05` & `UC-10` (Furnace $CO/O_2$ & Coking), `UC-07` (Condenser UA Fouling) | Scene 8 & 9 (Units 1, 3, 5) | ☑ |
+| **11 Energy, $\Delta P$, Equip & Catalogue Tab (`v0.4`)** | Step 11 | `UC-06` (Plan-Coupled Energy), `UC-08` (Hydraulic $\Delta P$), `UC-09` (`CAB`/`WGC`, Valves, `*_dup` Drift) + `UseCaseCatalogueView.tsx` (`#1–#11` & 23 Cases) | Scene 9 (Use-Case Explorer) | ☑ |
+| **12 PINN Panel, Gemini Live Tools & BDD (`v0.5`)** | Step 12 | `pinn_residuals` strip, Copilot/Live tools (`get_systems_twin_state`, `get_use_case_detail`), `test_twin_expansion.py` (`BDD-19..22`) | Full v2 Demo Sign-Off | ☑ |
+
+---
+
+### Phase 9: Unified Systems Twin Backend & 6-Unit Interactive Digital Twin Schematic (Step 9)
+
+- ☑ `cockpit/api/app/twin.py` created: reads 112-column simulator rows + model committee estimates + knowledge citations
+- ☑ `GET /api/twin?run_id=&time_min=` registered in `cockpit/api/app/routers/decision.py`
+- ☑ All 6 sequential physical units returned (`unit_1_furnace`, `unit_2_riser`, `unit_3_regenerator`, `unit_4_fractionator`, `unit_5_condenser`, `unit_6_stabiliser`) with 3-zone operating envelopes (`SDD-TWIN-01..03`)
+- ☑ 3 Closed-Loop System Couplings (`loop_hydrocarbon`, `loop_catalyst`, `loop_heat`) and 4-Domain Systems Ripple Matrix (`yield`, `energy`, `regeneration`, `reliability`) populated (`SDD-RIP-01`)
+- ☑ Live envelopes & recommendations for **UC-01** (`LCO_T98_F`), **UC-02** (Stabiliser $C_5$ recovery `c5_recovery_pct`), **UC-03** (LPG & `HN_T98_F` split), and **UC-11** (Multi-stream Soft Sensors)
+- ☑ `cockpit/web/src/components/twin/RefineryTwinSchematic.tsx` built: interactive 2D ISA-101 6-unit PFD with hydrocarbon, pumparound heat, and catalyst loops (`I1`)
+- ☑ `OverviewView.tsx` updated with `RefineryTwinSchematic`, Unit/Use-Case selector, and 4-Domain Systems Ripple Matrix (`I2`)
+
+---
+
+### Phase 10: Catalyst Regeneration, Fired Heaters & Exchanger UA Fouling (Step 10)
+
+- ☑ **UC-04 (Reactor Regeneration & Cyclone Afterburn — `I7`):** `Treg_F`, `Tcyc_F`, `dT_cyc_reg_F = Tcyc_F - Treg_F`, `C_spent_cat`, `C_regen_cat`, `F_coke`, `standpipe_level`; cites `[IOW-002]` & `[SOP-FCC-010]`
+- ☑ **UC-05 & UC-10 (Fired Heater $CO/O_2$ Combustion & Tube Coking — `I8`):** `fluegas_O2_pct`, `fluegas_CO_ppm`, `F5_fuel`, `T3_furnace_F - T2_preheat_F`; cites `[IOW-001]`
+- ☑ **UC-07 (Overhead Condenser & Exchanger UA Fouling — `I10`):** `dist_condenser_eff` vs clean baseline (`0.900`), `MV_cw_flow`, `MV_PA1..MV_PA4`; cites `[SOP-FCC-012]`
+
+---
+
+### Phase 11: Plan-Coupled Energy, Hydraulic $\Delta P$, Rotating Equipment, Sensor Drift & Use-Case Explorer (Step 11)
+
+- ☑ **UC-06 (Plan-Coupled Complex Energy Dashboard — `I9`):** `F5_fuel` + `power_CAB` + `power_WGC` minus `MV_PA1..MV_PA4` heat recovery evaluated against active Plan cutpoints (`SP_LCO_T98`, `SP_HN_T98`)
+- ☑ **UC-08 (Hydraulic & Filter/Coalescer $\Delta P / F^2$ Breakthrough — `I11`):** `dP_reactor_frac` normalized resistance cited to `[SOP-FCC-010]`
+- ☑ **UC-09 (Rotating Equipment, Valve Stiction & Dual-Sensor Drift Matrix — `I12`):** `power_CAB`, `power_WGC`, `valve_V8..V11`, and 5-channel `|T - T_dup|` / `|P - P_dup|` matrix cited to `[WO-2025-118]` and `[MOC-2025-041]`
+- ☑ `cockpit/web/src/components/views/UseCaseCatalogueView.tsx` built (`I4`): explicit use-case-by-use-case explorer for `UC-01`..`UC-11` + 23 downstream cases + Dual-Sensor Drift & Valve Stiction table
+- ☑ Mode switcher / sub-tab added in `OverviewView.tsx`, `cockpit/web/src/app/decision/use-cases/page.tsx` & `cockpit/web/src/lib/nav.ts` (`Overview & Twin` ↔ `Use-Case Catalogue` ↔ `Decisions` ↔ `Quality`)
+
+---
+
+### Phase 12: PINN Conservation Panel, Gemini Live Systems Tools & BDD Verification (Step 12)
+
+- ☑ `pinn_residuals` strip (`mass_balance_err_pct`, First-Law enthalpy balance, Tray boiling monotonicity `T_tray01 <= ... <= T_tray20`, equipment residuals) rendered in `OverviewView.tsx` & `UseCaseCatalogueView.tsx` (`I3`)
+- ☑ Read-only Copilot & Gemini Live tools `get_systems_twin_state` and `get_use_case_detail` added in `cockpit/api/app/copilot/tools.py` & `adk_agent.py` (`SDD-CAT-02`, `BDD-22`)
+- ☑ `cockpit/api/tests/test_twin_expansion.py` passing (`BDD-19`, `BDD-20`, `BDD-21`, `BDD-22`, plus `SDD-NFR-11` zero-currency check across all `/api/twin` payloads)
+- ☑ All backend pytest tests (`213 passed`) and frontend tests (`npx tsc --noEmit && npx vitest run` — `55 passed`) pass with 0 errors
+
+---
+
+### Phase 13: Full Unit & Use-Case Data Workspaces, Engineered SVG PFD, Actionable Decisions & Proactive Multilingual Sentinels (Step 13)
+
+- ☑ `cockpit/api/app/twin.py` upgraded with per-unit and per-use-case `tag_table` (all relevant tags with `role`, `current`, `window_min`, `window_mean`, `window_max`, `limit_or_sp`), `chart_panels` (2–3 multi-trace time-series chart groups), and `decisions_needed` (`SDD-TWIN-05`, `SDD-CAT-03`)
+- ☑ `POST /api/twin/decision` added in `cockpit/api/app/routers/decision.py` to record `accepted` / `declined` decisions for any unit (`Units 1–6`) or use case (`UC-01–UC-11`) in SQLite `decisions` & `audit` tables (`SDD-TWIN-06`)
+- ☑ `agent_fleet` (1 Shift Supervisor Orchestrator + 6 Domain Sentinel Agents) added to `GET /api/twin` with proactive early warnings and real-time briefings in **English (`en`)**, **Hinglish (`hinglish`)**, and **Hindi (`hi`)** (`SDD-AGENT-01..03`)
+- ☑ `RefineryTwinSchematic.tsx` upgraded with: (a) **Interactive 2D ISA-101 SVG Process Flowsheet** (vessels, pipes, loops, `#1–#11` pins), (b) **Proactive Multi-Agent Sentinel Bar (`EN` / `Hinglish` / `हिंदी` + Voice Readout)**, and (c) **Full Unit Digital Twin Workspace** (live Plotly time-series charts, complete tag table, and working `Accept`/`Decline` decision buttons)
+- ☑ `UseCaseCatalogueView.tsx` upgraded with Left-Rail System Tree + **Full Use-Case Workspace** (live Plotly time-series charts for that use case, complete tag table with shift `min`/`mean`/`max`, trilingual agent briefing, and working `Accept`/`Decline` decision buttons)
+- ☑ `BDD-23` verified in `cockpit/api/tests/test_twin_expansion.py` with 100% backend and frontend test pass rate
+
+
+
+
+## v3 Checklist (Phases 14–19): Crude-Adaptive Engines & L0/L1 Screens (Epic J)
+
+> Plan: [BUILD_PLAN_v3.md](BUILD_PLAN_v3.md) · Specs: SDD §1A, §14 · Acceptance: BDD-24..28
+
+### Phase 14: Regime data & staging (Step 14 · J1 · BDD-24)
+- ☑ SDD §1A problem re-anchor + §14 engine/screen specs; BDD-24..28; features Epic J; build Steps 14–19 (P0)
+- ☑ `cockpit/api/app/regimes.py` — R1–R4 API bands, labels, `regime_for_api`, `regime_segments`
+- ☑ `sim_octave/stage_regimes.py` — `_staged/regimes.csv`, `_staged/lab_results.csv` for `full_v1` (54 runs, 50 switches, 98 labs)
+- ☑ `sim_octave/scenario.m` `crude_campaign` + `run_campaign_batch.sh` (generation deferred until `full_v1` completes)
+- ☑ `tests/test_regimes.py` green; financial-term scan green
+
+### Phase 15: E1 Regime + E3 Detection (Step 15 · J2, J4 · BDD-24, BDD-26)
+- ☐ `app/engines/regime.py` — fingerprint, posterior, novelty, `transition_pct`, `declared_vs_detected`; `GET /api/regime`; `crude_slate` in `/api/twin`
+- ☐ `app/engines/detect.py` — residual ±3σ, CUSUM, change-point, MV contribution; trilingual briefings
+- ☐ SQLite `agent_events`; `GET /api/agents/events`; SSE `GET /api/agents/stream`
+- ☐ `GET /api/unit/{unit_id}/workbench` — four zones (Data · Analysis · Models · Decisions) for all 6 units; `crude_slate` / `needs_attention` / `timeline` in `/api/twin`
+- ☐ Held-out acceptance: regime within ≤ 45 min on ≥ 90 % switches; U4 breach before next lab on ≥ 80 %
+
+### Phase 16: E2 Adaptation + E4 Recipe (Step 16 · J3, J5 · BDD-25, BDD-27) — critical path
+- ☐ `app/engines/adapt.py` — per-regime weights, physics weight vs novelty, bias reset; `GET /api/adaptation`
+- ☐ `app/engines/surrogates.py` + `train_surrogates.py` — 10 outputs × 11 inputs per regime, model cards
+- ☐ `app/engines/recipe.py` — objective, constraints, search, gate; `GET /api/recipe`; `recipe_id` on decisions
+- ☐ `config.yaml` `recipe:` and `iow:` sections
+- ☐ `eval_recipe.py` replay: recipe ≥ hold on priority yield at equal/better P(on-spec)
+
+### Phase 17: Agents on the event bus (Step 17 · J4)
+- ☐ Sentinels emit E3 events and draft E4 recipes; Systems Agent consequence lines
+- ☐ ADK extras (`get_scope_snapshot`, `get_regime`, `get_recipe`) in `ALL_TOOLS`; `root_agent.tools` still 8
+
+### Phase 18: Screens (Step 18 · J6, J7 · BDD-28)
+- ☐ L0 `/twin` — PFD, crude-slate banner, KPI vs plan, counts, "Needs attention", timeline; zero charts
+- ☐ L1 `/twin/unit/[unit_id]` — U4 first: I/O strip, chart stack on one cursor, event ribbon, right rail
+- ☐ U1, U3, U6, U5, U2 workbenches; `?uc=` entry
+- ☐ Light default + persisted dark toggle; named trace palette; no grey curves; Phase-13 catalogue retired from nav
+- ☐ Playwright `e2e/twin.spec.ts` green
+
+### Phase 19: Gemini scope, Hindi-first, director script (Step 19 · J8 · BDD-28)
+- ☐ Screen-scoped Gemini: `context.screen` → server-side scope snapshot (plant on L0, unit on L1); can still answer about the whole refinery; tools `get_scope_snapshot` / `get_regime` / `get_recipe` in `ALL_TOOLS` (canonical 8 unchanged)
+- ☐ Screen-specific Hindi-first suggestions; screen chip in the Copilot drawer; Live voice `hi-IN`
+- ☐ `demoflow.md` 7-scene crude-switch script with run / minutes

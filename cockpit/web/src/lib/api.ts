@@ -16,6 +16,7 @@ import type {
   RunInfo,
   RunTimeseries,
   TagInfo,
+  TwinState,
 } from "./types";
 
 /** Error raised for non-2xx responses; carries the contract `{error, detail}` body. */
@@ -191,6 +192,15 @@ export const useRecommendations = (runId: string | null, status?: string, timeMi
     placeholderData: keepPreviousData,
   });
 
+export const useTwin = (runId: string | null, timeMin?: number | null) =>
+  useQuery({
+    queryKey: ["twin", runId, timeMin ?? null],
+    queryFn: () => fetchJson<TwinState>(`/api/twin${qs({ run_id: runId, time_min: timeMin })}`),
+    enabled: !!runId,
+    placeholderData: keepPreviousData,
+    ...STATIC,
+  });
+
 export const useAudit = (q: string) =>
   useQuery({
     queryKey: ["audit", q],
@@ -241,6 +251,30 @@ export async function postDecision(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ decision, user, note }),
+  });
+}
+
+export async function postTwinDecision(
+  recId: string,
+  decision: "accepted" | "declined",
+  user: string,
+  note = "",
+  runId?: string | null,
+  timeMin?: number | null,
+  recipeId?: string,
+): Promise<{ ok: boolean; rec_id: string; decision: string; status: string; audit_id: number; note: string }> {
+  return fetchJson("/api/twin/decision", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      rec_id: recId,
+      recipe_id: recipeId,
+      decision,
+      user,
+      note,
+      run_id: runId ?? null,
+      time_min: timeMin ?? null,
+    }),
   });
 }
 

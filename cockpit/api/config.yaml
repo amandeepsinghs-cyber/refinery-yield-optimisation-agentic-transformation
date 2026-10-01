@@ -90,3 +90,20 @@ gemini:
   voice: Aoede
 knowledge: {min_score_embedding: 0.35, min_score_bm25: 0.35}
 cors_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
+recipe:
+  w_LCO: 1.0
+  w_HN: 0.8
+  w_LPG: 0.4
+  p_F5_fuel: 0.1
+  p_power: 0.1
+  p_coke: 0.1
+iow:
+  SP_T_riser_ROT_F: [955, 985]
+  SP_T_preheat_F: [590, 640]
+  MV_PA1: [20, 60]
+  MV_PA2: [20, 60]
+  MV_PA3: [20, 60]
+  MV_PA4: [20, 60]
+  MV_reflux_ratio: [0.5, 1.2]
+  SP_LCO_T98: [735, 765]
+  SP_HN_T98: [515, 540]

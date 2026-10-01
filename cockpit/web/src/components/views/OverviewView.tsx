@@ -9,6 +9,7 @@ import {
   useOverview,
   useRecommendations,
   useRuns,
+  useTwin,
 } from "@/lib/api";
 import { clock, dataSpan, num, pct, propLabel, signed, spanLabel } from "@/lib/format";
 import { parseData, streamSSE } from "@/lib/sse";
@@ -16,6 +17,8 @@ import { useCockpit } from "@/lib/store";
 import { MODEL_ORDER, STATUS, modelColor, modelLabel } from "@/lib/theme";
 import { FanChart } from "@/components/charts/EstimateCharts";
 import { DistributionOverlay } from "@/components/views/ConfidenceView";
+import RefineryTwinSchematic from "@/components/twin/RefineryTwinSchematic";
+import UseCaseCatalogueView from "@/components/views/UseCaseCatalogueView";
 import Markdown from "@/components/copilot/Markdown";
 import { usePageContext } from "@/components/copilot/useCopilotChat";
 import {
@@ -1155,9 +1158,13 @@ export default function OverviewView() {
   const run = runs.data?.find((r) => r.run_id === runId);
   const [windowHours, setWindowHours] = useState<3 | 6 | 12 | 24>(12);
   const [highlightMode, setHighlightMode] = useState<"none" | "align" | "diverge">("none");
+  const [viewMode, setViewMode] = useState<"twin" | "catalogue">("twin");
+  const [selectedUnitId, setSelectedUnitId] = useState<string>("unit_4_fractionator");
+  const [selectedUseCaseId, setSelectedUseCaseId] = useState<string>("UC-01");
   const end = timeMin ?? run?.n_minutes ?? null;
   const from = end !== null ? Math.max(0, end - windowHours * 60) : null;
   const ov = useOverview(runId, property, end);
+  const twin = useTwin(runId, end);
   const est = useEstimatesTimeseries(runId, property, { from, to: end }, 1000, end !== null);
   const fullEst = useEstimatesTimeseries(runId, property, {}, 400, !!runId);
   const cur = useEstimate(runId, property, end);
@@ -1176,17 +1183,35 @@ export default function OverviewView() {
   return (
     <div className="page">
       <PageHeader
-        title="Decision Overview"
-        question="Is the soft sensor accurate and trustworthy right now, and does anything need a decision?"
+        title="Decision Overview & Connected Refinery Digital Twin"
+        question="Is the connected refinery operating inside its optimal yield, energy, and integrity envelope right now, and what needs a decision?"
         actions={
-          <button
-            type="button"
-            className={`btn ${showReport ? "primary" : ""}`}
-            onClick={() => setShowReport((s) => !s)}
-            disabled={!runId}
-          >
-            {showReport ? "Hide Demo Report" : "Export Demo Report (F14)"}
-          </button>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <div className="seg" role="group" aria-label="Switch between Systems Digital Twin and Use-Case Catalogue">
+              <button
+                type="button"
+                aria-pressed={viewMode === "twin"}
+                onClick={() => setViewMode("twin")}
+              >
+                🌐 Systems Digital Twin (6 Units)
+              </button>
+              <button
+                type="button"
+                aria-pressed={viewMode === "catalogue"}
+                onClick={() => setViewMode("catalogue")}
+              >
+                📋 Use-Case Catalogue (#1–#11 + 23)
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`btn ${showReport ? "primary" : ""}`}
+              onClick={() => setShowReport((s) => !s)}
+              disabled={!runId}
+            >
+              {showReport ? "Hide Demo Report" : "Export Demo Report (F14)"}
+            </button>
+          </div>
         }
       />
       {gateMsg ? (
@@ -1243,7 +1268,29 @@ export default function OverviewView() {
             highlightMode={highlightMode}
             onChangeHighlight={setHighlightMode}
           />
-          <div className="grid">
+          {viewMode === "catalogue" && twin.data ? (
+            <UseCaseCatalogueView
+              twin={twin.data}
+              initialUseCaseId={selectedUseCaseId}
+              onHighlightUnitOnTwin={(uid) => {
+                setSelectedUnitId(uid);
+                setViewMode("twin");
+              }}
+            />
+          ) : (
+            <>
+              {twin.data ? (
+                <RefineryTwinSchematic
+                  twin={twin.data}
+                  selectedUnitId={selectedUnitId}
+                  onSelectUnit={setSelectedUnitId}
+                  onOpenUseCase={(ucId) => {
+                    setSelectedUseCaseId(ucId);
+                    setViewMode("catalogue");
+                  }}
+                />
+              ) : null}
+              <div className="grid">
             <div className="s-8 s-md-12 stack" style={{ gap: 16 }}>
               <Card
                 title={`${propLabel(property)} — ${est.data?.time_min?.length ? spanLabel(dataSpan(est.data.time_min)) : "estimates"}`}
@@ -1334,6 +1381,8 @@ export default function OverviewView() {
               <PeriodSummary onSummaryChange={setPeriodNarrative} />
             </div>
           </div>
+            </>
+          )}
         </>
       )}
     </div>

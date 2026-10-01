@@ -15,7 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .copilot.chat import chat_stream
 from .copilot.live import live_ws, probe_all
-from .routers import decision, knowledge, meta, modelling, timeseries
+from .routers import agents, decision, knowledge, meta, modelling, recipe, regime, timeseries, twin
 from .state import get_state
 
 log = logging.getLogger("cockpit")
@@ -23,7 +23,9 @@ app = FastAPI(title="FCC Soft-Sensor Decision Cockpit API", version="1.0",
               description="Technical demo on simulated data. Advisory only: no write path to any control system.")
 app.add_middleware(CORSMiddleware, allow_origins=get_state().s["cors_origins"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
-for r in (meta.router, timeseries.router, modelling.router, decision.router, knowledge.router):
+ROUTERS = (meta.router, timeseries.router, modelling.router, decision.router, knowledge.router,  # soft-sensor (v1/v2)
+           twin.router, regime.router, agents.router, recipe.router)                              # crude-adaptive twin (v3)
+for r in ROUTERS:
     app.include_router(r)
 
 

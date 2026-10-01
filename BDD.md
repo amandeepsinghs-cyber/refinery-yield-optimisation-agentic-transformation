@@ -887,3 +887,367 @@ Every `@demo` scenario gets its data from the simulator. None uses hand-made dat
 | Sensor-fault reference | Copies of simulated `full_v1` runs with injected sensor faults; the PCA method is validated against the public ML-PSE FCCU dataset (github.com/ML-PSE/FCCU-Dataset, MIT); not stored locally — re-clone if needed | PCA novelty cross-check |
 
 **Layout:** `tests/features/bdd_XX_*.feature` (copied from above) with step definitions in `tests/steps/` (pytest-bdd), and `cockpit/e2e/*.spec.ts` (Playwright) for the `@ui` scenarios.
+
+
+---
+
+## 6. v2 Expansion Features: Systems-Thinking Digital Twin & 11-Use-Case Catalogue (`BDD-19` to `BDD-22`)
+
+### BDD-19: 6-Unit Connected Refinery Digital Twin & Systems Ripple Matrix `@twin @ui` (NEW)
+
+```gherkin
+Feature: Interactive 6-unit sequential process digital twin with systems-thinking ripple analysis
+  As a plant head or chief process engineer
+  I want to see all 6 sequential refinery units connected by hydrocarbon, heat-recovery and catalyst loops
+  So that I can evaluate how any yield, energy or reliability action affects the whole refinery system
+
+  @twin @ui @demo
+  Scenario: All 6 sequential physical units render with live simulated telemetry
+    Given simulated run "random_s140" at minute 125
+    When the user opens the Systems Twin view on /decision
+    Then the 6 sequential units are displayed in process order:
+      | unit_id            | label                                       | primary_tags                               |
+      | unit_1_furnace     | Preheat Furnace & Flue-Gas Combustion       | T3_furnace_F, T2_preheat_F, fluegas_O2_pct |
+      | unit_2_riser       | Riser Reactor & Transfer Hydraulics         | Tr_riser_out_F, conversion_pct, dP_reactor_frac |
+      | unit_3_regenerator | Catalyst Regenerator & Main Air Blower      | Treg_F, dT_cyc_reg_F, C_spent_cat, power_CAB |
+      | unit_4_fractionator| 20-Tray Main Fractionator & Pumparounds     | LCO_T98_F, HN_T98_F, MV_T17_sp, MV_PA2     |
+      | unit_5_condenser   | Overhead Condenser & Wet Gas Compressor     | dist_condenser_eff, MV_cw_flow, power_WGC  |
+      | unit_6_stabiliser  | Stabiliser Overhead & Light-Ends Gas Plant  | eff_C5, eff_C4, SP_T_overhead, prod_LPG    |
+    And every value matches the simulated run row at minute 125
+    And no currency, ROI, NPV or payback figure is displayed anywhere
+
+  @twin @demo
+  Scenario: Every recommendation includes the 4-domain systems-thinking ripple matrix
+    Given a recommendation or use-case evaluation at minute 125
+    When GET /api/twin is called
+    Then the response includes a 4-domain systems_ripple list covering:
+      | domain       | required_technical_metrics                                        |
+      | yield        | LCO_T98_F, HN_T98_F, c5_recovery_pct, lco_yield_shift_pct         |
+      | energy       | F5_fuel, MV_PA1..4 pumparound heat recovery, fluegas_O2_pct       |
+      | regeneration | Treg_F, dT_cyc_reg_F cyclone afterburn margin, C_regen_cat        |
+      | reliability  | power_CAB, power_WGC, dP_reactor_frac, max_dup_sensor_delta_F     |
+```
+
+### BDD-20: PINN Conservation Laws & Equipment Degradation Residuals `@pinn` (NEW)
+
+```gherkin
+Feature: Physics-Informed Neural Network (PINN) conservation laws and clean-twin equipment residuals
+  As a process engineer or data scientist
+  I want mass balance, enthalpy balance, tray monotonicity and equipment fouling/drift residuals verified every minute
+  So that black-box ML predictions never violate physical laws or mask mechanical degradation
+
+  @pinn @demo
+  Scenario: PINN conservation checks pass on normal steady operation
+    Given simulated run "random_s140" at a steady minute
+    When GET /api/twin is evaluated
+    Then pinn_residuals.mass_balance_err_pct is within 0.5%
+    And pinn_residuals.tray_monotonicity_valid is true (T_tray01_F >= T_tray06_F >= T_tray13_F >= T_tray20_F)
+    And pinn_residuals.boiling_gap_valid is true (HN_T98_F <= LCO_T98_F - 50 °F)
+
+  @pinn @demo
+  Scenario: Condenser fouling residual isolates heat exchanger degradation and cites WO-24031 and IOW-HX-03
+    Given a simulated minute where dist_condenser_eff drops below 0.885
+    When the PINN equipment residual engine evaluates Unit 5 (Overhead Condenser)
+    Then Use Case #7 (UC-07) status is WATCH or FAULT
+    And the recommendation advises shifting heat removal duty to pumparounds PA1/PA2 and scheduling bundle cleaning
+    And the citations include IOW-HX-03 and WO-24031
+
+  @pinn @demo
+  Scenario: Redundant sensor drift residual isolates thermocouple drift from process upsets
+    Given simulated run "random_s152" (or an injected sensor drift window where |T_tray13_F - truth| or |T - T_dup| exceeds 2.0 °F)
+    When the PINN sensor integrity engine evaluates Use Case #9 (UC-09)
+    Then the sensor drift channel is flagged
+    And the recommendation cites SOP-APC-008, WO-24058 or INC-0733
+```
+
+### BDD-21: Explicit 11-Use-Case Catalogue Explorer `@catalogue @ui` (NEW)
+
+```gherkin
+Feature: Use-Case-by-Use-Case Explorer covering all 11 core refinery requirements
+  As a refinery plant head
+  I want to step through all 11 requirements from refinery_optimisation.md one by one
+  So that I can see how the same platform solves Yield, Regeneration, Energy and Reliability
+
+  @catalogue @ui @demo
+  Scenario: All 11 core use cases are returned by the API and selectable in the UI
+    When GET /api/twin is called for the active simulated run
+    Then use_cases contains 11 items with IDs "UC-01" through "UC-11":
+      | id    | unit_id            | title_contains                                      |
+      | UC-01 | unit_4_fractionator| FCC / RFCC / INDMAX Product-Quality Inferential     |
+      | UC-02 | unit_6_stabiliser  | Stabiliser-Tower Overhead C5 Recovery               |
+      | UC-03 | unit_6_stabiliser  | LPG / Naphtha Balance & Distillation Split          |
+      | UC-04 | unit_3_regenerator | Reactor Regeneration, Coke Burn & Afterburn         |
+      | UC-05 | unit_1_furnace     | Fired Heaters / Furnaces CO & O2 Combustion         |
+      | UC-06 | unit_4_fractionator| Plan-Coupled Complex Energy & Pumparound Management |
+      | UC-07 | unit_5_condenser   | Overhead Condenser & Exchanger UA Fouling Health    |
+      | UC-08 | unit_2_riser       | Hydraulic & Filter/Coalescer dP Breakthrough        |
+      | UC-09 | unit_3_regenerator | Rotating Equipment (CAB/WGC), Valves & Sensor Drift |
+      | UC-10 | unit_1_furnace     | Preheat Furnace Tube Coking & Hydraulic Constraint  |
+      | UC-11 | unit_4_fractionator| Online Product Soft Sensors (LCO T98 & HN T98)      |
+    And every use case includes a 3-zone operating envelope, 4 live technical KPIs, a gated recommendation, a 4-domain systems_ripple summary, and resolved knowledge corpus citations
+
+  @catalogue @ui @demo
+  Scenario: Switching between Systems Twin mode and Use-Case Catalogue mode preserves run and minute context
+    Given the user is viewing simulated run "random_s140" at minute 455
+    When the user switches from "Systems Twin" mode to "Use-Case Catalogue (#1–#11)" mode and selects "UC-02"
+    Then the Stabiliser C5 Recovery 3-zone operating envelope, eff_C5 and eff_C4 flows, Systems Ripple Matrix and [SOP-FRAC-002] citation are displayed for minute 455
+```
+
+### BDD-22: Systems-Thinking Copilot & Gemini Live Multi-Unit Reasoning `@copilot @voice` (NEW)
+
+```gherkin
+Feature: Text and Voice Copilot answer cross-unit systems-thinking and use-case questions
+  As an executive or operator
+  I want to ask the Copilot how a move on one unit ripples across the rest of the refinery
+  So that I can make holistic plant decisions by text or voice
+
+  @copilot @voice @demo
+  Scenario: Copilot explains cross-unit systems ripple using get_systems_twin_state
+    Given simulated run "random_s140" at minute 125
+    When the user asks "How does optimising LCO cutpoint and Stabiliser C5 recovery affect our energy balance, regenerator afterburn, and compressor load?"
+    Then the Copilot calls get_systems_twin_state or get_use_case_detail
+    And the answer reports technical values for yield, pumparound/furnace energy, regenerator dT_cyc_reg_F and CAB/WGC compressor load with cited SOP/IOW/WO references
+```
+
+### BDD-23: Full Unit/Use-Case Workspaces, Actionable Decisions & Proactive Multilingual Multi-Agent Sentinels `@twin @agents @voice` (NEW)
+
+```gherkin
+Feature: Complete unit and use-case data workspaces, actionable decisions, and proactive English/Hinglish/Hindi multi-agent sentinels
+  As a plant head or shift superintendent
+  I want clicking any of the 6 units or 11 use cases to load all relevant time-series charts, full tag tables, and actionable Accept/Decline decisions, backed by 6 domain sentinel agents and a supervisor speaking English, Hinglish, or Hindi
+  So that every section is a complete operational workspace and anomalies are proactively briefed in advance
+
+  @twin @ui @demo
+  Scenario: Every unit and use case exposes complete tag tables, chart panel definitions, and actionable decisions
+    When GET /api/twin is called for the active simulated run at minute 60
+    Then every unit in units (unit_1_furnace through unit_6_stabiliser) includes:
+      | field            | requirement                                                                 |
+      | tag_table        | >= 8 relevant tags with role, current, window_min, window_mean, window_max  |
+      | chart_panels     | >= 2 multi-trace time-series chart definitions for that unit                |
+      | decisions_needed | >= 1 recommendation card with rec_id, action, sp_before, sp_after, status   |
+    And every use case in use_cases (UC-01 through UC-11) includes tag_table, chart_panels, and decisions_needed
+    And posting an "accepted" decision to POST /api/twin/decision records an audit entry and updates the recommendation status to "ACCEPTED"
+
+  @agents @voice @demo
+  Scenario: Proactive Multi-Agent Sentinel Fleet provides early warnings and decisions in English, Hinglish, and Hindi
+    When GET /api/twin is called for the active simulated run at minute 60
+    Then agent_fleet contains 7 agents (agent_supervisor plus 6 unit/domain sentinels)
+    And each agent includes status, proactive_alert, and briefings in "en", "hinglish", and "hi"
+    And all briefings contain exact technical tag values and zero financial or currency terms
+```
+
+
+## 7. v3 Features: Crude-Adaptive Engines & L0/L1 Screens (`BDD-24` to `BDD-28`, Epic J)
+
+> Problem statement: SDD §1A. Specifications: SDD §14. Data: `sim_octave/data/full_v1` (50 labelled crude switches) and `_staged/regimes.csv`.
+
+### BDD-24: Crude Regime Recognition from Unit Response (E1) `@regime @data` (NEW)
+
+```gherkin
+Feature: Recognise the active crude regime from what the unit actually sees
+  As a shift superintendent
+  I want the twin to tell me which crude family the unit is really running on, and how sure it is
+  So that I stop trusting a model that was fitted on the previous crude
+
+  @data
+  Scenario: Regime staging labels every crude segment in a batch
+    Given sim_octave/stage_regimes.py is run on batch full_v1
+    Then _staged/regimes.csv contains one row per (run_id, crude_id) with regime_id in {R1, R2, R3, R4}
+    And every row with crude_id > 1 has transition_start_min < transition_end_min = transition_start_min + 60
+    And _staged/lab_results.csv contains one row per lab_sample minute with LCO_T98_F, HN_T98_F and regime_id
+    And no run folder scan treats _staged files as simulated runs
+
+  @regime @demo
+  Scenario: Detected regime follows the switch within 45 minutes
+    Given a held-out run (seed >= 140) with a crude switch from R3 to R1 ending at minute T
+    When GET /api/regime is called at minute T + 45
+    Then regime_id is "R1" and p_regime["R1"] >= 0.6
+    And declared_vs_detected is "match"
+    And novelty is between 0 and 1
+
+  @regime
+  Scenario: During the ramp the twin reports lagging detection, not a false match
+    Given the same run at a minute inside the 60-minute API ramp
+    When GET /api/regime is called
+    Then transition_pct is between 1 and 99
+    And declared_vs_detected is "lagging" or "match"
+    And the response contains the fingerprint fields coke_per_feed, riser_dT_F, fuel_per_feed, Treg_F, conversion_pct, tray_dT_F
+
+  @regime @ui
+  Scenario: Level 0 shows the crude-slate banner without any chart
+    When the operator opens /twin
+    Then a banner shows declared API, detected regime label, transition percent and novelty
+    And the page contains zero Plotly charts and zero model member outputs
+```
+
+### BDD-25: Regime-Aware Model Adaptation (E2) `@models @regime` (NEW)
+
+```gherkin
+Feature: Adapt the model committee to the detected crude regime
+  As a process engineer
+  I want the committee weights and the physics share to change with the regime and novelty
+  So that predictions stay trustworthy through a crude switch, not only after the next lab
+
+  @models
+  Scenario: Per-regime committee weights exist for every member
+    When GET /api/adaptation is called for the active run
+    Then weights lists ridge, hybrid, pinn and gpr, each with by_regime for R1..R4
+    And the live weights sum to 1 within 1e-6
+
+  @models @demo
+  Scenario: Physics weight rises with novelty
+    Given two minutes of the same run with novelty 0.1 and novelty 0.8
+    When GET /api/adaptation is called for both
+    Then physics_weight at novelty 0.8 is greater than physics_weight at novelty 0.1
+    And reason names the regime label and the novelty value
+
+  @models
+  Scenario: Online bias memory resets at a detected switch
+    Given a detected transition_end_min T
+    When the estimate at minute T + 1 is inspected
+    Then the bias term equals 0 and bias_var equals its prior
+```
+
+### BDD-26: "How We Know It Is Off" — Residual, CUSUM & Root Cause (E3) `@detection @agents` (NEW)
+
+```gherkin
+Feature: Detect the moment a unit leaves its expected behaviour and say why
+  As an operator
+  I want a residual chart with a ±3σ band, a CUSUM change-point marker and a ranked root cause
+  So that I act before the next lab result instead of after it
+
+  @detection @demo
+  Scenario: Quality breach is detected before the next lab sample
+    Given a held-out run whose post-switch LCO_T98 settles above the plan band
+    When the detection engine replays the run
+    Then an event of kind "breach" or "cusum" for unit_4_fractionator opens at a minute earlier than the next lab_sample minute
+    And the event lists residual, sigma and at least two root_cause entries with tag and contrib
+
+  @detection
+  Scenario: Event record is complete and trilingual
+    When GET /api/agents/events is called for the run
+    Then each event contains event_id, run_id, time_min, unit_id, tag, kind, severity, residual, sigma, root_cause, briefing and next_lab_min
+    And briefing has keys en, hinglish and hi with non-empty text containing the tag value
+    And no event text matches the financial-term pattern
+
+  @detection @ui
+  Scenario: Residual chart carries the breach marker on the shared cursor
+    When the operator opens /twin/unit/unit_4_fractionator
+    Then the residual panel shows a ±3σ band, a CUSUM trace and a marker at the first breach minute
+    And moving the global cursor updates every panel in the stack to the same minute
+
+  @agents
+  Scenario: Events stream live
+    When a client subscribes to GET /api/agents/stream
+    Then each new event is delivered as an SSE message within 2 seconds of being recorded
+```
+
+### BDD-27: Coordinated Multi-Set-Point Recipe (E4) `@recipe @decision` (NEW)
+
+```gherkin
+Feature: Prescribe the coordinated set-point recipe that restores plan
+  As a plant head
+  I want one recipe with several coordinated moves, the expected yield, fuel, power and coke effect, and the on-spec probability
+  So that the twin optimises the unit instead of trimming one knob
+
+  @recipe @demo
+  Scenario: Recipe is multi-move and quantified in engineering units
+    Given a held-out run 90 minutes after an R3 to R1 switch
+    When GET /api/recipe is called for unit_4_fractionator
+    Then moves contains at least 2 entries, each with sp_tag, current, recommended, delta and unit
+    And d_yield_pct_feed has keys LCO, HN, LN, LPG
+    And d_fuel_lb_s, d_power_MW and d_coke_pct are numbers
+    And p_on_spec.LCO >= 0.95 and p_on_spec.HN >= 0.95
+    And the response contains no currency symbol or financial term
+
+  @recipe @gate
+  Scenario: Recipe is withheld when the committee spread is too wide or novelty is high
+    Given a minute where the spread gate is WITHHELD or novelty > 0.7
+    When GET /api/recipe is called
+    Then gate is "WITHHELD" and gate_reason names the cause
+    And moves is empty
+
+  @recipe
+  Scenario: Every move respects IOW and step limits
+    When any recipe is returned
+    Then for each move recommended is within [limit_lo, limit_hi]
+    And |delta| is within the per-move step limit from config.yaml
+
+  @recipe @decision
+  Scenario: Replaying the recipe beats holding set-points
+    Given the surrogate replay harness on held-out switches
+    When the recipe set-points are applied versus holding the current set-points
+    Then priority yield (LCO + 0.8 HN + 0.4 LPG, % feed) is greater or equal with p_on_spec not lower
+
+  @decision
+  Scenario: Accepting a recipe is audited
+    When the operator posts "accepted" with the recipe_id to POST /api/twin/decision
+    Then an audit row exists with the recipe_id and the recipe status becomes "ACCEPTED"
+```
+
+### BDD-28: L0 Refinery Twin & L1 Unit Workbench Screens `@ui @twin @copilot @voice` (NEW)
+
+```gherkin
+Feature: Two-level decision-grade twin — plant home and unit workbench
+  As a plant head
+  I want the whole refinery at a glance and, on one click, everything about one unit on one time axis
+  So that I see where the crude change hits first and how the decision is made
+
+  @ui @demo
+  Scenario: Level 0 is the home and has no charts
+    When the operator opens the application root
+    Then the route is /twin
+    And the page shows 6 unit blocks with KPI vs plan, a status pill and decision and flag counts
+    And a crude-slate banner and a "Needs attention" list with systemic consequence lines are visible
+    And zero Plotly charts are rendered
+
+  @ui @demo
+  Scenario: Clicking the fractionator opens its workbench on one cursor
+    When the operator clicks unit_4_fractionator on /twin
+    Then the route is /twin/unit/unit_4_fractionator
+    And panels measured-vs-expected, residual, manipulated variables, disturbances and yield share one x-axis
+    And a single cursor line appears in every panel at the store's timeMin
+    And the right rail shows regime and adaptation, recipe, model evidence, decision and Gemini cards
+
+  @ui
+  Scenario: Use-case entry opens the owning unit scrolled to its signature chart
+    When the operator opens /twin/unit/unit_1_furnace?uc=UC-05
+    Then the combustion panel (fluegas_O2_pct, fluegas_CO_ppm, F5_fuel) is scrolled into view and highlighted
+    And the rail lists the citations for UC-05
+
+  @ui
+  Scenario: Visual register is sober and accessible
+    When Playwright captures /twin and /twin/unit/unit_4_fractionator in light and dark themes
+    Then no data trace uses a grey colour
+    And there is no horizontal scrollbar at 1440 px width
+    And the default theme is light and the toggle persists across reloads
+
+  @ui @demo
+  Scenario: Every section shows Data, Analysis, Models and Decisions for that section only
+    When GET /api/unit/<unit_id>/workbench is called for each of the 6 units
+    Then the payload contains series, panels, analysis, models, regime, recipe and decisions
+    And panels include kinds measured_vs_expected, residual, mv, disturbance and yield
+    And analysis contains primary_tag, residual_now, sigma_now, cusum_now, breach_open and root_cause
+    And models contains committee or surrogate, pinn_checks and gate
+    And no trace colour in panels is a grey (#808080-family) value
+    And the rendered page labels the four zones "Data", "Analysis", "Models" and "Decisions"
+
+  @copilot @demo
+  Scenario: Gemini knows which screen is open
+    Given the operator is on /twin (Level 0)
+    When the operator asks "what needs attention right now?"
+    Then the system instruction names screen level L0 and embeds the plant snapshot (crude slate, needs-attention lines, unit statuses)
+    And the answer covers the whole refinery
+    Given the operator is on /twin/unit/unit_4_fractionator (Level 1)
+    When the operator asks "why is it off?"
+    Then the system instruction names screen level L1 with unit_id unit_4_fractionator and embeds that unit's scope snapshot
+    And the answer opens with the fractionator's residual, regime and recipe
+    And when the operator then asks about the regenerator, the answer still covers the regenerator (whole-refinery context remains available)
+
+  @copilot @voice @demo
+  Scenario: Gemini answers from the visible window in Hindi with citations
+    Given the operator is on /twin/unit/unit_4_fractionator with lang "hi"
+    When the operator asks why LCO T98 drifted after the crude switch
+    Then the answer is in Hindi, quotes the regime label, the residual value and the recipe moves visible on screen
+    And it cites at least one knowledge document and contains no financial term
+```

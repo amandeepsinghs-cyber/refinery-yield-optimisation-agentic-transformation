@@ -19,11 +19,12 @@ This project demonstrates agent-managed inferential soft sensors for Fluid Catal
 ## Repo layout
 
 ```
-├── sim_octave/       # Octave simulator port, batch scripts, BigQuery loader, VALIDATION.md
-├── cockpit/api/      # FastAPI + soft-sensor pipeline: models, gate, recommendations, Copilot, knowledge index
-├── cockpit/web/      # Next.js cockpit, 4 dashboards: Decision, Technical, Modelling, Knowledge
+├── sim_octave/       # Octave simulator port, batch scripts, regime staging, BigQuery loader, VALIDATION.md
+├── cockpit/api/      # FastAPI: soft-sensor pipeline + v3 crude-adaptive engines (E1–E4), twin, Copilot, knowledge index
+├── cockpit/web/      # Next.js cockpit: L0 /twin + L1 /twin/unit/[unit_id] (v3) and the v2 dashboards
 ├── knowledge/        # 46 SIMULATED documents + tools
-├── docs/ui/          # UI mockups
+├── design/           # L0 / L1 twin mockups that bind Epic J screens
+├── docs/             # Documentation map (docs/README.md), UI mockups (ui/), superseded plans (archive/)
 ├── tasks/            # Task cards and reports
 └── FCC-Fractionator/ # Original simulator, MIT, provenance
 ```

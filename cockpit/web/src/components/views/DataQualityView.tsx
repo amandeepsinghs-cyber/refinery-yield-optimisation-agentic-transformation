@@ -4,9 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchJson, qs } from "@/lib/api";
 import { useCockpit } from "@/lib/store";
 import { Card, PageHeader, QueryView, NoRun } from "@/components/ui/primitives";
-import dynamic from "next/dynamic";
-
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
+import Chart from "@/components/charts/Chart";
 
 interface DQTag {
   tag: string;
@@ -85,7 +83,9 @@ export default function DataQualityView() {
 
                 <div className="grid">
                   <Card className="s-6 s-md-12" title="Hotelling T² over time">
-                    <Plot
+                    <Chart
+                      ariaLabel="Hotelling T2 over time"
+                      height={250}
                       data={[
                         {
                           x: d.time_min,
@@ -105,13 +105,13 @@ export default function DataQualityView() {
                         }
                       ]}
                       layout={{ autosize: true, height: 250, margin: { t: 10, r: 10, b: 30, l: 40 }, showlegend: false }}
-                      useResizeHandler
-                      style={{ width: "100%" }}
                     />
                   </Card>
 
                   <Card className="s-6 s-md-12" title="Squared Prediction Error (SPE) over time">
-                    <Plot
+                    <Chart
+                      ariaLabel="Squared Prediction Error over time"
+                      height={250}
                       data={[
                         {
                           x: d.time_min,
@@ -131,8 +131,6 @@ export default function DataQualityView() {
                         }
                       ]}
                       layout={{ autosize: true, height: 250, margin: { t: 10, r: 10, b: 30, l: 40 }, showlegend: false }}
-                      useResizeHandler
-                      style={{ width: "100%" }}
                     />
                   </Card>
                 </div>

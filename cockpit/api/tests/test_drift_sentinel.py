@@ -35,6 +35,7 @@ def test_slow_tray_temp_drift():
         st.catalog._mcache.clear()
         
 def test_cusum_drift_alert():
+    np.random.seed(42)
     # BDD-8
     R = 7.0
     k = 0.5

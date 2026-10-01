@@ -276,8 +276,8 @@ function Panel({ voice, onClose }: { voice: LiveVoice; onClose: () => void }) {
         </div>
         <div className="drawer-ctx" aria-label="Context sent with each question">
           <span>Context:</span>
-          <span className="mono">{ctx.page}</span>·<span className="mono">{ctx.run_id ?? "no run"}</span>·
-          <span>{propLabel(ctx.property)}</span>·<span className="mono">t {ctx.time_min ?? "—"} ({clock(ctx.time_min)})</span>
+          <span className="mono">{ctx.screen.level === 'L1' ? (ctx.screen.unit_id?.replace('unit_4_', '') ?? 'L1') : ctx.screen.level} · t {ctx.time_min ?? "—"}</span>·<span className="mono">{ctx.run_id ?? "no run"}</span>
+
         </div>
         <div className="drawer-body" ref={bodyRef}>
           {source ? (

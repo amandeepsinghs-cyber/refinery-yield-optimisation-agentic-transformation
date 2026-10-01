@@ -5,8 +5,15 @@ fastapi/Vertex AI chat_stream code path.
 Outputs:
   - cockpit/api/artifacts/copilot_eval.md (Markdown report)
   - cockpit/api/artifacts/copilot_eval.json (Machine-readable JSON)
+
+Run from cockpit/api: `.venv/bin/python scripts/eval_copilot.py [--strict]` (or `make copilot-eval`).
 """
 from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # make `app` importable when run as a script
 
 import argparse
 import asyncio
@@ -22,9 +29,9 @@ from typing import Any
 
 import yaml
 
-from .copilot.chat import chat_stream
-from .knowledge.index import CITE_RE
-from .state import get_state
+from app.copilot.chat import chat_stream
+from app.knowledge.index import CITE_RE
+from app.state import get_state
 
 log = logging.getLogger("eval_copilot")
 

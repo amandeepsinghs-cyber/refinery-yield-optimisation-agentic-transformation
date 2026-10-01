@@ -120,7 +120,7 @@ export const THEME_STORAGE_KEY = "fcc-theme";
 
 /**
  * Inline, render-blocking script: sets data-theme before first paint.
- * Stored choice wins; otherwise dark (control room). The user decided that every
- * screen is dark by default, so prefers-color-scheme is intentionally not used.
+ * Stored choice wins; otherwise light. The user decided that every
+ * screen is light by default, so prefers-color-scheme is intentionally not used.
  */
-export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('${THEME_STORAGE_KEY}');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('${THEME_STORAGE_KEY}');if(t!=='light'&&t!=='dark'){t='light';}document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
