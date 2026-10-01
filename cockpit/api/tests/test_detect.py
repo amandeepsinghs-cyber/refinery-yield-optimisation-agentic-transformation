@@ -23,7 +23,8 @@ def test_detection_series_shapes_and_statistics():
         assert len(d[k]) == n, k
     assert np.all(d["sigma"] > 0)
     assert np.allclose(d["residual"], d["measured"] - d["expected"], equal_nan=True)
-    assert np.all(d["band_lo"] <= d["band_hi"])
+    finite = np.isfinite(d["band_lo"]) & np.isfinite(d["band_hi"])  # tail is NaN while the run is still being simulated
+    assert finite.sum() > 0.5 * n and np.all(d["band_lo"][finite] <= d["band_hi"][finite])
     # CUSUM resets after it signals, so it never grows without bound
     assert np.nanmax(np.abs(d["cusum"])) < 20 * np.nanmax(d["sigma"])
     d2 = detection_series(RUN, "unit_2_riser", "conversion_pct")

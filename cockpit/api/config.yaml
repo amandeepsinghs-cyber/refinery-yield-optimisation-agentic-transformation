@@ -121,3 +121,12 @@ iow:                                  # integrity operating windows (engineering
   Fair: {rel: 0.08}
   MV_reflux_ratio: [0.5, 1.2]
   MV_cw_flow: {rel: 0.15}
+plan_tolerances:                      # L0 KPI-vs-plan pill (SDD-L0-01): |value − plan| ≤ tol → OK, ≤ 2·tol → WATCH, else ACT
+  T2_preheat_F: 5.0                   # °F vs SP_T_preheat_F
+  conversion_pct: 1.0                 # % vs regime-surrogate expected
+  dT_cyc_reg_F: 10.0                  # °F afterburn vs expected
+  Treg_F: 10.0                        # °F vs SP_T_reg_F
+  LCO_T98_F: 3.0                      # °F vs SP_LCO_T98
+  HN_T98_F: 3.0                       # °F vs SP_HN_T98
+  MV_cw_flow: 15.0                    # lb/s (≈ 5 %) vs expected for this load / ambient
+  eff_C5: 1.5                         # % recovery vs expected

@@ -118,11 +118,25 @@ One call renders the whole workbench (Data · Analysis · Models · Decisions):
 ```json
 {"crude_slate":{"declared_api":23.3,"declared_regime_id":"R2","regime_id":"R2","regime_label":"...","p_max":0.84,"novelty":0.21,
                 "transition_pct":100,"declared_vs_detected":"match","last_switch_min":427,"settled_min":487},
- "needs_attention":[{"unit_id":"unit_4_fractionator","severity":"warn","line":"LCO T98 +4.8 °F above expected since 08:23",
-                     "consequence":"PA3 saturates in ~90 min; LCO yield −0.4 % feed if unadjusted","event_id":"..."}],
- "timeline":[{"time_min":427,"kind":"regime_change","unit_id":null,"label":"Crude switch started (R3→R2)"}],
- "units":[{"...existing...","events_open":1,"flags":1,"decisions_open":1,"kpi_vs_plan":{"label":"LCO T98","value":761.9,"plan":755,"tol":3,"unit":"°F","state":"WATCH"}}]}
+ "plant":{"shift_label":"Shift A","clock":"10:00","time_min":600,"mass_closure_pct":0.014,"open_decisions":8,"agent_flags":6,
+          "top_flag":"Riser conversion","units_act":0,"units_watch":1},
+ "needs_attention":[{"unit_id":"unit_4_fractionator","unit_label":"Fractionator","severity":"warn","kind":"cusum","tag":"LCO_T98_F",
+                     "time_min":503,"time_label":"08:23","line":"LCO T98 +4.8 °F above expected (sustained shift) since 08:23",
+                     "consequence":"LCO heavier than spec: PA3 saturates in ~90 min; LCO yield −0.4 % feed if the cut point is not pulled back",
+                     "loop":"Hydrocarbon loop","downstream_unit_id":"unit_4_fractionator","horizon_min":90,"event_id":"...","recipe_id":"..."}],
+ "timeline":[{"time_min":427,"time_label":"07:07","kind":"regime_change","severity":"info","unit_id":null,"label":"Crude switch started (R3→R2)","event_id":"..."}],
+ "units":[{"...existing...","events_open":1,"flags":1,"decisions_open":1,
+           "kpi_vs_plan":{"tag":"LCO_T98_F","label":"LCO T98","value":761.9,"plan":755.0,"plan_source":"set point","tol":3.0,
+                          "deviation":6.9,"unit":"°F","state":"ACT"}}]}
 ```
+Rules (`app/engines/systems.py`): `kpi_vs_plan` uses the unit's primary tag (§0); `plan` is the set point where one exists
+(`SP_LCO_T98`, `SP_HN_T98`, `SP_T_preheat_F`, `SP_T_reg_F`), otherwise the regime-surrogate / committee expected value;
+`tol` comes from `config.yaml → plan_tolerances`; `state` = `OK` (|dev| ≤ tol) · `WATCH` (≤ 2·tol) · `ACT`. `flags` counts
+distinct tags with an open warn/alarm E3 event; `decisions_open` counts `OPEN` decision cards. `needs_attention` is at most 5
+lines, alarm > warn > info then newest, one per (unit, tag); `consequence` comes from the Systems-Agent rule table over the
+catalyst / heat / hydrocarbon loops with a horizon that shrinks from 180 min at 3σ to 45 min at ≥ 7σ. Timeline labels are
+≤ 60 characters. No field is ever a placeholder string.
+
 
 ## 7. Screen-scoped Gemini
 

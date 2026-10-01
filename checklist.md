@@ -339,21 +339,22 @@ curl -s localhost:8010/api/health | python3 -m json.tool | grep -A3 knowledge
 - ☑ `tests/test_regimes.py` green; financial-term scan green
 
 ### Phase 15: E1 Regime + E3 Detection (Step 15 · J2, J4 · BDD-24, BDD-26)
-- ☐ `app/engines/regime.py` — fingerprint, posterior, novelty, `transition_pct`, `declared_vs_detected`; `GET /api/regime`; `crude_slate` in `/api/twin`
-- ☐ `app/engines/detect.py` — residual ±3σ, CUSUM, change-point, MV contribution; trilingual briefings
-- ☐ SQLite `agent_events`; `GET /api/agents/events`; SSE `GET /api/agents/stream`
-- ☐ `GET /api/unit/{unit_id}/workbench` — four zones (Data · Analysis · Models · Decisions) for all 6 units; `crude_slate` / `needs_attention` / `timeline` in `/api/twin`
-- ☐ Held-out acceptance: regime within ≤ 45 min on ≥ 90 % switches; U4 breach before next lab on ≥ 80 %
+- ☑ `app/engines/regime.py` — fingerprint, posterior, novelty, `transition_pct`, `declared_vs_detected`; `GET /api/regime`; `crude_slate` in `/api/twin`
+- ☑ `app/engines/detect.py` — residual ±3σ, CUSUM, change-point, MV contribution; trilingual briefings
+- ☑ SQLite `agent_events`; `GET /api/agents/events`; SSE `GET /api/agents/stream`
+- ☑ `GET /api/unit/{unit_id}/workbench` — four zones (Data · Analysis · Models · Decisions) for all 6 units; `crude_slate` / `needs_attention` / `timeline` in `/api/twin`
+- ☑ `/api/twin` L0 contract (§6): `kpi_vs_plan` (SP-or-expected plan, `plan_tolerances`), `flags` / `decisions_open`, ranked `needs_attention` with Systems-Agent consequence, compact `timeline`, `plant` strip — `tests/test_twin_l0.py` (2026-10-01)
+- ☐ Held-out acceptance: regime within ≤ 45 min on ≥ 90 % switches; U4 breach before next lab on ≥ 80 % — *tests pass on partial `full_v1`; re-run after the batch completes*
 
 ### Phase 16: E2 Adaptation + E4 Recipe (Step 16 · J3, J5 · BDD-25, BDD-27) — critical path
-- ☐ `app/engines/adapt.py` — per-regime weights, physics weight vs novelty, bias reset; `GET /api/adaptation`
-- ☐ `app/engines/surrogates.py` + `train_surrogates.py` — 10 outputs × 11 inputs per regime, model cards
-- ☐ `app/engines/recipe.py` — objective, constraints, search, gate; `GET /api/recipe`; `recipe_id` on decisions
-- ☐ `config.yaml` `recipe:` and `iow:` sections
-- ☐ `eval_recipe.py` replay: recipe ≥ hold on priority yield at equal/better P(on-spec)
+- ☑ `app/engines/adapt.py` — per-regime weights, physics weight vs novelty, bias reset; `GET /api/adaptation`
+- ☑ `app/engines/surrogates.py` + `train_surrogates.py` — 10 outputs × 11 inputs per regime, model cards
+- ☑ `app/engines/recipe.py` — objective, constraints, search, gate; `GET /api/recipe`; `recipe_id` on decisions
+- ☑ `config.yaml` `recipe:` and `iow:` sections
+- ☐ `eval_recipe.py` replay: recipe ≥ hold on priority yield at equal/better P(on-spec) — *harness exists; number to be recorded after `full_v1` completes*
 
 ### Phase 17: Agents on the event bus (Step 17 · J4)
-- ☐ Sentinels emit E3 events and draft E4 recipes; Systems Agent consequence lines
+- ☑ Sentinels emit E3 events and draft E4 recipes; Systems Agent consequence lines (`app/engines/systems.py`, 19 rules over catalyst / heat / hydrocarbon loops)
 - ☐ ADK extras (`get_scope_snapshot`, `get_regime`, `get_recipe`) in `ALL_TOOLS`; `root_agent.tools` still 8
 
 ### Phase 18: Screens (Step 18 · J6, J7 · BDD-28)

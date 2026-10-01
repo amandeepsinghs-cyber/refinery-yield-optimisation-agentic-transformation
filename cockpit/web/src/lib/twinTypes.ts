@@ -44,14 +44,7 @@ export interface TwinUnit {
   events_open?: number;
   flags?: number;
   decisions_open?: number;
-  kpi_vs_plan?: {
-    label: string;
-    value: number;
-    plan: number;
-    tol: number;
-    unit: string;
-    state: "OK" | "WATCH" | "ACT";
-  };
+  kpi_vs_plan?: TwinKpiVsPlan | null;
   tag_table?: TwinUnitTag[];
 }
 
@@ -205,6 +198,60 @@ export interface TwinWorkbench {
   citations: any[];
 }
 
+export type KpiState = "OK" | "WATCH" | "ACT";
+export type Severity = "info" | "warn" | "alarm";
+
+export interface TwinKpiVsPlan {
+  tag: string;
+  label: string;
+  value: number;
+  plan: number;
+  plan_source: "set point" | "committee" | "regime surrogate";
+  tol: number;
+  deviation: number;
+  unit: string;
+  state: KpiState;
+}
+
+export interface TwinAttention {
+  unit_id: string;
+  unit_label: string;
+  severity: Severity;
+  kind: string;
+  tag: string | null;
+  time_min: number;
+  time_label: string;
+  line: string;
+  consequence: string | null;
+  loop: string | null;
+  downstream_unit_id: string | null;
+  horizon_min: number | null;
+  event_id: string;
+  recipe_id?: string | null;
+}
+
+export interface TwinTimelineItem {
+  time_min: number;
+  time_label: string;
+  kind: string;
+  severity: Severity;
+  unit_id: string | null;
+  label: string;
+  event_id: string;
+}
+
+export interface TwinPlantStrip {
+  shift_label: string;
+  clock: string;
+  time_min: number;
+  mass_closure_pct: number | null;
+  open_decisions: number;
+  agent_flags: number;
+  top_flag: string | null;
+  units_act: number;
+  units_watch: number;
+}
+
 export interface TwinOverview {
   crude_slate: {
     declared_api: number;
@@ -218,18 +265,9 @@ export interface TwinOverview {
     last_switch_min: number;
     settled_min: number;
   };
-  needs_attention: {
-    unit_id: string;
-    severity: "info" | "warn" | "alarm";
-    line: string;
-    consequence: string;
-    event_id: string;
-  }[];
-  timeline: {
-    time_min: number;
-    kind: string;
-    unit_id: string | null;
-    label: string;
-  }[];
+  plant: TwinPlantStrip;
+  needs_attention: TwinAttention[];
+  timeline: TwinTimelineItem[];
   units: TwinUnit[];
+  downstream_cases_summary?: { number: number; title: string; tier: string; boundary_tag: string; boundary_value: string }[];
 }

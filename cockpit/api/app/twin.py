@@ -25,6 +25,7 @@ import pandas as pd
 from .state import get_state
 from .engines.regime import regime_at
 from .engines.detect import events_for_run
+from .engines.systems import l0_fields
 
 
 def _val(row: pd.Series | dict[str, Any], *cols: str, default: float = 0.0) -> float:
@@ -1993,47 +1994,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         crude_slate = {}
 
     ev_data = events_for_run(rid, upto_time_min=t_val).get("events", [])
-    open_events = [e for e in ev_data if e["status"] == "open"]
-    
-    needs_attention = []
-    for e in open_events:
-        needs_attention.append({
-            "unit_id": e.get("unit_id"),
-            "severity": e.get("severity"),
-            "line": f"{e.get('tag', '')} {e.get('kind', '')} alert at {e.get('time_min')} min",
-            "consequence": "Action required", # could pull from systems_ripple if we had exact matches, just simple string for now
-            "event_id": e.get("event_id")
-        })
-        
-    timeline = []
-    for e in ev_data:
-        timeline.append({
-            "time_min": e["time_min"],
-            "kind": e["kind"],
-            "unit_id": e.get("unit_id"),
-            "label": e.get("payload", {}).get("label") or e.get("payload", {}).get("briefing", {}).get("en", "Event")
-        })
-        
-    for u in units:
-        u_events = [e for e in open_events if e.get("unit_id") == u["unit_id"]]
-        u["events_open"] = len(u_events)
-        u["flags"] = len(u_events) # approx
-        u["decisions_open"] = len(u.get("decisions_needed", []))
-        
-        # approximate kpi_vs_plan
-        hl = None
-        for k in u.get("kpis", []):
-            hl = k
-            break
-        if hl:
-            u["kpi_vs_plan"] = {
-                "label": hl.get("label", ""),
-                "value": hl.get("value", 0),
-                "plan": hl.get("target", 0), # string or num
-                "tol": 3,
-                "unit": hl.get("unit", ""),
-                "state": "WATCH"
-            }
+    # Systems Agent: kpi_vs_plan + counts on every unit (in place), ranked needs_attention with consequence lines,
+    # compact timeline and the plant header strip (API_CONTRACT_v3 §6, SDD-L0-01).
+    l0 = l0_fields(rid, t_val, units, row.to_dict() if hasattr(row, "to_dict") else dict(row), ev_data, mb_err_pct)
 
     return {
         "schema_version": "2.0",
@@ -2052,8 +2015,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         "agent_fleet": agent_fleet,
         "downstream_cases_summary": downstream_cases_summary,
         "crude_slate": crude_slate,
-        "needs_attention": needs_attention,
-        "timeline": timeline,
+        "plant": l0["plant"],
+        "needs_attention": l0["needs_attention"],
+        "timeline": l0["timeline"],
     }
 
 

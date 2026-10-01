@@ -6,6 +6,33 @@ this file records what actually happened and the state things were left in.
 
 ---
 
+## 2026-10-01 17:30 — L0 Pass A: `/api/twin` now honours the L0 contract; Systems Agent consequence rules
+
+Decisions taken with the user ([L0 build plan](L0_BUILD_PLAN.md)):
+**D1** hybrid whole-refinery PFD with the 6 simulator units live (U1–U4 inside the FCC/RFCC complex, U5 = gas plant,
+U6 = stabiliser) and other blocks "boundary data only" · **D2** Systems Agent consequence rules built now ·
+**D3** `/` → `/twin` redirect only; old dashboards retired after L1.
+
+### Done
+- New `cockpit/api/app/engines/systems.py`: 19-rule consequence table keyed `(unit, tag, direction)` over the catalyst /
+  heat / hydrocarbon loops, horizon 180 → 45 min as the residual goes 3σ → 7σ; `kpi_vs_plan` (plan = set point where one
+  exists else regime-surrogate / committee expected; `tol` from new `config.yaml → plan_tolerances`; OK ≤ tol, WATCH ≤ 2·tol,
+  else ACT); `flags` = distinct warn/alarm tags; `decisions_open` = OPEN cards; `needs_attention` top-5 ranked and
+  de-duplicated; timeline labels ≤ 60 chars; `plant` strip (shift, clock, mass closure, counts, top flag).
+- `twin.py` placeholder block removed (`"Action required"`, `tol=3`, `state="WATCH"`, `flags == events_open` are gone).
+- `API_CONTRACT_v3.md` §6 rewritten to the implemented payload; `twinTypes.ts` extended (`TwinKpiVsPlan`, `TwinAttention`,
+  `TwinTimelineItem`, `TwinPlantStrip`).
+- Tests: new `tests/test_twin_l0.py` (5 tests incl. placeholder/financial scan and rule coverage for every primary tag in
+  both directions). `test_detect` band check made NaN-aware because `random_s144` is still being simulated (CSV grows past
+  the committee estimates).
+- `checklist.md` Phases 15–17 ticked where code + tests exist; held-out acceptance numbers deferred to post-`full_v1`.
+
+### Next — Pass B (frontend)
+`L0Header` (shift · clock · run · EN/Hinglish/हिंदी · Gemini Live), `PlantStatusStrip`, `RefineryPFD` (hybrid per D1),
+`NeedsAttentionRail`, `ShiftTimeline` (draggable cursor, ▶), `/` redirect, `layout.tsx` light default, real Playwright asserts.
+
+---
+
 ## 2026-10-01 17:00 — Epic J engine hardening committed; `full_v1` still generating; disk / resize plan
 
 ### Code
