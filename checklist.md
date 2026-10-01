@@ -367,6 +367,7 @@ curl -s localhost:8010/api/health | python3 -m json.tool | grep -A3 knowledge
 - ☐ Playwright `e2e/twin.spec.ts` green — spec has BDD-28 L0 + L1 + nav/deep-link scenarios; runner not installed (`@playwright/test` absent, ~300 MB; deferred until disk is resized)
 
 ### Phase 19: Gemini scope, Hindi-first, director script (Step 19 · J8 · BDD-28)
-- ☐ Screen-scoped Gemini: `context.screen` → server-side scope snapshot (plant on L0, unit on L1); can still answer about the whole refinery; tools `get_scope_snapshot` / `get_regime` / `get_recipe` in `ALL_TOOLS` (canonical 8 unchanged)
-- ☐ Screen-specific Hindi-first suggestions; screen chip in the Copilot drawer; Live voice `hi-IN`
-- ☐ `demoflow.md` 7-scene crude-switch script with run / minutes
+- ☑ Screen-scoped Gemini: `context.screen` (built in `useCopilotChat.usePageContext` from the route) → `chat.screen_of` / `scope_snapshot_for` embed the unit snapshot on L1 and the plant snapshot elsewhere; Gemini may still answer about the whole refinery; tools `get_scope_snapshot` / `get_regime` / `get_recipe` in `ALL_TOOLS` + `DECLS` (canonical `root_agent.tools` = 8) — `tests/test_gemini_scope.py` 6 passed
+- ☑ Screen-specific Hindi-first suggestions (`chat.suggestions`: L0 / L1 × en / hinglish / hi); screen chip in the Copilot drawer (`data-testid="screen-chip"`, unit label from `TWIN_UNITS`); Live voice `SpeechConfig.language_code` = `hi-IN` for hi / hinglish, `en-IN` otherwise (`live.live_language_code`) — ◐ live audio session in `hi-IN` not yet exercised against Vertex from this Cloudtop
+- ☑ `demoflow.md` §1–2 + §4 rewritten as the 7-scene crude-switch script on L0 → L1 with run / minute per scene (random_s107: switch 07:25, detected 07:39, change-point 09:42, recipe ISSUED 10:00; withhold on random_s144 @ 600); in-app `DemoGuideModal` mirrors it and pins run + minute on "Go to"; §9 Phase-13 scenes marked superseded
+- ☑ `?uc=` lands on the use case's **signature** panel (`engines/workbench.py → SIGNATURE_PANEL`; UC-05 → combustion verified by CDP `highlighted:["panel-combustion"]`)

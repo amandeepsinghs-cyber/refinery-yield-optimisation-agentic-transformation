@@ -300,7 +300,12 @@ def workbench(unit_id: str, run_id: str, time_min: int, window_min: int = 720, s
     headline = {"label": kpi.get("label") or (_label(primary) if primary else ""), "value": kpi.get("value"),
                 "plan": kpi.get("plan"), "tol": kpi.get("tol"), "unit": kpi.get("unit") or (_unit(primary) if primary else ""),
                 "state": kpi.get("state")}
-    use_cases = [{"id": uc["id"], "number": uc.get("number"), "title": uc.get("title"), "panel_id": "quality"}
+    # Signature chart per use case (SDD-L1-04, BDD-28 "use-case entry opens the owning unit scrolled to its signature chart").
+    SIGNATURE_PANEL = {"UC-03": "quality_2", "UC-04": "yield", "UC-05": "combustion", "UC-06": "mv", "UC-07": "mv",
+                       "UC-08": "yield", "UC-09": "yield", "UC-10": "mv", "UC-02": "yield"}
+    panel_ids = {p["panel_id"] for p in panels}
+    use_cases = [{"id": uc["id"], "number": uc.get("number"), "title": uc.get("title"),
+                  "panel_id": SIGNATURE_PANEL.get(uc["id"]) if SIGNATURE_PANEL.get(uc["id"]) in panel_ids else "quality"}
                  for uc in twin.get("use_cases", []) if uc.get("unit_id") == unit_id]
     return {
         "unit": {"unit_id": unit_id, "seq": unit.get("seq"), "name": unit.get("name"), "short_name": unit.get("short_name"),

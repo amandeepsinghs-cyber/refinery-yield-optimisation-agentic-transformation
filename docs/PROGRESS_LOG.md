@@ -6,7 +6,24 @@ this file records what actually happened and the state things were left in.
 
 ---
 
-## 2026-10-01 18:35 — L1 Pass D: other units polished, nav retired to the Twin, L0 → L1 deep links (commit follows this entry)
+## 2026-10-01 18:45 — Phase 19 (J8): screen-scoped Gemini verified, Hindi-first + hi-IN voice, director script on the Twin, `?uc=` signature panels
+
+**Finding first:** most of J8 was already in the code base from Epic J (`chat.screen_of`, `scope_snapshot_for`, `suggestions` per screen × language, `get_scope_snapshot` / `get_regime` / `get_recipe` tools, `context.screen` from the route) but the checklist still showed it ☐ because it had never been verified end-to-end. `tests/test_gemini_scope.py` passes (5 → 6 with the new language test); the Copilot drawer already sent `screen` and showed a chip.
+
+**What changed**
+- `api/app/copilot/live.py`: `live_language_code(ctx)` → `SpeechConfig(language_code=hi-IN|en-IN, voice_config=…)`; previously only the voice name was set, so Hindi operators got an English session.
+- `api/app/engines/workbench.py`: `SIGNATURE_PANEL` map — each use case's `panel_id` now points at its signature chart (UC-05 → `combustion`, UC-03 → `quality_2`, UC-06/07/10 → `mv`, UC-02/04/08/09 → `yield`), falling back to `quality` when the panel is absent. `L1Workbench` now prefers that `panel_id` over the broad `use_case_ids` match (which tagged every panel). CDP: `/twin/unit/unit_1_furnace?uc=UC-05` → `highlighted:["panel-combustion"]` with "more" auto-opened — BDD-28 scenario satisfied. Test `test_use_case_signature_panels_point_at_real_panels` added.
+- `web/src/components/shell/DemoGuideModal.tsx`: scenes rewritten for the crude-switch story on L0 → L1 (Scene 0 hook, 1 L0 switch 07:25→10:00, 2 U4 via `?tag=LCO_T98_F`, 3 regime + evidence, 4 optimisation + Accept, 5 withhold on `random_s144`, 6 Hindi chips + `hi-IN` voice + guardrail, 7 audit + ask); each "Go to" pins `run` / `timeMin` through `store.setRun`. Page directory lists L0 / L1 first; the old dashboards are labelled "(legacy)".
+- `web/src/components/copilot/CopilotLauncher.tsx`: screen chip uses `TWIN_UNITS` labels ("Fractionator · t 600", "Refinery · t 600") instead of a `unit_4_` string hack; `data-testid="screen-chip"`.
+- `demoflow.md`: §1 story line, §2 cast (two levels + Audit; demo run `random_s107`, withhold run `random_s144`), §4 the 7-scene script with route · run · minute per scene; §9 marked superseded by L0/L1.
+
+**Verification**: `tsc` 0 errors · vitest 75/75 · pytest `test_workbench + test_twin_l0 + test_gemini_scope + test_adk_agent` green · API restarted on :8010 with the engine change · CDP L0 still `plotly:0`, no console errors. Facts in the script checked against the live API: `random_s107 @ 600` recipe ISSUED (3 moves, gate PASS W90 13.7), `random_s144 @ 600` recipe WITHHELD (`spread_gate`, HN side).
+
+**Not verified**: a real `hi-IN` Live audio session from this Cloudtop (needs the Vertex probe + mic); Playwright still not installed.
+
+---
+
+## 2026-10-01 18:35 — L1 Pass D: other units polished, nav retired to the Twin, L0 → L1 deep links (committed as `ef06b25`)
 
 **What changed**
 - **Per-unit yield axes** (`cockpit/web/src/lib/l1.ts → yieldAxis`, used by `ChartStack`): the Pass-C rule divided *every* "Yields / products" trace by feed, which was wrong outside U4 (U3 blower power and carbon-on-catalyst, U5 compressor power, U6 recoveries were all shown as "% feed"). Now mass flows (`prod_*`, `F_coke`, `F5_fuel`, unit `lb/min`) → % feed; recoveries / `*_pct` → %; `C_*` and `*_frac` → ×100 (wt % / %); everything else (power) → right axis in its own units, promoted to the left axis when nothing else is plotted. Verified by CDP axis titles: U3 `% feed · wt %` / `power`, U5 `power`, U6 `% feed · %`, U2 `%` / `%`.

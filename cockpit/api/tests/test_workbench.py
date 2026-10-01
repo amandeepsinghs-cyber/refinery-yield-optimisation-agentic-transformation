@@ -101,3 +101,19 @@ def test_workbench_route_time_min_optional_defaults_to_last_minute():
     # explicit time_min still honoured
     r2 = client.get("/api/unit/unit_4_fractionator/workbench", params={"time_min": 300, "run_id": RUN})
     assert r2.status_code == 200 and r2.json()["time"]["time_min"] == 300 and r2.json()["run_id"] == RUN
+
+
+def test_use_case_signature_panels_point_at_real_panels():
+    """BDD-28: /twin/unit/unit_1_furnace?uc=UC-05 must land on the combustion panel; every panel_id must exist."""
+    from app.engines.workbench import workbench
+    from app.routers.common import default_run
+    rid = default_run()
+    u1 = workbench("unit_1_furnace", rid, 600)
+    ids = {p["panel_id"] for p in u1["panels"]}
+    uc5 = next(u for u in u1["unit"]["use_cases"] if u["id"] == "UC-05")
+    assert uc5["panel_id"] == "combustion" and "combustion" in ids
+    u4 = workbench("unit_4_fractionator", rid, 600)
+    ids4 = {p["panel_id"] for p in u4["panels"]}
+    for uc in u4["unit"]["use_cases"]:
+        assert uc["panel_id"] in ids4
+    assert next(u for u in u4["unit"]["use_cases"] if u["id"] == "UC-03")["panel_id"] == "quality_2"

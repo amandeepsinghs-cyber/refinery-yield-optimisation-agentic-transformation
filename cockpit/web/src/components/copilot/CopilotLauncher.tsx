@@ -12,6 +12,7 @@ import { IconAlert, IconMinimise, IconMic, IconSend, IconSpark, IconStop, IconTr
 import Markdown from "./Markdown";
 import SourcePreview from "./SourcePreview";
 import { useCopilotChat, usePageContext } from "./useCopilotChat";
+import { TWIN_UNITS } from "@/lib/nav";
 import { useLiveVoice, type LiveVoice } from "./useLiveVoice";
 
 const STARTERS = [
@@ -276,7 +277,7 @@ function Panel({ voice, onClose }: { voice: LiveVoice; onClose: () => void }) {
         </div>
         <div className="drawer-ctx" aria-label="Context sent with each question">
           <span>Context:</span>
-          <span className="mono">{ctx.screen.level === 'L1' ? (ctx.screen.unit_id?.replace('unit_4_', '') ?? 'L1') : ctx.screen.level} · t {ctx.time_min ?? "—"}</span>·<span className="mono">{ctx.run_id ?? "no run"}</span>
+          <span className="mono" data-testid="screen-chip">{ctx.screen.level === 'L1' ? (TWIN_UNITS.find((u) => u.unit_id === ctx.screen.unit_id)?.label ?? ctx.screen.unit_id ?? 'L1') : ctx.screen.level === 'L0' ? 'Refinery' : ctx.screen.level} · t {ctx.time_min ?? "—"}</span>·<span className="mono">{ctx.run_id ?? "no run"}</span>
 
         </div>
         <div className="drawer-body" ref={bodyRef}>

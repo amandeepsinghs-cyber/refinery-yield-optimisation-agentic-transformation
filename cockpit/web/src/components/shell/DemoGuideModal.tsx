@@ -10,6 +10,9 @@ interface SceneItem {
   duration: string;
   route: string;
   routeLabel: string;
+  /** Pin the twin clock for this scene (demoflow.md §4). */
+  run?: string;
+  timeMin?: number;
   moment?: string;
   onScreen: string;
   action: string;
@@ -17,120 +20,134 @@ interface SceneItem {
   geminiPrompt?: string;
 }
 
+/** Demo run: random_s107 — crude switch R3 → R4 detected 07:39 (t 459); LCO change-point 09:42 (t 582); recipe ISSUED at 10:00 (t 600). */
+const DEMO_RUN = "random_s107";
+const WITHHOLD_RUN = "random_s144";
+
 const SCENES: SceneItem[] = [
   {
     id: "Scene 0",
     title: "Hook & Honesty",
     duration: "1 min",
-    route: "/decision/overview",
-    routeLabel: "Decision → Overview",
+    route: "/twin",
+    routeLabel: "Refinery Twin",
+    run: DEMO_RUN,
+    timeMin: 600,
     onScreen:
-      "Topbar Provenance Chip ('Simulated data · full_v1 · random_sNNN · t min') and Decision Overview KPIs.",
-    action:
-      "Highlight the Provenance Chip in the top-right bar and toggle 'Simulator truth' on the 12-hour fan chart.",
+      "Refinery Twin home at 10:00: six live units on the flow sheet, crude-slate banner, plant strip, 'Needs attention' rail and the 12-hour shift timeline. Provenance chip in the top bar: 'Simulated data · full_v1 · random_s107 · t 600 min'.",
+    action: "Point at the provenance chip. Nothing on these screens is from a real refinery; every curve is simulator truth or a model of it.",
     talkTrack:
-      "This is a refinery FCC fractionator. The data comes from a peer-reviewed physics simulator (Santander et al., 2022), validated against published results (41 of 46 signals within 0.2%). Every ground-truth curve is explicitly labelled 'simulator truth'.",
-    geminiPrompt: "Explain what data is being shown on this Decision Overview page and what the provenance chip means.",
+      "A refinery changes crude every day or two. Every model and every operator setting lags that change by hours. This cockpit watches all six FCC units at once, detects the new crude from the plant's own response, re-weights its models and tells each unit what to move — and when not to. Data: a peer-reviewed physics simulator, 54 runs, 50 labelled crude switches.",
+    geminiPrompt: "What is this screen showing and where does the data come from?",
   },
   {
     id: "Scene 1",
-    title: "Decision Overview — 'Can I trust it, and what should I do?'",
+    title: "The crude switch arrives — L0, 'Where will it hit first?'",
     duration: "2 min",
-    route: "/decision/decisions",
-    routeLabel: "Decision → Decision Center",
-    moment: "M2 (Safe Recommendation)",
+    route: "/twin",
+    routeLabel: "Refinery Twin · 07:25",
+    run: DEMO_RUN,
+    timeMin: 445,
+    moment: "crude switch R3 → R4",
     onScreen:
-      "6 technical KPI tiles, 12-hour LCO T98 fan chart (P5–P95 blue band, lab dots every 8h, 765 °F spec line), and Actionable Recommendation cards.",
+      "Crude banner: declared API vs detected regime, transition %, novelty. Unit blocks turn WATCH as the lighter crude reaches the furnace, riser and fractionator. 'Needs attention' lists the consequence per line (e.g. 'LCO heavier than spec: PA3 saturates in ~180 min').",
     action:
-      "1) Click a citation chip like [SOP-FRAC-003 r4 §4.2] on a recommendation card to open the SOP preview in Gemini. 2) Click 'Accept' and confirm in the modal to show the advisory-only toast ('Recorded. The cockpit never writes to the DCS.').",
+      "Drag the shift timeline from 07:25 to 10:00 (or press ▶). Watch the banner flip to 'R4 · match' at 07:39 and the attention lines appear in flow order. Switch the language toggle to Hinglish for the plant-head view.",
     talkTrack:
-      "The blue band is the soft sensor's minute-by-minute estimate and 90% uncertainty interval. The dots are lab draws—only one every 8 hours. When trust is GREEN and the spread gate passes, the cockpit recommends a safe set-point move with P(on-spec) >= 95%.",
-    geminiPrompt: "Should we move the cut point now, and what procedure governs the maximum step size?",
+      "The declared crude says light Bonny; the plant's response says the same fourteen minutes after the ramp. The twin shows you where the change lands first and what breaks downstream if nobody acts — before the next lab result, which is still hours away.",
+    geminiPrompt: "Where will the crude change hit first and what breaks downstream if ignored?",
   },
   {
     id: "Scene 2",
-    title: "Replay the Disturbance — 'Why a soft sensor?'",
+    title: "Drill into the fractionator — L1, 'How do we know it is off?'",
     duration: "2 min",
-    route: "/technical/timeseries",
-    routeLabel: "Technical → Time-Series Explorer",
-    moment: "M1 (Blind Drift Between Labs)",
+    route: "/twin/unit/unit_4_fractionator?tag=LCO_T98_F",
+    routeLabel: "U4 Fractionator · 10:00",
+    run: DEMO_RUN,
+    timeMin: 600,
+    moment: "LCO T98 change-point 09:42",
     onScreen:
-      "Synchronised stacked panels: (1) Feed API & Riser Temp, (2) Tray 13 & Tray 6 Temps, (3) LCO T98 soft-sensor band vs dotted simulator truth vs lab dots, (4) Controller mode strip (cutpoint_auto), Gate strip, Trust strip, and (5) Job & Shift Record Track (H6).",
+      "Unit header with status pill and I/O strip, then five panels on one cursor: LCO T98 measured vs expected with the 5–95 % band and spec line; residual with ±3σ and CUSUM; manipulated variables (PA1–PA4, set points); disturbances; yields as % feed. Event ribbon below: regime change 07:39, change-points, recipe_ready.",
     action:
-      "Use the bottom Replay Bar to press Play at 30× speed across a disturbance while Controller Mode is Manual (0). Toggle 'Job & Shift Records (H6)' to inspect the SHIFT log window.",
+      "Click the 'LCO T98' attention line on L0 — it lands here with the measured-vs-expected panel highlighted. Hover any panel: the dotted guide moves in all of them. Click the 09:42 event chip to jump the cursor. Open 'More panels ▾' for the HN pair and the tray temperature profile.",
     talkTrack:
-      "When feed quality or riser temperature moves while the draw controller is in manual between 8-hour labs, tray temperatures shift within minutes and the true cut point drifts. The operator is blind until the next lab arrives, whereas the soft sensor tracks the drift every minute.",
-    geminiPrompt: "What happened around the last disturbance event in this run, and how did LCO T98 respond?",
+      "Measured against what the committee expects for this crude: the residual walks out, the CUSUM trips at 09:42, and the analysis strip says so in one sentence — in English, Hinglish or Hindi. One cursor, every panel, no tab-hopping.",
+    geminiPrompt: "Why is the fractionator off plan, and how do we know?",
   },
   {
     id: "Scene 3",
-    title: "The Withhold — 'It knows when not to be trusted'",
-    duration: "2 min",
-    route: "/modelling/confidence",
-    routeLabel: "Modelling → Model Confidence",
-    moment: "M3 (Spread Gate Withhold)",
+    title: "Regime & models — 'The models adapted, here is the evidence'",
+    duration: "1.5 min",
+    route: "/twin/unit/unit_4_fractionator",
+    routeLabel: "U4 rail · Regime & Model evidence",
+    run: DEMO_RUN,
+    timeMin: 600,
     onScreen:
-      "Amber Spread-Gate WITHHELD banner, overlaid probability density bell curves (Bayesian Ridge, GPR, Hybrid Delta, PINN, Mixture), W90 Spread Gauge vs 14.0 °F limit, and Bimodality Index (Ashman's D vs 2.0).",
-    action:
-      "From a WITHHELD card on /decision/decisions, click 'Why? → Modelling' (or open /modelling/confidence directly) to see why the models disagree.",
+      "Right rail: 'Regime & adaptation' (R1–R4 bars, declared vs detected, novelty, physics weight, Kalman bias reset at 07:25) and 'Model evidence' (committee weights per regime, physics checks — mass closure, tray monotonic, reactor balance — and the spread gate: PASS · W90 vs 14 °F).",
+    action: "Read the regime card top to bottom, then the gate line. Point at the per-regime weight column: the PINN ensemble carries more weight under R4.",
     talkTrack:
-      "Here the 90% mixture width W90 exceeds the 14.0 °F gate limit (or the models split into a bimodal distribution). Instead of averaging conflicting models and guessing, the Spread Gate withholds advice and tells the operator to request a lab sample and hold the current set point.",
-    geminiPrompt: "Why is the distribution spread wide or withheld, and how do the four model families compare at this minute?",
+      "No retraining in the loop. The committee re-weights by crude regime from a fitted table, physics-anchored members take over while the data members catch up, and the gate only passes when the models agree within fourteen degrees.",
+    geminiPrompt: "Which crude regime is active and how did the model weights change?",
   },
   {
     id: "Scene 4",
-    title: "Model Depth, Calibration & Drift Sentinel",
-    duration: "1.5 min",
-    route: "/modelling/models",
-    routeLabel: "Modelling → Model Comparison",
+    title: "Optimisation & decision — 'What to move, by how much, and the consequence'",
+    duration: "2 min",
+    route: "/twin/unit/unit_4_fractionator",
+    routeLabel: "U4 rail · Optimisation & Decision",
+    run: DEMO_RUN,
+    timeMin: 600,
+    moment: "recipe ISSUED",
     onScreen:
-      "4-model committee table (admitted vs shadow weight 0, RMSE, coverage, CRPS, per-regime RMSE), hyperparameter cards, A6 prewhitened CCF lag table, Parity plot, GPR ARD feature relevance, and Hybrid physics+delta split.",
+      "'Optimisation': three set-point sliders (LCO T98 SP, HN T98 SP, riser outlet T) with the recommended moves, the P(on-spec) / Δ-yield curve, and the effects in engineering units (yield shift % feed, fuel, power, coke). 'Decision' GREEN: 'LOWER SP_LCO_T98 −2.0 °F' with rationale, systems ripple and [SOP-frac-014 r3 §4.2] citations; Accept / Decline.",
     action:
-      "Inspect the admitted vs shadow models on /modelling/models, then click 'Calibration' (/modelling/calibration) to show the Drift Sentinel (E1), Live W90 & Kalman Bias chart (F9), PIT histogram, and Reliability diagram.",
+      "Drag the LCO T98 slider: the curve and effects update live. Click a citation chip to preview the SOP. Click 'Accept' — the toast confirms the audit entry; nothing is written to the DCS.",
     talkTrack:
-      "Every model family must beat Bayesian Ridge on held-out runs and maintain 85–95% empirical coverage to earn committee weight; otherwise it runs in shadow mode (weight 0). Calibration and the CUSUM Drift Sentinel continuously verify that uncertainty bands remain honest.",
-    geminiPrompt: "Which models are admitted into the committee and why, and are the distributions calibrated?",
+      "The recipe is a coordinated multi-set-point move with its yield and energy consequence stated in plant units, not money. A human accepts it; the audit log keeps the record.",
+    geminiPrompt: "What does the recipe change and what is the effect on yield and energy?",
   },
   {
     id: "Scene 5",
-    title: "Gemini Copilot Text & Grounded Citations",
+    title: "The withhold — 'It knows when not to be trusted'",
     duration: "1.5 min",
-    route: "/knowledge",
-    routeLabel: "Knowledge → Corpus Browser",
+    route: "/twin/unit/unit_4_fractionator",
+    routeLabel: "U4 on a hold-out run",
+    run: WITHHOLD_RUN,
+    timeMin: 600,
+    moment: "spread gate WITHHELD",
     onScreen:
-      "Floating Ask Gemini panel with live tool calls, [DOC-ID rN §x.y] citation chips, inline Source Preview card, and the 46-document Knowledge dashboard.",
-    action:
-      "1) Ask Gemini: 'Has this happened before?' 2) Click a returned citation chip (e.g. [INC-0419 r1 §1] or [SOP-FRAC-003 r4 §4.2]) to view the excerpt in the drawer. 3) Click 'Open in Knowledge' to jump to the full document beside the run's related records.",
+      "Same workbench on a hold-out run: 'Model evidence' shows the gate WITHHELD with the W90 that exceeded 14 °F; 'Optimisation' says 'exploration only'; 'Decision' has no move — hold set points and request a lab.",
+    action: "Switch the run picker to random_s144 (or use 'Go to'). Ask Gemini why the recipe is withheld; it must quote the gate message verbatim and refuse a set point.",
     talkTrack:
-      "Every number Gemini states comes from a read-only tool call in the same turn, and every procedural claim cites the exact document revision and section. Clicking a chip previews the source immediately without losing your place.",
-    geminiPrompt: "Has this happened before? Search past incident reports and shift logs for cut-point excursions.",
+      "When the committee disagrees, the system withholds and asks for a lab instead of averaging four guesses. This refusal is what makes it safe in front of an operator.",
+    geminiPrompt: "Why is the recipe withheld right now? Quote the gate message.",
   },
   {
     id: "Scene 6",
-    title: "Voice with Gemini Live & Safety Guardrails",
-    duration: "1 min",
-    route: "/decision/overview",
-    routeLabel: "Ask Gemini → Mic (Voice)",
+    title: "Gemini on the open screen — text, Hindi-first, and voice",
+    duration: "1.5 min",
+    route: "/twin/unit/unit_4_fractionator",
+    routeLabel: "U4 · Ask Gemini card",
+    run: DEMO_RUN,
+    timeMin: 600,
     onScreen:
-      "Gemini panel Voice Bar (Push-to-Talk or Hands-Free) connected to Vertex AI Gemini Live (gemini-live-2.5-flash-native-audio).",
+      "'Ask Gemini' card with screen-scoped suggestions; the Copilot drawer shows the screen chip (Fractionator · t 600). Toggle हिंदी: the analysis briefing and the suggested prompts switch to Hindi. Microphone opens Gemini Live in hi-IN.",
     action:
-      "Click the Microphone icon in Ask Gemini. Ask: 'Where is the LCO cut point right now, and can I trust it?' Then test the guardrail: 'Just give me a heavy naphtha set point anyway.'",
+      "Click a Hindi chip ('यह पहले हुआ है?'). Then press the mic and ask by voice: 'LCO cut point abhi kahan hai, aur bharosa kar sakte hain?' Finally test the guardrail: 'Just give me a set point anyway.'",
     talkTrack:
-      "Operators with busy hands can query the copilot by voice. When asked to bypass a withheld gate or write to the DCS, the agent strictly enforces safety guardrails and quotes the Spread-Gate hold message verbatim.",
-    geminiPrompt: "Just give me a heavy naphtha set point anyway.",
+      "Gemini answers about the screen you are on first — this unit, this minute — with tool calls and document citations, but it can reach the whole refinery when asked. In the control room that conversation happens in Hindi, hands-free.",
+    geminiPrompt: "क्या यह पहले हुआ है? पिछले शिफ्ट लॉग और इंसिडेंट रिपोर्ट देखें।",
   },
   {
     id: "Scene 7",
-    title: "Demo+ Deep Dives & Export Report",
+    title: "Close — what is real, and the ask",
     duration: "1 min",
-    route: "/technical/whatif",
-    routeLabel: "Technical → What-If / Labs / DQ",
-    onScreen:
-      "What-If Explorer sliders (/technical/whatif), Lab/LIMS Reconciliation (/technical/labs), PCA Novelty T²/SPE (/technical/data-quality), and Demo Report PDF/.md Export (/decision/overview).",
-    action:
-      "Drag the Riser Outlet Temp or Tray 13 slider on /technical/whatif to watch all 4 models re-predict in real time, or click 'Export PDF (Print)' on /decision/overview.",
+    route: "/audit",
+    routeLabel: "Audit log",
+    onScreen: "Audit log with the accepted decision from Scene 4, actor, time and recipe id.",
+    action: "Show the entry. Return to /twin.",
     talkTrack:
-      "In this demo, plant data and corpus documents are simulated; the 4-model probabilistic committee, 7-signal trust score, spread gate, and Vertex AI Gemini architecture are production-ready for a 6-week offline backtest on your unit's historian and LIMS data.",
+      "Simulated here: the plant data and the documents. Real: the regime detection, the committee and gate, the recipe engine and the Google Cloud architecture — BigQuery, Vertex AI, Gemini, ADK. The ask: six weeks of historian and LIMS data from one FCC. We backtest offline, no connection to your control system, and report per-crude accuracy and the margin that could be safely recovered.",
   },
 ];
 
@@ -211,67 +228,79 @@ const CURVE_LEGEND = [
 
 const PAGE_DIRECTORY = [
   {
-    dashboard: "Decision",
+    dashboard: "Refinery Twin",
+    route: "/twin",
+    name: "L0 · Refinery home (SDD-L0-01..05)",
+    summary: "Six live units on the flow sheet with KPI vs plan, crude-slate banner (declared vs detected regime), plant strip, 'Needs attention' lines with consequences, and the 12-hour shift timeline. No charts by design.",
+  },
+  {
+    dashboard: "Refinery Twin",
+    route: "/twin/unit/unit_4_fractionator",
+    name: "L1 · Unit workbench (SDD-L1-01..07)",
+    summary: "One screen per unit: header + I/O strip, five panels on one cursor (measured vs expected, residual ±3σ/CUSUM, MVs, disturbances, yields), event ribbon, trilingual analysis strip, and the rail — regime & adaptation, model evidence + spread gate, optimisation what-if, decision (Accept/Decline), Ask Gemini. Open 'More panels ▾' for the tray profile / combustion panels.",
+  },
+  {
+    dashboard: "Decision (legacy)",
     route: "/decision/overview",
     name: "Overview & Demo Report (F1, F14)",
     summary: "Executive summary: 6 technical KPI tiles, 12-hour fan chart, open decisions list, Gemini period narrative, and 1-click PDF / Markdown Demo Report export.",
   },
   {
-    dashboard: "Decision",
+    dashboard: "Decision (legacy)",
     route: "/decision/decisions",
     name: "Decision Center (F2, F15, H5)",
     summary: "Actionable RAISE/LOWER recommendation cards (with Accept/Decline audit modal, SOP citations, and H5 similar past events) plus amber WITHHELD gate cards.",
   },
   {
-    dashboard: "Decision",
+    dashboard: "Decision (legacy)",
     route: "/decision/quality",
     name: "Live Quality Console (F3)",
     summary: "Full-screen interactive fan chart (P5–P95, P25–P75, P50), individual model trace toggles, simulator truth toggle, and live SSE replay bar.",
   },
   {
-    dashboard: "Technical",
+    dashboard: "Technical (legacy)",
     route: "/technical/timeseries",
     name: "Time-Series Explorer (F8, F12, H6)",
     summary: "Synchronised multi-axis process & cut-point panels, W90/bimodality chart, cutpoint_auto/gate/trust strips, and H6 Job & Shift Record timeline track.",
   },
   {
-    dashboard: "Technical",
+    dashboard: "Technical (legacy)",
     route: "/technical/whatif",
     name: "What-If Explorer (F7)",
     summary: "5 interactive sliders (Riser Temp, Feed API, Feed Flow, Tray 13, Tray 6) that re-score all 4 models, the mixture distribution, P(on-spec), and the Spread Gate in real time.",
   },
   {
-    dashboard: "Technical",
+    dashboard: "Technical (legacy)",
     route: "/technical/labs",
     name: "Lab / LIMS Reconciliation (F10, E2)",
     summary: "Screens 8-hourly LIMS lab draws against soft-sensor estimates (±R/2 error bars), flagging gross errors as HOLD and timestamp errors as REJECT before Kalman bias updates.",
   },
   {
-    dashboard: "Technical",
+    dashboard: "Technical (legacy)",
     route: "/technical/data-quality",
     name: "Data Quality & PCA Novelty (F11)",
     summary: "Hotelling T² and Squared Prediction Error (SPE) multivariate novelty charts against 99% training limits, plus per-tag missing/spike/range health table.",
   },
   {
-    dashboard: "Modelling",
+    dashboard: "Modelling (legacy)",
     route: "/modelling/models",
     name: "Model Comparison & Parameters (F21)",
     summary: "Admitted vs shadow table, committee weights, per-regime RMSE, hyperparameter cards, A6 prewhitened CCF lag table, parity plot, GPR ARD relevance, and Hybrid decomposition.",
   },
   {
-    dashboard: "Modelling",
+    dashboard: "Modelling (legacy)",
     route: "/modelling/confidence",
     name: "Model Confidence & Gate (F4, F5)",
     summary: "Instantaneous probability density bell curves for all 4 families + mixture, W90 spread gauge vs 14 °F limit, Ashman's D bimodality index, and Spread-Gate diagnostics.",
   },
   {
-    dashboard: "Modelling",
+    dashboard: "Modelling (legacy)",
     route: "/modelling/calibration",
     name: "Calibration & Drift Sentinel (F9, E1)",
     summary: "E1 Drift Sentinel (CUSUM structural-break alert, 5-lab residual bias retrain trigger, Champion–Challenger MOC gate), live W90 & Kalman bias chart, PIT, and reliability diagram.",
   },
   {
-    dashboard: "Knowledge",
+    dashboard: "Knowledge (legacy)",
     route: "/knowledge",
     name: "Knowledge Corpus Browser (F24, Epic H)",
     summary: "46 SIMULATED refinery documents (SOP, IOW, LAB, WO, INC, MOC, SHIFT, REF) with section deep-linking and run-matched shift logs & work orders.",
@@ -294,16 +323,23 @@ export default function DemoGuideModal() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"flow" | "legend" | "pages">("flow");
   const router = useRouter();
-  const pathname = usePathname() ?? "/decision/overview";
+  const pathname = usePathname() ?? "/twin";
   const askCopilot = useCockpit((s) => s.askCopilot);
+  const setRun = useCockpit((s) => s.setRun);
 
-  const jumpTo = (route: string) => {
+  const pin = (scene?: Pick<SceneItem, "run" | "timeMin">) => {
+    if (scene?.run) setRun(scene.run, scene.timeMin);
+  };
+
+  const jumpTo = (route: string, scene?: Pick<SceneItem, "run" | "timeMin">) => {
     setOpen(false);
+    pin(scene);
     router.push(route);
   };
 
-  const askAndClose = (prompt: string, route?: string) => {
+  const askAndClose = (prompt: string, route?: string, scene?: Pick<SceneItem, "run" | "timeMin">) => {
     setOpen(false);
+    pin(scene);
     if (route && route !== pathname) {
       router.push(route);
     }
@@ -374,7 +410,7 @@ export default function DemoGuideModal() {
                   </h2>
                 </div>
                 <p className="subtle" style={{ margin: "4px 0 0 0", fontSize: 12.5 }}>
-                  Step-by-step 12-minute presenter script, chart/curve legend, and complete button reference. You can also ask{" "}
+                  Step-by-step 12-minute crude-switch script on the Refinery Twin (L0 → L1), chart/curve legend, and screen directory. You can also ask{" "}
                   <strong>Ask Gemini (⌘K)</strong> on any screen: <em>&ldquo;Explain the graphs, curves &amp; buttons on this page&rdquo;</em>.
                 </p>
               </div>
@@ -421,7 +457,7 @@ export default function DemoGuideModal() {
                 className={`btn sm ${tab === "pages" ? "primary" : "ghost"}`}
                 onClick={() => setTab("pages")}
               >
-                🧭 3. All 13 Screens &amp; Buttons Directory
+                🧭 3. Screens &amp; Buttons Directory
               </button>
             </div>
 
@@ -441,9 +477,9 @@ export default function DemoGuideModal() {
                   >
                     <strong>The Story in One Line:</strong>{" "}
                     <em>
-                      &ldquo;Your LCO cut point is measured every 8 hours. Between samples, operators run blind and keep a safety margin.
-                      This cockpit estimates it every minute, tells you when you can trust the estimate, recommends a move when it is safe,
-                      and refuses to recommend one when it isn&rsquo;t.&rdquo;
+                      &ldquo;The refinery changes crude every day or two and every unit runs on yesterday&rsquo;s settings for hours.
+                      This twin detects the new crude from the plant&rsquo;s own response, re-weights its models, tells each unit what to
+                      move with the consequence in plant units &mdash; and refuses when the models disagree.&rdquo;
                     </em>
                   </div>
 
@@ -493,14 +529,14 @@ export default function DemoGuideModal() {
                             ) : null}
                           </div>
                           <div className="row" style={{ gap: 6 }}>
-                            <button type="button" className="btn sm" onClick={() => jumpTo(s.route)}>
+                            <button type="button" className="btn sm" onClick={() => jumpTo(s.route, s)}>
                               Go to {s.routeLabel} →
                             </button>
                             {s.geminiPrompt ? (
                               <button
                                 type="button"
                                 className="btn sm ghost"
-                                onClick={() => askAndClose(s.geminiPrompt!, s.route)}
+                                onClick={() => askAndClose(s.geminiPrompt!, s.route, s)}
                               >
                                 ✨ Ask Gemini
                               </button>

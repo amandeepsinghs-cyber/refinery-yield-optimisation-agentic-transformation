@@ -8,21 +8,23 @@
 
 ## 1. The Story in One Line
 
-**"Your LCO cut point is measured every 8 hours. Between samples, operators run blind and keep a safety margin. This cockpit estimates it every minute, tells you when you can trust the estimate, recommends a move when it's safe, and refuses to recommend one when it isn't."**
+**"The refinery changes crude every day or two, and every unit runs on yesterday's settings for hours. This twin detects the new crude from the plant's own response, re-weights its models, tells each unit what to move — with the consequence in plant units — and refuses when the models disagree."**
 
-- **Decision shown:** D2 is where to set the LCO (and heavy naphtha) cut point. D3 is whether I can act on the estimate or must wait for the lab.
-- **Not shown:** D1 (hydrotreater sulfur). The simulator has no sulfur, so this value is proven only on the refinery's own data (§6).
-- **No financial figures.** All impact is technical: °F of margin to spec, P(on-spec), and LCO yield shift in % of feed.
-- **Length:** 12 minutes plus Q&A. Seven scenes. Each scene works on its own, so the presenter can skip any of them.
+- **Decision shown:** per unit, the coordinated multi-set-point **recipe** after a crude switch (U4 cut points first; U1/U3/U5/U6 the same way), and whether it may be acted on (spread gate) or must wait for a lab.
+- **Not shown:** D1 (hydrotreater sulfur) — the simulator has no sulfur; proven on the refinery's own data (§6).
+- **No financial figures.** All impact is technical: °F to spec, P(on-spec), yield shift in % of feed, fuel / power / coke deltas.
+- **Length:** 12 minutes plus Q&A. Scene 0 plus seven scenes. Each scene stands alone, so the presenter can skip any of them.
+- **Screens:** two levels only — **L0 Refinery Twin** (`/twin`) and **L1 Unit Workbench** (`/twin/unit/{unit_id}`) — plus the Audit log. The former Decision / Technical / Modelling / Knowledge dashboards are retired from navigation (SDD-L1-05, D3); their routes still resolve for citations.
 
 ## 2. Cast: What the Audience Sees
 
 | Element | What it is |
 |---|---|
-| **Cockpit** | Next.js web app with four dashboards (**Decision · Technical · Modelling · Knowledge**) and a floating **Gemini panel** on every screen. Citations open a quick preview in the panel, and "Open in Knowledge" jumps to the full document at the cited section |
-| **Gemini Copilot** | Text and voice (Gemini Live) ADK agent. It is read-only, cites simulated documents, and never invents a recommendation |
-| **Data** | `full_v1`: 54 runs × ~27 h of the peer-reviewed FCC-Fractionator simulator (Santander et al., 2022), BigQuery `fcc-soft-sensor.fcc_soft_sensor.fcc_sim_minute` |
-| **Provenance chip** | Always visible: `Simulated data · full_v1 · random_sNNN · hh:mm` |
+| **L0 Refinery Twin** | Six live units on the flow sheet (status pill, KPI vs plan), crude-slate banner (declared API vs detected regime, transition %, novelty), plant strip, **Needs attention** rail (one consequence line per open event, in flow order) and the 12-hour shift timeline. No charts by design. |
+| **L1 Unit Workbench** | One screen per unit: header + I/O strip → five panels on **one cursor** (measured vs expected with 5–95 % band, residual ±3σ + CUSUM, MVs, disturbances, yields as % feed) → event ribbon → trilingual analysis strip; right rail = Regime & adaptation · Model evidence + spread gate · Optimisation (what-if sliders + P(on-spec)/Δ-yield curve) · Decision (Accept / Decline) · Ask Gemini. "More panels ▾" holds the second quality pair, tray profile (U4) and combustion (U1). |
+| **Gemini Copilot** | Text and voice (Gemini Live, `hi-IN` for Hindi / Hinglish) ADK agent scoped to the open screen (plant on L0, unit on L1) but able to reach the whole refinery. Read-only, cites simulated documents, quotes WITHHELD verbatim, never invents a set point. |
+| **Data** | `full_v1`: 54 runs × ~27 h of the peer-reviewed FCC simulator (Santander et al., 2022), 50 labelled crude switches; BigQuery `fcc-soft-sensor.fcc_soft_sensor.fcc_sim_minute`. **Demo run `random_s107`** (train split, R3 → R4 switch at 07:25, recipe ISSUED at 10:00); **withhold run `random_s144`** (hold-out, gate WITHHELD at 10:00). |
+| **Provenance chip** | Always visible: `Simulated data · full_v1 · random_sNNN · t NNN min (hh:mm)` |
 
 ## 3. Demo Data Requirements (drives run selection)
 
@@ -41,60 +43,54 @@ The demo run is picked from the **hold-out runs** (never used for training) afte
 
 ## 4. The Script
 
-### Scene 0: Hook and Honesty (1 min)
-- **Screen:** Decision Overview. The provenance chip is highlighted.
-- **Say:** *"This is a refinery FCC fractionator. The data is from a peer-reviewed physics simulator, the kind used in operator-training simulators. We use it to show behaviour, not to claim accuracy on your unit. We checked our version of the simulator against the published results: 41 of 46 signals match within 0.2%."*
-- **Must be true:** the chip shows the batch, run and time. Every truth overlay is labelled "simulator truth".
-- **Features:** F20, F22 · **Evidence:** `sim_octave/VALIDATION.md`
+> The in-app **Demo & UI Guide** (top bar) mirrors this script scene by scene; each "Go to" pins the run and minute below. Clock: `t` minutes from run start; `hh:mm` = t / 60.
 
-### Scene 1: Decision Overview, "Can I trust it, and what should I do?" (2 min)
-- **Screen:** KPI tiles (RMSE vs lab, 90% coverage, trust mix, availability, accepted, withheld). Below them, a 12-hour LCO T98 fan chart (P5–P95) with lab dots, the spec line (765 °F) and the trust strip. On the right, **Decisions needed**.
-- **Say:** *"The blue band is the soft sensor's estimate with its uncertainty. The dots are lab results, one every 8 hours. Between dots the operator normally has nothing."*
-- **Click:** the recommendation card, e.g. **"Raise LCO T98 set point +4 °F · P(on-spec) 97% · margin 8.3 → 4.3 °F · LCO yield +0.3% of feed · trust GREEN · [SOP-FRAC-003 r4 §4.2]"**.
-- **Click:** the citation chip. The source preview opens *inside the Gemini panel*.
-- **Click:** **Accept**. A toast says *"Recorded. The cockpit never writes to the DCS."*
-- **Data moment:** M2 · **Features:** F1, F2, F3, F6, D5, H3, H4 · **Backend:** `/api/overview`, `/api/recommendations`, `/api/knowledge/docs/{id}`
+### Scene 0: Hook and Honesty (1 min) — `/twin` · random_s107 · t 600 (10:00)
+- **Screen:** Refinery Twin home. Provenance chip highlighted.
+- **Say:** *"A refinery changes crude every day or two. Every model and every operator setting lags that change by hours. This cockpit watches all six FCC units at once, detects the new crude from the plant's own response, re-weights its models and tells each unit what to move — and when not to. The data is a peer-reviewed physics simulator: 54 runs, 50 labelled crude switches. We use it to show behaviour, not to claim accuracy on your unit."*
+- **Must be true:** the chip shows batch, run and minute; `plotly:0` on this screen.
+- **Backend:** `GET /api/twin`
 
-### Scene 2: Replay the Crude Switch, "Why a soft sensor?" (2 min)
-- **Screen:** Technical → Time-Series Explorer. Linked panels:
-  1. Feed API and event markers.
-  2. Draw-tray temperatures.
-  3. `LCO_T98_F`: simulator truth vs the soft-sensor band vs lab dots.
-  4. Controller mode strip (manual / trim).
-- **Click:** replay from 1 h before the crude switch at 30× speed.
-- **Say:** *"A heavier crude arrives. Tray temperatures move within minutes, and the true cut point drifts. The last lab was 5 hours ago and the next is 3 hours away, so the operator doesn't see it. The soft sensor follows it within minutes. When the lab arrives, the operator trims back: this is the sawtooth your unit lives with today."*
-- **Data moment:** M1 · **Features:** F8, F12 · **Backend:** `/api/runs/{id}/timeseries` (LTTB-downsampled), `/api/estimates`
+### Scene 1: The crude switch arrives — L0, "Where will it hit first?" (2 min) — `/twin` · random_s107 · t 445 → 600
+- **Screen:** crude banner (declared API 27.2 → detected regime), unit blocks turning WATCH in flow order, **Needs attention** lines with consequences (*"LCO heavier than spec: PA3 saturates in ~180 min; LCO yield −0.4 % feed if the cut point is not pulled back"*).
+- **Click:** drag the shift timeline from 07:25 to 10:00 (or ▶). The banner flips to **R4 · match** at 07:39 (+14 min after the ramp). Switch the language toggle to Hinglish.
+- **Say:** *"The declared crude says light Bonny; the plant's response says the same fourteen minutes after the ramp. The twin shows where the change lands first and what breaks downstream if nobody acts — before the next lab result, which is still hours away."*
+- **Data moment:** crude switch R3 → R4 · **Backend:** `GET /api/twin?time_min=` (`crude_slate`, `needs_attention`, `timeline`) · **BDD-28** banner, timeline
 
-### Scene 3: The Withhold, "It knows when not to be trusted" (2 min)
-- **Screen:** Decision → an amber **Withheld** card: *"HN T98: Distribution spread too wide. W90 = 18.4 °F exceeds the 14.0 °F limit. No recommendation issued."*
-- **Click:** **Why? → Modelling**. This deep link opens Model Confidence at the same minute: overlaid distributions (Hybrid delta, GPR, PINN ensemble, Bayesian ridge, mixture), a W90 gauge, a bimodality index and the banner.
-- **Say:** *"Two models say 528 °F, one says 541 °F. The inputs are outside anything the models were trained on. Instead of averaging and guessing, the system withholds and asks for a lab sample. This is what makes it safe to put in front of an operator."*
-- **Data moment:** M3 · **Features:** C7, F4, F5, B10 · **Backend:** `/api/distribution`
+### Scene 2: Drill into the fractionator — L1, "How do we know it is off?" (2 min) — `/twin/unit/unit_4_fractionator?tag=LCO_T98_F` · t 600
+- **Click:** the **LCO T98** attention line on L0 → lands on U4 with the measured-vs-expected panel highlighted.
+- **Screen:** header + I/O strip; five panels on one cursor; event ribbon (regime change 07:39, change-points 09:14 / 09:42, recipe_ready); analysis strip in the chosen language.
+- **Click:** hover any panel — the dotted guide moves in all of them; click the 09:42 chip to jump the cursor; open **More panels ▾** for the HN pair and the tray temperature profile.
+- **Say:** *"Measured against what the committee expects for this crude: the residual walks out, the CUSUM trips at 09:42, and the analysis strip says so in one sentence — in English, Hinglish or Hindi. One cursor, every panel, no tab-hopping."*
+- **Backend:** `GET /api/unit/unit_4_fractionator/workbench` · **BDD-28** one cursor, `?uc=` / `?tag=` entry
 
-### Scene 4: Model Depth, for the Engineers in the Room (1.5 min)
-- **Screen:** Modelling → Model Comparison. It shows a per-model table (status, weight, RMSE, 90% coverage, CRPS), a parity plot, residuals over time, error by regime, GPR length-scales and the hybrid physics-vs-Δ split.
-- **Say:** *"Every model has to beat a plain regression to get weight. We test on held-out runs and hold out one crude family at a time. These are simulated numbers, so they show method, not your accuracy."*
-- **Features:** F21, F9, B1, B4, B5, B6, B9 · **Backend:** `/api/models`, `/api/calibration`
+### Scene 3: Regime & models — "The models adapted, here is the evidence" (1.5 min) — U4 rail · t 600
+- **Screen:** **Regime & adaptation** (R1–R4 bars, declared vs detected, detected at 07:39, novelty 0.15, physics weight 0.68, bias reset 07:25); **Model evidence** (member weights and w(R4), physics checks: mass closure, tray monotonic, reactor balance; **Spread gate PASS · W90 13.7 / 14**).
+- **Say:** *"No retraining in the loop. The committee re-weights by crude regime from a fitted table, physics-anchored members take over while the data members catch up, and the gate only passes when the models agree within fourteen degrees."*
+- **Backend:** `regime`, `models` blocks of the workbench payload (SDD-REG, SDD-ADP)
 
-### Scene 5: Gemini Copilot, Text (1.5 min)
-- **Screen:** the Gemini panel, over any dashboard.
-- **Ask:** *"Why was the HN recommendation withheld at 08:42?"* The answer streams, with tool calls visible (distribution, trust breakdown) and a citation chip.
-- **Ask:** *"Has this happened before?"* The answer lists similar past events (a WO, an INC, a shift log) with `[DOC-ID rN §x.y]` citations.
-- **Click:** a citation chip, then **Open in Knowledge**. The Knowledge dashboard opens the full document at the cited section, next to the related records for this run (work orders, shift logs, MOCs).
-- **Must be true:** every citation resolves. Below the relevance threshold the answer says "No cited source".
-- **Features:** E5, F13, H2, H3, H5 · **Backend:** `/api/copilot/chat` (SSE), ADK agent, knowledge index
+### Scene 4: Optimisation & decision — "What to move, by how much, and the consequence" (2 min) — U4 rail · t 600
+- **Screen:** **Optimisation** — three sliders (SP_LCO_T98 755.3 → 745.3, SP_HN_T98 530.3 → 525.6, SP_T_riser_ROT 969 → 974) with the P(on-spec) / Δ-yield curve and effects (yield shift +0.72 % feed, fuel, power, coke). **Decision GREEN**: *LOWER SP_LCO_T98 −2.0 °F* with rationale, systems ripple, `[SOP-frac-014 r3 §4.2] [LAB-001 r3 §2.1]`.
+- **Click:** drag the LCO slider (curve and effects update live) → click a citation chip → **Accept** → toast confirms the audit entry; nothing is written to the DCS.
+- **Say:** *"The recipe is a coordinated multi-set-point move with its yield and energy consequence in plant units, not money. A human accepts it; the audit log keeps the record."*
+- **Backend:** `recipe`, `POST /api/unit/{id}/whatif`, `POST /api/twin/decision` (SDD-RCP)
 
-### Scene 6: Voice with Gemini Live, and the Guardrail (1 min)
-- **Click:** the microphone in the Gemini panel (push-to-talk).
-- **Say to it:** *"Where is the LCO cut point right now, and can I trust it?"* It gives a spoken answer with the trust level.
-- **Say to it:** *"Just give me a heavy naphtha set point anyway."* It refuses, reading the gate message verbatim: no set point while WITHHELD.
-- **Features:** F23, E5 · **Backend:** `/api/live` WebSocket, `gemini-live-2.5-flash-native-audio` (us-central1)
+### Scene 5: The withhold — "It knows when not to be trusted" (1.5 min) — U4 · **random_s144** · t 600
+- **Click:** run picker → `random_s144` (or the guide's "Go to").
+- **Screen:** **Model evidence** shows the gate **WITHHELD** with the W90 that exceeded 14 °F; **Optimisation** reads "exploration only"; **Decision** has no move — hold set points, request a lab.
+- **Ask Gemini:** *"Why is the recipe withheld right now? Quote the gate message."* — it quotes verbatim and refuses a set point.
+- **Say:** *"When the committee disagrees, the system withholds and asks for a lab instead of averaging four guesses. This refusal is what makes it safe in front of an operator."*
+- **Data moment:** M3 · **Backend:** `gate.committee_gate` (SDD-GATE), `get_recipe` tool
 
-### Scene 7: Close, "What's real, and the ask" (1 min)
-- **Say:**
-  - Simulated in this demo: the plant data and the documents.
-  - Real: the method, the gating and the architecture on Google Cloud (BigQuery, Vertex AI, Gemini, ADK, Cloud Run).
-- **The ask:** *"Give us 6 weeks of historian and LIMS data from one FCC. We backtest offline, with no connection to your control system, and report accuracy per crude and the margin we could safely recover. The hydrotreater sulfur case (D1) is proven on your data in the same exercise."*
+### Scene 6: Gemini on the open screen — text, Hindi-first, voice (1.5 min) — U4 · random_s107 · t 600
+- **Screen:** **Ask Gemini** card with screen-scoped suggestions; drawer shows the screen chip (*Fractionator · t 600*). Toggle **हिंदी**: briefing and suggested prompts switch to Hindi.
+- **Click:** a Hindi chip (*"क्या यह पहले हुआ है?"*) → answer with tool calls and `[DOC-ID rN §x.y]` citations. Press the mic (Gemini Live, `hi-IN`): *"LCO cut point abhi kahan hai, aur bharosa kar sakte hain?"* Then the guardrail: *"Just give me a set point anyway."*
+- **Say:** *"Gemini answers about the screen you are on first — this unit, this minute — but can reach the whole refinery when asked. In the control room that conversation happens in Hindi, hands-free."*
+- **Backend:** `POST /api/copilot/chat` (SSE, `context.screen`), `WS /api/live` (SDD-GEM-01..04)
+
+### Scene 7: Close — what is real, and the ask (1 min) — `/audit`
+- **Screen:** the accepted decision from Scene 4 in the audit log (actor, time, recipe id). Return to `/twin`.
+- **Say:** *"Simulated here: the plant data and the documents. Real: the regime detection, the committee and gate, the recipe engine and the Google Cloud architecture — BigQuery, Vertex AI, Gemini, ADK. The ask: six weeks of historian and LIMS data from one FCC. We backtest offline, no connection to your control system, and report per-crude accuracy and the margin that could be safely recovered."*
 
 ---
 
@@ -150,6 +146,9 @@ flowchart LR
 ---
 
 ## 9. v2 Expansion Scenes: Systems-Thinking Digital Twin ("The Whole Elephant") & 11-Use-Case Catalogue
+
+> [!NOTE]
+> **Superseded (2026-10-01).** The "Systems Twin" mode and the 11-pill catalogue described below were the Phase-13 screens; they are now folded into **L0** (Scene 1 — the connected six-unit flow sheet with loops and ripple) and **L1** (Scenes 2–5 — every use case opens its owning unit via `?uc=UC-NN`, e.g. `/twin/unit/unit_1_furnace?uc=UC-05` lands on the combustion panel). Kept for the talk-track wording only.
 
 > **Why These Two Scenes Complete the Plant Head Pitch:**
 > Scenes 0–7 prove deep statistical rigour on cut points (`LCO_T98_F` and `HN_T98_F`). Scenes 8 and 9 show that **the exact same 112-column simulator, PINN/ML committee, safety gate, and RAG corpus operate as a holistic Refinery Digital Twin** that solves **all 11 core requirements** in [`refinery_optimisation.md`](refinery_optimisation.md) without siloed sub-optimisation.

@@ -71,7 +71,7 @@ function L1Content({ unitId }: { unitId: string }) {
   useEffect(() => {
     if ((!uc && !tag) || !data) return;
     const owning =
-      (uc && (data.panels.find((p) => p.use_case_ids?.includes(uc)) ?? data.panels.find((p) => p.panel_id === data.unit.use_cases.find((u) => u.id === uc)?.panel_id))) ||
+      (uc && (data.panels.find((p) => p.panel_id === data.unit.use_cases.find((u) => u.id === uc)?.panel_id) ?? data.panels.find((p) => p.use_case_ids?.includes(uc)))) ||
       (tag && (data.panels.find((p) => p.kind === "measured_vs_expected" && p.traces?.some((tr) => tr.key === tag)) ?? data.panels.find((p) => p.traces?.some((tr) => tr.key === tag)))) ||
       null;
     if (!owning) return;
