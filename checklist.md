@@ -355,7 +355,7 @@ curl -s localhost:8010/api/health | python3 -m json.tool | grep -A3 knowledge
 
 ### Phase 17: Agents on the event bus (Step 17 · J4)
 - ☑ Sentinels emit E3 events and draft E4 recipes; Systems Agent consequence lines (`app/engines/systems.py`, 19 rules over catalyst / heat / hydrocarbon loops)
-- ☐ ADK extras (`get_scope_snapshot`, `get_regime`, `get_recipe`) in `ALL_TOOLS`; `root_agent.tools` still 8
+- ☑ ADK extras (`get_scope_snapshot`, `get_regime`, `get_recipe`) in `ALL_TOOLS`; `root_agent.tools` still 8 (`tests/test_gemini_scope.py::test_adk_canonical_count_unchanged_and_extras_registered`)
 
 ### Phase 18: Screens (Step 18 · J6, J7 · BDD-28)
 - ☑ L0 `/twin` — hybrid PFD (6 live units + boundary blocks, 3 loops), crude-slate banner, KPI vs plan, counts, "Needs attention", 12-h shift timeline (drag / arrow-key scrub, ▶ replay); zero charts (`plotly:0` verified by CDP screenshot)
