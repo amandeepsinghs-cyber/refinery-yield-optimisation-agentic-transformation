@@ -80,7 +80,7 @@ Full lever table with typical values and allowed ranges: [verbatim.md §9.5.3](v
 > [!NOTE]
 > **Alignment review against verbatim.md (2 Oct 13:05–13:20).** Two older asks were replaced by the 11:00 agreement ("on the surface looks better; then click for details"):
 > - **VN6, hover a unit for a mini-graph or right pane:** replaced by click-through to the unit page. `l0/DetailPane.tsx` is still in the code but not used on the home page.
-> - **VN1, data flow from Bigtable to BigQuery lakehouse to models:** shown as the lakehouse source line under ④ on the unit page. `l0/FlowStrip.tsx` is still in the code but not used on the home page. Waiting on the owner: does he want a one-line "data path" back on the home page?
+> - **VN1, data flow from Bigtable to BigQuery lakehouse to models:** shown as the lakehouse source line under ④ on the unit page. `l0/FlowStrip.tsx` is still in the code but not used on the home page. Owner 14:08: show the simulation path only (Simulation → BigQuery → Lakehouse → Models → Decision); it is now a one-line strip on the home page above the timeline.
 >
 > Everything else in VN1–VN11 is covered by the rows above: dark default with a light toggle, coloured curves (no grey), a band around the live value, bell curves, the systemic "if nothing is done", Gemini with window context in Hindi, explicit levers, and the spread gate that waits for the lab.
 
