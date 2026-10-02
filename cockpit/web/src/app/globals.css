@@ -3061,6 +3061,7 @@ input[type=range]::-webkit-slider-runnable-track {
 .wr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .wr-h { font-size: 11px; font-weight: 650; letter-spacing: 0.09em; text-transform: uppercase; color: var(--subtle); }
 .wr-lead b { color: var(--ink); }
+.wr-lead { white-space: nowrap; }
 .wr-item { display: inline-flex; gap: 6px; align-items: baseline; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--border);
   background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
 .wr-item b { color: var(--ink); font-weight: 600; }

@@ -86,7 +86,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
           <span className="uf-pick">
             {decisions.map((x) => (
               <button key={x.id} type="button" className={`uf-pick-b p-${x.status} ${x.id === d?.id ? "on" : ""}`} onClick={() => onPick(x.id)} title={x.question}>
-                {x.status === "open" ? "Decide" : x.status === "withheld" ? "Not yet" : "Watch"} · {x.type_name.split(":")[0].split(" ").slice(0, 3).join(" ")}
+                {x.status === "open" ? "Decide" : x.status === "withheld" ? "Not yet" : "Watch"} · {SHORT[x.id.split("-")[0]] ?? x.type_name.split(":")[0]}
               </button>
             ))}
           </span>
@@ -197,4 +197,10 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
       </ol>
     </section>
   );
-}
+}// short, whole-word labels for the decision picker (first-three-words cut mid-phrase, e.g. "Coordinated recipe for")
+const SHORT: Record<string, string> = {
+  D1: "Cut point", D2: "Trust the estimate", D3: "Recipe for new crude", D4: "Crude switch", D5: "Regenerator air",
+  D6: "Furnace preheat", D7: "Condenser and stabiliser", D8: "What breaks downstream", D9: "Extra lab sample",
+};
+
+
