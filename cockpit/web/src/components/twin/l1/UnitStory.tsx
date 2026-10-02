@@ -467,7 +467,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 <button type="button" className="hs-btn ghost" onClick={() => ask(`Explain decision "${d.headline}" (${d.id}): what we observe, the lever, what happens if we hold.`)}>Ask Gemini</button>
                 {d.action ? <span className="subtle">{d.action.action} at {d.action.time_label} · recorded in audit, nothing sent to the plant</span> : null}
               </div>
-              <p className="us-uc">IOCL use case · {d.use_cases.map((x) => x.iocl_title).join(" · ")}<br /><span className="subtle">Problem it solves · {d.problem_text.join(" ")}</span></p>
+              <p className="us-uc">IOCL use case · {d.use_cases.map((x) => x.iocl_title).join(" · ")}<Link className="us-how" href={`/how-it-works#${d.type}`}>How this decision is made →</Link><br /><span className="subtle">Problem it solves · {d.problem_text.join(" ")}</span></p>
               <h3 className="us-earlier-h">Earlier on this decision</h3>
               <EarlierDecisions rows={actions} d={d} />
             </div>

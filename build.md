@@ -21,6 +21,7 @@
 > - **Stays on the real engine:** D1 cut point, D2 trust or spread gate (wait for the lab), D9 lab sample, D8 watch.
 > - **Labels:** the top pill reads "Simulated data · scripted outcomes", and each scripted lever carries a "scripted outcome" tag. Switch it off with `demo.scripted_outcomes: false` or `FCC_SCRIPTED=0`; tests run with it off and `tests/test_scripted.py` checks it on.
 > - **Consistency rules (14:25):** crude-switch events use the scripted detection time (switch end + 12 min) so the shift list, crude block and classifier agree; the scripted D3 recipe is not released while D2 is withheld on spread, so run s144 still shows the cockpit refusing when the models disagree.
+> - **How it works (14:31–14:40):** `/how-it-works` and the home use-case chips share one explainer per IOCL use case (`components/how/UseCaseExplainer.tsx`, content `lib/howItWorks.ts`): problem today → how it is solved → in → parts → decision rule → out → value in plant terms. Each use case, part and decision carries a status (Real · Scripted outcome · Partly · Watch only). No money figures, ever (standing rule).
 > - **Gone in scripted mode:** the "Not yet" status for D3 and D5–D7, the real classifier's 57 % accuracy line, and the need for the lever batch, refit and closed-loop check before the demo.
 
 ### Screens

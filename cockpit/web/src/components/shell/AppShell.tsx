@@ -10,7 +10,6 @@ import { useCockpit } from "@/lib/store";
 import type { PropertyId } from "@/lib/types";
 import type { ThemeName } from "@/lib/theme";
 import CopilotLauncher from "@/components/copilot/CopilotLauncher";
-import DemoGuideModal from "@/components/shell/DemoGuideModal";
 import Toaster from "@/components/ui/Toaster";
 import { IconMoon, IconSun } from "@/components/ui/icons";
 
@@ -181,7 +180,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <span className="tray-label">Simulated run</span>
               <div className="tray-row"><RunPropertySelect /></div>
               <span className="tray-label">Walkthrough</span>
-              <div className="tray-row"><DemoGuideModal /></div>
+              <div className="tray-row"><Link href="/how-it-works" className="strip-link">How it works</Link></div>
             </div>
           </details>
         </div>

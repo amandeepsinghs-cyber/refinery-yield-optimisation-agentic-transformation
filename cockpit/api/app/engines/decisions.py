@@ -429,8 +429,8 @@ def _watch(run_id: str, t: int, attention: list[dict], covered: set[str]) -> lis
         down = UNIT_SHORT.get(a.get("downstream_unit_id"), "")
         d["question"] = {"D5": "Rebalance regenerator air against riser severity?",
                          "D6": "Trim the furnace preheat for the new crude?",
-                         "D7": ("Raise condenser cooling water or reflux?" if uid == "unit_5_condenser"
-                                else "Adjust stabiliser overhead temperature / reflux for C5 recovery?"),
+                         "D7": ("Raise the overhead temperature or the cooling water?" if uid == "unit_5_condenser"
+                                else "Adjust the stabiliser overhead temperature for C5 recovery?"),
                          }.get(dtype, f"Act on the {UNIT_SHORT.get(uid, '').lower()} now, before it reaches the "
                                       f"{down.lower()}?")
         d["observed"] = {"tag": a.get("tag"), "label": TAG_LABEL.get(a.get("tag"), a.get("tag")), "line": a.get("line"),

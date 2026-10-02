@@ -6,7 +6,10 @@
  * and, underneath, the IOCL use cases this shift is exercising. Every number comes from /api/twin and /api/decisions.
  */
 
-import { useState } from "react";
+import Link from "next/link";
+import UseCaseExplainer from "@/components/how/UseCaseExplainer";
+import { UC_DETAIL } from "@/lib/howItWorks";
+import { useEffect, useState } from "react";
 import { useCockpit } from "@/lib/store";
 import { modelColor } from "@/lib/theme";
 import { clock } from "@/lib/format";
@@ -133,18 +136,44 @@ const UC_STATE: Record<string, string> = { active: "decision open", watching: "w
 
 export function UseCaseBand({ rows, selected }: { rows: CoverageRow[]; selected: Decision | null }) {
   const mine = new Set(selected?.use_cases.map((u) => u.platform_id) ?? []);
+  // Each chip is an explainer (owner, 14:40): click → the problem, the parts that solve it, in / out, how the decision is
+  // made and the value. Same component as the How it works page.
+  const [open, setOpen] = useState<string | null>(null);
+  // Deep link: /twin#uc-UC-01 opens that explainer (used by the demo script and screenshots).
+  useEffect(() => {
+    const m = window.location.hash.match(/^#uc-(.+)$/);
+    if (!m || !UC_DETAIL[m[1]]) return;
+    const t1 = setTimeout(() => setOpen(m[1]), 0);
+    const t2 = setTimeout(() => document.getElementById("uc-panel")?.scrollIntoView({ block: "start" }), 400);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
   useScreenPart("use_cases", rows.map((r) => ({ use_case: r.iocl_title, row: r.iocl_row, state: r.state })));
   return (
     <section className="ucb" data-testid="use-case-band" aria-label="IOCL use cases">
-      <h2 className="hs-h">IOCL use cases this shift</h2>
+      <h2 className="hs-h">IOCL use cases this shift <span className="ucb-hint">click one to see how it is solved</span>
+        <Link href="/how-it-works#usecases" className="us-how">All, stage by stage →</Link></h2>
       <ul className="ucb-list">
-        {rows.map((r) => (
-          <li key={r.iocl_title} className={`ucb-chip u-${r.state.replace(" ", "-")} ${r.platform_id && mine.has(r.platform_id) ? "mine" : ""}`}
-            title={`${r.iocl_row}${r.platform_id ? ` · ${r.platform_id}` : ""} — ${UC_STATE[r.state]}`}>
-            <i aria-hidden />{r.iocl_title}
-          </li>
-        ))}
+        {rows.map((r) => {
+          const id = r.platform_id;
+          const can = !!id && !!UC_DETAIL[id];
+          return (
+            <li key={r.iocl_title}>
+              <button type="button" disabled={!can} aria-expanded={can ? open === id : undefined}
+                className={`ucb-chip u-${r.state.replace(" ", "-")} ${id && mine.has(id) ? "mine" : ""} ${open === id ? "on" : ""}`}
+                title={`${r.iocl_row}${id ? ` · ${id}` : ""} — ${UC_STATE[r.state]}`}
+                onClick={() => can && setOpen(open === id ? null : id)}>
+                <i aria-hidden />{r.iocl_title}
+              </button>
+            </li>
+          );
+        })}
       </ul>
+      {open ? (
+        <div className="ucb-panel" id="uc-panel">
+          <button type="button" className="ucb-close" onClick={() => setOpen(null)} aria-label="Close">×</button>
+          <UseCaseExplainer id={open} />
+        </div>
+      ) : null}
     </section>
   );
 }
