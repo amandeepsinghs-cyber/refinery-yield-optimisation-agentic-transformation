@@ -17,7 +17,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCockpit } from "@/lib/store";
-import { useDistribution } from "@/lib/api";
+import { useDistribution, useHealth } from "@/lib/api";
 import { getTwinWorkbench } from "@/lib/twinApi";
 import { actOnDecision, getDecisions, type Decision } from "@/lib/decisionsApi";
 import type { TwinWorkbench } from "@/lib/twinTypes";
@@ -557,6 +557,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                   <li><span>Goal</span>{goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of {move.label.charAt(0).toLowerCase() + move.label.slice(1)}</li>
                   <li><span>Limits</span>SOP step ≤ {fx(stepMax, nd)} {move.unit} · time between moves · lever window</li>
                   <li><span>Model</span>{p.model ?? `4-model soft sensor, weighted for the crude now (${data.regime?.regime_id ?? "—"})`}</li>
+                  <TrainedOn />
                   <li><span>Result</span>{fx(move.from, nd)} → {fx(move.to, nd)} {move.unit}: {pct(p.p_on_spec_before)} → {pct(p.p_on_spec_after)}, margin {fx(p.margin_after, 1)} {p.unit ?? move.unit}</li>
                 </ul>
                 <h3 className="us-bind-h">What sets the size of the move</h3>
@@ -597,4 +598,16 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
 
 export default function UnitStory({ unitId }: { unitId: string }) {
   return <UnitStoryInner unitId={unitId} />;
+}
+
+/** ④ "What the models were trained on" (VN10 "how did we train"). Read from /api/health. */
+function TrainedOn() {
+  const h = useHealth().data?.data;
+  if (!h?.trained) return null;
+  const tr = h.split?.match(/train[^(]*\((\d+) runs\)/)?.[1];
+  const te = h.split?.match(/test[^(]*\((\d+) runs\)/)?.[1];
+  const at = h.trained_at ? new Date(h.trained_at).toISOString().slice(0, 16).replace("T", " ") + " UTC" : null;
+  return (
+    <li><span>Trained on</span>{tr ? `${tr} simulated runs` : `${h.runs} simulated runs`}{te ? `, checked on ${te} held-out runs it never saw` : ""} · labels: simulator truth (on site: lab samples){at ? ` · last trained ${at}` : ""}</li>
+  );
 }

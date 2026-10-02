@@ -17,7 +17,7 @@ export interface ApiError {
 // ---------- Meta ----------
 export interface Health {
   status: string;
-  data: { runs: number; batches: string[]; trained: boolean; trained_at: string | null };
+  data: { runs: number; batches: string[]; trained: boolean; trained_at: string | null; split?: string };
   gemini: {
     project: string;
     location: string;
