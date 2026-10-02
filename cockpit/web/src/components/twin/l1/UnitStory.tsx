@@ -456,7 +456,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 <ul className="us-whyl">
                   {d.observed?.estimate != null && p.spec_max != null ? <li>The estimate is <b className="num">{fx(d.observed.estimate, 1)} °F</b>, {fx(p.spec_max - d.observed.estimate, 1)} °F inside the {fx(p.spec_max, 0)} °F spec.</li> : null}
                   <li>{goal} <b className="num">{pct(p.p_on_spec_before)}</b> now, <b className="num good">{pct(p.p_on_spec_after)}</b> after the move.</li>
-                  {d.gates.length ? <li><b>{nPass} of {d.gates.length}</b> trust checks pass, so the advice is shown. Advisory only; the operator decides.</li> : null}
+                  {d.gates.length ? <li><b>{nPass} of {d.gates.length}</b> trust checks pass{nPass < d.gates.length && d.diagnosed?.conservative ? "; one is amber, so the move is cut to half size" : nPass < d.gates.length ? "; the failed check is not a stop rule, so the advice is shown" : ", so the advice is shown"}. Advisory only; the operator decides.</li> : null}
                 </ul>
               ) : null}
               {d.diagnosed?.text ? <details className="us-eng"><summary>Engineer&apos;s note</summary><p>{d.diagnosed.text}</p></details> : null}

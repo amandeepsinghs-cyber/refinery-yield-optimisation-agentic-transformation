@@ -35,7 +35,7 @@ export interface Decision {
     regime_id?: string; regime_label?: string; p_regime?: Record<string, number>; declared_regime_id?: string; transition_pct?: number; novelty?: number;
     severity?: string;
   };
-  diagnosed: null | { text?: string | null; trust?: string | null; trust_reason?: string | null };
+  diagnosed: null | { text?: string | null; trust?: string | null; trust_reason?: string | null; conservative?: boolean | null };
   related?: { property: string; w90: number | null; p_on_spec: number | null; estimate: number | null; sigma: number | null }[];
   proposed: { moves: DecisionMove[]; alternative: string | null; sample?: { properties?: string[]; property?: string; when: string }; sop?: string };
   predicted: null | {

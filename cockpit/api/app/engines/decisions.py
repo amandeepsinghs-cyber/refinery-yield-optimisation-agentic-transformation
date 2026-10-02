@@ -148,8 +148,11 @@ def _est(arrs: dict, prop: str, j: int) -> dict:
         if ok is None:
             continue
         name, op = SIGNAL_NAMES[s]
-        gates.append({"id": s, "name": name, "op": op, "pass": bool(ok), "value": _f(g(f"sig|{s}|value")),
-                      "limit": _f(g(f"sig|{s}|limit"))})
+        val, lim = _f(g(f"sig|{s}|value")), _f(g(f"sig|{s}|limit"))
+        if s == "S2" and not ok and val is not None and lim is not None and val <= lim:
+            # inputs are inside the envelope, but the GPR member's own spread says it is outside its range
+            name = "inputs inside training range (GPR model outside its range)"
+        gates.append({"id": s, "name": name, "op": op, "pass": bool(ok), "value": val, "limit": lim})
     return {"mu": _f(g("mean")), "sigma": _f(g("sd")),  # mixture moments (mu/sigma are per committee member)
             "q05": _f(g("q05")), "q95": _f(g("q95")), "w90": _f(g("w90")), "p_on_spec": _f(g("p_on_spec"), 3),
             "trust": str(g("trust")) if g("trust") is not None else None,
@@ -266,7 +269,10 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
                           "ripple": _ripple(run_id, t, unit_id, sp_tag, sp1, dl or 0.0)}
         horizon = att.get("horizon_min") if att else int(rec.get("valid_until_min", t + 30)) - t
         d["urgency"] = {"rank": None, "time_to_consequence_min": horizon,
-                        "consequence": (att or {}).get("consequence") or f"{short} T98 q95 above spec: off-spec risk",
+                        "consequence": ((att or {}).get("consequence") if rec["action"] == "LOWER" else None)
+                        or (f"{short} T98 q95 above spec: off-spec risk" if rec["action"] == "LOWER" else
+                            f"{short} cut lighter than it needs to be ({_f(rec.get('margin_before_F'), 1)} °F inside spec): "
+                            f"product goes to the heavier stream every hour the cut point is not raised"),
                         "decide_by_label": clock(int(rec.get("valid_until_min", t + 30)))}
         out.append(d)
     elif status == "WITHHELD" or e["trust"] == "RED":

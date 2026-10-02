@@ -330,3 +330,8 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Tests: 289 back-end pass (3 new in `tests/test_bq_source.py`, offline), 82 front-end pass.
 - Not changed: models (same rows), scripted outcomes, the lever batch (still CSV; not in the lake, not needed for the demo).
 
+## 2026-10-02 16:15 — demo click-through (scenes A–J)
+
+- All scenes on BigQuery data: A–G and I–J OK. Scene H (s144) fixed: the D1 consequence matched to the move direction (raise → product giveaway text), the S2 check named “GPR model outside its range” when it fails with its value inside the limit, “one is amber, so the move is cut to half size” in the summary, and the stray `rcp_test_contract` agent event archived to `agent_events_archive` (backup `artifacts/audit_backup_20261002_1612.db`).
+- 286 back-end tests pass.
+
