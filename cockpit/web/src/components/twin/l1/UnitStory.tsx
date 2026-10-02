@@ -586,10 +586,6 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           ))}</ol>
         </div>
         <div>
-          <h3>Use cases on this unit</h3>
-          <ul className="us-ucs">{u.use_cases.map((x) => <li key={x.id}><b>{x.id}</b> {x.title}</li>)}</ul>
-        </div>
-        <div>
           <h3>Actions taken on this unit</h3>
           <UnitActions rows={actions} />
         </div>
