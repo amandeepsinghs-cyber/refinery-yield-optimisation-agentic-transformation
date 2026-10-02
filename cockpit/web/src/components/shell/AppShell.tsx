@@ -53,21 +53,19 @@ function ContextBootstrap() {
   return null;
 }
 
+/** Segmented register switch — verbatim VN-5: "a toggle in which we can see black and then white"; dark is the default. */
 function ThemeToggle() {
   const theme = useCockpit((s) => s.theme);
-  const toggle = useCockpit((s) => s.toggleTheme);
-  const next = theme === "dark" ? "light" : "dark";
+  const setTheme = useCockpit((s) => s.setTheme);
   return (
-    <button
-      type="button"
-      className="btn icon"
-      onClick={toggle}
-      aria-label={`Switch to ${next} theme`}
-      title={`Switch to ${next} theme`}
-      id="theme-toggle"
-    >
-      {theme === "dark" ? <IconSun /> : <IconMoon />}
-    </button>
+    <div className="seg theme-seg" role="group" aria-label="Display register" data-testid="theme-seg" id="theme-toggle">
+      <button type="button" aria-pressed={theme === "dark"} onClick={() => setTheme("dark")} title="Dark register (default)">
+        <IconMoon /> <span>AI Dark</span>
+      </button>
+      <button type="button" aria-pressed={theme === "light"} onClick={() => setTheme("light")} title="Light register">
+        <IconSun /> <span>Light</span>
+      </button>
+    </div>
   );
 }
 

@@ -45,6 +45,10 @@ describe("traceColor (contract §8)", () => {
   });
   it("honours an explicit non-grey colour", () => {
     expect(traceColor("mv", "x", 0, "#ea580c")).toBe("#ea580c");
+    // dark register: palette inks, explicit light-register colours are not carried onto the obsidian canvas
+    expect(traceColor("measured", "LCO_T98_F", 0, undefined, "dark")).toBe("#22d3ee");
+    expect(traceColor("expected", "x", 0, "#047857", "dark")).toBe("#34d399");
+    expect(isGrey(traceColor("mv", "MV_PA1", 1, undefined, "dark"))).toBe(false);
   });
 });
 

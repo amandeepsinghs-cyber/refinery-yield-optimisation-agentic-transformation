@@ -6,6 +6,30 @@ this file records what actually happened and the state things were left in.
 
 ---
 
+## 2026-10-02 02:35 — UI remediation Pass E (dark register) + Pass F (band bug) — response to the owner's "2/10" review
+
+**Finding first:** the owner rated the UI 2/10 and pointed at `verbatim.md`. All four complaints in verbatim Part 6 were true in the code and three of them were *spec-driven*: SDD-L0-02 forbade charts on L0, SDD-L0-03 mandated a light default, and the mockups were light / flat / chart-less. An independent critic subagent (`scratch/ui_critic_report.md`) reached the same four root causes. Remediation plan approved by the owner ("yes for all"): dark default, charts + model output on L0, autonomous passes E → F → G → I → H with a push per pass.
+
+**Pass E — register**
+- `web/src/lib/theme.ts`: dark tokens re-cut as a navy obsidian (`bg #0b0f17`, `card #111622`, `border #1f2738`, `text #e8ecf4`, `accent #4f8cff`); `DEFAULT_THEME = "dark"`; `THEME_BOOT_SCRIPT` defaults dark; `STATUS_DARK` (brighter green/amber/rose) + `statusColor()`; committee colours: light `bayes_ridge` grey `#64748b` → violet `#7c3aed`, dark set cyan / emerald / gold / violet. `store.ts` default `DEFAULT_THEME`; `layout.tsx` `data-theme="dark"`.
+- `web/src/lib/palette.ts`: `TRACE_PALETTE_DARK` (cyan measured, emerald expected/band, gold plan, rose spec, high-chroma MVs) + `paletteFor(theme)`; `lib/l1.ts traceColor(role, key, i, explicit, theme)` picks the register (explicit light colours are not carried onto the dark canvas).
+- `ChartStack.tsx`: theme threaded into every colour, strokes 2.2 / 1.8 / 1.7 px with spline smoothing, panels 230 / 190 / 165 px, legend 11.5 px, regime / change-point markers per theme.
+- `globals.css`: dark block mirrors the tokens and now owns `--green/--amber/--red/--m-*` (previously a later `:root` rule overrode them); `--m-ridge` grey → violet; type scale up (L0 title 20, L1 title 22, panel titles 13.5, KPI numerals 17–26 px tabular), cards get `--shadow-card`, L1 rail 380 px and **sticky**; `.theme-seg` segmented switch.
+- `AppShell.tsx`: icon button → segmented `🌙 AI Dark | ☀️ Light` (`data-testid="theme-seg"`, `#theme-toggle`).
+- `OptimisationCard.tsx` / `RefineryPFD.tsx`: hard-coded hexes → `var(--m-*)` so loops and curves follow the register.
+- Specs amended: SDD-L0-02 (L0 is a data-first systemic view: live curve + ŷ ± 2σ band + N(μ,σ) PDF per unit), SDD-L0-03 (dark default, segmented toggle, dark trace palette); BDD-28 "no charts" scenario → "live curves per unit", "default theme is light" → dark; `e2e/twin.spec.ts` register tests inverted and pointed at `theme-seg`.
+
+**Pass F — band anchored to the live prediction** (`api/app/engines/surrogates.py expected_series`)
+- Before: `expected = rolling(240).median(y).shift(1) + B·(X − rolling-median(X))` → a flat, lagging envelope (verbatim Part 6 §2 "looks stupid").
+- After: `ŷ_t = predict_matrix(regime_t, X_t)` (dynamic surrogate at the current inputs) `+ bias_t`, where `bias_t` is a one-step-lagged EWMA of past innovations (`BIAS_HALFLIFE_MIN = 45`); `σ_t = sqrt(resid_sd_regime² + ½·EWMstd(innovation)²)`; band = `ŷ_t ± 2σ_t`. U4 still uses the committee `mean / q05 / q95`.
+- New test `test_detect.py::test_band_wraps_live_trajectory_not_a_lagged_median` on `random_s144` + `random_s107` × U1/U2/U3/U5/U6: measured inside the band 86–99 %, expected carries ≥ 0.36× of the 60-min movement of the smoothed measured curve, lag-0 correlation beats lag-120 everywhere (e.g. U3 `c0 0.98 / c120 0.76`, U2 `0.74 / 0.15`).
+
+**Verification**: `tsc` 0 errors · vitest 77/77 (theme / palette / l1 tests updated: dark default, no grey in either register, dark luminance > light) · pytest `test_detect + test_workbench + test_twin_l0 + test_engines_api + test_recipe + test_gemini_scope` 52 passed · API restarted · CDP dark shots `docs/ui/E_L0_dark_default_asbuilt.png`, `E_L1_u4_dark_default_asbuilt.png`, `F_L1_u3_band_wraps_live_asbuilt.png` (0 grey traces, no h-scroll). Playwright still not installed (runner), `/tmp/cdp-*` cleared (4 GB) with owner approval.
+
+**Next**: Pass G (N(μ,σ) PDFs on L1 rail + L0 tiles — `lib/gauss.ts` + `twin/shared/GaussianPdf.tsx` already written), Pass I (decisions first), Pass H (L0 systemic view with sparklines, ripple plot, lakehouse → ML strip, assay panel).
+
+---
+
 ## 2026-10-01 18:45 — Phase 19 (J8): screen-scoped Gemini verified, Hindi-first + hi-IN voice, director script on the Twin, `?uc=` signature panels
 
 **Finding first:** most of J8 was already in the code base from Epic J (`chat.screen_of`, `scope_snapshot_for`, `suggestions` per screen × language, `get_scope_snapshot` / `get_regime` / `get_recipe` tools, `context.screen` from the route) but the checklist still showed it ☐ because it had never been verified end-to-end. `tests/test_gemini_scope.py` passes (5 → 6 with the new language test); the Copilot drawer already sent `screen` and showed a chip.

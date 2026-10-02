@@ -1194,12 +1194,12 @@ Feature: Two-level decision-grade twin — plant home and unit workbench
   So that I see where the crude change hits first and how the decision is made
 
   @ui @demo
-  Scenario: Level 0 is the home and has no charts
+  Scenario: Level 0 is the home and shows live curves per unit (amended 2026-10-02, verbatim VN-1/VN-5)
     When the operator opens the application root
     Then the route is /twin
     And the page shows 6 unit blocks with KPI vs plan, a status pill and decision and flag counts
+    And each unit block renders its headline tag as a live curve with the ŷ ± 2σ band and a compact N(μ,σ) PDF vs plan / spec
     And a crude-slate banner and a "Needs attention" list with systemic consequence lines are visible
-    And zero Plotly charts are rendered
 
   @ui @demo
   Scenario: Clicking the fractionator opens its workbench on one cursor
@@ -1220,7 +1220,7 @@ Feature: Two-level decision-grade twin — plant home and unit workbench
     When Playwright captures /twin and /twin/unit/unit_4_fractionator in light and dark themes
     Then no data trace uses a grey colour
     And there is no horizontal scrollbar at 1440 px width
-    And the default theme is light and the toggle persists across reloads
+    And the default theme is dark and the segmented AI Dark | Light toggle persists across reloads
 
   @ui @demo
   Scenario: Every section shows Data, Analysis, Models and Decisions for that section only

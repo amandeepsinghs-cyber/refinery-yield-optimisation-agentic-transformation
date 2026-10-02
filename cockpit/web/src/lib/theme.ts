@@ -48,24 +48,24 @@ export const TOKENS: Record<ThemeName, ThemeTokens> = {
     eventFill: "rgba(113,113,122,0.14)",
   },
   dark: {
-    bg: "#09090b",
-    canvas: "#09090b",
-    card: "#0c0c0f",
-    elevated: "#131318",
-    border: "#1e1e24",
-    borderStrong: "#2a2a32",
-    text: "#fafafa",
-    muted: "#a1a1aa",
-    subtle: "#71717a",
-    accent: "#3b82f6",
+    bg: "#0b0f17",
+    canvas: "#0b0f17",
+    card: "#111622",
+    elevated: "#161c2a",
+    border: "#1f2738",
+    borderStrong: "#2c3650",
+    text: "#e8ecf4",
+    muted: "#9aa6bd",
+    subtle: "#687491",
+    accent: "#4f8cff",
     accentFg: "#ffffff",
-    hover: "#16161b",
-    grid: "rgba(250,250,250,0.08)",
-    zeroline: "rgba(250,250,250,0.22)",
-    band95: "rgba(59,130,246,0.15)",
-    band50: "rgba(59,130,246,0.30)",
+    hover: "#182032",
+    grid: "rgba(232,236,244,0.07)",
+    zeroline: "rgba(232,236,244,0.22)",
+    band95: "rgba(79,140,255,0.16)",
+    band50: "rgba(79,140,255,0.32)",
     withheldFill: "rgba(148,163,184,0.06)",
-    eventFill: "rgba(161,161,170,0.12)",
+    eventFill: "rgba(154,166,189,0.12)",
   },
 };
 
@@ -75,18 +75,29 @@ export const STATUS = {
   RED: "#dc2626",
 } as const;
 
+/** Brighter state colours for the dark register (same hue family, higher luminance). */
+export const STATUS_DARK = {
+  GREEN: "#22c55e",
+  AMBER: "#f59e0b",
+  RED: "#f43f5e",
+} as const;
+
+export const statusColor = (k: keyof typeof STATUS, theme: ThemeName): string =>
+  theme === "dark" ? STATUS_DARK[k] : STATUS[k];
+
+/** Committee member colours — never grey (verbatim VN-1/VN-5). Light: saturated; dark: high-chroma. */
 export const MODEL_COLORS: Record<string, string> = {
   hybrid_delta_v1: "#2563eb",
   pinn_ens_v1: "#0d9488",
   gpr_v1: "#ea580c",
-  bayes_ridge_v1: "#64748b",
+  bayes_ridge_v1: "#7c3aed",
 };
 
 export const DARK_MODEL_COLORS: Record<string, string> = {
-  hybrid_delta_v1: "#60a5fa",
-  pinn_ens_v1: "#2dd4bf",
-  gpr_v1: "#fb923c",
-  bayes_ridge_v1: "#c084fc",
+  hybrid_delta_v1: "#22d3ee",
+  pinn_ens_v1: "#34d399",
+  gpr_v1: "#fbbf24",
+  bayes_ridge_v1: "#a78bfa",
 };
 
 export const MODEL_LABELS: Record<string, string> = {
@@ -104,8 +115,8 @@ export const modelColor = (id: string, theme: ThemeName): string =>
   id === "mixture"
     ? TOKENS[theme].text
     : theme === "dark"
-      ? (DARK_MODEL_COLORS[id] ?? MODEL_COLORS[id] ?? TOKENS[theme].muted)
-      : (MODEL_COLORS[id] ?? TOKENS[theme].muted);
+      ? (DARK_MODEL_COLORS[id] ?? MODEL_COLORS[id] ?? TOKENS[theme].accent)
+      : (MODEL_COLORS[id] ?? TOKENS[theme].accent);
 
 export const modelLabel = (id: string): string => MODEL_LABELS[id] ?? id;
 
@@ -118,9 +129,12 @@ export const FONT_MONO = "var(--font-mono), 'JetBrains Mono', ui-monospace, mono
 
 export const THEME_STORAGE_KEY = "fcc-theme";
 
+/** Default register. verbatim.md VN-5: "let's make the standard to be black" — dark is the default, light is the toggle. */
+export const DEFAULT_THEME: ThemeName = "dark";
+
 /**
  * Inline, render-blocking script: sets data-theme before first paint.
- * Stored choice wins; otherwise light. The user decided that every
- * screen is light by default, so prefers-color-scheme is intentionally not used.
+ * Stored choice wins; otherwise dark (control-room default). prefers-color-scheme is intentionally not used.
  */
-export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('${THEME_STORAGE_KEY}');if(t!=='light'&&t!=='dark'){t='light';}document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
+export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('${THEME_STORAGE_KEY}');if(t!=='light'&&t!=='dark'){t='${DEFAULT_THEME}';}document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.setAttribute('data-theme','${DEFAULT_THEME}');}})();`;
+

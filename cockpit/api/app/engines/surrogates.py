@@ -72,6 +72,7 @@ UNIT_PRIMARY_TAGS = {
 MIN_EVENTS = 3            # designed moves needed per (regime, input) for an own estimate; else pooled across regimes
 MIN_EVENTS_POOLED = 3     # below this the input is "unsupported"
 BEFORE_MIN, SETTLE_MIN, AFTER_MIN = 15, 30, 60
+BIAS_HALFLIFE_MIN = 45    # lagged EWMA half-life for the expected-value bias correction (expected_series)
 MIN_STEP = {"SP_T_riser_ROT_F": 0.5, "SP_LCO_T98": 0.5, "SP_HN_T98": 0.5, "feed_flow_lb_s": 0.5,
             "dist_T_feed_in_F": 1.0}
 AUTO_MIN_LEN, AUTO_MIN_SD, AUTO_MIN_WINDOWS, AUTO_MIN_R2 = 60, 1.0, 3, 0.3
@@ -441,23 +442,32 @@ def expected_series(run_id: str, unit_id: str) -> dict:
     res = get_run_regimes(run_id)
     det = np.asarray(res["detected_regime"]) if res else np.full(len(df), "R3")
     X = df[sup].astype(float).ffill().bfill().to_numpy()
-    base_x = pd.DataFrame(X).rolling(240, min_periods=30).median().shift(1).bfill().to_numpy()
-    dX = X - base_x
     out = {}
     for tag in tags:
         if tag not in OUTPUTS or tag not in df.columns:
             continue
         j = OUTPUTS.index(tag)
-        y = df[tag].astype(float).to_numpy()
-        base_y = pd.Series(y).rolling(240, min_periods=30).median().shift(1).bfill().to_numpy()
-        dY = np.zeros(len(df))
+        y = pd.to_numeric(df[tag], errors="coerce").to_numpy(float)
+        # Dynamic prediction ŷ_t from the regime surrogate at the *current* inputs — moves with the plant, not with a
+        # lagged median of the tag (verbatim Part 6 §2: the band must wrap the live trajectory).
+        yhat = np.full(len(df), np.nan)
         for r in REGIME_IDS:
             m = det == r
             if m.any():
-                dY[m] = predict_delta(r, dX[m])[:, j]
-        exp = base_y + dY
-        sd = np.array([get_surrogate_card(r).get("resid_sd", {}).get(tag, 2.0) for r in det])
+                yhat[m] = predict_matrix(r, X[m])[:, j]
+        yhat = pd.Series(yhat).ffill().bfill().to_numpy()
+        # Slow bias correction — one-step-lagged EWMA of past innovations (y − ŷ). Half-life 45 min: it absorbs
+        # run-specific offsets and slow drift, but a fast move or a fault still shows as a residual, not as a shift of the band.
+        innov = y - yhat
+        bias = pd.Series(innov).ewm(halflife=BIAS_HALFLIFE_MIN, min_periods=1).mean().shift(1).bfill().fillna(0.0).to_numpy()
+        exp = yhat + bias
+        sd_card = np.array([float(get_surrogate_card(r).get("resid_sd", {}).get(tag, 2.0) or 2.0) for r in det])
+        # σ_t: regime residual sd floor, widened by the trailing spread of the corrected innovation (lagged).
+        corr = pd.Series(y - exp)
+        sd_loc = corr.ewm(halflife=BIAS_HALFLIFE_MIN, min_periods=10).std().shift(1).bfill().to_numpy()
+        sd = np.sqrt(np.square(sd_card) + np.square(np.nan_to_num(sd_loc, nan=0.0)) * 0.5)
         out[f"expected:{tag}"] = exp.tolist()
         out[f"band_lo:{tag}"] = (exp - 2 * sd).tolist()
         out[f"band_hi:{tag}"] = (exp + 2 * sd).tolist()
     return out
+

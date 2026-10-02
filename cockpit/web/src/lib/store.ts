@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { Citation, PropertyId } from "./types";
-import { THEME_STORAGE_KEY, type ThemeName } from "./theme";
+import { DEFAULT_THEME, THEME_STORAGE_KEY, type ThemeName } from "./theme";
 
 /** Operator language for briefings and Copilot (SDD-GEM-03): English, Hinglish control-room phrasing, or Hindi. */
 export type Lang = "en" | "hinglish" | "hi";
@@ -68,7 +68,7 @@ export const useCockpit = create<CockpitState>()(
       runId: null,
       property: "LCO_T98_F",
       timeMin: null,
-      theme: "light",
+      theme: DEFAULT_THEME,
       lang: "en",
       copilotOpen: false,
       copilotTab: "text",

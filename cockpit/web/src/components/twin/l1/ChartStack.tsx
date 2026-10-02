@@ -15,7 +15,7 @@ import { minToX, xToMin } from "@/lib/format";
 import { traceColor, yieldAxis, trayNumber, indexAtMin } from "@/lib/l1";
 import type { TwinPanel, TwinWorkbench } from "@/lib/twinTypes";
 
-const HEIGHT: Record<string, number> = { measured_vs_expected: 200, residual: 180, mv: 150, disturbance: 150, yield: 150, tray_profile: 190, combustion: 150 };
+const HEIGHT: Record<string, number> = { measured_vs_expected: 230, residual: 190, mv: 165, disturbance: 165, yield: 165, tray_profile: 200, combustion: 165 };
 const MARGIN = { l: 56, r: 56, t: 8, b: 24 };
 
 export interface ChartStackProps {
@@ -54,7 +54,7 @@ export default function ChartStack({ data, panels, hoverMin, onHover }: ChartSta
           height: HEIGHT[panel.kind] ?? 150,
           margin: MARGIN,
           showlegend: true,
-          legend: { ...base.legend, orientation: "h", x: 1, xanchor: "right", y: 1, yanchor: "bottom", font: { size: 10.5, color: TOKENS[theme].muted } },
+          legend: { ...base.legend, orientation: "h", x: 1, xanchor: "right", y: 1, yanchor: "bottom", font: { size: 11.5, color: TOKENS[theme].muted } },
           xaxis: isTime
             ? { ...base.xaxis, ...timeAxis, range, fixedrange: true, showspikes: false }
             : { ...base.xaxis, title: { ...axisStyle(theme).title, text: "Tray (1 = top)" }, tickmode: "linear", dtick: 1, range: [0.5, 20.5], fixedrange: true, showspikes: false },
@@ -112,12 +112,12 @@ function buildTrayProfile(panel: TwinPanel, data: TwinWorkbench, timeMin: number
   const traces: Partial<PlotData>[] = [
     {
       x: xs, y: at(Math.max(iStart, 0)), type: "scatter", mode: "lines+markers", name: "window start",
-      line: { color: traceColor("expected", "", 0), width: 1.2, dash: "dash" }, marker: { size: 5, color: traceColor("expected", "", 0) },
+      line: { color: traceColor("expected", "", 0, undefined, theme), width: 1.2, dash: "dash" }, marker: { size: 5, color: traceColor("expected", "", 0, undefined, theme) },
       hovertemplate: "Tray %{x}: %{y:.1f} °F<extra>window start</extra>",
     },
     {
       x: xs, y: at(iNow), type: "scatter", mode: "lines+markers", name: `t = ${timeMin} min`,
-      line: { color: traceColor("measured", "", 0), width: 2 }, marker: { size: 6, color: traceColor("measured", "", 0) },
+      line: { color: traceColor("measured", "", 0, undefined, theme), width: 2 }, marker: { size: 6, color: traceColor("measured", "", 0, undefined, theme) },
       hovertemplate: "Tray %{x}: %{y:.1f} °F<extra>now</extra>",
     },
   ];
@@ -141,9 +141,9 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
   const lo = panel.traces?.find((tr) => tr.role === "band_lo");
   const hi = panel.traces?.find((tr) => tr.role === "band_hi");
   if (lo && hi && keys[lo.key] && keys[hi.key]) {
-    const c = traceColor("band_lo", lo.key, 0, lo.color);
+    const c = traceColor("band_lo", lo.key, 0, lo.color, theme);
     traces.push({ x, y: keys[lo.key], type: "scatter", mode: "lines", line: { width: 0, color: c }, showlegend: false, hoverinfo: "skip", name: "band" });
-    traces.push({ x, y: keys[hi.key], type: "scatter", mode: "lines", fill: "tonexty", fillcolor: hexA(c, 0.14), line: { width: 0, color: c }, name: hi.label ?? lo.label ?? "5–95 % band", hoverinfo: "skip" });
+    traces.push({ x, y: keys[hi.key], type: "scatter", mode: "lines", fill: "tonexty", fillcolor: hexA(c, theme === "dark" ? 0.13 : 0.14), line: { width: 0, color: c }, name: hi.label ?? lo.label ?? "5–95 % band", hoverinfo: "skip" });
   }
 
   if (panel.kind === "tray_profile") {
@@ -157,7 +157,7 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
     let y: Series | undefined = keys[tr.key];
     if (!y) return;
     const idx = tr.role === "mv" ? mvIdx++ : tr.role === "disturbance" ? distIdx++ : tr.role === "yield" ? yieldIdx++ : tr.role === "tray_profile" ? trayIdx++ : 0;
-    const color = traceColor(tr.role, tr.key, idx, tr.color);
+    const color = traceColor(tr.role, tr.key, idx, tr.color, theme);
 
     if (tr.role === "sigma3") {
       traces.push({ x, y, type: "scatter", mode: "lines", line: { color, width: 1, dash: "dash" }, name: tr.label ?? "±3σ", hoverinfo: "skip" });
@@ -184,7 +184,7 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
     if (onY2) hasY2 = true;
     traces.push({
       x, y, type: "scatter", mode: "lines",
-      line: { color, width: tr.role === "measured" || tr.role === "residual" ? 1.8 : 1.4, dash: "solid" },
+      line: { color, width: tr.role === "measured" || tr.role === "residual" ? 2.2 : tr.role === "expected" ? 1.8 : 1.7, dash: tr.role === "expected" ? "solid" : "solid", shape: "spline", smoothing: 0.6 },
       name: tr.label ?? tr.key,
       yaxis: onY2 ? "y2" : "y",
       hovertemplate: `%{y:.2f}<extra>${tr.label ?? tr.key}</extra>`,
@@ -200,7 +200,7 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
   }
 
   panel.hlines?.forEach((h) => {
-    const color = traceColor(h.role, "", 0, h.color);
+    const color = traceColor(h.role, "", 0, h.color, theme);
     shapes.push({ type: "line", xref: "paper", x0: 0, x1: 1, yref: "y", y0: h.value, y1: h.value, line: { color, width: 1, dash: h.role === "plan" ? "dash" : "dot" } });
     if (h.label && h.label !== "0") {
       annotations.push({ xref: "paper", x: 1, xanchor: "right", yref: "y", y: h.value, yanchor: "bottom", text: h.label, showarrow: false, font: { size: 10, color }, yshift: 1 });
@@ -215,7 +215,7 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
   sortedMarkers.forEach((m) => {
     if (seen.has(m.time_min)) return;
     seen.add(m.time_min);
-    const color = m.kind === "regime_change" ? "#6d28d9" : "#b91c1c";
+    const color = m.kind === "regime_change" ? (theme === "dark" ? "#c084fc" : "#6d28d9") : (theme === "dark" ? "#fb7185" : "#b91c1c");
     shapes.push({ type: "line", xref: "x", x0: minToX(m.time_min), x1: minToX(m.time_min), yref: "paper", y0: 0, y1: 1, line: { color, width: 1, dash: "dot" }, opacity: 0.7 });
     if (m.time_min - lastLabelAt >= minGap && labels < 3) {
       lastLabelAt = m.time_min;

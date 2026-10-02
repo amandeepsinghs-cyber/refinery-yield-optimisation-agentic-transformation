@@ -67,6 +67,27 @@
 ### Voice Note 4 — Saving to `verbatim.md`
 > "Put all this in a verbatim.md file and give that file to me."
 
+### Voice Note 5 — UI Regression Critique, Curves & Distributions, Median Deviation Flaw, Dark Mode & Decision Support
+> "So give me the verbatim of this text.
+>
+> So basically what I asked you was that each of the separate, I would say, units should be clearly mentioned, right? Okay, it is clear, but it looks again like an ugly HTML file, very ugly map.
+>
+> Then I said that some of these curves, for example the Gaussian, would have different colors — that is completely gone for some reason.
+>
+> Third, initially for every curve there was a kind of a distribution of probability that was around the curve or basically around the value, current value. Now I see that you have taken a median for some reason and then the deviation is around the median — it looks stupid. We are looking [at] deviation around the value, right, of the curve. So the different boundaries, that is completely gone. So I'm not sure if we are progressing or if we are fucking taking 20 steps back and gotten a very lackluster kind of a user interface.
+>
+> And also this looks like a very stupid HTML, it is more like a fucking seriously like a presentation, like a PowerPoint. I want the experience of a very professional-grade user interface.
+>
+> And then all the bell curves are also gone for some reason. And I said, okay, there should be a... there should be a systemic thinking. I don't see any of that.
+>
+> And also there was supposed to be a toggle in which we can see black and then we can see white. There is just white for some reason. I asked let's make the standard to be black.
+>
+> And what happened to all the previous curves? Okay, I see different units, but what happened to the previous curves? What the heck? And where are the decisions?
+>
+> To be fair, I'm not even sure if you're doing the same thing, if you're on the same page. You're crying about data, but I don't see anything. Like seriously, is this the best dashboard? This is more like a PowerBI dashboard — PowerBI dashboards are better than this.
+>
+> I want an industry-grade user interface. Like seriously."
+
 ---
 
 ## Part 2: Deep Analysis — Are We Solving the Right Problem?
@@ -240,5 +261,51 @@ All **23 documented downstream case examples** (Coker outage readiness, Coker he
     - `active_crude_regime` & `visible_chart_tags`
 * **Native Hindi (`हिंदी`) First-Class Support:**
   - Add a **`हिंदी` | `Hinglish` | `EN`** language selector pill directly inside the **Gemini Copilot Drawer Header** (`CopilotLauncher.tsx`).
-  - Provide native Hindi (`हिंदी`) starter prompts when `हिंदी` is selected (e.g., *"इस स्क्रीन के सभी ग्राफ़, कर्व्स और डेटा को समझाएं"*, *"नए क्रूड (Crude) के अनुसार कौन से पैरामीटर बदलने चाहिए?"*, *"क्या अभी सॉफ्ट सेंसर पर भरोसा किया जा सकता है?"*).
+  - Provide native Hindi (`हिंदी`) starter prompts when `हिंदी` is selected (e.g., *"इस स्क्रीन के सभी ग्राफ़, कर्व्स और डेटा को समझाएं"*, *"नए क्रूड (Crude) के अनुसार कौन से पैरामीटर बदलने चाहिए?"*, *"क्या अभी सॉफ्टセンサー पर भरोसा किया जा सकता है?"*).
   - Pass `lang` to both `POST /api/copilot/chat` and `WS /api/live` (Gemini Live native audio) so Gemini answers fluently in Hindi (Devanagari script + spoken Hindi voice) while keeping tag IDs, numbers, °F/psia units, and `[DOC-ID rN §x.y]` citations exact.
+
+---
+
+## Part 6: Codebase Completeness & Integrity Audit (Quantified Analysis)
+
+### 6.1 Executive Completeness Scorecard
+
+| Architectural Layer | Completeness | Production Ready? | Primary Gaps & Incomplete Modules | Key Files Involved |
+| :--- | :---: | :---: | :--- | :--- |
+| **1. Simulation & Batch Data** | **70%** | ◐ In Progress | Simulator ODE engine is 100% verified. Batch `full_v1` is running in background (54/54 runs, ~50–78% progress). BigQuery & GCS export pending batch completion (`make load-full`). | [`sim_octave/run_sim.m`](sim_octave/run_sim.m)<br>[`sim_octave/load_to_bq.py`](sim_octave/load_to_bq.py) |
+| **2. Soft-Sensor & Safety Engine (Unit 4)** | **75%** | ◐ Partial | 4 model families (`bayes_ridge`, `gpr`, `hybrid_delta`, `pinn_ens`), 7 trust gates (S1–S7), and Kalman bias correction are code-complete. However, trained on preliminary batch; lacks crude assay fingerprinting and crude model switching. | [`cockpit/api/app/pipeline.py`](cockpit/api/app/pipeline.py)<br>[`cockpit/api/app/train.py`](cockpit/api/app/train.py) |
+| **3. Digital Twin & Sentinels (Units 1–6)** | **60%** | ⚠️ Flawed | All 6 units and 34 use cases modeled. **Flaw:** [`surrogates.py:L452`](cockpit/api/app/engines/surrogates.py#L452) centers uncertainty bands around a 240-min rolling median rather than wrapping the live process trajectory! Units 1–3, 5, 6 use linear surrogates only. | [`cockpit/api/app/twin.py`](cockpit/api/app/twin.py)<br>[`cockpit/api/app/engines/surrogates.py`](cockpit/api/app/engines/surrogates.py)<br>[`cockpit/api/app/engines/detect.py`](cockpit/api/app/engines/detect.py) |
+| **4. Prescriptive Multi-Parameter Optimizer** | **20%** | ❌ Incomplete | [`recommend.py`](cockpit/api/app/recommend.py) only does a 1-D grid search over `SP_LCO_T98` or `SP_HN_T98` ($\pm 5^\circ\text{F}$). Completely missing multi-parameter optimization across preheat, ROT, cat/oil, air, and pumparounds for crude transitions. | [`cockpit/api/app/recommend.py`](cockpit/api/app/recommend.py)<br>[`cockpit/api/app/engines/recipe.py`](cockpit/api/app/engines/recipe.py) |
+| **5. Frontend Cockpit & Industrial UI** | **35% (UX)<br>85% (Code)** | ❌ Regressed | Rich Plotly views (`OverviewView.tsx`, `ConfidenceView.tsx`) exist in the codebase but were bypassed by redirecting `/` to `/twin` (`L0Home.tsx`), which strips all charts and forces light theme. Gaussian bell curves and decision cards were buried. | [`cockpit/web/src/app/page.tsx`](cockpit/web/src/app/page.tsx)<br>[`cockpit/web/src/app/layout.tsx`](cockpit/web/src/app/layout.tsx)<br>[`cockpit/web/src/components/twin/l0/L0Home.tsx`](cockpit/web/src/components/twin/l0/L0Home.tsx)<br>[`cockpit/web/src/components/views/OverviewView.tsx`](cockpit/web/src/components/views/OverviewView.tsx) |
+| **6. Gemini Copilot & Native Hindi (`हिंदी`)** | **45%** | ◐ Partial | Backend supports Hindi/Hinglish prompts, but frontend lacks a language toggle in `CopilotLauncher.tsx`. Window context is minimal (does not inject active unit, active use case, crude regime, or visible curves). | [`cockpit/web/src/components/copilot/CopilotLauncher.tsx`](cockpit/web/src/components/copilot/CopilotLauncher.tsx)<br>[`cockpit/web/src/components/copilot/useCopilotChat.ts`](cockpit/web/src/components/copilot/useCopilotChat.ts)<br>[`cockpit/api/app/copilot/chat.py`](cockpit/api/app/copilot/chat.py) |
+| **OVERALL SYSTEM READINESS** | **~48%** | ◐ Working Prototype | **Foundation is solid (tests pass, models predict, simulator runs), but user-facing UI regressed to an unstyled shell and optimizer is single-knob.** | Full Codebase |
+
+---
+
+### 6.2 Root Causes of Recent Regressions & Code Gaps
+
+#### 1. Why the UI Looks Like an "Ugly HTML / PowerPoint Dashboard"
+* **The Route Redirect:** [`cockpit/web/src/app/page.tsx:L4`](cockpit/web/src/app/page.tsx#L4) redirects directly to `/twin`.
+* **The Strip-Down in L0:** [`cockpit/web/src/components/twin/l0/L0Home.tsx:L6`](cockpit/web/src/components/twin/l0/L0Home.tsx#L6) explicitly documents:
+  `* No Plotly chart and no model internals on this screen; every number comes from GET /api/twin.`
+  This stripped out all rich Plotly time-series charts, replacing them with a flat SVG block diagram ([`RefineryPFD.tsx`](cockpit/web/src/components/twin/l0/RefineryPFD.tsx)) with basic colored boxes and static HTML tables.
+* **The Solution:** Restore the unified industrial cockpit view that leads with high-density Plotly fan charts, Gaussian distributions, live telemetry curves, and actionable decision cards on the front page.
+
+#### 2. The "Deviation Around the Median" Bug
+* In [`cockpit/api/app/engines/surrogates.py:L452`](cockpit/api/app/engines/surrogates.py#L452):
+  ```python
+  base_y = pd.Series(y).rolling(240, min_periods=30).median().shift(1).bfill().to_numpy()
+  exp = base_y + dY
+  out[f"band_lo:{tag}"] = (exp - 2 * sd).tolist()
+  out[f"band_hi:{tag}"] = (exp + 2 * sd).tolist()
+  ```
+* **Why it looks wrong:** The baseline `base_y` was computed as a 240-minute rolling median of the tag. When plotted, the expected value and the $\pm 2\sigma$ uncertainty envelope do not follow the actual dynamic process trajectory — they lag behind as a flat, sluggish median!
+* **The Solution:** Anchor uncertainty bands directly to the dynamic model prediction ($\hat{y}_t \pm 2\sigma_t$) and live process estimates, wrapping tightly around the actual curves.
+
+#### 3. Why Dark Mode Disappeared
+* [`cockpit/web/src/app/layout.tsx:L65`](cockpit/web/src/app/layout.tsx#L65) and `THEME_BOOT_SCRIPT` set `document.documentElement.dataset.theme = "light"` by default, and the header toggle was removed or replaced in the L0 shell.
+* **The Solution:** Reinstate **Obsidian Dark Mode (`data-theme="dark"`)** as the standard default and provide an explicit segmented toggle (`🌙 AI Dark` | `☀️ Light`) in the main navigation.
+
+#### 4. Where the Bell Curves (`DistributionOverlay`) Went
+* While [`cockpit/web/src/components/views/ConfidenceView.tsx`](cockpit/web/src/components/views/ConfidenceView.tsx) contains a full Gaussian probability density chart component (`DistributionOverlay`), it was never imported into the new L0 or L1 twin workbench screens (`components/twin/l0/` and `components/twin/l1/`).
+* **The Solution:** Embed Gaussian probability distribution curves (`N(\mu, \sigma)`) directly into the main view and every unit/use-case workbench.

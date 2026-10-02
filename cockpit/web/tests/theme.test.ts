@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { MODEL_COLORS, STATUS, THEME_BOOT_SCRIPT, TOKENS, cssVarName, modelColor } from "@/lib/theme";
+import { DEFAULT_THEME, DARK_MODEL_COLORS, MODEL_COLORS, STATUS, THEME_BOOT_SCRIPT, TOKENS, cssVarName, modelColor } from "@/lib/theme";
+import { isGrey } from "@/lib/palette";
 import { baseLayout } from "@/lib/plotTheme";
 import { extractSection } from "@/lib/knowledge";
 import { linkifyCitations, parseCiteHref } from "@/components/copilot/Markdown";
@@ -18,18 +19,18 @@ function block(selector: string): string {
 describe("theme tokens", () => {
   it("SDD-UI-02 core values", () => {
     expect(TOKENS.light.bg).toBe("#ffffff");
-    expect(TOKENS.dark.bg).toBe("#09090b");
-    expect(TOKENS.dark.card).toBe("#0c0c0f");
-    expect(TOKENS.dark.border).toBe("#1e1e24");
+    expect(TOKENS.dark.bg).toBe("#0b0f17");
+    expect(TOKENS.dark.card).toBe("#111622");
+    expect(TOKENS.dark.border).toBe("#1f2738");
     expect(TOKENS.light.border).toBe("#e4e4e7");
     expect(TOKENS.light.accent).toBe("#2563eb");
-    expect(TOKENS.dark.accent).toBe("#3b82f6");
+    expect(TOKENS.dark.accent).toBe("#4f8cff");
     expect(STATUS).toEqual({ GREEN: "#16a34a", AMBER: "#d97706", RED: "#dc2626" });
     expect(MODEL_COLORS).toEqual({
       hybrid_delta_v1: "#2563eb",
       pinn_ens_v1: "#0d9488",
       gpr_v1: "#ea580c",
-      bayes_ridge_v1: "#64748b",
+      bayes_ridge_v1: "#7c3aed",
     });
   });
 
@@ -41,7 +42,7 @@ describe("theme tokens", () => {
   });
 
   it("mixture uses the theme text colour", () => {
-    expect(modelColor("mixture", "dark")).toBe("#fafafa");
+    expect(modelColor("mixture", "dark")).toBe("#e8ecf4");
     expect(modelColor("mixture", "light")).toBe("#09090b");
   });
 
@@ -55,7 +56,7 @@ describe("theme tokens", () => {
     expect(d.paper_bgcolor).toBe("rgba(0,0,0,0)");
   });
 
-  it("boot script defaults to light and honours a stored choice", () => {
+  it("boot script defaults to dark (verbatim VN-5) and honours a stored choice", () => {
     const run = (stored: string | null) => {
       const attrs: Record<string, string> = {};
       const document = { documentElement: { setAttribute: (k: string, v: string) => (attrs[k] = v), style: {} as Record<string, string> } };
@@ -63,9 +64,15 @@ describe("theme tokens", () => {
       new Function("document", "localStorage", "window", THEME_BOOT_SCRIPT)(document, localStorage, {});
       return attrs["data-theme"];
     };
-    expect(run(null)).toBe("light");
+    expect(DEFAULT_THEME).toBe("dark");
+    expect(run(null)).toBe("dark");
     expect(run("light")).toBe("light");
-    expect(run("garbage")).toBe("light");
+    expect(run("dark")).toBe("dark");
+    expect(run("garbage")).toBe("dark");
+  });
+
+  it("no committee colour is grey in either register (verbatim VN-1)", () => {
+    for (const c of [...Object.values(MODEL_COLORS), ...Object.values(DARK_MODEL_COLORS)]) expect(isGrey(c), c).toBe(false);
   });
 
   it("no financial wording in UI tokens / labels", () => {

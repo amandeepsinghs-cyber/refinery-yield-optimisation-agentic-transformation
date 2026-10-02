@@ -78,18 +78,18 @@ test.describe("Level 0 — Refinery Twin home", () => {
     await expect(page.locator(".l0-title")).not.toHaveText(new RegExp(`${before}`)); // clock re-rendered from the new minute
   });
 
-  test("sober register: light by default, dark persists, no grey data colours, no horizontal scroll at 1440", async ({ page }) => {
+  test("register: dark by default, light persists, no grey data colours, no horizontal scroll at 1440", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openTwin(page);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
     // loop lines and state pills must not be grey; boundary blocks and borders may be
     const strokes = await page.locator(".pfd-svg g[stroke]:not(.pfd-flow-bnd)").evaluateAll((els) => els.map((e) => e.getAttribute("stroke") ?? ""));
     for (const c of strokes) expect(c, `grey data stroke ${c}`).not.toMatch(GREY);
-    await page.locator("#theme-toggle").click();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await page.locator("[data-testid=theme-seg] button[aria-pressed=false]").click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await page.reload();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   });
 });
 
@@ -168,8 +168,8 @@ test.describe("Level 1 — Unit workbench (SDD-L1-01..07)", () => {
     expect(strokes.length).toBeGreaterThan(0);
     for (const s of strokes) expect(s, `grey trace ${s}`).not.toMatch(/^rgb\((\d+), \1, \1\)$/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
-    await page.locator("#theme-toggle").click();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await page.locator("[data-testid=theme-seg] button[aria-pressed=false]").click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await expect(page.locator(".js-plotly-plot .cartesianlayer").first()).toBeVisible();
   });
 

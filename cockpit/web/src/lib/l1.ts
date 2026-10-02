@@ -3,7 +3,8 @@
  */
 
 import type { TwinDecision, TwinEvent, TwinPanel, TwinRecipe, TwinUnitIO } from "./twinTypes";
-import { TRACE_PALETTE, isGrey } from "./palette";
+import { paletteFor, isGrey } from "./palette";
+import type { ThemeName } from "./theme";
 
 /** SDD-L1-02 primary stack order. Anything else (second property pair, tray profile, …) is "more". */
 const PRIMARY_KINDS: TwinPanel["kind"][] = ["measured_vs_expected", "residual", "mv", "disturbance", "yield"];
@@ -25,39 +26,43 @@ export function selectPanels(panels: TwinPanel[]): { primary: TwinPanel[]; more:
   return { primary, more };
 }
 
-/** Trace colour per contract §8 — never grey. Yields keyed by product; MVs / disturbances by index. */
-export function traceColor(role: string, key: string, index: number, explicit?: string): string {
-  if (explicit && /^#[0-9a-f]{6}$/i.test(explicit) && !isGrey(explicit)) return explicit;
+/**
+ * Trace colour per contract §8 — never grey. Yields keyed by product; MVs / disturbances by index.
+ * `theme` selects the register (dark = high-chroma inks on obsidian). Explicit server colours win unless grey.
+ */
+export function traceColor(role: string, key: string, index: number, explicit?: string, theme: ThemeName = "light"): string {
+  if (explicit && /^#[0-9a-f]{6}$/i.test(explicit) && !isGrey(explicit) && theme !== "dark") return explicit;
+  const P = paletteFor(theme);
   switch (role) {
     case "measured":
-      return TRACE_PALETTE.measured;
+      return P.measured;
     case "expected":
     case "band_lo":
     case "band_hi":
-      return TRACE_PALETTE.expected;
+      return P.expected;
     case "plan":
-      return TRACE_PALETTE.plan;
+      return P.plan;
     case "spec":
-      return TRACE_PALETTE.spec;
+      return P.spec;
     case "residual":
-      return TRACE_PALETTE.residual.base;
+      return P.residual.base;
     case "sigma3":
-      return TRACE_PALETTE.residual.sigma3;
+      return P.residual.sigma3;
     case "cusum":
-      return TRACE_PALETTE.residual.cusum;
+      return P.residual.cusum;
     case "mv":
-      return TRACE_PALETTE.mvs[index % TRACE_PALETTE.mvs.length];
+      return P.mvs[index % P.mvs.length];
     case "disturbance":
-      return TRACE_PALETTE.disturbances[index % TRACE_PALETTE.disturbances.length];
+      return P.disturbances[index % P.disturbances.length];
     case "yield": {
       const k = key.replace(/^prod_/, "");
-      const y = TRACE_PALETTE.yields as Record<string, string>;
-      return y[k] ?? y[k.toLowerCase()] ?? TRACE_PALETTE.mvs[index % TRACE_PALETTE.mvs.length];
+      const y = P.yields;
+      return y[k] ?? y[k.toLowerCase()] ?? P.mvs[index % P.mvs.length];
     }
     case "tray_profile":
-      return [TRACE_PALETTE.measured, TRACE_PALETTE.expected, TRACE_PALETTE.yields.LN, TRACE_PALETTE.yields.LPG, TRACE_PALETTE.yields.slurry][index % 5];
+      return [P.measured, P.expected, P.yields.LN, P.yields.LPG, P.yields.slurry][index % 5];
     default:
-      return TRACE_PALETTE.measured;
+      return P.measured;
   }
 }
 

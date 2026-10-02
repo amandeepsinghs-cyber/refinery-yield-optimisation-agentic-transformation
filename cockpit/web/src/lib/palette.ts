@@ -1,4 +1,20 @@
-export const TRACE_PALETTE = {
+/**
+ * Trace palette — contract §8 "never grey". Two registers: `TRACE_PALETTE` (light canvas, saturated/dark inks) and
+ * `TRACE_PALETTE_DARK` (obsidian canvas, high-chroma inks: cyan measured, emerald expected/band, gold plan, rose spec).
+ */
+export interface TracePalette {
+  measured: string;
+  expected: string;
+  band: string;
+  plan: string;
+  spec: string;
+  residual: { base: string; sigma3: string; cusum: string };
+  mvs: string[];
+  disturbances: string[];
+  yields: Record<string, string>;
+}
+
+export const TRACE_PALETTE: TracePalette = {
   measured: "#1d4ed8",
   expected: "#047857",
   band: "#047857",
@@ -19,6 +35,32 @@ export const TRACE_PALETTE = {
     slurry: "#7c2d12",
   }
 };
+
+export const TRACE_PALETTE_DARK: TracePalette = {
+  measured: "#22d3ee",
+  expected: "#34d399",
+  band: "#34d399",
+  plan: "#fbbf24",
+  spec: "#fb7185",
+  residual: {
+    base: "#38bdf8",
+    sigma3: "#f472b6",
+    cusum: "#fb923c",
+  },
+  mvs: ["#fb923c", "#2dd4bf", "#f472b6", "#818cf8"],
+  disturbances: ["#f472b6", "#c084fc", "#38bdf8"],
+  yields: {
+    LCO: "#22d3ee",
+    HN: "#34d399",
+    LN: "#fde047",
+    LPG: "#c084fc",
+    slurry: "#fb923c",
+  }
+};
+
+export const paletteFor = (theme: "light" | "dark" | undefined): TracePalette =>
+  theme === "dark" ? TRACE_PALETTE_DARK : TRACE_PALETTE;
+
 
 /**
  * Ensures no colour is grey by checking if r=g=b or if saturation is very low.

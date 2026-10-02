@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { TwinUnit, KpiState } from "@/lib/twinTypes";
 
-export const LOOP_COLOURS = { hydrocarbon: "#1d4ed8", catalyst: "#ea580c", heat: "#047857" } as const;
+export const LOOP_COLOURS = { hydrocarbon: "var(--m-hybrid)", catalyst: "var(--m-gpr)", heat: "var(--m-pinn)" } as const;
 const STATE_COLOUR: Record<KpiState, string> = { OK: "var(--green)", WATCH: "var(--amber)", ACT: "var(--red)" };
 export const STATE_LABEL: Record<KpiState, string> = { OK: "IN ENVELOPE", WATCH: "DRIFT", ACT: "ACT NOW" };
 // Short KPI captions for the block (the full tag label lives in the workbench).

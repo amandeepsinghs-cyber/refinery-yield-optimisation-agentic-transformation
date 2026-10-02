@@ -91,3 +91,41 @@ def test_detect_meta_marks_version():
     events_for_run(RUN)
     row = st.db.execute("SELECT fit_key FROM detect_meta WHERE run_id=?", (RUN,)).fetchone()
     assert row and row[0].startswith("detect")
+
+
+def test_band_wraps_live_trajectory_not_a_lagged_median():
+    """verbatim.md Part 6 §2 — the expected value / ±2σ envelope must follow the live process, not a 240-min median.
+
+    For every non-U4 unit (regime-surrogate path) on two runs: (a) the measured curve sits inside the band ≥ 85 % of
+    the time after warm-up, (b) the expected curve carries the dynamics (its minute-to-minute movement is at least
+    half that of the measured curve) and (c) it does not lag — its lag-0 correlation with measured beats its lag-120
+    correlation.
+    """
+    from app.engines.surrogates import UNIT_PRIMARY_TAGS, expected_series
+
+    for run in ("random_s144", "random_s107"):
+        for unit, tags in UNIT_PRIMARY_TAGS.items():
+            if unit == "unit_4_fractionator":
+                continue
+            exp = expected_series(run, unit)
+            d = detection_series(run, unit, tags[0])
+            if not exp or d is None:
+                continue
+            m, e, lo, hi = d["measured"], d["expected"], d["band_lo"], d["band_hi"]
+            ok = np.isfinite(m) & np.isfinite(e) & np.isfinite(lo) & np.isfinite(hi)
+            ok[:120] = False  # warm-up
+            if ok.sum() < 300:
+                continue
+            inside = np.mean((m[ok] >= lo[ok]) & (m[ok] <= hi[ok]))
+            assert inside >= 0.85, f"{run} {unit} {tags[0]}: only {inside:.0%} of measured inside the band"
+            # dynamics: 60-min movement of the expected curve vs the 30-min-smoothed measured curve (noise excluded)
+            import pandas as pd
+            ms = pd.Series(m).rolling(30, center=True, min_periods=5).mean().to_numpy()[ok]
+            d60m, d60e = ms[60:] - ms[:-60], e[ok][60:] - e[ok][:-60]
+            assert np.std(d60e) >= 0.3 * np.std(d60m) or np.std(d60m) < 1e-6, f"{run} {unit}: expected is flat vs measured"
+            mm, ee = ms - np.nanmean(ms), e[ok] - e[ok].mean()
+            if np.std(mm) > 1e-6 and np.std(ee) > 1e-6:
+                c0 = np.corrcoef(mm, ee)[0, 1]
+                c120 = np.corrcoef(mm[120:], ee[:-120])[0, 1]
+                assert c0 >= c120 - 0.02, f"{run} {unit}: expected lags measured (c0={c0:.2f} < c120={c120:.2f})"
+

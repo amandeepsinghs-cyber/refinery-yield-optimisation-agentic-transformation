@@ -172,13 +172,13 @@ function Curve({ pts, current, chosen, recommended, tag, unit, pKey, yKey }: {
       <text x={L} y={H - 6} className="l1-curve-tick">{num(lo, 1)}</text>
       <text x={W - R} y={H - 6} textAnchor="end" className="l1-curve-tick">{num(hi, 1)}</text>
       <text x={(L + W - R) / 2} y={H - 6} textAnchor="middle" className="l1-curve-label">{tag}{unit ? ` (${unit})` : ""}</text>
-      <text x={L + 2} y={H - B - 4} className="l1-curve-label" fill="#1d4ed8">P(on-spec{pKey ? ` ${pKey}` : ""})</text>
-      {yKey && <text x={W - R - 2} y={H - B - 4} textAnchor="end" className="l1-curve-label" fill="#047857">Δ yield {yKey}</text>}
-      {pts.length > 1 && <path d={path((p) => p.p, YP)} fill="none" stroke="#1d4ed8" strokeWidth={1.8} />}
-      {pts.length > 1 && dys.length > 0 && <path d={path((p) => p.dy, YD)} fill="none" stroke="#047857" strokeWidth={1.4} strokeDasharray="4 3" />}
+      <text x={L + 2} y={H - B - 4} className="l1-curve-label" fill="var(--m-hybrid)">P(on-spec{pKey ? ` ${pKey}` : ""})</text>
+      {yKey && <text x={W - R - 2} y={H - B - 4} textAnchor="end" className="l1-curve-label" fill="var(--m-pinn)">Δ yield {yKey}</text>}
+      {pts.length > 1 && <path d={path((p) => p.p, YP)} fill="none" stroke="var(--m-hybrid)" strokeWidth={1.8} />}
+      {pts.length > 1 && dys.length > 0 && <path d={path((p) => p.dy, YD)} fill="none" stroke="var(--m-pinn)" strokeWidth={1.4} strokeDasharray="4 3" />}
       <line x1={X(chosen)} y1={T} x2={X(chosen)} y2={H - B} stroke="var(--text)" strokeWidth={1} strokeDasharray="2 2" opacity={0.6} />
-      <circle cx={X(current)} cy={pAt(pts, current, YP, H - B)} r={4} fill="var(--card)" stroke="#1d4ed8" strokeWidth={1.6}><title>current {num(current, 1)}</title></circle>
-      {optSp != null && <circle cx={X(optSp)} cy={pAt(pts, optSp, YP, H - B)} r={4.5} fill="#047857"><title>recommended {num(optSp, 1)}</title></circle>}
+      <circle cx={X(current)} cy={pAt(pts, current, YP, H - B)} r={4} fill="var(--card)" stroke="var(--m-hybrid)" strokeWidth={1.6}><title>current {num(current, 1)}</title></circle>
+      {optSp != null && <circle cx={X(optSp)} cy={pAt(pts, optSp, YP, H - B)} r={4.5} fill="var(--m-pinn)"><title>recommended {num(optSp, 1)}</title></circle>}
       {pts.length === 0 && <text x={W / 2} y={H / 2} textAnchor="middle" className="l1-curve-tick">sweeping surrogate…</text>}
     </svg>
   );
