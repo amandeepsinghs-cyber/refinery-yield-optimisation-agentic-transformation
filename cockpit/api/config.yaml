@@ -2,6 +2,9 @@
 # Environment overrides: FCC_GCP_PROJECT, FCC_GCP_LOCATION, FCC_TEXT_MODEL, FCC_LIVE_MODEL, FCC_EMBED_MODEL.
 data:
   root: sim_octave/data            # <batch>/*.csv below this folder are scanned
+  source: bigquery                 # bigquery | csv (env FCC_DATA_SOURCE). bigquery = run rows from fcc_silver.telemetry_minute,
+                                   # lab schedule + crude segments from fcc_bronze; local CSV only if BigQuery is unreachable
+  bigquery: {project: fcc-soft-sensor, location: us-central1, silver: fcc_silver, bronze: fcc_bronze, cache_dir: bq_cache}
   primary_batch: full_v1           # source of truth for training, evaluation and the demo
   default_run: random_s144         # demo default (clean 13h held-out test run in [742, 758.2] °F while s140 catches up)
   fallback_batches: [frontend_sample_1h]   # TEMPORARY: used only while full_v1 has no data rows; drops out automatically

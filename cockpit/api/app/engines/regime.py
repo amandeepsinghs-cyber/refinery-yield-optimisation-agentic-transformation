@@ -11,6 +11,7 @@ import logging
 from functools import lru_cache
 import numpy as np
 import pandas as pd
+from app.data.bq_source import staged_table
 
 from app.state import get_state
 from app.regimes import REGIME_IDS, REGIMES, regime_by_id, regime_segments
@@ -65,12 +66,10 @@ def _fit_regime_model():
         return
         
     logger.info("Fitting regime E1 class models...")
-    regimes_csv = st.s.data_root / st.s["data"]["primary_batch"] / "_staged" / "regimes.csv"
-    if not regimes_csv.exists():
-        logger.warning(f"Missing {regimes_csv}")
+    seg_df = staged_table(st.s, "regimes")      # BigQuery lakehouse (fcc_bronze.crude_regimes_raw) or local CSV
+    if seg_df.empty:
+        logger.warning("No crude segments (regimes) found")
         return
-    
-    seg_df = pd.read_csv(regimes_csv)
     features_list = []
     labels_list = []
     
@@ -361,10 +360,9 @@ def holdout_score() -> dict:
     """How often the classifier names the right crude 45 min after a crude switch, on the held-out runs
     (seed >= training.test_seed_min). Shown next to the crude classifier so its accuracy can be checked."""
     st = get_state()
-    regimes_csv = st.s.data_root / st.s["data"]["primary_batch"] / "_staged" / "regimes.csv"
-    if not regimes_csv.exists():
+    seg_df = staged_table(st.s, "regimes")
+    if seg_df.empty:
         return {}
-    seg_df = pd.read_csv(regimes_csv)
     test_min = int(st.s["training"].get("test_seed_min", 140))
     correct = total = 0
     for run_id in st.catalog.runs:

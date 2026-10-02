@@ -3642,3 +3642,7 @@ button.ucb-chip.on { border-color: var(--accent); background: color-mix(in srgb,
 .ush-part i { font-style: normal; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: 5px; border-radius: 50%;
   border: 1px solid var(--border-strong); font-size: 10px; }
 @media (max-width: 1100px) { .ush dl { grid-template-columns: 1fr; gap: 8px; } }
+
+.dpath-src { margin: 8px 0 0; font-size: 12.5px; }
+.dpath-src code { font-size: 11.5px; }
+.dpath-src.warn { color: var(--warn, #d97706); }

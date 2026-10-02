@@ -320,3 +320,13 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - [ ] After `full_v1` completes: re-run s102/s127/s128/s149/s150, then `sim_octave/stage_regimes.py --batch full_v1`.
 - [ ] Resize Cloudtop disk (post-sim).
 - [ ] Resume BUILD_PLAN_v3 Step 16 remainder (`adapt.py`, `train_surrogates.py` model cards, `eval_recipe` replay) and Step 17.
+
+## 2026-10-02 16:05 — cockpit reads from BigQuery
+
+- Lakehouse top-up: `load_lakehouse.py --batch full_v1 --skip-audit --skip-knowledge --skip-models`, 1,029 s. 54 runs in `fcc_silver` (44 complete, 10 still simulating). Decision record in BigQuery left as it was (167 archived actions).
+- API: new `app/data/bq_source.py`; `Catalog.load_true()` reads lake runs from `fcc_silver.telemetry_minute`; detect / adapt / regime read the lab schedule and crude segments from `fcc_bronze`. Parallel warm-up on start (54 runs into `artifacts/bq_cache`). CSV fallback if BigQuery fails, shown on the home page.
+- Parity: random_s107 from BigQuery vs CSV, 1,600 rows × 112 columns, max difference 0.0, no NaN mismatches.
+- New dependency: `google-cloud-bigquery==3.46.1` (pinned in `requirements.txt`).
+- Tests: 289 back-end pass (3 new in `tests/test_bq_source.py`, offline), 82 front-end pass.
+- Not changed: models (same rows), scripted outcomes, the lever batch (still CSV; not in the lake, not needed for the demo).
+

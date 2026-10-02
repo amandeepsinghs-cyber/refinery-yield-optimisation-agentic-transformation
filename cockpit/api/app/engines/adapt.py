@@ -2,6 +2,7 @@ import json
 import logging
 import numpy as np
 import pandas as pd
+from app.data.bq_source import staged_table
 from functools import lru_cache
 
 from app.state import get_state
@@ -32,11 +33,9 @@ def crps_gaussian(mu, sigma, truth):
 @lru_cache(maxsize=1)
 def _calc_train_weights():
     st = get_state()
-    labs_csv = st.s.data_root / st.s["data"]["primary_batch"] / "_staged" / "lab_results.csv"
-    if not labs_csv.exists():
+    df = staged_table(st.s, "lab_results")      # BigQuery lakehouse (fcc_bronze.lab_results_raw) or local CSV
+    if df.empty:
         return {}
-        
-    df = pd.read_csv(labs_csv)
     # Filter to train runs
     train_runs = [r for r in st.catalog.runs if "random_s" in r and int(r.split("random_s")[-1]) < 140]
     df = df[df["run_id"].isin(train_runs)]

@@ -76,7 +76,7 @@ function Provenance() {
   const run = runs.data?.find((r) => r.run_id === runId);
   const up = health.isSuccess;
   const text = run
-    ? `Simulated data · scripted outcomes · ${run.run_id} · ${clock(timeMin)}`
+    ? `Simulated data · ${health.data?.data?.store?.source === "bigquery" && !health.data?.data?.store?.error ? "BigQuery" : "local files"} · scripted outcomes · ${run.run_id} · ${clock(timeMin)}`
     : health.isError
       ? "Simulated data · API offline"
       : "Simulated data · no run selected";

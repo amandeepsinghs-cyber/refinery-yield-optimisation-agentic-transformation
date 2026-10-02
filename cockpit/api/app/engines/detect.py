@@ -23,6 +23,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from app.data.bq_source import staged_table
 
 from app.data.catalog import tag_meta
 from app.engines.regime import get_run_regimes
@@ -75,10 +76,9 @@ def _label(tag: str) -> str:
 @lru_cache(maxsize=1)
 def _lab_table() -> pd.DataFrame:
     st = get_state()
-    p = st.s.data_root / st.s["data"]["primary_batch"] / "_staged" / "lab_results.csv"
-    if not p.exists():
+    df = staged_table(st.s, "lab_results")      # BigQuery lakehouse (fcc_bronze.lab_results_raw) or local CSV
+    if df.empty or "time_min" not in df.columns:
         return pd.DataFrame(columns=["run_id", "time_min"])
-    df = pd.read_csv(p)
     df["time_min"] = pd.to_numeric(df["time_min"], errors="coerce")
     return df.dropna(subset=["time_min"])
 

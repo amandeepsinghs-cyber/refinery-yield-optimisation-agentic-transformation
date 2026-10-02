@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from ..config import Settings, get_settings
+from .bq_source import data_source, get_bq
 
 EVENT_LABELS = {
     1: "Crude change", 2: "Feed rate change", 3: "Riser outlet temperature move",
@@ -52,6 +53,7 @@ class RunInfo:
     mtime: float
     size: int
     columns: list[str] = field(default_factory=list)
+    lake: dict | None = None   # fcc_silver.run_registry row when data.source = bigquery and the run is in the lake
 
 
 def _scenario_for(stem: str, batch: str) -> str:
@@ -205,7 +207,30 @@ class Catalog:
         else:
             self.runs, self.fallback = {r: i for r, i in runs.items() if i.batch in fallback}, True
         self.all_runs = runs
+        self._attach_lake()
         return self.runs
+
+    def _attach_lake(self) -> None:
+        """data.source = bigquery: mark every active run that is in the lakehouse; its rows are then read from
+        fcc_silver.telemetry_minute (local CSV only if BigQuery is unreachable)."""
+        self.store = {"source": data_source(self.s), "lake_runs": 0, "error": None}
+        if self.store["source"] != "bigquery":
+            return
+        try:
+            reg = get_bq(self.s).registry()
+        except Exception as e:  # noqa: BLE001
+            self.store["error"] = f"{type(e).__name__}: {e}"[:300]
+            return
+        for r, info in self.runs.items():
+            e = reg.get(r)
+            if e and e.get("batch_id") == info.batch and int(e.get("rows_loaded") or 0) > 0:
+                info.lake = e
+                info.n_minutes = int(e["rows_loaded"])
+        self.store["lake_runs"] = sum(1 for i in self.runs.values() if i.lake)
+        try:
+            get_bq(self.s).prefetch({r: i.lake for r, i in self.runs.items() if i.lake})
+        except Exception as e:  # noqa: BLE001 — runs then fall back one by one in load_true()
+            self.store["error"] = f"{type(e).__name__}: {e}"[:300]
 
     @property
     def data_mode(self) -> dict:
@@ -223,7 +248,20 @@ class Catalog:
         if pp and pp["partial"]:
             note = f"{pp['partial']} {prim} runs are still partial (< {pp['min_rows']} rows) and are excluded until complete."
         return {"source": "primary", "primary_batch": prim, "batches": self.batches, "primary_progress": pp,
-                "note": note}
+                "note": note, "store": self.store_info()}
+
+    def store_info(self) -> dict:
+        """Where run rows are read from: BigQuery lakehouse or local CSV (shown on the data chip)."""
+        st = dict(getattr(self, "store", {}) or {"source": "csv"})
+        if st.get("source") == "bigquery":
+            bq = get_bq(self.s)
+            st.update(table=f"{bq.project}.{bq.silver}.telemetry_minute", registry=f"{bq.project}.{bq.silver}.run_registry",
+                      active_runs=len(self.runs), error=st.get("error") or bq.last_error,
+                      read_from={k: v for k, v in sorted(bq.fetched.items())})
+            st["label"] = (f"BigQuery · {bq.silver}" if not st["error"] else "Local copy (BigQuery unreachable)")
+        else:
+            st["label"] = "Local simulator files"
+        return st
 
     @property
     def batches(self) -> list[str]:
@@ -246,12 +284,22 @@ class Catalog:
     def load_true(self, run_id: str) -> pd.DataFrame:
         """Simulator values for every column (no measurement noise). Use for evaluation / the truth overlay."""
         info = self.get(run_id)
-        key = (info.mtime, info.size)
+        bq = get_bq(self.s) if info.lake and data_source(self.s) == "bigquery" else None
+        key = (info.mtime, info.size, bq.key(info.lake) if bq else "csv")
         with self._lock:
             hit = self._cache.get(run_id)
             if hit and hit[0] == key:
                 return hit[1]
-        df = _read_csv(info.path, self._expected_rows(info))
+        df = None
+        if bq:
+            try:
+                df = bq.fetch_run(run_id, info.lake)
+            except Exception as e:  # noqa: BLE001 — network / auth failure: read the local copy and say so
+                bq.last_error = f"{type(e).__name__}: {e}"[:300]
+                getattr(self, "store", {}).update(error=bq.last_error)
+                key = (info.mtime, info.size, "csv")
+        if df is None:
+            df = _read_csv(info.path, self._expected_rows(info))
         info.n_minutes = len(df)
         with self._lock:
             self._cache[run_id] = (key, df)

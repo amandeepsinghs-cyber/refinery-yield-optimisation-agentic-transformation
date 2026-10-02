@@ -25,6 +25,7 @@ def health():
                      "trained_at": b.get("trained_at"), "stale_runs": len(st.stale_runs()) if st.trained else None,
                      "rescoring": st.scoring, "source": dm["source"],
                      "note": dm["note"], "split": b.get("mode"), "primary_progress": dm.get("primary_progress"),
+                     "store": dm.get("store"),
                      "retrain_recommended": bool(st.trained and dm["source"] == "primary" and trained_on_fallback)},
             "gemini": st.gemini,
             "knowledge": {**st.knowledge.info(), "note": st.knowledge.note}}

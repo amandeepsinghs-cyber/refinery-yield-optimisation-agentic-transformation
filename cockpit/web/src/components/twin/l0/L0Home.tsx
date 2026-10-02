@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useCockpit } from "@/lib/store";
-import { useRuns } from "@/lib/api";
+import { useRuns, useHealth } from "@/lib/api";
 import { getTwinOverview } from "@/lib/twinApi";
 import { getCoverage, getDecisions, type CoverageRow, type Decision, type DecisionQueueResp } from "@/lib/decisionsApi";
 import type { TwinOverview } from "@/lib/twinTypes";
@@ -142,11 +142,12 @@ export default function L0Home() {
         <h2 className="hs-h">Data path</h2>
         <ol>
           <li><b>Simulation</b><span>FCC simulator, every tag each minute</span></li>
-          <li><b>BigQuery</b><span>raw tags and lab results land here</span></li>
-          <li><b>Lakehouse</b><span>cleaned, lab-aligned tables per unit</span></li>
+          <li><b>BigQuery</b><span>raw tags and lab results land here (fcc_bronze)</span></li>
+          <li><b>Lakehouse</b><span>cleaned, lab-aligned tables (fcc_silver); the cockpit reads every run from here</span></li>
           <li><b>Models</b><span>crude classifier · soft sensor · response models</span></li>
           <li><b>Decision</b><span>the move, its checks and Accept / Hold / Decline</span></li>
         </ol>
+        <DataStore />
       </section>
 
       <footer className="home-foot">
@@ -154,5 +155,20 @@ export default function L0Home() {
         <p className="home-prov subtle">Simulated data · {data.provenance?.batch_id} · {data.provenance?.run_id} · advisory only — nothing here writes to a control system</p>
       </footer>
     </div>
+  );
+}
+
+/** Where the rows on screen are actually read from (GET /api/health → data.store). */
+function DataStore() {
+  const st = useHealth().data?.data?.store;
+  if (!st) return null;
+  const ok = st.source === "bigquery" && !st.error;
+  return (
+    <p className={`dpath-src subtle${ok ? "" : " warn"}`}>
+      Read from: <b>{st.label}</b>
+      {st.table ? <> · <code>{st.table}</code></> : null}
+      {st.lake_runs != null ? ` · ${st.lake_runs} of ${st.active_runs ?? st.lake_runs} runs` : ""}
+      {st.error ? ` · ${st.error}` : ""}
+    </p>
   );
 }
