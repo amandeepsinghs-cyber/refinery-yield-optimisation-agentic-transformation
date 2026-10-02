@@ -48,6 +48,8 @@ training:
   test_seed_min: 140               # full_v1: random_s140..s153 held out (test); s100..s139 train
   lever_batches: [lever_v1]        # designed lever moves (scenario 'lever'); used only by the set-point surrogates
   lever_test_seed_min: 210         # lever_v1: lever_s210..s211 held out; lever_s200..s209 train
+  lever_min_rows: 360              # lever runs are used while still running once they have >= 6 h of data (each
+                                   # lever's first designed move lands in hours 1-6); the fit is redone on restart as they grow
   group_kfold: 4                   # grouped K-fold by run on the train runs (admission + committee MSE)
 hybrid:
   draw_tray: {LCO_T98_F: T_tray13_F, HN_T98_F: T_tray06_F}

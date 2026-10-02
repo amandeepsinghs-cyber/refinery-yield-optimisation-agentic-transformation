@@ -78,8 +78,11 @@ def _calc_train_weights():
             m_c = {m: np.mean(v) for m, v in crps_dict.items() if v}
             if len(m_c) != 4:
                 return {m: 0.25 for m in MEMBER_LABELS}
-            w = {m: np.exp(-c) for m, c in m_c.items()}
+            c0 = min(m_c.values())   # shift before exp so large CRPS values do not underflow to 0/0
+            w = {m: np.exp(-(c - c0)) for m, c in m_c.items()}
             tot = sum(w.values())
+            if not np.isfinite(tot) or tot <= 0:
+                return {m: 0.25 for m in MEMBER_LABELS}
             return {m: v/tot for m, v in w.items()}
             
         out[prop]["global"] = _get_w(member_crps)
@@ -113,6 +116,10 @@ def adaptation_at(run_id: str, time_min: int, prop: str) -> dict:
         live_w[m] = w
         
     tot = sum(live_w.values())
+    if not np.isfinite(tot) or tot <= 0:
+        # no regime probabilities at this minute (e.g. the run's last minute): fall back to the global weights
+        live_w = dict(w_info["global"])
+        tot = sum(live_w.values()) or 1.0
     live_w = {m: v/tot for m, v in live_w.items()}
     
     w_hybrid = live_w["hybrid"]

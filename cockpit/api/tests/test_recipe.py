@@ -22,8 +22,11 @@ def test_surrogate_card_is_structural_for_cut_points():
         other = [t for t in CUTPOINT_SP.values() if t != t98][0]
         assert card["sensitivity"][other][sp] == 0.0
         assert card["source"][sp].startswith("structural")
-    # the auto-window yield response is negative in this simulator and has hold-out skill
-    assert card["sensitivity"]["prod_LCO"]["SP_LCO_T98"] < -2
+    # the auto-window yield response is used only where it has hold-out skill; then it is negative in this simulator,
+    # otherwise it is zero (no claim). On full_v1 the HN response has skill; the LCO one does not (hold-out R² ~0).
+    for out, sp in (("prod_LCO", "SP_LCO_T98"), ("prod_HN", "SP_HN_T98")):
+        g = card["sensitivity"][out][sp]
+        assert g < -2 or g == 0.0, (out, g)
     assert card["sensitivity"]["prod_HN"]["SP_HN_T98"] < -2
     # constant tags are never searched
     assert {"SP_T_preheat_F", "MV_PA1", "MV_reflux_ratio", "SP_T_overhead", "MV_cw_flow"} <= set(card["unsupported_inputs"])
@@ -80,7 +83,8 @@ def test_recipe_withheld_without_data_support():
 def test_whatif_tracks_limits_and_spec():
     inside = whatif(RUN, T_PASS, U4, {"SP_LCO_T98": 750.0})
     assert inside["within_limits"] is True
-    assert inside["d_yield_pct_feed"]["LCO"] > 0  # lower LCO T98 raises LCO make in this simulator
+    # lower LCO T98 never lowers predicted LCO make; it is 0 while the LCO yield response has no hold-out skill
+    assert inside["d_yield_pct_feed"]["LCO"] >= 0
     assert inside["predicted"]["LCO_T98_F"] < 755
     outside = whatif(RUN, T_PASS, U4, {"SP_LCO_T98": 790.0})
     assert outside["within_limits"] is False

@@ -66,7 +66,8 @@ def test_events_are_stable_and_filterable():
 def test_next_lab_from_lab_schedule():
     assert next_lab_min(RUN, 100) == 360
     assert next_lab_min(RUN, 600) == 840
-    assert next_lab_min(RUN, 1150) is None
+    assert next_lab_min(RUN, 1150) == 1320       # full_v1 runs are 1,600 min (the test predates the full length)
+    assert next_lab_min(RUN, 1320) is None
 
 
 def test_open_breach_and_root_cause():

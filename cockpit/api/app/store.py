@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import threading
 from pathlib import Path
@@ -60,7 +61,8 @@ def _d(o):
 
 
 def audit_db(art: Path) -> sqlite3.Connection:
-    con = sqlite3.connect(art / "audit.db", check_same_thread=False)
+    # FCC_AUDIT_DB lets the test suite write to a throw-away file instead of the live decision record
+    con = sqlite3.connect(os.environ.get("FCC_AUDIT_DB") or (art / "audit.db"), check_same_thread=False)
     con.execute("CREATE TABLE IF NOT EXISTS audit (audit_id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, actor TEXT,"
                 " action TEXT, target TEXT, detail TEXT)")
     con.execute("CREATE TABLE IF NOT EXISTS decisions (rec_id TEXT PRIMARY KEY, decision TEXT, user TEXT, note TEXT,"

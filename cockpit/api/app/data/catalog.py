@@ -239,7 +239,7 @@ class Catalog:
 
     def _expected_rows(self, info: RunInfo) -> int | None:
         D = self.s["data"]
-        if info.batch == D.get("primary_batch"):
+        if info.batch == D.get("primary_batch") or info.batch in (self.s["training"].get("lever_batches") or []):
             return int(D.get("expected_rows", 1600))
         return None
 
