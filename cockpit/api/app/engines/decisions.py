@@ -68,7 +68,7 @@ TYPES: dict[str, dict[str, Any]] = {
            "today": "One loop at a time by experience → several set points searched together inside limits"},
     "D5": {"name": "Regenerator air versus severity", "problem": ["P3"], "uc": ["UC-04"],
            "today": "Afterburn noticed on the board → drift flagged against expected with the downstream effect"},
-    "D6": {"name": "Furnace preheat and excess O₂", "problem": ["P2", "P3"], "uc": ["UC-05", "UC-10"],
+    "D6": {"name": "Furnace preheat", "problem": ["P2", "P3"], "uc": ["UC-05", "UC-10"],
            "today": "Fired duty set by habit → drift against expected flagged with its effect on the riser"},
     "D7": {"name": "Overhead condenser and stabiliser", "problem": ["P3"], "uc": ["UC-02", "UC-03", "UC-07"],
            "today": "C5 loss found in the next lab → drift flagged as it starts"},
@@ -428,7 +428,7 @@ def _watch(run_id: str, t: int, attention: list[dict], covered: set[str]) -> lis
             d["use_case"] = _use_case(UC_BY_UNIT[uid])
         down = UNIT_SHORT.get(a.get("downstream_unit_id"), "")
         d["question"] = {"D5": "Rebalance regenerator air against riser severity?",
-                         "D6": "Trim furnace preheat or excess O₂?",
+                         "D6": "Trim the furnace preheat for the new crude?",
                          "D7": ("Raise condenser cooling water or reflux?" if uid == "unit_5_condenser"
                                 else "Adjust stabiliser overhead temperature / reflux for C5 recovery?"),
                          }.get(dtype, f"Act on the {UNIT_SHORT.get(uid, '').lower()} now, before it reaches the "

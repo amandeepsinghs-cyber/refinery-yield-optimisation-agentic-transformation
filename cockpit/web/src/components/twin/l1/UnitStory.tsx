@@ -410,7 +410,11 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           ) : k ? <div className="us-fact big"><span>{k.label} now</span><b className="num">{fx(k.value)} <small>{k.unit}</small></b><em>plan {fx(k.plan)}</em></div> : null}
           <div className="us-fact"><span>Away from expected</span><b className="num">{Math.abs(a.residual_now) < 0.05 ? "" : a.residual_now > 0 ? "+" : "−"}{fx(Math.abs(a.residual_now), 1)} <small>{k?.unit}</small></b><em>{fx(a.sigma_now ? Math.abs(a.residual_now) / a.sigma_now : null, 1)} σ</em></div>
           <div className="us-fact"><span>Sustained drift (CUSUM)</span><b className="num">{fx(a.cusum_now, 1)}</b><em>{a.breach_open ? `since ${clock(a.first_breach_min)}` : "no breach open"}</em></div>
-          <div className="us-fact"><span>Likely driver</span><b>{a.root_cause[0] ? `${a.root_cause[0].label ?? a.root_cause[0].tag} ${a.root_cause[0].direction === "up" ? "↑" : "↓"}` : "—"}</b><em>largest contribution</em></div>
+          {(() => {
+            const calm = !a.breach_open && a.sigma_now != null && a.sigma_now > 0 && Math.abs(a.residual_now) / a.sigma_now < 1;
+            const rc = a.root_cause[0];
+            return <div className="us-fact"><span>Likely driver</span><b>{calm || !rc ? "—" : `${rc.label ?? rc.tag} ${rc.direction === "up" ? "↑" : "↓"}`}</b><em>{calm ? "nothing unusual" : "largest contribution"}</em></div>;
+          })()}
           {data.regime ? <div className="us-fact"><span>Crude</span><b>{data.regime.regime_id} {data.regime.regime_label.split(" ")[0]}</b><em>{Math.round((data.regime.p_regime?.[data.regime.regime_id] ?? 0) * 100)} % sure · since {clock(data.regime.detected_at_min)}</em></div> : null}
         </div>
         {data.regime ? <CrudeBlock r={data.regime} physicsPct={committee?.reason?.match(/carry (\d+) %/)?.[1] ?? null} /> : null}
@@ -547,7 +551,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
               <>
                 <h3>The search, in plain words</h3>
                 <ul className="uf-opt">
-                  <li><span>Goal</span>{goal.toLowerCase()} ≥ 95 % with the smallest move of {move.label.toLowerCase()}</li>
+                  <li><span>Goal</span>{goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of {move.label.charAt(0).toLowerCase() + move.label.slice(1)}</li>
                   <li><span>Limits</span>SOP step ≤ {fx(stepMax, nd)} {move.unit} · time between moves · lever window</li>
                   <li><span>Model</span>{p.model ?? `4-model soft sensor, weighted for the crude now (${data.regime?.regime_id ?? "—"})`}</li>
                   <li><span>Result</span>{fx(move.from, nd)} → {fx(move.to, nd)} {move.unit}: {pct(p.p_on_spec_before)} → {pct(p.p_on_spec_after)}, margin {fx(p.margin_after, 1)} {p.unit ?? move.unit}</li>

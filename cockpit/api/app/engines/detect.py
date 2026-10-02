@@ -226,7 +226,27 @@ def _regime_events(run_id: str, df: pd.DataFrame) -> list[dict]:
         return []
     det, t = reg["detected_regime"], df["time_min"].to_numpy()
     out = []
-    for i in range(1, len(det)):
+    from app.engines import scripted  # local: avoid an import cycle
+    if scripted.enabled():
+        # Scripted classifier: a switch is confirmed DETECT_LAG_MIN after the declared switch completes — the same
+        # time the crude block reports — so the shift list and the classifier never disagree.
+        segs = reg["segs"].reset_index(drop=True)
+        pairs = []
+        for j in range(1, len(segs)):
+            a, b = segs.loc[j - 1, "regime_id"], segs.loc[j, "regime_id"]
+            end = segs.loc[j].get("transition_end_min")
+            end = segs.loc[j, "t_start_min"] if end is None or pd.isna(end) else end
+            ts = int(end) + scripted.DETECT_LAG_MIN
+            if a != b and len(t) and ts <= int(t[-1]):
+                pairs.append((ts, a, b))
+        det, t = [], []
+        for ts, a, b in pairs:
+            det += [a, b]
+            t += [ts, ts]
+        rng = range(1, len(det), 2)
+    else:
+        rng = [i for i in range(1, len(det)) if det[i] != det[i - 1]]
+    for i in rng:
         if det[i] != det[i - 1]:
             out.append(_event(run_id, t[i], None, None, "regime", "regime_change", "info",
                               {"label": f"Crude switch detected ({det[i - 1]}→{det[i]})", "from": det[i - 1], "to": det[i],
@@ -338,8 +358,10 @@ def _residual_events(run_id: str, df: pd.DataFrame) -> list[dict]:
 
 
 def _fit_key() -> str:
+    from app.engines import scripted
     from app.engines.regime import REGIME_FIT_VERSION
-    return f"detect{DETECT_VERSION}:surrogate{SURROGATE_VERSION}:regime{REGIME_FIT_VERSION}"
+    return (f"detect{DETECT_VERSION}:surrogate{SURROGATE_VERSION}:regime{REGIME_FIT_VERSION}"
+            f":scripted{int(scripted.enabled())}")
 
 
 def compute_detect(run_id: str) -> None:

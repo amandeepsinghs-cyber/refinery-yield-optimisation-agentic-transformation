@@ -157,8 +157,14 @@ def _script(d: dict, row: dict) -> dict:
 def apply(decisions: list[dict], row: dict) -> list[dict]:
     if not enabled() or not row:
         return decisions
+    # The recipe stands on the cut-point estimate: if the soft-sensor committee is too uncertain to advise the cut
+    # point (D2 withheld on spread), the scripted recipe is not released either — the honesty scene (run s144) holds.
+    d2_withheld = any(d.get("type") == "D2" and d.get("status") == "withheld" for d in decisions)
     out = []
     for d in decisions:
+        if d.get("type") == "D3" and d2_withheld:
+            out.append(d)
+            continue
         if d.get("type") in SPEC and d.get("status") in ("withheld", "watch") and not d.get("action"):
             d = _script(d, row)
         out.append(d)

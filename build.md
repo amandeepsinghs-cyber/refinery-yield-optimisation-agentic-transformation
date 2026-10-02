@@ -20,6 +20,7 @@
 > - **D3 recipe for the new crude, D5 regenerator air, D6 furnace preheat, D7 condenser:** open moves. Each moves a real lever inside its operating window and SOP step, with fixed plant-plausible gains. The chance of returning to the band goes from about 31 % to 96–98 %.
 > - **Stays on the real engine:** D1 cut point, D2 trust or spread gate (wait for the lab), D9 lab sample, D8 watch.
 > - **Labels:** the top pill reads "Simulated data · scripted outcomes", and each scripted lever carries a "scripted outcome" tag. Switch it off with `demo.scripted_outcomes: false` or `FCC_SCRIPTED=0`; tests run with it off and `tests/test_scripted.py` checks it on.
+> - **Consistency rules (14:25):** crude-switch events use the scripted detection time (switch end + 12 min) so the shift list, crude block and classifier agree; the scripted D3 recipe is not released while D2 is withheld on spread, so run s144 still shows the cockpit refusing when the models disagree.
 > - **Gone in scripted mode:** the "Not yet" status for D3 and D5–D7, the real classifier's 57 % accuracy line, and the need for the lever batch, refit and closed-loop check before the demo.
 
 ### Screens
