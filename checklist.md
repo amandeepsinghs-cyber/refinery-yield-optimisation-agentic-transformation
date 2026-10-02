@@ -12,7 +12,7 @@
 
 | Done (commit) | Open |
 |---|---|
-| ☑ Decision API + home redesign `994380a` · ☑ lever-batch code `1edeb3e` · ☑ four-step unit page `beee022` · ☑ six unit drawings + decision record `112aa48` · ☑ plain-words copy `11876cc` · ☑ ② estimate over time + labs, ③ earlier decisions, ④ binding limits + exact missing data, ① full tag list, footer action history, crude classifier `c694166` · ◐ surrogate fit reads `lever_v1` (code ready, uncommitted, 12:35) | ◐ `lever_v1` running (launched 12:15 UTC) · ☐ stage `lever_v1` regimes + refit · ☐ closed-loop simulator check · ☐ home page at 1366 px ("What went wrong" chips cut off) · ☐ Hindi / Hinglish check on the new parts |
+| ☑ Decision API + home redesign `994380a` · ☑ lever-batch code `1edeb3e` · ☑ four-step unit page `beee022` · ☑ six unit drawings + decision record `112aa48` · ☑ plain-words copy `11876cc` · ☑ ② estimate over time + labs, ③ earlier decisions, ④ binding limits + exact missing data, ① full tag list, footer action history, crude classifier `c694166` · ☑ surrogate fit reads `lever_v1` `af43f5c` | ◐ `lever_v1` running (launched 12:15 UTC) · ☐ stage `lever_v1` regimes + refit · ☐ closed-loop simulator check · ☐ home page at 1366 px ("What went wrong" chips cut off) · ☐ Hindi / Hinglish check on the new parts |
 
 > [!IMPORTANT]
 > **Current status (2026-10-01 05:25 UTC):** *(superseded for screens by the 2026-10-02 section above)*
@@ -439,7 +439,7 @@ Decision record and copy
 Data for D3, D5–D7
 - ☑ Lever scenario in `sim_octave/scenario.m` (events 7–12: preheat, regenerator T / air, PA2, reflux, cooling water, overhead T), `run_lever_batch.sh`, surrogate `EVENT_INPUT` map — `1edeb3e`
 - ◐ `lever_v1` batch: 12 runs, seeds 200–211, `sim_octave/data/lever_v1/`, launched 12:15 UTC 2 Oct
-- ◐ Surrogate fit to include `lever_v1` — code ready 12:35 (reads `lever_sNNN`, train s200–s209 / hold-out s210–s211 via `training.lever_test_seed_min`, merges `lever_v1/_staged/regimes.csv`, refits automatically when the set of lever runs changes, `SURROGATE_VERSION` 6); awaiting commit
+- ◐ Surrogate fit to include `lever_v1` — code `af43f5c` (reads `lever_sNNN`, train s200–s209 / hold-out s210–s211 via `training.lever_test_seed_min`, merges `lever_v1/_staged/regimes.csv`, refits automatically when the set of lever runs changes, `SURROGATE_VERSION` 6)
 - ☐ Stage `lever_v1` regimes after the batch (`sim_octave/stage_regimes.py --batch lever_v1`) and restart the API
 - ☐ Refit → D3, D5–D7 give real target values
 - ☐ Feed one recipe back through the simulator; observed change within the predicted band
