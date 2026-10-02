@@ -451,3 +451,9 @@ Data for D3, D5–D7
 
 Docs
 - ☑ `verbatim.md` Part 9.5 corrections; build / features / BDD / SDD / checklist / BUILD_PLAN_v3 / L0_BUILD_PLAN / PROGRESS_LOG / demoflow / DECISIONS / API_CONTRACT_v3 updated to the agreement (2026-10-02, uncommitted)
+
+Polish (16:35 2 Oct)
+- ☑ Unit footer events in plain words (API `tag_label`, no raw tags)
+- ☑ Chart corner labels use IOCL numbering (#1, #6, #11)
+- ☑ Gemini answers match the decision cards in English, Hinglish and Hindi (`decisions_block`); voice probe OK
+- ☐ Top up the lake once the last 10 `full_v1` runs finish, then restart the API

@@ -14,6 +14,10 @@ import { TOKENS } from "@/lib/theme";
 import { minToX, xToMin } from "@/lib/format";
 import { traceColor, yieldAxis, trayNumber, indexAtMin } from "@/lib/l1";
 import type { TwinPanel, TwinWorkbench } from "@/lib/twinTypes";
+import { USE_CASES } from "@/lib/howItWorks";
+
+/** Internal "UC-01" → the IOCL list row "#1" (owner asked for IOCL numbering on screen). */
+const ioclRow = (id: string) => USE_CASES.find((u) => u.id === id)?.row ?? null;
 
 const HEIGHT: Record<string, number> = { measured_vs_expected: 230, residual: 190, mv: 165, disturbance: 165, yield: 165, tray_profile: 200, combustion: 165 };
 const MARGIN = { l: 56, r: 56, t: 8, b: 24 };
@@ -79,7 +83,10 @@ export default function ChartStack({ data, panels, hoverMin, onHover }: ChartSta
             <div className="l1-panel-head">
               <span className="l1-panel-title">{panel.title}</span>
               {!isTime ? <span className="l1-panel-uc muted">at t = {timeMin} min · dashed = window start</span> : null}
-              {panel.use_case_ids?.length ? <span className="l1-panel-uc muted">{panel.use_case_ids.join(" · ")}</span> : null}
+              {(() => {
+                const rows = (panel.use_case_ids ?? []).map(ioclRow).filter((r): r is string => !!r && r.startsWith("#"));
+                return rows.length ? <span className="l1-panel-uc muted" title="IOCL use-case list rows">IOCL {rows.join(" · ")}</span> : null;
+              })()}
             </div>
             <Chart
               data={built.traces}

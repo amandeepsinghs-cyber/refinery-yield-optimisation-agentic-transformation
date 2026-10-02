@@ -262,7 +262,8 @@ def workbench(unit_id: str, run_id: str, time_min: int, window_min: int = 720, s
     except Exception:  # noqa: BLE001 - accuracy line is informative only
         regime["holdout"] = None
     rcp = recipe_for(run_id, time_min, unit_id)
-    events = [e for e in events_for_run(run_id, time_min, None)["events"]
+    events = [{**e, "tag_label": _label(e["tag"]) if e.get("tag") else None}
+              for e in events_for_run(run_id, time_min, None)["events"]
               if e.get("unit_id") in (unit_id, None) and window[0] <= int(e["time_min"]) <= window[1]]
     markers = [{"time_min": int(e["time_min"]), "kind": e["kind"], "tag": e.get("tag") if e["kind"] != "regime_change" else None,
                 "label": e.get("label") or {"breach": "±3σ breach", "cusum": "Change-point", "recipe_ready": "Recipe ready",

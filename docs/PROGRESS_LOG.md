@@ -335,3 +335,11 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - All scenes on BigQuery data: A–G and I–J OK. Scene H (s144) fixed: the D1 consequence matched to the move direction (raise → product giveaway text), the S2 check named “GPR model outside its range” when it fails with its value inside the limit, “one is amber, so the move is cut to half size” in the summary, and the stray `rcp_test_contract` agent event archived to `agent_events_archive` (backup `artifacts/audit_backup_20261002_1612.db`).
 - 286 back-end tests pass.
 
+
+## 2026-10-02 16:35 — plain labels, IOCL numbering, Gemini check
+
+- Unit footer "This shift on the unit" shows plain names, not tags: e.g. "Preheat outlet outside its normal band", "Cyclone ΔT drifting (sustained)", "Cooling water drifting (sustained)". The API now adds `tag_label` to each unit event (`engines/workbench.py`); the page falls back to the unit's own label map, never the raw tag.
+- Chart corner labels read "IOCL #1 · #6 · #11" (IOCL list rows) instead of internal `UC-01 · UC-03 · UC-11` (`ChartStack.tsx`, mapped through `howItWorks.ts` `USE_CASES`).
+- Gemini (demoflow Scene 6) checked on s144 fractionator at 10:00, asking "why half size, what if I hold?" in English, Hinglish and Hindi. First run: answered in all three languages but contradicted the D1 card ("no move", "withheld"), because Gemini only saw the older recipe / gate snapshot. Fix: `copilot/chat.py` `decisions_block` sends the unit's decision cards (headline, why, trust, half-move flag, if-you-hold, failed checks, Not-yet reason) with every turn; voice uses the same block. Second run: all three answers match the card (+2.5 °F half move because trust AMBER; holding sends product to the heavier stream). Also removed a citation template from the language instruction that Gemini copied literally into a Hindi answer, and asked for plain control-room Hindi.
+- Voice: startup probe OK (`gemini-live-2.5-flash-native-audio`, audio returned).
+- Tests: 286 back-end pass, 82 front-end pass.

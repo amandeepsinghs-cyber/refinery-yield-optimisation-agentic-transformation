@@ -106,6 +106,48 @@ def visible_block(sc: dict) -> str:
             f" and may be quoted directly):{focus_line}\n{txt}")
 
 
+DECISIONS_MAX_CHARS = 3200
+
+
+def decisions_block(ctx: dict, sc: dict) -> str:
+    """The decision cards on screen (GET /api/decisions, same run/minute): this unit's on L1, all open ones on L0.
+
+    Without this Gemini only sees the older recipe/gate snapshot and can contradict the card (e.g. say "no move" while the
+    card shows a half-size raise). Never raises."""
+    try:
+        from ..engines.decisions import build
+        rid, t = ctx.get("run_id"), ctx.get("time_min")
+        if not rid or t is None:
+            return ""
+        ds = build(rid, int(t)).get("decisions", [])
+    except Exception:  # noqa: BLE001 - the copilot must still answer without the decision engine
+        return ""
+    if sc.get("unit_id"):
+        ds = [d for d in ds if d.get("unit_id") == sc["unit_id"]]
+    else:
+        ds = [d for d in ds if d.get("status") in ("open", "held")]
+    rows = []
+    for d in ds[:6]:
+        u, dg, pr = d.get("urgency") or {}, d.get("diagnosed") or {}, d.get("predicted") or {}
+        rows.append({
+            "decision": d["id"].split("-")[0], "unit": d.get("unit_label"), "status": d.get("status"),
+            "question": d.get("question"), "headline": d.get("headline"),
+            "why": dg.get("text"), "trust": dg.get("trust"), "half_move_because_amber": bool(dg.get("conservative")),
+            "if_you_hold": u.get("consequence"), "decide_by": u.get("decide_by_label"),
+            "alternative": (d.get("proposed") or {}).get("alternative"),
+            "p_on_spec_before_after": [pr.get("p_on_spec_before"), pr.get("p_on_spec_after")] if pr else None,
+            "checks_failed": [g.get("name") for g in d.get("gates") or [] if not g.get("pass")],
+            "not_yet_because": d.get("withheld_text"),
+        })
+    if not rows:
+        return ""
+    txt = json.dumps(rows, default=str, ensure_ascii=False, separators=(",", ":"))
+    if len(txt) > DECISIONS_MAX_CHARS:
+        txt = txt[:DECISIONS_MAX_CHARS] + "...]"
+    return ("\nDECISION CARDS ON SCREEN (authoritative — same source the operator reads; answer 'why this move / why half size /"
+            " what if I hold / why not yet' from these, in the operator's language, and never contradict them):\n" + txt)
+
+
 def screen_block(ctx: dict) -> str:
     sc = screen_of(ctx)
     snap = scope_snapshot_for(ctx)
@@ -132,6 +174,7 @@ def screen_block(ctx: dict) -> str:
     body = f"\nSCOPE SNAPSHOT (server-side, same minute as the page): {snap['snapshot_json']}" if snap else \
         "\nSCOPE SNAPSHOT: unavailable for this run/minute — say so if asked and use tools."
     body += visible_block(sc)
+    body += decisions_block(ctx, sc)
     body += ("\nWhen asked to explain / describe / walk through 'the screen', 'this page', 'what I am seeing' or 'what is going on': "
              "go region by region in screen order using ON-SCREEN RIGHT NOW (fall back to the SCOPE SNAPSHOT), name each unit / panel "
              "as it is labelled, quote its numbers, say what is normal vs. what needs attention and why, and finish with the open "
@@ -147,13 +190,15 @@ def system_instruction(ctx: dict) -> str:
     if lang == "hinglish":
         lang_directive = (
             "\nLANGUAGE MODE: Respond in Hinglish (natural Indian refinery control-room mix of Hindi in Latin script "
-            "and English engineering terms/units/SOP citations). Keep all tag names, numeric values, °F/psig units, "
-            "and [DOC-ID rN §x.y] citations exact."
+            "and English engineering terms/units/SOP citations). Keep all tag names, numeric values and °F/psig units "
+            "exact; copy any SOP citation exactly as a tool returned it, and never write a citation you were not given."
         )
     elif lang in ("hi", "hindi"):
         lang_directive = (
-            "\nLANGUAGE MODE: Respond in Hindi (Devanagari script) while keeping technical tag IDs, numeric values, "
-            "°F/psig units, and [DOC-ID rN §x.y] citations exact."
+            "\nLANGUAGE MODE: Respond in plain control-room Hindi (Devanagari script) — everyday words an operator uses, "
+            "not literary Hindi (e.g. 'conservative move' = 'सावधानी से छोटा कदम', not 'रूढ़िवादी'). Keep technical tag IDs, "
+            "numeric values and °F/psig units exact; copy any SOP citation exactly as a tool returned it, and never write "
+            "a citation you were not given."
         )
     return f"""You are the FCC soft-sensor Decision Cockpit copilot for a TECHNICAL DEMO on SIMULATED data (Octave FCC +
 fractionator simulator). You help operators and engineers understand LCO T98 (LCO_T98_F) and heavy-naphtha T98 (HN_T98_F)

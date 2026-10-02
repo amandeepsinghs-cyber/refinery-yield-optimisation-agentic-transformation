@@ -41,7 +41,7 @@ const fx = (v: number | null | undefined, d?: number) => (v == null || !Number.i
 const pct = (p?: number | null) => (p == null ? "—" : `${Math.round(p * 100)} %`);
 const STATUS: Record<string, string> = { open: "Decide", watch: "Watch", withheld: "Not yet", held: "Held", accepted: "Accepted", declined: "Declined", expired: "Expired" };
 const TAGN: Record<string, string> = { LCO_T98_F: "LCO T98", HN_T98_F: "HN T98" };
-const EVK: Record<string, string> = { cusum: "drifting (sustained)", change_point: "step change", recipe_ready: "move ready", regime_change: "crude switch", sigma3: "outside ±3σ" };
+const EVK: Record<string, string> = { cusum: "drifting (sustained)", breach: "outside its normal band", change_point: "step change", recipe_ready: "move ready", regime_change: "crude switch", sigma3: "outside ±3σ", combustion: "combustion pattern", flooding_pattern: "flooding pattern", drift: "drifting" };
 const KIND: Record<string, string> = { agent: "Agent", ml: "ML", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
 
 
@@ -583,7 +583,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
         <div>
           <h3>This shift on the unit</h3>
           <ol className="us-events">{a.events.slice(-6).reverse().map((e) => (
-            <li key={e.event_id} className={`ev-${e.severity}`}><span className="num">{clock(e.time_min)}</span>{(e as { label?: string }).label ?? `${TAGN[e.tag] ?? e.tag} ${EVK[e.kind] ?? e.kind.replace("_", " ")}`}</li>
+            <li key={e.event_id} className={`ev-${e.severity}`}><span className="num">{clock(e.time_min)}</span>{(e as { label?: string }).label ?? `${TAGN[e.tag] ?? (e as { tag_label?: string | null }).tag_label ?? labels[e.tag]?.[0] ?? e.tag} ${EVK[e.kind] ?? e.kind.replace(/_/g, " ")}`}</li>
           ))}</ol>
         </div>
         <div>
