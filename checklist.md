@@ -12,7 +12,7 @@
 
 | Done (commit) | Open |
 |---|---|
-| ☑ Decision API + home redesign `994380a` · ☑ lever-batch code `1edeb3e` · ☑ four-step unit page `beee022` · ☑ six unit drawings + decision record `112aa48` · ☑ plain-words copy `11876cc` · ☑ ② estimate over time + labs, ③ earlier decisions, ④ binding limits + exact missing data, ① full tag list, footer action history, crude classifier `c694166` · ☑ docs record the agreement `512e67e` · ☑ surrogate fit reads `lever_v1` `af43f5c` · ☑ home at 1366 px `f7349aa` · ☑ Hindi / Hinglish: Gemini answers in all three; recipe plausibility check in the recipe engine so Gemini no longer calls D3 "ISSUED" `12434e3` · ☑ lever runs feed the fit while running (≥ 6 h each); NaN crash in `adapt.py` fixed; tests use a throw-away audit file and no longer write into the live decision record; 281 back-end + 82 front-end tests pass `2fc6402` · ☑ production build passes (13:00) · ☑ pushed to `origin/main` (12:59) | ◐ `lever_v1` running (launched 12:15 UTC; ~15 h to finish; hourly check at :30 stages and refits from ≥ 6 h of data, first ~15:30 UTC) · ☐ D3, D5–D7 real target values after the refit · ☐ closed-loop simulator check of one recipe · ☐ crude classifier: 8 of 14 held-out switches right (test wants 80 %), R2 Urals-type confused; retrain with the lever runs' extra crude switches |
+| ☑ Decision API + home redesign `994380a` · ☑ lever-batch code `1edeb3e` · ☑ four-step unit page `beee022` · ☑ six unit drawings + decision record `112aa48` · ☑ plain-words copy `11876cc` · ☑ ② estimate over time + labs, ③ earlier decisions, ④ binding limits + exact missing data, ① full tag list, footer action history, crude classifier `c694166` · ☑ docs record the agreement `512e67e` · ☑ surrogate fit reads `lever_v1` `af43f5c` · ☑ home at 1366 px `f7349aa` · ☑ Hindi / Hinglish: Gemini answers in all three; recipe plausibility check in the recipe engine so Gemini no longer calls D3 "ISSUED" `12434e3` · ☑ lever runs feed the fit while running (≥ 6 h each); NaN crash in `adapt.py` fixed; tests use a throw-away audit file and no longer write into the live decision record; 281 back-end + 82 front-end tests pass `2fc6402` · ☑ production build passes (13:00) · ☑ pushed to `origin/main` (12:59) · ☑ alignment review against verbatim (13:15): ③ lever allowed ranges, ② classifier accuracy on screen, D4 caveat in build.md | ◐ `lever_v1` running (launched 12:15 UTC; ~15 h to finish; hourly check at :30 stages and refits from ≥ 6 h of data, first ~15:30 UTC) · ☐ D3, D5–D7 real target values after the refit · ☐ closed-loop simulator check of one recipe · ☐ crude classifier: 8 of 14 held-out switches right (test wants 80 %), R2 Urals-type confused; retrain with the lever runs' extra crude switches · ☐ ④ "trained on" line (VN10) · ❓ owner: home "data path" line (VN1)? |
 
 > [!IMPORTANT]
 > **Current status (2026-10-01 05:25 UTC):** *(superseded for screens by the 2026-10-02 section above)*
@@ -424,7 +424,10 @@ Unit page (`/twin/unit/{unit_id}`, `UnitStory.tsx`)
 - ☑ ② Crude classifier R1–R4 with "how it knows" — `c694166`
 - ☑ ③ Every decision for the unit (tabs), lever, what-if slider, Accept / Hold / Decline — `beee022`
 - ☑ ③ Earlier decisions on this decision (accepted / held / declined, with note) — `c694166`
-- ◐ ③ Lever allowed range — slider ±5 °F; SOP text only
+- ☑ ③ Each lever with its current value and allowed range (config operating window), on every decision incl. "Not yet" — alignment review 13:15
+- ☑ ② Classifier accuracy on screen: 8 of 14 held-out crude switches (57 %) — alignment review 13:15
+- ☐ ④ "What the models were trained on" line (runs, hold-out, labs) — VN10 "how did we train"
+- ☑ VN6 hover pane and VN1 Bigtable → BigQuery flow strip: replaced by "click for details" (11:00); lakehouse shown as a source line in ④; `DetailPane.tsx` / `FlowStrip.tsx` not used. Owner to confirm whether a home "data path" line is wanted
 - ☑ ③ Ripple to next units hidden on purpose (honesty call) — `994380a`
 - ☑ ④ Goal and every check pass / fail; checks without data shown as skipped — `beee022`, `11876cc`
 - ☑ ④ Which limits actually bind the move — `c694166`

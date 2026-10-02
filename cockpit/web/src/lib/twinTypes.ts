@@ -251,6 +251,7 @@ export interface TwinRegime {
   detection_delay_min: number | null;
   fingerprint?: Record<string, number>;
   segments?: { crude_id: string; regime_id: string; t_start_min: number; t_end_min: number }[];
+  holdout?: { correct: number; total: number; rate: number; what?: string };
 }
 
 export interface TwinCitation {

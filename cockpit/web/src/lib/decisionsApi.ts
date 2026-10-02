@@ -46,6 +46,7 @@ export interface Decision {
   evidence: { tags: string[]; labs: string[]; docs: string[]; lakehouse: string | null; event_id?: string };
   withheld_reason: string | null;
   withheld_text: string | null;
+  levers?: { tag: string; label: string; unit: string; current: number | null; lo: number | null; hi: number | null; source?: string }[];
   outcome: null | Record<string, unknown>;
   action: null | { action: "accept" | "hold" | "decline"; time_min: number; time_label: string; user: string; note: string; reopened?: boolean };
   problem: string[];

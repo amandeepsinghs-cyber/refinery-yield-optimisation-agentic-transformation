@@ -26,7 +26,7 @@ from typing import Any
 import numpy as np
 
 from app.engines.detect import TAG_LABEL, events_for_run, next_lab_min
-from app.engines.recipe import plausibility_issue, recipe_for, whatif
+from app.engines.recipe import _label_unit, _row_at, plausibility_issue, recipe_for, whatif
 from app.engines.regime import regime_at
 from app.engines.systems import UNIT_SHORT, clock, needs_attention
 from app.state import get_state, now_iso
@@ -563,6 +563,43 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
     return steps
 
 
+# ------------------------------------------------------------------------------------------------ levers
+# The set points / manipulated variables each decision would move (unit page ③ "each lever with its allowed range").
+_LEVERS_BY_TAG = {"LCO_T98_F": ["SP_LCO_T98"], "HN_T98_F": ["SP_HN_T98"], "T2_preheat_F": ["SP_T_preheat_F"],
+                  "dT_cyc_reg_F": ["Fair"], "Treg_F": ["Fair"], "conversion_pct": ["SP_T_riser_ROT_F"],
+                  "MV_cw_flow": ["MV_cw_flow", "SP_T_overhead"], "eff_C5": ["MV_reflux_ratio"]}
+
+
+def _lever_tags(d: dict) -> list[str]:
+    tags = [m["tag"] for m in (d.get("proposed") or {}).get("moves", []) if m.get("tag")]
+    if not tags and d.get("type") == "D3":
+        tags = [t for t in (d.get("evidence") or {}).get("tags", []) if t.startswith(("SP_", "MV_")) or t == "Fair"]
+    if not tags:
+        tags = _LEVERS_BY_TAG.get(((d.get("observed") or {}).get("tag")) or "", [])
+    return list(dict.fromkeys(tags))
+
+
+def _levers(d: dict, row: dict) -> list[dict]:
+    """Each lever: label, current value and its allowed range (integrity operating window from config.yaml)."""
+    iow = get_state().s.get("iow", {}) or {}
+    out = []
+    for tag in _lever_tags(d):
+        label, unit = _label_unit(tag)
+        unit = "lb/s" if tag == "MV_cw_flow" and unit in ("-", "") else unit
+        cur = row.get(tag)
+        cur = float(cur) if cur is not None and np.isfinite(float(cur)) else None
+        w = iow.get(tag)
+        lo = hi = None
+        if isinstance(w, (list, tuple)) and len(w) == 2:
+            lo, hi = float(w[0]), float(w[1])
+        elif isinstance(w, dict) and "rel" in w and cur is not None:
+            lo, hi = cur * (1 - float(w["rel"])), cur * (1 + float(w["rel"]))
+        out.append({"tag": tag, "label": label, "unit": unit, "current": None if cur is None else round(cur, 2),
+                    "lo": None if lo is None else round(lo, 2), "hi": None if hi is None else round(hi, 2),
+                    "source": "integrity operating window" if w is not None else None})
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ orchestration
 _ORDER = {"open": 0, "held": 1, "withheld": 2, "watch": 3, "accepted": 4, "declined": 5, "expired": 6}
 
@@ -589,8 +626,11 @@ def build(run_id: str, time_min: int) -> dict:
     acts = _actions(run_id)
     decisions = [_overlay(d, acts, t) for d in decisions]
     reg = regime_at(run_id, t) or {}
+    df = st.catalog.load(run_id)
+    row = _row_at(df, t)[0] if not df.empty else {}
     for d in decisions:
         d["enabled_by"] = _enabled_by(d, reg)
+        d["levers"] = _levers(d, row)
     big = 10 ** 6
     decisions.sort(key=lambda d: (_ORDER.get(d["status"], 9), d["urgency"].get("time_to_consequence_min") or big))
     for i, d in enumerate(decisions, 1):

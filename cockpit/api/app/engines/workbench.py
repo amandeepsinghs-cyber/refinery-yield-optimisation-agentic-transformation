@@ -22,7 +22,7 @@ from app.engines.adapt import adaptation_at
 from app.engines.detect import (TAG_LABEL, briefing, detection_series, events_for_run, next_lab_min, open_breach,
                                 root_cause)
 from app.engines.recipe import recipe_for
-from app.engines.regime import regime_at
+from app.engines.regime import holdout_score, regime_at
 from app.engines.surrogates import UNIT_PRIMARY_TAGS, get_surrogate_card
 from app.lttb import lttb_indices
 from app.state import get_state
@@ -255,7 +255,11 @@ def workbench(unit_id: str, run_id: str, time_min: int, window_min: int = 720, s
     primary = tags[0] if tags else None
 
     series, det, cfg = _series(st, run_id, unit_id, tags, window, step)
-    regime = regime_at(run_id, time_min)
+    regime = dict(regime_at(run_id, time_min) or {})
+    try:
+        regime["holdout"] = holdout_score()
+    except Exception:  # noqa: BLE001 - accuracy line is informative only
+        regime["holdout"] = None
     rcp = recipe_for(run_id, time_min, unit_id)
     events = [e for e in events_for_run(run_id, time_min, None)["events"]
               if e.get("unit_id") in (unit_id, None) and window[0] <= int(e["time_min"]) <= window[1]]

@@ -29,7 +29,7 @@
 | D1 | Move the cut point now, or wait for the lab? | Main fractionator | `SP_LCO_T98`, `SP_HN_T98` | **Live** |
 | D2 | Can the estimate be trusted now? | Main fractionator | — (go / no-go on D1) | **Live** |
 | D9 | Pull an extra lab sample? | Main fractionator | sampling schedule | **Live** |
-| D4 | Which crude is in the unit; is the switch finished? | Riser reactor | — (confirm crude) | **Live** |
+| D4 | Which crude is in the unit; is the switch finished? | Riser reactor | — (confirm crude) | **Live, with a caveat**: the classifier names the right crude in 8 of 14 held-out crude switches (57 %; target 80 %). The page shows this figure, and the lab assay confirms each switch. Retrain planned with the lever runs. |
 | D8 | What first; what breaks downstream if nothing is done? | Plant | — | **Live** (watch items) |
 | D3 | Coordinated recipe for the new crude | Main fractionator / Riser | `SP_T_riser_ROT_F`, `MV_PA1..MV_PA4`, cut points | **Not yet**: withheld by the plausibility check; PA moves not in training data |
 | D5 | Regenerator air vs severity | Regenerator | `Fair` (via `SP_T_reg_F`), `SP_T_riser_ROT_F` | **Not yet**: air never moved in training data |
@@ -65,6 +65,16 @@ Full lever table with typical values and allowed ranges: [verbatim.md §9.5.3](v
 | ④ Which limits bind the move; for "Not yet", the exact missing data | ☑ `c694166` |
 | ① Full tag list (collapsible) | ☑ `c694166` |
 | Footer: history of actions on this unit | ☑ `c694166` |
+| ③ Each lever with its current value and allowed range (from the config operating windows; `levers[]` on every decision) | ☑ alignment review, 2 Oct 13:15 |
+| ② Crude classifier accuracy shown on the page (held-out crude switches, VN10 "check the accuracy") | ☑ alignment review, 2 Oct 13:15 |
+| ④ "What the models were trained on" line (runs, hold-out, lab count). Answers VN10's "how did we train / how do we know yield is maximised" | ☐ open; the full answer to the second part is the closed-loop simulator check above |
+
+> [!NOTE]
+> **Alignment review against verbatim.md (2 Oct 13:05–13:20).** Two older asks were replaced by the 11:00 agreement ("on the surface looks better; then click for details"):
+> - **VN6, hover a unit for a mini-graph or right pane:** replaced by click-through to the unit page. `l0/DetailPane.tsx` is still in the code but not used on the home page.
+> - **VN1, data flow from Bigtable to BigQuery lakehouse to models:** shown as the lakehouse source line under ④ on the unit page. `l0/FlowStrip.tsx` is still in the code but not used on the home page. Waiting on the owner: does he want a one-line "data path" back on the home page?
+>
+> Everything else in VN1–VN11 is covered by the rows above: dark default with a light toggle, coloured curves (no grey), a band around the live value, bell curves, the systemic "if nothing is done", Gemini with window context in Hindi, explicit levers, and the spread gate that waits for the lab.
 
 > [!WARNING]
 > **Superseded (kept for history):** the "Current status (2026-09-30)" box below, the Step 5 Decision / Modelling pages and the Step 18 L0 / L1 layout describe screens that the 2 Oct agreement replaced. Their engines and APIs still stand.

@@ -93,11 +93,45 @@ function CrudeBlock({ r, physicsPct }: { r: import("@/lib/twinTypes").TwinRegime
         {r.fingerprint ? (
           <p className="us-fp">{FP.filter(([k]) => r.fingerprint?.[k] != null).map(([k, l, u, d]) => <span key={k}>{l} <b className="num">{r.fingerprint![k].toFixed(d)}{u ? ` ${u}` : ""}</b></span>)}</p>
         ) : null}
+        {r.holdout && r.holdout.total > 0 ? (
+          <p className="us-note">
+            Accuracy: names the right crude in <b className="num">{r.holdout.correct} of {r.holdout.total}</b> held-out crude switches
+            ({Math.round(r.holdout.rate * 100)} %). The lab assay confirms each switch, so a wrong call is caught.
+          </p>
+        ) : null}
         <h3>What changes for {now ? `${now[1].toLowerCase()} crude` : "this crude"}</h3>
         <p className="us-note">
           The soft sensor re-weights its models for {r.regime_id}{physicsPct ? ` (physics-based models ${physicsPct} %)` : ""}, and the set-point search in step ③ looks for the right settings for this crude.
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+type LeverRow = NonNullable<import("@/lib/decisionsApi").Decision["levers"]>[number];
+function LeverRanges({ levers, bare }: { levers?: LeverRow[]; bare?: boolean }) {
+  if (!levers?.length) return null;
+  return (
+    <div className="us-lranges">
+      {bare ? null : <h4>Levers and their allowed range</h4>}
+      <ul className="us-levers">
+        {levers.map((l) => {
+          const has = l.lo != null && l.hi != null && l.current != null && l.hi > l.lo;
+          const pos = has ? Math.min(100, Math.max(0, ((l.current! - l.lo!) / (l.hi! - l.lo!)) * 100)) : null;
+          return (
+            <li key={l.tag} title={l.tag}>
+              <span>{l.label}</span>
+              <b className="num">{fx(l.current, 1)} <small>{l.unit}</small></b>
+              {has ? (
+                <em className="us-lr num">
+                  {fx(l.lo, 1)}<i><s style={{ left: `${pos}%` }} /></i>{fx(l.hi, 1)}
+                </em>
+              ) : <em className="us-lr subtle">no limit set</em>}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -445,17 +479,21 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                     {Math.abs(wi.s - move.to) > 1e-6 ? <span className="subtle"> · advised {fx(move.to, 1)} gives {pct(p?.p_on_spec_after)}</span> : <span className="subtle"> · the advised move</span>}</p>
                   <p className="us-note subtle">SOP: one step at most 5 °F, 30 min between moves. The cut-point controller follows its set point 1 : 1.</p>
                   {p?.ripple?.some((r) => r.delta != null) ? <p className="us-note subtle">Next units: {p.ripple.filter((r) => r.delta != null).map((r) => `${r.what} ${r.delta} ${r.unit}`).join("; ")}</p> : null}
+                  <LeverRanges levers={d.levers} />
                 </>
               ) : d.proposed.sample ? (
                 <>
                   <div className="us-lever-h"><span>Lever</span><b>An extra lab sample</b></div>
                   <div className="us-lever-big">now <i>instead of</i> {d.observed?.next_lab_label}</div>
                   <p className="us-note">The estimate&apos;s spread is {fx(d.predicted?.w90 ?? d.gates.find((g) => g.id === "spread")?.value, 1)} °F against a 14 °F limit. A sample re-anchors it {d.observed?.next_lab_in_min} min earlier.</p>
+                  <LeverRanges levers={d.levers} />
                 </>
               ) : (
                 <>
                   <div className="us-lever-h"><span>Levers here</span></div>
-                  <ul className="us-levers">{io?.levers.map(([tag, name, un]) => <li key={tag}><span>{name}</span><b className="num">{fx(at(tag))} <small>{un}</small></b></li>)}</ul>
+                  {d.levers?.length ? <LeverRanges levers={d.levers} bare /> : (
+                    <ul className="us-levers">{io?.levers.map(([tag, name, un]) => <li key={tag}><span>{name}</span><b className="num">{fx(at(tag))} <small>{un}</small></b></li>)}</ul>
+                  )}
                   <p className="us-note subtle">{d.status === "withheld" ? "No move proposed until the model can be trusted here — see step 4." : "Watching; no move needed yet."}</p>
                 </>
               )}

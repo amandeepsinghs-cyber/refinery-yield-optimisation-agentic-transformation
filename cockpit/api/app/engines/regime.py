@@ -353,3 +353,33 @@ def regime_timeseries(run_id: str, step: int = 5) -> dict:
         "declared_api": [round(float(v), 1) for v in api_ds],
         "p_regime": p_dict
     }
+
+
+@lru_cache(maxsize=1)
+def holdout_score() -> dict:
+    """How often the classifier names the right crude 45 min after a crude switch, on the held-out runs
+    (seed >= training.test_seed_min). Shown next to the crude classifier so its accuracy can be checked."""
+    st = get_state()
+    regimes_csv = st.s.data_root / st.s["data"]["primary_batch"] / "_staged" / "regimes.csv"
+    if not regimes_csv.exists():
+        return {}
+    seg_df = pd.read_csv(regimes_csv)
+    test_min = int(st.s["training"].get("test_seed_min", 140))
+    correct = total = 0
+    for run_id in st.catalog.runs:
+        if "random_s" not in run_id:
+            continue
+        try:
+            if int(run_id.split("random_s")[-1]) < test_min:
+                continue
+        except ValueError:
+            continue
+        segs = seg_df[(seg_df["run_id"] == run_id) & (seg_df["transition_complete"] == True)]  # noqa: E712
+        for _, seg in segs.iterrows():
+            if pd.isna(seg.get("transition_end_min")):
+                continue
+            reg = regime_at(run_id, int(seg["transition_end_min"]) + 45)
+            correct += int(bool(reg) and reg.get("regime_id") == seg["regime_id"])
+            total += 1
+    return {"correct": correct, "total": total, "rate": round(correct / total, 3) if total else None,
+            "what": "held-out crude switches named correctly 45 min after the switch"}
