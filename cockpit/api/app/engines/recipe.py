@@ -32,7 +32,25 @@ from app.state import get_state
 
 logger = logging.getLogger(__name__)
 
-GATE_REASONS = ("spread_gate", "novelty", "insufficient_data", "infeasible", "no_gain")
+GATE_REASONS = ("spread_gate", "novelty", "insufficient_data", "infeasible", "no_gain", "implausible")
+
+# Physical plausibility of a recipe's predicted effects. A surrogate fitted on few designed moves can extrapolate to
+# effects no FCC delivers from a few-degree trim; such a recipe is withheld here, at the source, so the decision list,
+# the unit page, the older views and Gemini all report the same thing.
+PLAUSIBLE = {"d_power_MW": 3.0, "d_fuel_lb_s": 50.0, "d_yield_pct_feed": 1.5}
+
+
+def plausibility_issue(r: dict) -> str | None:
+    """Plain-words reason if the predicted effects are physically implausible, else None."""
+    if abs(r.get("d_power_MW") or 0) > PLAUSIBLE["d_power_MW"]:
+        return f"predicted compressor power {r['d_power_MW']:+.1f} MW"
+    if abs(r.get("d_fuel_lb_s") or 0) > PLAUSIBLE["d_fuel_lb_s"]:
+        return f"predicted furnace fuel {r['d_fuel_lb_s']:+.1f} lb/s"
+    big = {k: v for k, v in (r.get("d_yield_pct_feed") or {}).items() if abs(v or 0) > PLAUSIBLE["d_yield_pct_feed"]}
+    if big:
+        k, v = next(iter(big.items()))
+        return f"predicted {k} yield {v:+.1f} % feed"
+    return None
 
 # Set points each unit may move (the unit's own, plus the coordinated upstream move the contract example shows).
 DEFAULT_UNIT_INPUTS = {
@@ -351,6 +369,14 @@ def recipe_for(run_id: str, time_min: int, unit_id: str) -> dict:
                         + (f" ({bound_note})." if bound_note else ".")),
         "n_candidates": n_eval, "row_time_min": t_row,
     })
+    issue = plausibility_issue(p)
+    if issue:
+        # drop the extrapolated effects so no reader can quote them; keep only the reason
+        p.update({"d_yield_pct_feed": {k: 0.0 for k in YIELD_TAGS}, "d_fuel_lb_s": 0.0, "d_power_MW": 0.0,
+                  "d_coke_pct": 0.0, "predicted": {}, "p_on_spec": {}, "implausible_detail": issue})
+        return _withheld(p, "implausible", f"The best candidate's {issue} is physically implausible for a few-degree "
+                                           f"trim: the model is extrapolating beyond the moves in its training data. "
+                                           f"No recipe until the lever-move batch is in and the model is refit.")
     return p
 
 

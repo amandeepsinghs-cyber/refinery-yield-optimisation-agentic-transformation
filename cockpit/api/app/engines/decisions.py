@@ -26,7 +26,7 @@ from typing import Any
 import numpy as np
 
 from app.engines.detect import TAG_LABEL, events_for_run, next_lab_min
-from app.engines.recipe import recipe_for, whatif
+from app.engines.recipe import plausibility_issue, recipe_for, whatif
 from app.engines.regime import regime_at
 from app.engines.systems import UNIT_SHORT, clock, needs_attention
 from app.state import get_state, now_iso
@@ -99,7 +99,6 @@ HOLD_MIN = 30          # "Hold 30 min" re-opens the decision afterwards
 RECENT_SWITCH_MIN = 720  # a coordinated recipe (D3) is only asked for within 12 h of a crude switch
 # Plausibility envelope for a multi-lever recipe prediction (engineering judgement, simulator scale). A recipe whose
 # predicted effect sits outside it is withheld rather than shown: the surrogate is extrapolating.
-PLAUSIBLE = {"d_power_MW": 3.0, "d_fuel_lb_s": 50.0, "d_yield_pct_feed": 1.5}
 
 
 def _use_case(uc: str) -> dict:
@@ -341,15 +340,11 @@ def _crude(run_id: str, t: int) -> list[dict]:
 
 
 def _plausible(r: dict) -> str | None:
-    if abs(r.get("d_power_MW") or 0) > PLAUSIBLE["d_power_MW"]:
-        return f"predicted compressor power {r['d_power_MW']:+.1f} MW"
-    if abs(r.get("d_fuel_lb_s") or 0) > PLAUSIBLE["d_fuel_lb_s"]:
-        return f"predicted furnace fuel {r['d_fuel_lb_s']:+.1f} lb/s"
-    big = {k: v for k, v in (r.get("d_yield_pct_feed") or {}).items() if abs(v or 0) > PLAUSIBLE["d_yield_pct_feed"]}
-    if big:
-        k, v = next(iter(big.items()))
-        return f"predicted {k} yield {v:+.1f} % feed"
-    return None
+    """Why the recipe is implausible: the recipe engine now withholds it at the source (gate_reason 'implausible');
+    the check is repeated here for an ISSUED payload from an older cache."""
+    if r.get("gate_reason") == "implausible":
+        return r.get("implausible_detail") or "predicted effects outside physical range"
+    return plausibility_issue(r) if r.get("gate") == "ISSUED" else None
 
 
 def _recipe(run_id: str, t: int) -> list[dict]:
@@ -365,7 +360,7 @@ def _recipe(run_id: str, t: int) -> list[dict]:
     d["urgency"] = {"rank": None, "time_to_consequence_min": None,
                     "consequence": "Running the new crude on the old crude's set points", "decide_by_label": None}
     d["diagnosed"] = {"text": r.get("explanation"), "data_support": r.get("data_support")}
-    why_not = _plausible(r) if r.get("gate") == "ISSUED" else None
+    why_not = _plausible(r)
     if r.get("gate") == "ISSUED" and not why_not:
         d["headline"] = "Coordinated move: " + ", ".join(f"{m['label']} {m['delta']:+.1f} {m['unit']}" for m in r["moves"])
         d["proposed"] = {"moves": [{"tag": m["sp_tag"], "label": m["label"], "from": m["current"], "to": m["recommended"],

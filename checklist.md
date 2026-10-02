@@ -12,7 +12,7 @@
 
 | Done (commit) | Open |
 |---|---|
-| ☑ Decision API + home redesign `994380a` · ☑ lever-batch code `1edeb3e` · ☑ four-step unit page `beee022` · ☑ six unit drawings + decision record `112aa48` · ☑ plain-words copy `11876cc` · ☑ ② estimate over time + labs, ③ earlier decisions, ④ binding limits + exact missing data, ① full tag list, footer action history, crude classifier `c694166` · ☑ surrogate fit reads `lever_v1` `af43f5c` | ◐ `lever_v1` running (launched 12:15 UTC) · ☐ stage `lever_v1` regimes + refit · ☐ closed-loop simulator check · ☑ home page at 1366 px: chips fit, picker labels whole-word, "units on plan" on one line · ☐ Hindi / Hinglish check on the new parts |
+| ☑ Decision API + home redesign `994380a` · ☑ lever-batch code `1edeb3e` · ☑ four-step unit page `beee022` · ☑ six unit drawings + decision record `112aa48` · ☑ plain-words copy `11876cc` · ☑ ② estimate over time + labs, ③ earlier decisions, ④ binding limits + exact missing data, ① full tag list, footer action history, crude classifier `c694166` · ☑ surrogate fit reads `lever_v1` `af43f5c` | ◐ `lever_v1` running (launched 12:15 UTC) · ☐ stage `lever_v1` regimes + refit · ☐ closed-loop simulator check · ☑ home page at 1366 px: chips fit, picker labels whole-word, "units on plan" on one line · ☑ Hindi / Hinglish check: Gemini answers correctly in EN / Hinglish / Hindi; recipe plausibility check moved into the recipe engine so Gemini no longer calls the withheld D3 recipe "ISSUED" (12:46) · ☐ 10 back-end tests failing since before 2 Oct (workbench at the last minute: NaN in `adapt.py`; stale surrogate-card expectations; regime accuracy; lab schedule) |
 
 > [!IMPORTANT]
 > **Current status (2026-10-01 05:25 UTC):** *(superseded for screens by the 2026-10-02 section above)*
