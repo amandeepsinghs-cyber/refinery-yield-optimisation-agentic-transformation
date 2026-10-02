@@ -114,7 +114,7 @@ export function UnitUseCases({ unitId }: { unitId: string }) {
 export function StepHowStrip({ k }: { k: StepKey }) {
   const s = STEP_HOW[k];
   return (
-    <details className="ush" open>
+    <details className="ush">
       <summary><span className="ush-q">{s.q}</span><span className="ush-more">How this step works</span></summary>
       <dl>
         <div><dt>Answered by</dt><dd>{s.parts.length ? s.parts.map((p) => <span key={p} className="ush-part" title={PART[p].kind}><i>{PART[p].n}</i>{PART_NAME[p]}</span>) : s.by}</dd></div>
