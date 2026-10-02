@@ -163,6 +163,11 @@ export function UnitActions({ rows }: { rows: AuditRow[] }) {
 /* ------------------------------------------------------------------------------------------------------------ */
 /* ④ what sizes the move, and what is closest to stopping it                                                     */
 
+/** A cut-point move made while already on spec: its purpose is to take back margin (less product given away), not to reach 95 %. */
+export function isGiveBack(d: Decision): boolean {
+  return d.type === "D1" && !d.predicted?.goal_label && (d.predicted?.p_on_spec_before ?? 0) >= 0.95;
+}
+
 export function WhatSetsTheMove({ d, stepLimit = 5 }: { d: Decision; stepLimit?: number }) {
   const mv = d.proposed.moves[0];
   const p = d.predicted;
@@ -175,13 +180,22 @@ export function WhatSetsTheMove({ d, stepLimit = 5 }: { d: Decision; stepLimit?:
   const nd = (p.step ?? 0.5) < 0.1 ? 2 : 1;
   const tu = p.unit ?? mv.unit;
   const lim = p.spec_max ?? p.spec_min;
+  const giveBack = isGiveBack(d);
   return (
     <ul className="us-binding">
-      <li className="bind">
-        <span>Sets the move</span>
-        <b>{p.goal_label ?? "Chance on spec"} must reach 95 %</b>
-        <em>The search stops at the smallest move that gets there: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} gives {Math.round((p.p_on_spec_after ?? 0) * 100)} %.</em>
-      </li>
+      {giveBack ? (
+        <li className="bind">
+          <span>Sets the move</span>
+          <b>Take back margin while the chance on spec stays at 95 % or more</b>
+          <em>Already {Math.round((p.p_on_spec_before ?? 0) * 100)} % on spec, so the move runs the cut closer to spec and keeps more product in the right stream: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} keeps {Math.round((p.p_on_spec_after ?? 0) * 100)} %{d.diagnosed?.conservative ? "; half size because one check is amber" : ""}.</em>
+        </li>
+      ) : (
+        <li className="bind">
+          <span>Sets the move</span>
+          <b>{p.goal_label ?? "Chance on spec"} must reach 95 %</b>
+          <em>The search stops at the smallest move that gets there: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} gives {Math.round((p.p_on_spec_after ?? 0) * 100)} %.</em>
+        </li>
+      )}
       <li>
         <span>Not limiting</span>
         <b>SOP step ≤ {fx(stepLimit, nd)} {mv.unit}</b>

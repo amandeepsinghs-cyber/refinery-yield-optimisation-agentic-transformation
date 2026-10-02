@@ -34,7 +34,7 @@ import UnitDrawing, { HAS_DRAWING } from "./UnitDrawings";
 import { SUSPECT, isSuspect } from "@/lib/suspect";
 import { StepHowStrip, UnitUseCases } from "@/components/how/UseCaseExplainer";
 import type { StepKey } from "@/lib/howItWorks";
-import { EarlierDecisions, EstimateTrack, MissingData, TagList, UnitActions, WhatSetsTheMove, useUnitActions } from "./UnitStoryExtras";
+import { EarlierDecisions, EstimateTrack, MissingData, TagList, UnitActions, WhatSetsTheMove, isGiveBack, useUnitActions } from "./UnitStoryExtras";
 
 const RANK: Record<string, number> = { open: 0, held: 1, watch: 2, withheld: 3, accepted: 4, declined: 5 };
 const fx = (v: number | null | undefined, d?: number) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d ?? (Math.abs(v) >= 100 ? 1 : 2)));
@@ -554,7 +554,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
               <>
                 <h3>The search, in plain words</h3>
                 <ul className="uf-opt">
-                  <li><span>Goal</span>{goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of {move.label.charAt(0).toLowerCase() + move.label.slice(1)}</li>
+                  <li><span>Goal</span>{d && isGiveBack(d) ? `take back margin with ${move.label.charAt(0).toLowerCase() + move.label.slice(1)} while ${goal.charAt(0).toLowerCase() + goal.slice(1)} stays ≥ 95 %` : `${goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of ${move.label.charAt(0).toLowerCase() + move.label.slice(1)}`}</li>
                   <li><span>Limits</span>SOP step ≤ {fx(stepMax, nd)} {move.unit} · time between moves · lever window</li>
                   <li><span>Model</span>{p.model ?? `4-model soft sensor, weighted for the crude now (${data.regime?.regime_id ?? "—"})`}</li>
                   <TrainedOn />
