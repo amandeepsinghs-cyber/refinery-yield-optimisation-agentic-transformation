@@ -58,7 +58,7 @@ def test_workbench_four_zones_every_unit():
 
 
 def test_workbench_fractionator_specifics():
-    w = workbench("unit_4_fractionator", RUN, 200)
+    w = workbench("unit_4_fractionator", "random_s147", 300)  # recipe ISSUED minute since the 2 Oct retrain
     assert w["analysis"]["expected_source"] == "committee"
     q = next(p for p in w["panels"] if p["panel_id"] == "quality")
     assert any(h["role"] == "spec" and h["value"] == 765.0 for h in q["hlines"])

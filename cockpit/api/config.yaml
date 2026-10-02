@@ -10,6 +10,10 @@ data:
   fallback_batches: [frontend_sample_1h]   # TEMPORARY: used only while full_v1 has no data rows; drops out automatically
   min_rows: 550                    # interim 600-720 min full_v1 live preview threshold (restore to 1500 when all 54 runs hit 1600)
   expected_rows: 1600              # primary run length; a NaN last row is dropped only while row count < expected_rows
+  validity:                        # simulator breakdown cut (app/data/validity.py): models train / score only before it
+    copy_run: 5                    # >= 5 consecutive exactly repeated rows = failed solver minutes
+    lco_range: [650, 820]          # LCO T98 outside this (°F) or not finite = broken numerics
+    hn_range: [450, 680]           # HN T98 likewise
   min_complete_train_runs: 4       # primary becomes active only once this many complete train runs (seed < test_seed_min)
   min_complete_test_runs: 1        # ... and this many complete held-out runs exist; partial runs are never used
   skip_dirs: [_staged, logs]
@@ -50,7 +54,8 @@ training:
   loro_max_runs: 8                 # fallback data (few short runs): leave-one-run-out
   test_seed_min: 140               # full_v1: random_s140..s153 held out (test); s100..s139 train
   lever_batches: [lever_v1]        # designed lever moves (scenario 'lever'); used only by the set-point surrogates
-  lever_test_seed_min: 210         # lever_v1: lever_s210..s211 held out; lever_s200..s209 train
+  lever_test_seed_min: 210         # lever_v1: lever_s210..s211 held out; lever_s200..s209 and s212..s251 train
+  lever_test_seed_max: 211
   lever_min_rows: 360              # lever runs are used while still running once they have >= 6 h of data (each
                                    # lever's first designed move lands in hours 1-6); the fit is redone on restart as they grow
   group_kfold: 4                   # grouped K-fold by run on the train runs (admission + committee MSE)

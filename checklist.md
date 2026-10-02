@@ -456,4 +456,15 @@ Polish (16:35 2 Oct)
 - ☑ Unit footer events in plain words (API `tag_label`, no raw tags)
 - ☑ Chart corner labels use IOCL numbering (#1, #6, #11)
 - ☑ Gemini answers match the decision cards in English, Hinglish and Hindi (`decisions_block`); voice probe OK
-- ☐ Top up the lake once the last 10 `full_v1` runs finish, then restart the API
+- ☒ ~~Top up the lake once the last 10 `full_v1` runs finish~~ — dropped 17:00: the 9 still-running baseline runs had broken down in the simulator and were stopped; their files are kept
+
+Simulator breakdown cut and retrain (17:00–17:40 2 Oct)
+- ☑ Valid-range cut `api/app/data/validity.py` (≥ 5 repeated failed-step rows, LCO/HN T98 outside 650–820 / 450–680 °F, non-finite values); used by training, regime fit and surrogates (`load_valid`); 4 tests
+- ☑ BigQuery `fcc_silver.run_registry.breakdown_from_min` (33 of 54 runs break down; backup `run_registry_backup_20261002_1708`); `fcc_gold.v_run_coverage.valid_until_min` (72 % of minutes valid); loader writes it for new runs
+- ☑ Soft sensors retrained: held-out LCO 16.6 °F / HN 36.5 °F (516 / 5,353 °F without the cut); backup `api/artifacts/model_backup_20261002_1706`
+- ☑ Crude classifier bug fixed (segment mask bounded by its end minute): held-out switches 15 of 15 (was 57 %)
+- ☑ 40 more lever runs (seeds 212–251) — 52 simulations running in parallel
+- ☑ Demo repointed: recipe scene → `random_s144` 10:00, honesty scene (D2 "Not yet" + D3 withheld) → `random_s144` 12:00 (`DemoGuideModal.tsx`, `demoflow.md`)
+- ☑ 8 engine tests moved to the new behaviour (real recipe ISSUED checked on `random_s147` t300; spread-gate on s144 t720; scripted D3 on s144 t600; `implausible` accepted as a gate reason)
+- ☐ Stage `lever_v1` regimes once the lever runs pass 6 h, then restart the API (cards show `lever_runs: 0` until then)
+- ☐ Known limit: soft-sensor estimates are nearly flat; truth is pinned at the simulator ceiling for 22 % (LCO) / 6 % (HN) of held-out minutes

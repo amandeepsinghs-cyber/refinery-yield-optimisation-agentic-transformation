@@ -195,7 +195,7 @@ def system_instruction(ctx: dict) -> str:
         )
     elif lang in ("hi", "hindi"):
         lang_directive = (
-            "\nLANGUAGE MODE: Respond in plain control-room Hindi (Devanagari script) — everyday words an operator uses, "
+            "\nLANGUAGE MODE: Respond in Hindi (Devanagari script), in plain control-room words an operator uses, "
             "not literary Hindi (e.g. 'conservative move' = 'सावधानी से छोटा कदम', not 'रूढ़िवादी'). Keep technical tag IDs, "
             "numeric values and °F/psig units exact; copy any SOP citation exactly as a tool returned it, and never write "
             "a citation you were not given."

@@ -37,7 +37,7 @@ from app.state import get_state
 
 logger = logging.getLogger(__name__)
 
-SURROGATE_VERSION = 6
+SURROGATE_VERSION = 7          # 7: valid range (simulator breakdown cut), explicit lever hold-out range
 
 CANDIDATE_INPUTS = [
     "SP_T_preheat_F", "SP_T_riser_ROT_F", "Fair", "MV_PA1", "MV_PA2", "MV_PA3", "MV_PA4", "MV_reflux_ratio",
@@ -167,16 +167,18 @@ def _step_samples(st, seg_df: pd.DataFrame, *, holdout: bool) -> tuple[list[dict
     (regime, within-window demeaned T98s and outputs), and the steady-state envelope data."""
     test_min = int(st.s["training"].get("test_seed_min", 140))
     lever_test_min = int(st.s["training"].get("lever_test_seed_min", 210))
+    lever_test_max = int(st.s["training"].get("lever_test_seed_max", 10 ** 9))
     staged = set(seg_df["run_id"])
     samples, autos, X_env, Y_env = [], [], [], []
     jT = [OUTPUTS.index(c) for c in CUTPOINT_T98]
-    candidates = [(r, i, test_min) for r, i in st.catalog.runs.items() if i.batch == st.s["data"]["primary_batch"]]
-    candidates += [(r, st.catalog.get(r), lever_test_min) for r in _lever_runs(st) if r in staged]
-    for run_id, info, cut_seed in candidates:
+    # (run, info, held-out seed range): full_v1 seeds >= 140 held out; lever seeds 210..211 held out, the rest train
+    candidates = [(r, i, (test_min, 10 ** 9)) for r, i in st.catalog.runs.items() if i.batch == st.s["data"]["primary_batch"]]
+    candidates += [(r, st.catalog.get(r), (lever_test_min, lever_test_max)) for r in _lever_runs(st) if r in staged]
+    for run_id, info, (h_lo, h_hi) in candidates:
         seed = _seed_of(run_id)
-        if seed is None or (seed >= cut_seed) != holdout:
+        if seed is None or (h_lo <= seed <= h_hi) != holdout:
             continue
-        df = st.catalog.load(run_id)
+        df = st.catalog.load_valid(run_id)
         need = CANDIDATE_INPUTS + OUTPUTS + ["event_code", "time_min"]
         if df.empty or any(c not in df.columns for c in need):
             continue

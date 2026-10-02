@@ -320,6 +320,22 @@ class Catalog:
             self._mcache[run_id] = (key, df)
         return df
 
+    def valid_until(self, run_id: str) -> int | None:
+        """First minute where the simulator's numerics broke down (data.validity), or where its output turned
+        complex-valued (lake registry `diverged_from_min`; the CSV reader drops those rows); None = whole run valid."""
+        from .validity import valid_until
+        cut = valid_until(self.load_true(run_id), self.s["data"].get("validity") or {})
+        lake = getattr(self.get(run_id), "lake", None) or {}
+        div = lake.get("diverged_from_min")
+        if div is not None and str(div) not in ("", "nan", "None"):
+            cut = int(div) if cut is None else min(cut, int(div))
+        return cut
+
+    def load_valid(self, run_id: str) -> pd.DataFrame:
+        """load() cut at the breakdown minute — what the models train and are scored on."""
+        from .validity import trim
+        return trim(self.load(run_id), self.valid_until(run_id))
+
     # ------------------------------------------------------------------ events
     def events(self, run_id: str) -> list[dict]:
         info = self.get(run_id)

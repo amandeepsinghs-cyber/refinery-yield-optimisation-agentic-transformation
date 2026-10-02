@@ -18,7 +18,7 @@ from app.regimes import REGIME_IDS, REGIMES, regime_by_id, regime_segments
 
 logger = logging.getLogger(__name__)
 
-REGIME_FIT_VERSION = 2          # bump when the fingerprint, the fit or the settler changes
+REGIME_FIT_VERSION = 3          # bump when the fingerprint, the fit or the settler changes (3: valid range + per-segment labels)
 DEFAULT_DWELL_MIN, DEFAULT_ENTER_P = 15, 0.6
 
 
@@ -85,7 +85,7 @@ def _fit_regime_model():
         if seed is None or seed >= 140:
             continue
             
-        df = st.catalog.load(run_id)
+        df = st.catalog.load_valid(run_id)
         if df.empty:
             continue
             
@@ -101,7 +101,10 @@ def _fit_regime_model():
             if pd.isna(t_end):
                 t_end = seg.get("t_start_min", 0)
             t_end = int(t_end)
+            seg_last = seg.get("t_end_min")
             mask = df["time_min"] >= t_end
+            if not pd.isna(seg_last):
+                mask &= df["time_min"] <= int(seg_last)     # this segment's minutes only (not to the end of the run)
             if mask.sum() > 0:
                 features_list.append(feats[mask])
                 labels_list.extend([seg["regime_id"]] * mask.sum())

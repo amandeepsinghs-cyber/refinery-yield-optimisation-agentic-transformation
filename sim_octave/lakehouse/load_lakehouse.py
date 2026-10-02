@@ -165,12 +165,15 @@ def _complex_to_real(df: pd.DataFrame) -> tuple[pd.DataFrame, int | None, int]:
 
 
 def read_run(path: pathlib.Path) -> tuple[pd.DataFrame, dict]:
+    from app.data.validity import valid_until                   # noqa: E402 — same rule the cockpit trains with
     df = pd.read_csv(path, low_memory=False)
     df, diverged_from, n_diverged = _complex_to_real(df)
     df = df.replace([float("inf"), float("-inf")], pd.NA)
     df["time_min"] = pd.to_numeric(df["time_min"], errors="coerce").astype("Int64")
     df = df.dropna(subset=["time_min"])
-    return df, {"diverged_from_min": diverged_from, "diverged_rows": n_diverged}
+    num = df.apply(pd.to_numeric, errors="coerce").astype("float64")
+    breakdown = valid_until(num)
+    return df, {"diverged_from_min": diverged_from, "diverged_rows": n_diverged, "breakdown_from_min": breakdown}
 
 
 def run_frame(df: pd.DataFrame, run_id: str, batch: str) -> pd.DataFrame:
@@ -210,6 +213,7 @@ def stage_bronze(batch: str, runs: list[pathlib.Path], staged: pathlib.Path, wor
         sha = hashlib.sha256(p.read_bytes()).hexdigest()[:16]
         manifest["runs"].append({"run_id": run_id, "rows": n, "run_status": status, "t_last_min": int(df["time_min"].max()),
                                  "diverged_from_min": quality["diverged_from_min"], "diverged_rows": quality["diverged_rows"],
+                                 "breakdown_from_min": quality["breakdown_from_min"],
                                  "csv_sha256_16": sha, "csv_bytes": p.stat().st_size,
                                  "parquet_uri": f"{base}/run={run_id}/minute.parquet", "csv_uri": f"{base}/run={run_id}/{p.name}"})
         gcs_cp(out_dir / "minute.parquet", f"{base}/run={run_id}/minute.parquet", dry)
@@ -333,6 +337,7 @@ CLUSTER BY run_id
 {ice('run_registry')}, description='Silver · which runs are in the lake, how complete they are and when they were loaded (idempotent reload key).');
 ALTER TABLE `{PROJECT}.{SILVER}.run_registry` ADD COLUMN IF NOT EXISTS diverged_from_min INT64 OPTIONS(description='First minute at which the Octave fractionator model produced complex-valued (physically invalid) output; NULL = run stayed real-valued. Cells with a non-zero imaginary part are loaded as NULL / MISSING.');
 ALTER TABLE `{PROJECT}.{SILVER}.run_registry` ADD COLUMN IF NOT EXISTS diverged_rows INT64 OPTIONS(description='Number of minutes with at least one complex-valued cell.');
+ALTER TABLE `{PROJECT}.{SILVER}.run_registry` ADD COLUMN IF NOT EXISTS breakdown_from_min INT64 OPTIONS(description='First minute where the Octave solver broke down (>= 5 repeated failed-step rows, or LCO/HN T98 outside their physical range); NULL = no breakdown. Models train and score only before it (cockpit/api/app/data/validity.py).');
 """
     bq_query(sql, dry, "layer:silver")
 
@@ -404,9 +409,9 @@ SELECT run_id, batch_id, '{SITE}', SAFE_CAST(crude_id AS INT64), regime_id, regi
        SAFE_CAST(transition_start_min AS INT64), SAFE_CAST(transition_end_min AS INT64), SAFE_CAST(ramp_min AS INT64), transition_complete, SAFE_CAST(n_minutes AS INT64), SAFE_CAST(n_labs AS INT64), '{SOURCE}'
 FROM `{PROJECT}.{BRONZE}.crude_regimes_raw` WHERE batch = '{batch}' AND run_id IN UNNEST(runs);
 
-INSERT INTO `{PROJECT}.{SILVER}.run_registry` (run_id, batch_id, site_id, run_status, rows_loaded, t_last_min, expected_minutes, csv_sha256_16, loaded_at, source_system, diverged_from_min, diverged_rows)
-SELECT run_id, batch_id, '{SITE}', run_status, n_rows, t_last_min, {EXPECTED_MIN}, csv_sha256_16, CURRENT_TIMESTAMP(), '{SOURCE}', diverged_from_min, diverged_rows
-FROM UNNEST([{", ".join(f"STRUCT('{r['run_id']}' AS run_id, '{batch}' AS batch_id, '{r['run_status']}' AS run_status, {r['rows']} AS n_rows, {r['t_last_min']} AS t_last_min, '{r['csv_sha256_16']}' AS csv_sha256_16, {('NULL' if r.get('diverged_from_min') is None else r['diverged_from_min'])} AS diverged_from_min, {r.get('diverged_rows') or 0} AS diverged_rows)" for r in manifest['runs'])}]);
+INSERT INTO `{PROJECT}.{SILVER}.run_registry` (run_id, batch_id, site_id, run_status, rows_loaded, t_last_min, expected_minutes, csv_sha256_16, loaded_at, source_system, diverged_from_min, diverged_rows, breakdown_from_min)
+SELECT run_id, batch_id, '{SITE}', run_status, n_rows, t_last_min, {EXPECTED_MIN}, csv_sha256_16, CURRENT_TIMESTAMP(), '{SOURCE}', diverged_from_min, diverged_rows, breakdown_from_min
+FROM UNNEST([{", ".join(f"STRUCT('{r['run_id']}' AS run_id, '{batch}' AS batch_id, '{r['run_status']}' AS run_status, {r['rows']} AS n_rows, {r['t_last_min']} AS t_last_min, '{r['csv_sha256_16']}' AS csv_sha256_16, {('NULL' if r.get('diverged_from_min') is None else r['diverged_from_min'])} AS diverged_from_min, {r.get('diverged_rows') or 0} AS diverged_rows, CAST({('NULL' if r.get('breakdown_from_min') is None else r['breakdown_from_min'])} AS INT64) AS breakdown_from_min)" for r in manifest['runs'])}]);
 """
     bq_query(sql, dry, "layer:silver")
 
@@ -441,7 +446,8 @@ LEFT JOIN `{PROJECT}.{SILVER}.tag_minute` sp ON sp.run_id = l.run_id AND sp.time
 CREATE OR REPLACE VIEW `{PROJECT}.{GOLD}.v_run_coverage`
 OPTIONS (description='Gold · run completeness: rows, minutes, labs, regimes, events per run (what the footer provenance line reads).') AS
 SELECT r.run_id, r.batch_id, r.run_status, r.rows_loaded, r.t_last_min, r.expected_minutes, r.loaded_at, r.diverged_from_min, r.diverged_rows,
-       IF(r.diverged_from_min IS NULL, r.t_last_min, r.diverged_from_min - 1) AS valid_until_min,
+       LEAST(r.t_last_min, IFNULL(r.diverged_from_min - 1, r.t_last_min), IFNULL(r.breakdown_from_min - 1, r.t_last_min)) AS valid_until_min,
+       r.breakdown_from_min,
        (SELECT COUNT(*) FROM `{PROJECT}.{SILVER}.lab_results` l WHERE l.run_id = r.run_id) AS n_labs,
        (SELECT COUNT(*) FROM `{PROJECT}.{SILVER}.crude_assay_registry` c WHERE c.run_id = r.run_id) AS n_regime_segments,
        (SELECT COUNT(*) FROM `{PROJECT}.{SILVER}.events` e WHERE e.run_id = r.run_id) AS n_events

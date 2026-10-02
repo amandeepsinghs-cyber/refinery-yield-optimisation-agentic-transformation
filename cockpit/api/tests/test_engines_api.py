@@ -9,6 +9,7 @@ import re
 import pytest
 from fastapi.testclient import TestClient
 
+from app.engines.recipe import GATE_REASONS as RECIPE_GATE_REASONS
 from app.main import app
 
 client = TestClient(app)
@@ -93,7 +94,7 @@ def test_agent_stream_replays_events():
 
 
 # --- §4 recipe -------------------------------------------------------------------------------------------------------------
-GATE_REASONS = {"spread_gate", "novelty", "infeasible", "insufficient_data", "no_gain"}
+GATE_REASONS = set(RECIPE_GATE_REASONS)  # includes "implausible" (plausibility check)
 
 
 def _check_recipe_shape(d: dict) -> None:
@@ -121,7 +122,8 @@ def test_recipe_issued_or_withheld_with_reason():
 
 def test_recipe_issues_when_committee_passes():
     """At a committee-PASS minute the fractionator recipe must be a real coordinated recipe (BDD-27)."""
-    d = _get("/api/recipe", run_id=RUN, time_min=200, unit_id=U4)
+    # s144 is always withheld since the 2 Oct retrain; random_s147 t300 is a PASS-and-plausible hold-out minute
+    d = _get("/api/recipe", run_id="random_s147", time_min=300, unit_id=U4)
     _check_recipe_shape(d)
     assert d["gate"] == "ISSUED", d.get("explanation")
     tags = {m["sp_tag"] for m in d["moves"] if m["delta"] != 0}

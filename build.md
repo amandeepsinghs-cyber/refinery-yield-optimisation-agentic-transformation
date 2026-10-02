@@ -79,6 +79,10 @@ Full lever table with typical values and allowed ranges: [verbatim.md §9.5.3](v
 | ③ Each lever with its current value and allowed range (from the config operating windows; `levers[]` on every decision) | ☑ alignment review, 2 Oct 13:15 |
 | ② Crude classifier accuracy shown on the page (held-out crude switches, VN10 "check the accuracy") | ☑ alignment review, 2 Oct 13:15 |
 | ④ "What the models were trained on" line (runs, hold-out, lab count). Answers VN10's "how did we train / how do we know yield is maximised" | ☑ done 15:40 (“Trained on” row in ④ “The search, in plain words”: 34 simulated runs, checked on 11 held-out runs, labels = simulator truth, on site = lab); the full answer to the second part is the closed-loop simulator check above |
+| Valid-range cut (simulator breakdown) in training, regime fit, surrogates; `breakdown_from_min` in the BigQuery run registry | ☑ 2 Oct 17:40 |
+| Soft-sensor retrain on valid rows (held-out LCO 16.6 °F, HN 36.5 °F); crude classifier 15 of 15 held-out switches | ☑ 2 Oct 17:10 |
+| Lever runs: 52 in parallel (seeds 200–251) | ◐ running, ~14–17 h |
+| Demo scenes repointed: recipe → `random_s144` 10:00; honesty (D2 "Not yet", D3 withheld) → `random_s144` 12:00 | ☑ 2 Oct 17:40 |
 
 > [!NOTE]
 > **Alignment review against verbatim.md (2 Oct 13:05–13:20).** Two older asks were replaced by the 11:00 agreement ("on the surface looks better; then click for details"):

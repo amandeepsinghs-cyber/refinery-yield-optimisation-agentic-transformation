@@ -20,9 +20,14 @@ interface SceneItem {
   geminiPrompt?: string;
 }
 
-/** Demo run: random_s107 — crude switch R3 → R4 detected 07:39 (t 459); LCO change-point 09:42 (t 582); recipe ISSUED at 10:00 (t 600). */
+/**
+ * Demo run: random_s107 — crude switch R3 → R4 detected 07:39 (t 459); LCO change-point 09:42 (t 582).
+ * Since the valid-range retrain (2 Oct 17:10) s107 at 10:00 withholds the recipe (spread too wide), so the
+ * recipe scene uses the hold-out run random_s144 at 10:00 (t 600, recipe shown) and the honesty scene uses
+ * random_s144 at 12:00 (t 720: D2 "Not yet" for LCO and HN, D3 withheld).
+ */
 const DEMO_RUN = "random_s107";
-const WITHHOLD_RUN = "random_s144";
+const HOLDOUT_RUN = "random_s144";
 
 const SCENES: SceneItem[] = [
   {
@@ -94,16 +99,16 @@ const SCENES: SceneItem[] = [
     title: "Optimisation & decision — 'What to move, by how much, and the consequence'",
     duration: "2 min",
     route: "/twin/unit/unit_4_fractionator",
-    routeLabel: "U4 rail · Optimisation & Decision",
-    run: DEMO_RUN,
+    routeLabel: "U4 on random_s144 · 10:00 · Decision cards",
+    run: HOLDOUT_RUN,
     timeMin: 600,
-    moment: "recipe ISSUED",
+    moment: "recipe shown (scripted)",
     onScreen:
-      "'Optimisation': three set-point sliders (LCO T98 SP, HN T98 SP, riser outlet T) with the recommended moves, the P(on-spec) / Δ-yield curve, and the effects in engineering units (yield shift % feed, fuel, power, coke). 'Decision' GREEN: 'LOWER SP_LCO_T98 −2.0 °F' with rationale, systems ripple and [SOP-frac-014 r3 §4.2] citations; Accept / Decline.",
+      "Hold-out run random_s144 at 10:00. Decision cards: D1 'Raise LCO cut point +2.5 °F' (half move, amber) and D1 for heavy naphtha, with the predicted change; D3 recipe for this crude (scripted tag): riser outlet temperature +3.5 °F, LCO T98 set point −1.0 °F, HN T98 set point +1.0 °F, with the chance of staying in band. Accept / Decline only writes to the decision record.",
     action:
-      "Drag the LCO T98 slider: the curve and effects update live. Click a citation chip to preview the SOP. Click 'Accept' — the toast confirms the audit entry; nothing is written to the DCS.",
+      "Switch the run picker to random_s144 (or use 'Go to'). Open the D1 card, then the D3 recipe. Click 'Accept' — the toast confirms the decision-record entry; nothing is written to the DCS.",
     talkTrack:
-      "The recipe is a coordinated multi-set-point move with its yield and energy consequence stated in plant units, not money. A human accepts it; the audit log keeps the record.",
+      "The recipe is a coordinated multi-set-point move with its consequence stated in plant units, not money. A human accepts it; the decision record keeps it.",
     geminiPrompt: "What does the recipe change and what is the effect on yield and energy?",
   },
   {
@@ -111,15 +116,15 @@ const SCENES: SceneItem[] = [
     title: "The withhold — 'It knows when not to be trusted'",
     duration: "1.5 min",
     route: "/twin/unit/unit_4_fractionator",
-    routeLabel: "U4 on a hold-out run",
-    run: WITHHOLD_RUN,
-    timeMin: 600,
-    moment: "spread gate WITHHELD",
+    routeLabel: "U4 on random_s144 · 12:00",
+    run: HOLDOUT_RUN,
+    timeMin: 720,
+    moment: "D2 Not yet · D3 withheld",
     onScreen:
-      "Same workbench on a hold-out run: 'Model evidence' shows the gate WITHHELD with the W90 that exceeded 14 °F; 'Optimisation' says 'exploration only'; 'Decision' has no move — hold set points and request a lab.",
-    action: "Switch the run picker to random_s144 (or use 'Go to'). Ask Gemini why the recipe is withheld; it must quote the gate message verbatim and refuse a set point.",
+      "Same run two hours later (12:00): D2 'Not yet — hold the LCO cut point; the estimate is too uncertain (spread W90 above the 14 °F limit)', the same for heavy naphtha, and D3 'No coordinated recipe yet'. D9 asks for extra LCO and HN samples instead.",
+    action: "Move the clock to 12:00 (or use 'Go to'). Ask Gemini why the recipe is withheld; it must quote the reason verbatim and refuse a set point.",
     talkTrack:
-      "When the committee disagrees, the system withholds and asks for a lab instead of averaging four guesses. This refusal is what makes it safe in front of an operator.",
+      "When the models disagree, the system withholds and asks for a lab instead of averaging four guesses. This refusal is what makes it safe in front of an operator.",
     geminiPrompt: "Why is the recipe withheld right now? Quote the gate message.",
   },
   {

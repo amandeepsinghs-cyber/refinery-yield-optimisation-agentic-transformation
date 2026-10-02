@@ -9,7 +9,10 @@ from app.engines.recipe import GATE_REASONS, recipe_for, whatif
 from app.engines.surrogates import CUTPOINT_SP, OUTPUTS, get_surrogate_card, predict_delta, supported_inputs
 
 RUN, U4, U2 = "random_s144", "unit_4_fractionator", "unit_2_riser"
-T_PASS, T_WITHHELD = 200, 600  # committee gate PASS / WITHHELD minutes on random_s144
+# Since the valid-range retrain (2 Oct 17:10) the real engine withholds every s144 recipe (implausible or spread),
+# so the ISSUED check uses hold-out random_s147 t300 (one of the few PASS-and-plausible minutes), and the
+# spread-gate check uses s144 t720 (12:00, the demo honesty scene).
+RUN_PASS, T_PASS, T_WITHHELD = "random_s147", 300, 720
 FINANCIAL = re.compile(r"[$€£₹]\s?[0-9]|\b(USD|EUR|NPV|ROI|payback|cost|price|revenue|profit|savings?)\b", re.I)
 
 
@@ -44,7 +47,7 @@ def test_predict_delta_is_linear_and_zero_at_rest():
 
 
 def test_recipe_issued_at_committee_pass_minute():
-    r = recipe_for(RUN, T_PASS, U4)
+    r = recipe_for(RUN_PASS, T_PASS, U4)
     assert r["gate"] == "ISSUED", r["explanation"]
     assert r["gate_reason"] is None and len(r["moves"]) >= 2
     moved = [m for m in r["moves"] if m["delta"] != 0]

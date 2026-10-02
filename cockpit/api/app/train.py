@@ -133,10 +133,13 @@ def main(argv=None):
         log("no simulated runs with data found; nothing to train")
         return 1
     log(f"runs with data: {len(run_ids)} in batches {cat.batches}")
-    frames = {r: prepare(cat.load(r), s, lags=None) for r in run_ids}   # A6 lagged features added per training set below
+    cuts = {r: cat.valid_until(r) for r in run_ids}
+    log("valid range (simulator breakdown cut):", sum(c is None for c in cuts.values()), "runs whole,",
+        sum(c is not None for c in cuts.values()), "cut", {r: c for r, c in cuts.items() if c is not None})
+    frames = {r: prepare(cat.load_valid(r), s, lags=None) for r in run_ids}   # A6 lagged features added per training set below
     frames = {r: f for r, f in frames.items() if len(f) >= 5 and all(p in f for p in s.targets)}
     run_ids = sorted(frames)
-    raw_labs = {r: cat.raw_labs(r) for r in run_ids}
+    raw_labs = {r: [x for x in cat.raw_labs(r) if cuts.get(r) is None or x["time_min"] < cuts[r]] for r in run_ids}
     groups = {r: group_of(cat.get(r)) for r in run_ids}
     ugroups = sorted(set(groups.values()))
     T = s["training"]
@@ -167,7 +170,7 @@ def main(argv=None):
     n_clean_labs = count_clean_train_labs(raw_labs, train_runs, s.targets)
     source = choose_label_source(T["label_source"], n_clean_labs, int(T["min_labs"]))
     log(f"label source: {source} (clean labs per property on {len(train_runs)} train runs: {n_clean_labs})")
-    transient = {r: transient_mask(frames[r], cat.event_code_series(r), s) for r in run_ids}
+    transient = {r: transient_mask(frames[r], cat.event_code_series(r)[:len(frames[r])], s) for r in run_ids}
     log("transient minutes (A5):", {r: int(m.sum()) for r, m in list(transient.items())[:6]},
         "..." if len(transient) > 6 else "")
 
@@ -243,7 +246,7 @@ def main(argv=None):
         log(f"[{prop}] admission:", dict(zip(MODEL_IDS, admitted)))
 
     # ---------------- gains, assemble every run
-    gains = {p: estimate_gain_and_yield([(frames[r], cat.event_code_series(r)) for r in run_ids], p, s) for p in s.targets}
+    gains = {p: estimate_gain_and_yield([(frames[r], cat.event_code_series(r)[:len(frames[r])]) for r in run_ids], p, s) for p in s.targets}
     log("gains:", gains)
     art = s.artifacts
     (art / "runs").mkdir(exist_ok=True)
