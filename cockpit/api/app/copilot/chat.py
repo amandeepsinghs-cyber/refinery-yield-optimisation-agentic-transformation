@@ -42,7 +42,13 @@ def screen_of(ctx: dict) -> dict:
         unit_id = None
         if level == "L1":
             level = "L0"
-    return {"level": level, "unit_id": unit_id, "window_min": int(sc.get("window_min") or 720)}
+    out = {"level": level, "unit_id": unit_id, "window_min": int(sc.get("window_min") or 720)}
+    panels = sc.get("panel_ids")
+    if level == "L1" and isinstance(panels, list) and panels:
+        out["panel_ids"] = [str(p) for p in panels[:12]]
+        hp = sc.get("highlighted_panel")
+        out["highlighted_panel"] = str(hp) if hp else None
+    return out
 
 
 def scope_snapshot_for(ctx: dict) -> dict | None:
@@ -82,6 +88,11 @@ def screen_block(ctx: dict) -> str:
                 "Answer about THIS unit first — its regime, residual/breach (how we know it is off), model committee and the recipe moves "
                 "visible on screen. You may still answer about any other unit or the whole refinery when asked (use get_scope_snapshot "
                 "with unit_id=null or get_systems_twin_state).")
+        if sc.get("panel_ids"):
+            head += f" CHART PANELS ON SCREEN (top to bottom): {', '.join(sc['panel_ids'])}."
+            if sc.get("highlighted_panel"):
+                head += (f" The operator was sent to and is looking at the '{sc['highlighted_panel']}' panel — "
+                         "when they say 'this chart' or 'this curve', they mean that panel.")
     elif sc["level"] == "L0":
         head = ("OPEN SCREEN: Level 0 Refinery Twin (whole plant). Answer about the refinery as a whole first — crude slate "
                 "(declared vs detected regime), what needs attention and where the crude change hits first; drill into a unit with "

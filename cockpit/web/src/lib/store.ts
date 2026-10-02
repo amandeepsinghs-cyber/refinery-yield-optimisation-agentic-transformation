@@ -49,6 +49,9 @@ interface CockpitState {
   closeSource: () => void;
   askCopilot: (prompt: string) => void;
   clearPending: () => void;
+  /** Chart panels currently on screen (L1) and the one highlighted by `?uc=` / `?tag=` — forwarded to Gemini as page context. */
+  screenPanels: { panel_ids: string[]; highlighted: string | null };
+  setScreenPanels: (panel_ids: string[], highlighted?: string | null) => void;
 }
 
 function applyTheme(t: ThemeName) {
@@ -94,6 +97,12 @@ export const useCockpit = create<CockpitState>()(
       setMessages: (fn) => set({ messages: fn(get().messages) }),
       askCopilot: (prompt) => set({ pendingPrompt: prompt, copilotOpen: true, copilotTab: "text" }),
       clearPending: () => set({ pendingPrompt: null }),
+      screenPanels: { panel_ids: [], highlighted: null },
+      setScreenPanels: (panel_ids, highlighted = null) => {
+        const cur = get().screenPanels;
+        if (cur.highlighted === highlighted && cur.panel_ids.length === panel_ids.length && cur.panel_ids.every((p, i) => p === panel_ids[i])) return;
+        set({ screenPanels: { panel_ids, highlighted } });
+      },
     }),
     {
       name: "fcc-cockpit-context",

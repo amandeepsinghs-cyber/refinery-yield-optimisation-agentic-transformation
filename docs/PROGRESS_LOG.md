@@ -6,6 +6,18 @@ this file records what actually happened and the state things were left in.
 
 ---
 
+## 2026-10-02 03:10 — Playwright finally executed (19 / 19 green) + Gemini page context knows the panels on screen
+
+**Finding first:** the e2e suite had been ☐ since Phase 18 because `@playwright/test` could not be installed — `npm i -D` re-resolves the whole lockfile and the Airlock npm mirror 404s a transitive dependency (`JSV`). Workaround that works: run the runner from the npx cache with `NODE_PATH` pointed at it and use the system Chrome (`channel: "chrome"`), so nothing is added to `package.json` and no browser is downloaded. `make web-e2e` now does exactly that; `playwright.config.ts` added (1440 × 1000, dark, 2 workers so the Octave batch is not starved, traces/screenshots on failure under `cockpit/web/artifacts/`).
+
+**First run (unseeded) — 16 / 19**: the three failures were all *context*, not UI: without a seeded store the page opened the newest run at its last minute (recipe WITHHELD → no Accept button, 0 open decisions). The spec now seeds the demo context (`random_s107 @ 600`, EN) per test via `addInitScript`, only when absent so the scrub / register-persistence tests keep their own state. **Second run — 18 / 19**: the remaining failure was a stale expectation (`?uc=UC-03` → `#panel-quality`); since Phase 19 UC-03's signature panel is `quality_2` (HN T98, under "more", auto-opened) — verified from the failure screenshot, assertion corrected to "exactly one highlighted panel, id `panel-quality_2`, text HN T98, in viewport". **Third run — 19 / 19 in 1.6 min** via `make web-e2e`.
+
+**Gemini page context (Pass I leftover closed)**: `store.screenPanels {panel_ids, highlighted}` ← `L1Workbench` (visible panels in order + the `?uc=` / `?tag=` owning panel; cleared on unmount) → `usePageContext().screen.panel_ids / highlighted_panel` (L1 only) → `chat.screen_of` keeps them and `screen_block` adds "CHART PANELS ON SCREEN (top to bottom): … The operator is looking at the '<id>' panel — 'this chart' means that panel." Test `test_screen_carries_visible_panels_and_highlight_on_l1_only` (7 / 7 in `test_gemini_scope.py`).
+
+**Verification**: `tsc` 0 · vitest 82/82 · pytest `test_gemini_scope` 7 passed · API restarted · Playwright 19/19. `.gitignore` + `playwright-results/`.
+
+---
+
 ## 2026-10-02 02:55 — UI remediation Pass G (N(μ,σ)) + Pass I (decisions first) + Pass H (L0 systemic view)
 
 **Finding first:** L0 is now a data-first systemic home — six unit tiles each carrying a 4-h fan sparkline (measured over ŷ ± 2σ, plan, spec) and a compact N(μ,σ) bell, process connectors between them, a lakehouse → ML → agents flow strip, a cause → effect ripple card, an Open-decisions rail with Accept / Decline, and a crude-adaptation card with the regime posterior. L1's rail is reordered decisions-first and gains a Target-distribution card. This closes verbatim Part 6 §3 (bell curves), §4 (decisions visible) and §5 (systemic thinking) in code; the Playwright run is still outstanding.

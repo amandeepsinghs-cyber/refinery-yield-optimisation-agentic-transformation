@@ -44,8 +44,9 @@ web-typecheck: ## TypeScript type-check without emitting
 web-build: ## Build Next.js production frontend bundle
 	cd cockpit/web && npm run build
 
-web-e2e: ## Playwright end-to-end (needs api-run + web-dev up)
-	cd cockpit/web && npx playwright test
+PW_VERSION ?= 1.53.0
+web-e2e: ## Playwright end-to-end on the demo context (needs api-run + web-dev up; uses system Chrome; E2E_RUN / E2E_T override)
+	cd cockpit/web && npx -y -p @playwright/test@$(PW_VERSION) sh -c 'NODE_PATH="$$(dirname "$$(dirname "$$(command -v playwright)")")" playwright test --config playwright.config.ts'
 
 check: api-test web-typecheck web-test ## Everything that must be green before a hand-off
 

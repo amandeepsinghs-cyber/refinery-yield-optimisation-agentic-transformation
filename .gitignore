@@ -6,6 +6,7 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 playwright-report/
+playwright-results/
 test-results/
 
 # --- Python ---

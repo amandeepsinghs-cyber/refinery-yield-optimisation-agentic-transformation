@@ -14,13 +14,18 @@ export function usePageContext() {
   const property = useCockpit((s) => s.property);
   const timeMin = useCockpit((s) => s.timeMin);
   const lang = useCockpit((s) => s.lang);
+  const screenPanels = useCockpit((s) => s.screenPanels);
 
-  let screen: { level: 'L0' | 'L1' | 'other', unit_id?: string, window_min: 720 } = { level: 'other', window_min: 720 };
-  if (pathname === '/twin') {
-    screen.level = 'L0';
-  } else if (pathname.startsWith('/twin/unit/')) {
-    screen.level = 'L1';
-    screen.unit_id = pathname.split('/twin/unit/')[1];
+  const screen: { level: "L0" | "L1" | "other"; unit_id?: string; window_min: 720; panel_ids?: string[]; highlighted_panel?: string | null } = { level: "other", window_min: 720 };
+  if (pathname === "/twin") {
+    screen.level = "L0";
+  } else if (pathname.startsWith("/twin/unit/")) {
+    screen.level = "L1";
+    screen.unit_id = pathname.split("/twin/unit/")[1];
+    if (screenPanels.panel_ids.length) {
+      screen.panel_ids = screenPanels.panel_ids;
+      screen.highlighted_panel = screenPanels.highlighted;
+    }
   }
 
   return { page: pathname, run_id: runId, property, time_min: timeMin, screen, lang };

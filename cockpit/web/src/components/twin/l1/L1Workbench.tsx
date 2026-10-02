@@ -69,23 +69,33 @@ function L1Content({ unitId }: { unitId: string }) {
   const panels = showMore ? [...primary, ...more] : primary;
 
   // ?uc= / ?tag= entry (L0 attention rail → L1): scroll to the owning panel and highlight it.
-  useEffect(() => {
-    if ((!uc && !tag) || !data) return;
+  const owningPanelId = useMemo(() => {
+    if ((!uc && !tag) || !data) return null;
     const owning =
       (uc && (data.panels.find((p) => p.panel_id === data.unit.use_cases.find((u) => u.id === uc)?.panel_id) ?? data.panels.find((p) => p.use_case_ids?.includes(uc)))) ||
       (tag && (data.panels.find((p) => p.kind === "measured_vs_expected" && p.traces?.some((tr) => tr.key === tag)) ?? data.panels.find((p) => p.traces?.some((tr) => tr.key === tag)))) ||
       null;
-    if (!owning) return;
-    if (!primary.some((p) => p.panel_id === owning.panel_id)) setShowMore(true);
+    return owning?.panel_id ?? null;
+  }, [uc, tag, data]);
+  useEffect(() => {
+    if (!owningPanelId) return;
+    if (!primary.some((p) => p.panel_id === owningPanelId)) setShowMore(true);
     const t = setTimeout(() => {
-      const el = document.getElementById(`panel-${owning.panel_id}`);
+      const el = document.getElementById(`panel-${owningPanelId}`);
       if (!el) return;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add("twin-panel-highlight");
       setTimeout(() => el.classList.remove("twin-panel-highlight"), 6000);
     }, 400);
     return () => clearTimeout(t);
-  }, [uc, tag, data, primary]);
+  }, [owningPanelId, primary]);
+
+  // Tell Gemini which panels are on screen and which one the operator was sent to (SDD-GEM-02 page context).
+  const setScreenPanels = useCockpit((s) => s.setScreenPanels);
+  useEffect(() => {
+    setScreenPanels(panels.map((p) => p.panel_id), owningPanelId);
+  }, [panels, owningPanelId, setScreenPanels]);
+  useEffect(() => () => setScreenPanels([], null), [setScreenPanels]);
 
   if (error) return <div className="twin-container l1-root l1-error" data-testid="l1-root" role="alert">Workbench unavailable: {error}</div>;
   if (loading && !data) return <div className="twin-container l1-root l1-loading" data-testid="l1-root"><div className="skeleton" style={{ height: 48 }} /><div className="skeleton" style={{ height: 420, marginTop: 12 }} /></div>;

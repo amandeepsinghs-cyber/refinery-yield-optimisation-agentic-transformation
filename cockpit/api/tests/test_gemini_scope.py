@@ -74,3 +74,18 @@ def test_live_language_follows_operator_lang():
     assert live_language_code({"lang": "hinglish"}) == "hi-IN"
     assert live_language_code({"lang": "en"}) == "en-IN"
     assert live_language_code({}) == "en-IN"
+
+
+def test_screen_carries_visible_panels_and_highlight_on_l1_only():
+    """Pass I leftover: the page sends the chart panels on screen + the deep-linked one; the prompt names them."""
+    ctx = {"page": "/twin/unit/unit_4_fractionator", "run_id": "random_s144", "time_min": 600,
+           "screen": {"level": "L1", "unit_id": "unit_4_fractionator", "window_min": 720,
+                      "panel_ids": ["quality", "residual", "mv", "disturbance", "yield"], "highlighted_panel": "residual"}}
+    sc = screen_of(ctx)
+    assert sc["panel_ids"] == ["quality", "residual", "mv", "disturbance", "yield"]
+    assert sc["highlighted_panel"] == "residual"
+    si = system_instruction(ctx)
+    assert "CHART PANELS ON SCREEN" in si and "'residual' panel" in si
+    # L0 never carries panels, even if a stale client sends them
+    sc0 = screen_of({"page": "/twin", "screen": {"level": "L0", "panel_ids": ["quality"]}})
+    assert "panel_ids" not in sc0

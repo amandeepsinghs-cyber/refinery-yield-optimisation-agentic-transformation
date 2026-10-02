@@ -5,7 +5,22 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3001";
+// Demo context (demoflow.md §2): the crude-switch run at 10:00. Override with E2E_RUN / E2E_T.
+const RUN = process.env.E2E_RUN ?? "random_s107";
+const T = Number(process.env.E2E_T ?? 600);
 const GREY = /^#?(808080|a0a0a0|a1a1aa|71717a|64748b|94a3b8|9ca3af|6b7280|bfbfbf|c0c0c0|d4d4d8|e4e4e7)$/i;
+
+test.beforeEach(async ({ page }) => {
+  // Same seeding the CDP screenshot helper uses (sessionStorage store context). Only when absent, so a test that
+  // scrubs the clock or switches the register keeps its own state across reloads. Fresh contexts start dark by default.
+  await page.addInitScript(([run, t]) => {
+    try {
+      if (!sessionStorage.getItem("fcc-cockpit-context")) {
+        sessionStorage.setItem("fcc-cockpit-context", JSON.stringify({ state: { runId: run, property: "LCO_T98_F", timeMin: t, lang: "en" }, version: 0 }));
+      }
+    } catch { /* storage unavailable */ }
+  }, [RUN, T] as const);
+});
 
 async function openTwin(page: Page) {
   await page.goto(`${BASE}/twin`);
@@ -158,9 +173,12 @@ test.describe("Level 1 — Unit workbench (SDD-L1-01..07)", () => {
   });
 
   test("?uc= entry scrolls to and highlights the owning panel and lists its citations", async ({ page }) => {
+    // UC-03 (HN T98 quality) → signature panel `quality_2`, which lives under "More panels" and must be auto-opened.
     await openUnit(page, "unit_4_fractionator", "?uc=UC-03");
-    const panel = page.locator("#panel-quality");
-    await expect(panel).toHaveClass(/twin-panel-highlight/, { timeout: 10_000 });
+    const panel = page.locator(".l1-panel.twin-panel-highlight");
+    await expect(panel).toHaveCount(1, { timeout: 10_000 });
+    await expect(panel).toHaveId("panel-quality_2");
+    await expect(panel).toContainText(/HN T98/);
     expect(await panel.evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; })).toBe(true);
     await expect(page.getByTestId("decision-citations").locator(".l1-cite").first()).toBeVisible();
   });
