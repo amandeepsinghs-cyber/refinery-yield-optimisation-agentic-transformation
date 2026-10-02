@@ -366,3 +366,12 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Surrogates refit on API restart: `lever_runs` = 11; 64 train / 16 hold-out moves; cut-point yield fit hold-out R² LCO 0.90, HN 0.81, conversion 0.82.
 - Finding: the ~50 lever moves of codes 7–12 in these runs (≈ 8–9 per lever) are almost all rejected by the fit — only 1 preheat move used. `scenario.m` spaces consecutive moves ramp + 30 min apart, while the fit needs 15 min before and 60 min after with no other move. More simulated hours add more moves with the same spacing, so waiting does not fix it. D5–D7 stay scripted (labelled) as before.
 - Demo scenes unchanged (s144 10:00 recipe, s144 12:00 "Not yet", s107 10:00).
+
+## 2026-10-02 18:35 — data secured (local, GCS, BigQuery) and overnight watch
+
+- Local snapshot of all simulator data: `sim_octave/data/_snapshots/sim_data_20261002_1759.tar.gz` (110 CSVs, 23 MB), copied to `gs://fcc-soft-sensor-sim-data/_archive/`.
+- BigQuery backup before loading: dataset `fcc-soft-sensor:fcc_backup_20261002_1800` (all 7 silver tables; row counts checked, e.g. telemetry 82,940, tag_minute 8,459,880).
+- Lake top-up `full_v1` (10 partial runs, 300 more rows; 12,840 rows now = all local rows) plus model bundle to `gs://…/models/full_v1/` and `fcc_gold.model_registry`.
+- First lake load of `lever_v1` (52 runs, 7,440 rows, partial; 19 min). API restarted on BigQuery with lever runs in the lake: demo decisions at s144 10:00 / 12:00 and s107 10:00 unchanged.
+- New `sim_octave/monitor_runs.py`: per-run rows, last write, process alive, first broken minute, share of copied failed-solver rows; `--heal` stops runs stuck in solver failure (≥ 80 % copied rows in the last hour; valid rows kept) and relaunches runs that never wrote a row. Stopped so far: s208 (stuck from minute 315), s210 (376), s205 (418).
+- Overnight: a check every 30 min (monitor + heal, GCS rsync to `_archive/lever_v1_live`), lake load every 3 h, and a final load + stage + refit + push when the last run ends.
