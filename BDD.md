@@ -1194,12 +1194,13 @@ Feature: Two-level decision-grade twin — plant home and unit workbench
   So that I see where the crude change hits first and how the decision is made
 
   @ui @demo
-  Scenario: Level 0 is the home and shows live curves per unit (amended 2026-10-02, verbatim VN-1/VN-5)
+  Scenario: Level 0 is the home and discloses progressively (amended 2026-10-02 per verbatim VN-6; see BDD-29)
     When the operator opens the application root
     Then the route is /twin
-    And the page shows 6 unit blocks with KPI vs plan, a status pill and decision and flag counts
-    And each unit block renders its headline tag as a live curve with the ŷ ± 2σ band and a compact N(μ,σ) PDF vs plan / spec
-    And a crude-slate banner and a "Needs attention" list with systemic consequence lines are visible
+    And the page shows, in order: a one-sentence headline, the crude-slate line, six unit tiles in process order, a detail pane and a footer
+    And each tile shows the unit name, its state as a dot and a word, the headline KPI vs plan and a 1 px 4-h trend — no curve with band and no N(μ,σ) on the tile
+    And hovering, focusing or pinning a tile renders that unit's live curve with the ŷ ± 2σ band, its compact N(μ,σ) PDF vs plan / spec, since-when-why lines and its recommendations in the detail pane
+    And a crude-slate line and a "Needs attention" list with systemic consequence lines are visible (the list in the pane when no unit is focused)
 
   @ui @demo
   Scenario: Clicking the fractionator opens its workbench on one cursor
@@ -1250,4 +1251,106 @@ Feature: Two-level decision-grade twin — plant home and unit workbench
     When the operator asks why LCO T98 drifted after the crude switch
     Then the answer is in Hindi, quotes the regime label, the residual value and the recipe moves visible on screen
     And it cites at least one knowledge document and contains no financial term
+```
+
+## 8. v4 Features: Plant-Manager Question Tree, Progressive Disclosure & Screen-Aware Gemini (`BDD-29` to `BDD-30`)
+
+> Source: `verbatim.md` Voice Note 6 (2026-10-02 03:53 UTC) — "the front end has to be simplified … somebody opening a refinery wants high-level information: what are the units and the main message, OK or not OK … hover shows a mini graph / a pane on the right … do behaviour-driven development: what are the questions the plant manager has? Pyramid Principle — main question, sub-questions, details." Design: `UI_V2_PLAN.md` (ISA-101 high-performance-HMI register).
+
+### BDD-29: Plant-Manager Question Tree & Progressive Disclosure on L0 `@ui @pyramid` (NEW)
+
+The home answers the plant manager's questions in Pyramid order. Each question maps to exactly one screen region; nothing on L0 answers a sub-sub-question.
+
+| Level | Question | Region | Component |
+| :-- | :-- | :-- | :-- |
+| **Q0** | Is the refinery OK right now? If not, where, why, and what do we do? | whole L0 | `L0Home` |
+| Q1 | Is the plant on-spec / in envelope? | one headline sentence | `HeadlineStrip.Headline` |
+| Q1.1 | Which unit, how far off, trend? | unit train tile | `UnitTrain` |
+| Q1.2 | Since when and why? | detail pane — curve + band, since-when lines | `DetailPane.UnitDetail` |
+| Q2 | What changed in the feed, what does it hit next? | crude line + pane ripple | `HeadlineStrip.CrudeLine`, `DetailPane.Ripple` |
+| Q3 | What should we do? | pane — real recommendations (Δ ≠ 0) | `DetailPane` |
+| Q3.1 | How sure are we? | pane — N(μ,σ) vs plan / spec, P(on-spec) | `DetailPane` → `GaussianPdf` |
+| Q3.2 | What does the move do to the rest of the train? | pane ripple / L1 systems ripple | `DetailPane.Ripple` |
+| Q4 | Can I trust the numbers? | footer line; About this data | `HeadlineStrip.Footer`, `FlowStrip` |
+| Q5 | What happened last shift? | audit log | `/audit` |
+
+```gherkin
+Feature: The home reads top-down like a briefing — answer first, then evidence on demand
+  As a plant manager
+  I want one sentence that tells me whether the refinery is OK and where it is not
+  So that I can decide in five seconds whether to drill in, and get the curves only when I ask for them
+
+  @ui @demo
+  Scenario: Pyramid order of the home
+    When the operator opens /twin
+    Then the regions appear top-to-bottom in the order headline, crude line, unit train, footer, with the detail pane alongside the train
+    And the headline reads "<n> of 6 units in envelope · <worst unit> <KPI> <±Δ unit> vs plan since <hh:mm> (<cause>) · <k> recommendations to review"
+    And when every unit is in envelope the headline reads "6 of 6 units in envelope · all units tracking plan · no set-point move needed"
+    And no Plotly chart is mounted on the home
+
+  @ui
+  Scenario: Register — instrument, not dashboard (ISA-101)
+    When Playwright captures /twin in dark and light
+    Then no element uses a coloured left border stripe to encode status
+    And no status is rendered as a bordered pill; every status is a 7 px dot followed by a word (In envelope · Drifting · Act now)
+    And a normal unit's trend is drawn in the neutral trace colour and only an abnormal unit's trend is coloured
+    And the home contains no filled primary button (Accept / Decline live on L1 with the evidence)
+    And numbers use tabular figures and the monospace face is used only for numbers
+    And "-0.00 %" never appears (negative zero is normalised)
+
+  @ui @demo
+  Scenario: Progressive disclosure — hover, focus, pin, click
+    Given the operator is on /twin
+    Then the detail pane shows the plant overview: needs attention (≤ 5) and the real recommendations (Δ ≠ 0, ≤ 3) with holds summarised as one line
+    And no HOLD with zero delta is listed as a decision anywhere on the home
+    When the operator hovers the fractionator tile for 120 ms
+    Then the pane switches to that unit: hero KPI vs plan, the last-4-h curve with ŷ ± 2σ, the N(μ,σ) vs plan / spec with P(on-spec), the since-when-why lines and its recommendations
+    When the operator moves the pointer away
+    Then the pane returns to the plant overview after 160 ms
+    When the operator pins the pane
+    Then it stays on that unit until unpinned
+    When the operator focuses a tile with the keyboard (or taps it on a touch device)
+    Then the pane opens for that unit as well
+    When the operator clicks a tile
+    Then the unit workbench opens on the headline tag (/twin/unit/<unit_id>?tag=…)
+
+  @ui
+  Scenario: Demo controls leave the operations header
+    When the operator opens /twin
+    Then the header shows the brand, the dashboards, the provenance chip and one "Scenario" tray
+    And the run selector, the LCO / HN property switch, the display register toggle and the demo walkthrough open from that tray
+    And the lakehouse → ML flow strip and the full flowsheet sit behind "About this data" below the train, not on the first screen
+```
+
+### BDD-30: Screen-Aware Gemini — "explain what is on this screen" `@copilot @voice` (NEW)
+
+```gherkin
+Feature: Gemini describes exactly what the operator is looking at
+  As an operator
+  I want to ask "what is going on on this screen?" in English, Hinglish or Hindi
+  So that I get a region-by-region explanation of the tiles, curves, distributions and decisions I actually see
+
+  @copilot @demo
+  Scenario: The UI publishes a rendered-screen digest with every turn
+    Given every tile, pane, panel and card registers what it shows via useScreenPart (values, plan, Δ, μ/σ, P(on-spec), decision lines, legends, markers)
+    When the operator sends a chat message
+    Then context.screen.visible contains that digest keyed by region (headline, crude, train.U1..U6, pane, footer on L0; l1, l1.target_distribution on L1)
+    And context.screen.focus_unit names the hovered or pinned unit on L0
+    And the server includes the digest in the system instruction as "ON-SCREEN RIGHT NOW" (capped at 7 000 characters) after the server-side SCOPE SNAPSHOT
+
+  @copilot @demo
+  Scenario: "Explain this screen" is answered from the digest, region by region
+    Given the operator is on /twin with the fractionator pane pinned
+    When the operator asks "Explain what is going on on this screen, in full"
+    Then the answer walks the regions in screen order, names each unit as labelled, quotes the on-screen numbers (KPI, Δ vs plan, μ, σ, P(on-spec)) and the recommendation lines
+    And it says which units are normal and which need attention and why
+    And it does not claim it cannot see the screen and does not invent numbers absent from the digest or snapshot
+    And the first suggested prompt on L0 and L1 is the "explain this screen" prompt in the active language
+
+  @voice
+  Scenario: Live voice stays screen-aware after connect
+    Given a Gemini Live session is open
+    When the operator navigates, hovers a unit or the digest changes
+    Then the client sends {type:"context", page, time_min, lang, screen} (debounced 1.5 s, de-duplicated) and immediately on "ready"
+    And the server injects the screen block as user content without completing the turn, so the next spoken question is answered for the current screen
 ```

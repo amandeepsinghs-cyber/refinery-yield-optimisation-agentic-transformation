@@ -22,6 +22,7 @@ UNIT_SHORT = {"unit_1_furnace": "Feed preheat furnace", "unit_2_riser": "Riser r
               "unit_5_condenser": "Overhead condenser & WGC", "unit_6_stabiliser": "Stabiliser / gas plant"}
 _UNIT_RE = re.compile(r"/twin/unit/(unit_\d_[a-z]+)")
 SCOPE_MAX_CHARS = 2400
+VISIBLE_MAX_CHARS = 7000  # client-rendered digest (SDD-GEM-04); ~1.8k tokens
 
 
 def screen_of(ctx: dict) -> dict:
@@ -48,6 +49,13 @@ def screen_of(ctx: dict) -> dict:
         out["panel_ids"] = [str(p) for p in panels[:12]]
         hp = sc.get("highlighted_panel")
         out["highlighted_panel"] = str(hp) if hp else None
+    if sc.get("theme") in ("dark", "light"):
+        out["theme"] = sc["theme"]
+    fu = sc.get("focus_unit")
+    out["focus_unit"] = fu if fu in UNIT_IDS else None
+    vis = sc.get("visible")
+    if isinstance(vis, dict) and vis:
+        out["visible"] = vis
     return out
 
 
@@ -80,6 +88,24 @@ def scope_snapshot_for(ctx: dict) -> dict | None:
     return {"screen": sc, "snapshot_json": txt}
 
 
+def visible_block(sc: dict) -> str:
+    """Client-rendered screen digest (SDD-GEM-04): what every tile / panel / card on the operator's screen shows right now.
+
+    The UI registers each component's content (values, plan, Δ, μ/σ, decision lines, legends) and sends it with the
+    turn; we pass it through verbatim (size-capped) so "explain this screen" is answered from what is actually drawn."""
+    vis = sc.get("visible")
+    if not vis:
+        return ""
+    txt = json.dumps(vis, default=str, ensure_ascii=False, separators=(",", ":"))
+    if len(txt) > VISIBLE_MAX_CHARS:
+        txt = txt[:VISIBLE_MAX_CHARS] + "...}"
+    focus = sc.get("focus_unit")
+    focus_line = (f" The operator currently has the detail pane open for {UNIT_SHORT.get(focus, focus)} ({focus}) — "
+                  "when they say 'this unit' / 'this pane' they mean it." if focus else "")
+    return ("\nON-SCREEN RIGHT NOW (rendered by the UI, keys are screen regions top-to-bottom; numbers are exactly what the operator reads"
+            f" and may be quoted directly):{focus_line}\n{txt}")
+
+
 def screen_block(ctx: dict) -> str:
     sc = screen_of(ctx)
     snap = scope_snapshot_for(ctx)
@@ -94,13 +120,22 @@ def screen_block(ctx: dict) -> str:
                 head += (f" The operator was sent to and is looking at the '{sc['highlighted_panel']}' panel — "
                          "when they say 'this chart' or 'this curve', they mean that panel.")
     elif sc["level"] == "L0":
-        head = ("OPEN SCREEN: Level 0 Refinery Twin (whole plant). Answer about the refinery as a whole first — crude slate "
-                "(declared vs detected regime), what needs attention and where the crude change hits first; drill into a unit with "
-                "get_scope_snapshot(unit_id=...) when asked.")
+        head = ("OPEN SCREEN: Level 0 Refinery home (whole plant): a one-line headline, the crude-slate line, the six-unit train "
+                "(U1 furnace → U2 riser ⇄ U3 regenerator → U4 fractionator → U5 gas plant → U6 stabiliser; each tile = state, headline "
+                "KPI vs plan, 4-h sparkline) and a right-hand detail pane (hovered unit, or needs-attention + recommendations). "
+                "Answer about the refinery as a whole first — crude slate (declared vs detected regime), what needs attention and where "
+                "the crude change hits first; drill into a unit with get_scope_snapshot(unit_id=...) when asked.")
     else:
         head = f"OPEN SCREEN: {ctx.get('page')} (not a twin screen). The plant snapshot below is for orientation."
+    if sc.get("theme"):
+        head += f" Display register: {sc['theme']}."
     body = f"\nSCOPE SNAPSHOT (server-side, same minute as the page): {snap['snapshot_json']}" if snap else \
         "\nSCOPE SNAPSHOT: unavailable for this run/minute — say so if asked and use tools."
+    body += visible_block(sc)
+    body += ("\nWhen asked to explain / describe / walk through 'the screen', 'this page', 'what I am seeing' or 'what is going on': "
+             "go region by region in screen order using ON-SCREEN RIGHT NOW (fall back to the SCOPE SNAPSHOT), name each unit / panel "
+             "as it is labelled, quote its numbers, say what is normal vs. what needs attention and why, and finish with the open "
+             "recommendation(s). Numbers from these two blocks count as grounded — no extra tool call is needed to repeat them.")
     return head + body
 
 
@@ -138,7 +173,7 @@ GUARDRAILS (mandatory):
 2. Gate and set-point discipline (DECISIONS T5, SDD-COP-05). Before giving any advice or set-point suggestion, call get_gate_status for the property.
    If the gate status is WITHHELD (or if asked for a set point anyway while WITHHELD), quote the gate `message` VERBATIM (exactly as returned,
    in its own paragraph) and do NOT propose, suggest, or provide any set point or set-point move.
-3. Grounding and unknown values. Every live process number you state must come from a tool result in this same turn (standard fixed thresholds in the UI guide above such as 765 °F, 540 °F, R = 7 °F, W90 = 14 °F may be explained directly when describing UI elements). Never estimate, guess, or invent numbers.
+3. Grounding and unknown values. Every live process number you state must come from a tool result in this same turn OR from the SCOPE SNAPSHOT / ON-SCREEN RIGHT NOW blocks above (both are produced for this exact run and minute). Standard fixed thresholds in the UI guide (765 °F, 540 °F, R = 7 °F, W90 = 14 °F) may be explained directly when describing UI elements. Never estimate, guess, or invent numbers.
    If a tool or simulator data does not provide a requested tag, property, or value, state clearly that it is not available or unknown rather than inventing a number.
 4. Values of LCO_T98_F / HN_T98_F columns and `truth` fields are SIMULATOR TRUTH: always label them "simulator truth".
 5. Citations & Similar Past Events (demoflow Scene 5, Epic H): Cite documents from search_documents/get_document as [DOC-ID rN §x.y] (e.g. [SOP-FRAC-003 r4 §4.2])
@@ -172,21 +207,21 @@ def suggestions(ctx: dict) -> list[str]:
     if sc["level"] == "L1" and sc["unit_id"]:
         unit = UNIT_SHORT[sc["unit_id"]]
         if lang in ("hi", "hindi"):
-            return [f"{unit} अभी प्लान से क्यों हटा है? हमें कैसे पता चला?", "रेसिपी के सेट-पॉइंट बदलाव क्या हैं और उनका असर क्या होगा?",
+            return ["इस स्क्रीन पर क्या हो रहा है — हर पैनल समझाइए", f"{unit} अभी प्लान से क्यों हटा है? हमें कैसे पता चला?", "रेसिपी के सेट-पॉइंट बदलाव क्या हैं और उनका असर क्या होगा?",
                     "कौन सा क्रूड रिजीम चल रहा है और मॉडल कैसे बदले?", "क्या यह पहले हुआ है?"]
         if lang == "hinglish":
-            return [f"{unit} plan se kyun off hai? Kaise pata chala?", "Recipe ke set-point moves kya hain aur effect kya hoga?",
+            return ["Is screen pe kya chal raha hai — har panel samjhao", f"{unit} plan se kyun off hai? Kaise pata chala?", "Recipe ke set-point moves kya hain aur effect kya hoga?",
                     "Abhi kaunsa crude regime hai aur model weights kaise badle?", "Kya yeh pehle hua hai?"]
-        return [f"Why is the {unit.lower()} off plan, and how do we know?", "What does the recipe change and what is the effect?",
+        return ["Explain what is on this screen, panel by panel", f"Why is the {unit.lower()} off plan, and how do we know?", "What does the recipe change and what is the effect?",
                 "Which crude regime is active and how did the models adapt?", "Has this happened before?"]
     if sc["level"] == "L0":
         if lang in ("hi", "hindi"):
-            return ["अभी किस यूनिट पर ध्यान देना ज़रूरी है?", "घोषित और पहचाना गया क्रूड रिजीम क्या है?",
+            return ["इस स्क्रीन पर क्या हो रहा है — पूरी तरह समझाइए", "अभी किस यूनिट पर ध्यान देना ज़रूरी है?", "घोषित और पहचाना गया क्रूड रिजीम क्या है?",
                     "क्रूड बदलाव का असर सबसे पहले कहाँ दिखेगा?", "इस शिफ्ट में कौन से निर्णय खुले हैं?"]
         if lang == "hinglish":
-            return ["Abhi kis unit pe dhyan dena hai?", "Declared vs detected crude regime kya hai?",
+            return ["Is screen pe kya chal raha hai — poora samjhao", "Abhi kis unit pe dhyan dena hai?", "Declared vs detected crude regime kya hai?",
                     "Crude change ka asar sabse pehle kahan dikhega?", "Is shift mein kaunse decisions open hain?"]
-        return ["What needs attention right now, and why?", "Declared vs detected crude regime: do they match?",
+        return ["Explain what is going on on this screen, in full", "What needs attention right now, and why?", "Declared vs detected crude regime: do they match?",
                 "Where will the crude change hit first and what breaks downstream if ignored?", "Which decisions are open this shift?"]
     if "decision" in page:
         base = ["Explain the graphs, curves & buttons on this page", "Should we move the cut point now?",

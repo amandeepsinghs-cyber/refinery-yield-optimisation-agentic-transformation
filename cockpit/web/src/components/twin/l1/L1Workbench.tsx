@@ -13,6 +13,8 @@ import { useCockpit } from "@/lib/store";
 import { getTwinWorkbench } from "@/lib/twinApi";
 import type { TwinWorkbench } from "@/lib/twinTypes";
 import { citationChips, openDecision, selectPanels } from "@/lib/l1";
+import { dg, useScreenPart } from "@/lib/screenPart";
+import { clock } from "@/lib/format";
 import L1Header from "./L1Header";
 import UnitIOStrip from "./UnitIOStrip";
 import ChartStack from "./ChartStack";
@@ -97,6 +99,39 @@ function L1Content({ unitId }: { unitId: string }) {
   }, [panels, owningPanelId, setScreenPanels]);
   useEffect(() => () => setScreenPanels([], null), [setScreenPanels]);
 
+  // SDD-GEM-04: what the workbench is rendering right now — panel by panel with the value at the cursor — so
+  // "explain this screen" is answered from the drawn content, not a summary.
+  const lang = useCockpit((s) => s.lang);
+  const digest = useMemo(() => {
+    if (!data) return null;
+    const tmin = data.series.time_min;
+    const cursor = resolvedMin ?? data.time.time_min;
+    let ci = tmin.length - 1;
+    for (let i = 0; i < tmin.length; i++) if (tmin[i] <= cursor) ci = i;
+    const at = (key: string) => { const arr = data.series.keys[key]; const v = arr ? arr[ci] : null; return v == null || !Number.isFinite(v) ? null : dg(v); };
+    const dec = openDecision(data.decisions);
+    const rc = data.recipe;
+    return {
+      unit: `${data.unit.short_name}`, status: data.unit.status_label ?? data.unit.status, cursor_min: cursor, window: [data.time.window_start, data.time.window_end], next_lab_min: data.time.next_lab_min,
+      headline_kpi: data.unit.headline_kpi ? { label: data.unit.headline_kpi.label, value: dg(data.unit.headline_kpi.value), plan: dg(data.unit.headline_kpi.plan), tol: data.unit.headline_kpi.tol, unit: data.unit.headline_kpi.unit } : null,
+      io: { in: data.unit.io.inputs.slice(0, 4).map((i) => `${i.label} ${dg(i.value)} ${i.unit}`), out: data.unit.io.outputs.slice(0, 6).map((o) => `${o.label} ${dg(o.value)} ${o.unit}`) },
+      panels: panels.map((p) => ({
+        id: p.panel_id, kind: p.kind, title: p.title, highlighted: p.panel_id === owningPanelId || undefined,
+        traces: (p.traces ?? []).slice(0, 8).map((tr) => ({ label: tr.label ?? tr.key, role: tr.role, at_cursor: at(tr.key), unit: tr.unit ?? p.unit })),
+        reference_lines: (p.hlines ?? []).map((h) => `${h.label} ${dg(h.value)}`),
+        markers: (p.markers ?? []).slice(0, 6).map((m) => `${m.label} @ ${m.time_min} min`),
+      })),
+      analysis: { expected_source: data.analysis.expected_source, residual_now: dg(data.analysis.residual_now), sigma_now: dg(data.analysis.sigma_now), cusum_now: dg(data.analysis.cusum_now),
+        breach_open: data.analysis.breach_open, first_breach_min: data.analysis.first_breach_min, root_cause: data.analysis.root_cause.slice(0, 3).map((r) => `${r.label ?? r.tag} ${r.direction} (${Math.round(r.contrib * 100)} %)`),
+        summary: data.analysis.summary[lang] ?? data.analysis.summary.en },
+      regime: data.regime ? { id: data.regime.regime_id, label: data.regime.regime_label, declared_api: dg(data.regime.declared_api, 1), declared_vs_detected: data.regime.declared_vs_detected, novelty: dg(data.regime.novelty, 2), transition_pct: data.regime.transition_pct } : null,
+      recipe: rc ? { gate: rc.gate, gate_reason: rc.gate_reason, moves: rc.moves.map((m) => `${m.label ?? m.sp_tag} ${dg(m.current)} → ${dg(m.recommended)} ${m.unit}`) } : null,
+      decision: dec ? { line: `${dec.action} ${dec.parameter} ${dg(dec.sp_before)} → ${dg(dec.sp_after)} ${dec.unit}`, trust: dec.trust ?? null, gate: dec.gate_status ?? null, rationale: dec.rationale ?? null } : null,
+      models: { committee_weights: (data.models.committee?.weights ?? []).map((w) => `${w.label} ${Math.round(w.weight * 100)} %`), surrogate: `${data.models.surrogate.name} (${data.models.surrogate.regime_id})` },
+    };
+  }, [data, panels, owningPanelId, resolvedMin, lang]);
+  useScreenPart("l1", digest);
+
   if (error) return <div className="twin-container l1-root l1-error" data-testid="l1-root" role="alert">Workbench unavailable: {error}</div>;
   if (loading && !data) return <div className="twin-container l1-root l1-loading" data-testid="l1-root"><div className="skeleton" style={{ height: 48 }} /><div className="skeleton" style={{ height: 420, marginTop: 12 }} /></div>;
   if (!data || !resolvedRun || resolvedMin == null) return null;
@@ -111,7 +146,7 @@ function L1Content({ unitId }: { unitId: string }) {
       <UnitIOStrip unit={data.unit} />
       <div className="l1-body">
         <div className="l1-main">
-          <div className="l1-zone-label"><span className="l1-section-label">Data</span><span className="muted">{data.series.time_min.length} pts · window {data.time.window_start}–{data.time.window_end} min · one cursor</span></div>
+          <div className="l1-zone-label"><span className="l1-section-label">Data</span><span className="muted">{clock(data.time.window_start)}–{clock(data.time.window_end)} · one cursor across all panels</span></div>
           <ChartStack data={data} panels={panels} hoverMin={hoverMin} onHover={onHover} />
           {more.length > 0 && (
             <button type="button" className="btn text l1-more" onClick={() => setShowMore((v) => !v)} aria-expanded={showMore} data-testid="more-panels">

@@ -143,7 +143,7 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
   if (lo && hi && keys[lo.key] && keys[hi.key]) {
     const c = traceColor("band_lo", lo.key, 0, lo.color, theme);
     traces.push({ x, y: keys[lo.key], type: "scatter", mode: "lines", line: { width: 0, color: c }, showlegend: false, hoverinfo: "skip", name: "band" });
-    traces.push({ x, y: keys[hi.key], type: "scatter", mode: "lines", fill: "tonexty", fillcolor: hexA(c, theme === "dark" ? 0.13 : 0.14), line: { width: 0, color: c }, name: hi.label ?? lo.label ?? "5–95 % band", hoverinfo: "skip" });
+    traces.push({ x, y: keys[hi.key], type: "scatter", mode: "lines", fill: "tonexty", fillcolor: hexA(c, theme === "dark" ? 0.08 : 0.09), line: { width: 0, color: c }, name: hi.label ?? lo.label ?? "5–95 % band", hoverinfo: "skip" });
   }
 
   if (panel.kind === "tray_profile") {

@@ -58,6 +58,24 @@ export function useLiveVoice() {
   const pendingLenRef = useRef(0);
   const playCtxRef = useRef<AudioContext | null>(null);
   const nextTimeRef = useRef(0);
+  // SDD-GEM-04: keep the open Live session aware of the screen (route, focus unit, rendered digest). Debounced and
+  // de-duplicated so hover churn does not flood the socket; the server injects it without completing a turn.
+  const lastCtxKeyRef = useRef("");
+  const sendContext = useCallback((force = false) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const c = ctxRef.current;
+    const payload = { type: "context", page: c.page, time_min: c.time_min, lang: c.lang, screen: c.screen };
+    let key = "";
+    try { key = JSON.stringify(payload); } catch { key = String(Date.now()); }
+    if (!force && key === lastCtxKeyRef.current) return;
+    lastCtxKeyRef.current = key;
+    ws.send(key);
+  }, []);
+  useEffect(() => {
+    const t = setTimeout(() => sendContext(false), 1500);
+    return () => clearTimeout(t);
+  }, [ctx, sendContext]);
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const curMsgRef = useRef<{ user: string | null; model: string | null }>({ user: null, model: null });
   const modeRef = useRef<VoiceMode>("ptt");
@@ -250,6 +268,7 @@ export function useLiveVoice() {
         switch (msg.type) {
           case "ready":
             setModel((msg.model as string) ?? null);
+            sendContext(true);
             setState(capturingRef.current ? "listening" : "ready");
             if (!settled) {
               settled = true;

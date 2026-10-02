@@ -1,8 +1,8 @@
 # Verbatim Voice Notes & Complete Engineering Analysis: Refinery Crude-Adaptive Multi-Parameter Optimization
 
-> **Date:** 2026-10-01  
+> **Date:** 2026-10-01 (Updated 2026-10-02 03:53 UTC)  
 > **Directory:** `agent_ideas/FCC_RCC_Optimisation/`  
-> **Companion Documents:** [`refinery_optimisation.md`](refinery_optimisation.md) · [`fcc_soft_sensor_problem_statement.md`](fcc_soft_sensor_problem_statement.md) · [`fcc_ai_driven_soft_sensor_solutions.md`](fcc_ai_driven_soft_sensor_solutions.md) · [`BCC.md`](BCC.md) · [`SDD.md`](SDD.md) · [`checklist.md`](checklist.md)
+> **Companion Documents:** [`refinery_optimisation.md`](refinery_optimisation.md) · [`meity_compliance_strategy.md`](meity_compliance_strategy.md) · [`data_and_analytics_flow.md`](data_and_analytics_flow.md) · [`fcc_soft_sensor_problem_statement.md`](fcc_soft_sensor_problem_statement.md) · [`fcc_ai_driven_soft_sensor_solutions.md`](fcc_ai_driven_soft_sensor_solutions.md) · [`BCC.md`](BCC.md) · [`SDD.md`](SDD.md) · [`checklist.md`](checklist.md)
 
 ---
 
@@ -87,6 +87,52 @@
 > To be fair, I'm not even sure if you're doing the same thing, if you're on the same page. You're crying about data, but I don't see anything. Like seriously, is this the best dashboard? This is more like a PowerBI dashboard — PowerBI dashboards are better than this.
 >
 > I want an industry-grade user interface. Like seriously."
+
+### Voice Note 6 — Frontend Simplification, Hover Mini-Graph/Side-Pane, Progressive Disclosure & BDD Pyramid Principle
+> **Date & Time:** 2026-10-02 03:53 UTC (Recorded 2026-10-02 03:49 UTC)
+>
+> "So I'm giving this text just for you to give me verbatim, just give me the... what I'm saying, this message.
+>
+> So I think that the front is still a lot complicated. It should be much simplified. I can think from a user experience point of view, so if we are... somebody's opening a refinery, they want to get high-level information, right? What are the different units and the main message, if it is okay or not okay.
+>
+> Then what potentially one can do is, all these graphs, if one... which are currently there, if one hovers over these graphs, or over these panes, then a graph would appear, kind of a mini graph, right? Maybe a pane on the right, which show... which shows, right? Whatever incremental information that we would like the person to know, if the person... we should think what is the information the person is looking for now, right?
+>
+> Then a person hovers, then a particular, let's say, a small panel on the right shows, which shows the information from the graph to all the things that the... would be relevant. Then if the person wants to go deeper, the person presses either on this particular, um, icon or on the left, that is okay. That we can discuss. But for now, the frontend, I think, has to be simplified.
+>
+> Let's take... let's take all the questions a user is asking. Let's do a behavior-driven development. Let's say a plant manager enters: what are the questions the plant manager has? Think of the Pyramid Principle, right? The main question, the sub-questions, and the sub-questions, and the details. This is how the platform is supposed to be. See what is aligned, see what is not aligned.
+>
+> And now give me the exact verbatim of this, what I just said."
+
+### Voice Note 7 — IOCL, MeitY Category A Data Restrictions & Feasibility of Cloud
+> **Date & Time:** 2026-10-02 04:27 UTC
+>
+> "Now I have a question: what we are building is for IOCL, and IOCL have... and MeitY (M-E-I-T-Y), Ministry of Information Technology, they have different categories for organizations.
+>
+> Category A is critical data, right?
+>
+> Now, correct me if I'm wrong, so all of these use cases are of Category A. And if it is Category A, which forbids them to move to cloud, how can we implement?
+>
+> First, do you see a blocker? What are the regulations saying?
+>
+> And second, how would you see this solution running otherwise, or what is a way around that you see?
+>
+> If they have shared the use cases, do they know that it's Category [A] or Category B? If it's Category A, I see a clear block, so what is the point of making an effort?"
+
+### Voice Note 8 — GDC Commercial Reality & Solution 2 Validity Challenge
+> **Date & Time:** 2026-10-02 04:55 UTC
+>
+> "So basically, we are not selling cloud then? The GDC is a very different ball game. Half of the things would not even be available, and the price tag would be so high that it is out of context.
+>
+> Second, you're saying MeitY-empaneled Google Cloud India Sovereign region. So do you think, again, they said no to cloud, right? So how is Solution 2 even valid?"
+
+### Voice Note 9 — Jargon-Free Explanation Request & MeitY Compliance Strategy Document Mandate
+> **Date & Time:** 2026-10-02 04:57 UTC
+>
+> "So, I'm not sure, you're speaking in a lot of jargon. You have to explain, I need a thorough explanation. You're throwing some random words like Purdue, 3.5 DMZ, XYZ, PPP, what the heck?
+>
+> I just need explanation: how do you... give me the exact data and analytics flow. Where does the data go? How does it convert from Category A to Category B? How will the inference happen?
+>
+> Give me a detailed... and name this document `meity_compliance_strategy`."
 
 ---
 
@@ -309,3 +355,41 @@ All **23 documented downstream case examples** (Coker outage readiness, Coker he
 #### 4. Where the Bell Curves (`DistributionOverlay`) Went
 * While [`cockpit/web/src/components/views/ConfidenceView.tsx`](cockpit/web/src/components/views/ConfidenceView.tsx) contains a full Gaussian probability density chart component (`DistributionOverlay`), it was never imported into the new L0 or L1 twin workbench screens (`components/twin/l0/` and `components/twin/l1/`).
 * **The Solution:** Embed Gaussian probability distribution curves (`N(\mu, \sigma)`) directly into the main view and every unit/use-case workbench.
+
+---
+
+## Part 7: Status After Remediation (2026-10-02 04:45 — added by the build agent; Parts 1–6 and Voice Note 6 above are untouched)
+
+### 7.1 Refreshed Completeness Scorecard (same rows as 6.1, re-scored against the working tree)
+
+| Architectural Layer | Part 6 | Now | What changed | Evidence |
+| :--- | :---: | :---: | :--- | :--- |
+| **1. Simulation & Batch Data** | 70 % | **70 %** | Unchanged — `full_v1` batch still running in the background; nothing was touched. | `sim_octave/` |
+| **2. Soft-Sensor & Safety Engine (U4)** | 75 % | **75 %** | Unchanged. | `cockpit/api/app/pipeline.py` |
+| **3. Digital Twin & Sentinels (U1–U6)** | 60 % ⚠️ | **75 %** | The median-anchored band (Part 6 §2) is fixed: `expected_series` is anchored on the dynamic surrogate prediction ŷ_t + lagged EWMA bias, σ_t from regime sd + innovation spread (`test_band_wraps_live_trajectory_not_a_lagged_median`, coverage ≥ 85 %, no lag). Units 1–3, 5, 6 still linear surrogates. | `cockpit/api/app/engines/surrogates.py`, `docs/ui/F_L1_u3_band_wraps_live_asbuilt.png` |
+| **4. Prescriptive Multi-Parameter Optimizer** | 20 % ❌ | **55 % (data-limited)** | Part 6 under-counted the code: `engines/recipe.py` + `GET /api/recipe` + the L1 Optimisation card already search preheat / ROT / cat-oil / air / pumparounds jointly with the physics gates. The real gap is **training data**: the simulator scenario only exercises ROT / LCO_T98 / HN_T98 moves, so the other knobs have no learned sensitivity. Fix is in `scenario.m` (add preheat / air / pumparound move events), not in the optimizer. | `cockpit/api/app/engines/recipe.py`, `cockpit/web/src/components/twin/l1/OptimisationCard.tsx` |
+| **5. Frontend Cockpit & Industrial UI** | 35 % UX ❌ | **80 % UX / 90 % code** | Two passes since Part 6. **Pass 20** (dark default, band fix, N(μ,σ) everywhere, decisions first, systemic L0). **UI v2 (Voice Note 6)**: ISA-101 register (grey base, colour only on abnormality, no pills / stripes), L0 as the Pyramid (headline → crude → six flat unit tiles → timeline → trust footer), right-hand detail pane (plant overview by default; hover / focus a unit → fan curve, N(μ,σ), since-why, recommendation; 📌 pin), demo controls in a "Scenario" tray. Playwright **20 / 20**. Remaining 20 %: L1 chart polish (band alpha, MV panel), 1920-wide density pass, real-device touch review. | `docs/ui/L0_v2_home_dark.png`, `L0_v2_pane_dark.png`, `L0_v2_home_light.png`, `L1_v2_u4_dark.png`; `cockpit/web/e2e/twin.spec.ts` |
+| **6. Gemini Copilot & Native Hindi** | 45 % | **80 %** | Language toggle (EN / Hinglish / हिंदी) in the header and store; Hindi-first screen-specific prompts; **screen-aware Gemini** — every region registers a digest of what it renders (`store.screenDigest`), shipped as `screen.visible`, embedded as "ON-SCREEN RIGHT NOW" in chat and injected mid-session into Live voice, so "explain what is going on on this screen" is answered region by region with the actual numbers. Remaining: `hi-IN` Live audio not yet exercised end-to-end from this Cloudtop; voice session has no screenshot (digest is text, by design). | `cockpit/web/src/lib/screenPart.ts`, `cockpit/api/app/copilot/chat.py` (`visible_block`), `live.py` (`context` message) |
+| **7. Lakehouse (new row)** | — | **10 %** | Sample table + bucket exist in `fcc-soft-sensor`; medallion datasets (`fcc_bronze / silver / gold`), GCS folders, loader and the production-vs-build comparison in `data_and_analytics_flow.md` are the next phase (BigQuery-only build; Bigtable / Pub/Sub / Dataflow documented as production architecture). | `LAKEHOUSE_PLAN` (agent artifact) |
+| **OVERALL** | ~48 % | **~68 %** | UI and Gemini are no longer the blockers; the gaps are now simulator move coverage (optimizer data) and the lakehouse build. | |
+
+### 7.2 Part 6 root causes — closure status
+
+| Part 6 § | Root cause | Status | Where |
+| :--- | :--- | :---: | :--- |
+| 1 | Route redirect + chart-less L0 → "ugly HTML" | **Closed, then superseded** — curves are back (fan sparkline + N(μ,σ) per unit) and, per Voice Note 6, moved *behind hover* so the L0 reads as an instrument, not a dashboard | `L0Home.tsx`, `UnitTrain.tsx`, `DetailPane.tsx` |
+| 2 | Band around a lagged median | **Closed** | `surrogates.py → expected_series` + test |
+| 3 | Dark mode gone | **Closed** — dark default, light persists; toggle lives in the Scenario tray | `layout.tsx`, `AppShell.tsx` |
+| 4 | Bell curves not imported | **Closed** — `GaussianPdf` on L1 (Target distribution) and in the L0 detail pane | `twin/shared/GaussianPdf.tsx` |
+
+### 7.3 Voice Note 6 — point-by-point
+
+- "Simplify L0 to units and whether they are OK or not" → six flat tiles, dot + word state, hero numeral, Δ vs plan. ✔
+- "Curves behind a hover" → detail pane on hover / focus, pinnable. ✔
+- "BDD + Pyramid question tree" → BDD-29 (Q1 headline, Q2 crude, Q3 units, Q4 trust; Q5+ behind hover / click). ✔
+- "Gemini should know what is on the screen" → BDD-30 / SDD-GEM-05 screen digest. ✔
+- "Left colour bar is so typical" → removed; no stripes, no pills anywhere in L0 / L1. ✔
+
+### 7.4 Open question for the owner
+
+After the lakehouse: add preheat / air / pumparound move events to `sim_octave/scenario.m` (a new short batch, run only after `full_v1` finishes) so the multi-parameter optimizer has data for every knob it already models?

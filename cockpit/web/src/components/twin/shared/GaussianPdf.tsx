@@ -26,12 +26,14 @@ export interface GaussianPdfProps {
   compact?: boolean;
   /** Show the mixture curve on top (default true when > 1 member). */
   showMixture?: boolean;
+  /** In-chart P(on-spec) label (default true). Turn off when the surrounding card already prints it. */
+  showP?: boolean;
   ariaLabel?: string;
 }
 
 const fmt = (v: number, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : "—");
 
-export default function GaussianPdf({ members, target, spec, measured, unit = "", height = 120, compact = false, showMixture, ariaLabel }: GaussianPdfProps) {
+export default function GaussianPdf({ members, target, spec, measured, unit = "", height = 120, compact = false, showMixture, showP = true, ariaLabel }: GaussianPdfProps) {
   const theme = useCockpit((s) => s.theme);
   const P = paletteFor(theme);
   const uid = useId().replace(/:/g, "");
@@ -115,8 +117,8 @@ export default function GaussianPdf({ members, target, spec, measured, unit = ""
           <text x={box.x1} y={H - 5} className="gauss-tick" textAnchor="end">{fmt(g1)} {unit}</text>
         </>
       ) : null}
-      {pSpec != null && !compact ? (
-        <text x={box.x0 + 2} y={box.yBase - (compact ? 3 : 5)} textAnchor="start" className={compact ? "gauss-p compact" : "gauss-p"} fill={pSpec >= 0.9 ? "var(--green)" : pSpec >= 0.6 ? "var(--amber)" : "var(--red)"}>
+      {pSpec != null && !compact && showP ? (
+        <text x={box.x0 + 2} y={compact ? box.yBase - 3 : T + 9} textAnchor="start" className={compact ? "gauss-p compact" : "gauss-p"} fill={pSpec >= 0.9 ? "var(--green)" : pSpec >= 0.6 ? "var(--amber)" : "var(--red)"}>
           P(on-spec) {Math.round(pSpec * 100)} %
         </text>
       ) : null}

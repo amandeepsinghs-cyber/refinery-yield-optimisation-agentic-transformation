@@ -1,5 +1,5 @@
 // @ts-nocheck — @playwright/test is not a project dependency yet (types unavailable to tsc); install with `npx playwright install` before `make web-e2e`.
-// BDD-28 — L0 Refinery Twin & L1 Unit Workbench screens.
+// BDD-28 / BDD-29 — L0 Refinery home (UI v2 progressive disclosure) & L1 Unit Workbench screens.
 // Run with the API on :8010 and the dev server on :3001 (`make api-run`, `make web-dev`, then `make web-e2e`).
 // Use `localhost`, not 127.0.0.1 — Next's dev server blocks cross-origin dev resources from other hosts.
 import { test, expect, type Page } from "@playwright/test";
@@ -28,77 +28,111 @@ async function openTwin(page: Page) {
   await expect(page.locator(".l0-loading")).toHaveCount(0, { timeout: 30_000 });
 }
 
-test.describe("Level 0 — Refinery Twin home", () => {
-  test("root redirects to /twin; the home is data-first (SVG curves, no Plotly) and scrolls only vertically", async ({ page }) => {
+test.describe("Level 0 — Refinery home (UI v2, BDD-29 progressive disclosure)", () => {
+  test("root redirects to /twin; the home is the Pyramid: headline → crude line → unit train + pane → footer; no Plotly; vertical scroll only", async ({ page }) => {
     await page.goto(`${BASE}/`);
     await expect(page).toHaveURL(/\/twin$/);
     await expect(page.locator(".l0-loading")).toHaveCount(0, { timeout: 30_000 });
     await expect(page.locator(".js-plotly-plot")).toHaveCount(0);
+    const order = await page.evaluate(() =>
+      ["l0-headline", "crude-banner", "unit-train", "l0-pane", "plant-strip"].map((id) => document.querySelector(`[data-testid=${id}]`)?.getBoundingClientRect().top ?? -1));
+    for (const y of order) expect(y).toBeGreaterThanOrEqual(0);
+    expect(order[0]).toBeLessThan(order[1]);
+    expect(order[1]).toBeLessThan(order[2]);
+    expect(order[2]).toBeLessThan(order[4]);
     await expect(page.getByTestId("unit-spark")).toHaveCount(6);
+    // architecture strip and full flowsheet are behind the "About this data" disclosure, not on the ops home
+    await expect(page.getByTestId("flow-strip")).toBeHidden();
+    await page.getByTestId("about-data").locator("summary").click();
     await expect(page.getByTestId("flow-strip")).toBeVisible();
-    await expect(page.getByTestId("unit-flow")).toBeVisible();
-  });
-
-  test("six unit tiles: KPI vs plan, status pill, 4 h fan sparkline, N(μ,σ) bell, P(on-spec) and counts", async ({ page }) => {
-    await openTwin(page);
-    const tiles = page.getByTestId("unit-tile");
-    await expect(tiles).toHaveCount(6);
-    for (const id of ["unit_1_furnace", "unit_2_riser", "unit_3_regenerator", "unit_4_fractionator", "unit_5_condenser", "unit_6_stabiliser"]) {
-      const t = page.locator(`[data-testid=unit-tile][data-unit="${id}"]`);
-      await expect(t).toHaveCount(1);
-      await expect(t.locator(".u-tile-kpi-val")).toHaveText(/\d/);
-      await expect(t.locator(".u-tile-pill")).toHaveText(/IN ENVELOPE|DRIFT|ACT NOW/);
-      await expect(t.getByTestId("unit-spark")).toBeVisible();
-      await expect(t.locator("svg.gauss")).toBeVisible();
-      await expect(t.locator(".u-tile-foot")).toContainText(/μ .* σ/);
-      await expect(t.locator(".u-tile-foot")).toContainText(/P\(on-spec\)/);
-      expect(["OK", "WATCH", "ACT"]).toContain(await t.getAttribute("data-state"));
-      await expect(t).toHaveAttribute("href", new RegExp(`/twin/unit/${id}\\?tag=`));
-    }
-    // process connectors are drawn between tiles (hydrocarbon train, catalyst loop, heat recovery)
-    expect(await page.locator("[data-testid=unit-flow] svg.u-flow-links path").count()).toBeGreaterThanOrEqual(6);
-  });
-
-  test("systemic view: pipeline flow strip, cause → effect ripple, open decisions and crude adaptation", async ({ page }) => {
-    await openTwin(page);
-    const strip = page.getByTestId("flow-strip");
-    for (const id of ["flow-regime", "flow-committee", "flow-optimiser", "flow-agents"]) await expect(strip.getByTestId(id)).toBeVisible();
-    await expect(page.getByTestId("ripple-card")).toContainText(/Cause → effect/);
-    const dec = page.getByTestId("open-decisions");
-    await expect(dec).toBeVisible();
-    expect(await dec.getByTestId("open-decision").count()).toBeGreaterThanOrEqual(1);
-    await expect(dec.getByTestId("l0-accept").first()).toBeVisible();
-    await expect(dec.getByTestId("l0-decline").first()).toBeVisible();
-    await expect(page.getByTestId("crude-adaptation")).toContainText(/R[1-4]/);
-    // full PFD is still reachable behind a disclosure
-    await page.getByTestId("full-flowsheet").locator("summary").click();
     await expect(page.locator(".pfd-live")).toHaveCount(6);
   });
 
-  test("crude-slate banner, plant strip and needs-attention lines with consequences", async ({ page }) => {
+  test("headline answers Q1 in one sentence: units in envelope · worst deviation with since-when · recommendations", async ({ page }) => {
     await openTwin(page);
-    await expect(page.getByTestId("plant-strip")).toContainText(/Plant mass closure/);
-    await expect(page.getByTestId("plant-strip")).toContainText(/open decision/);
-    await expect(page.getByTestId("plant-strip")).toContainText(/proactive agent flag/);
+    const h = page.getByTestId("l0-headline");
+    await expect(h).toContainText(/\d of 6 units in envelope/);
+    await expect(h).toContainText(/(vs plan|all units tracking plan)/);
+    await expect(h).toContainText(/(recommendation|no set-point move needed)/);
     await expect(page.getByTestId("crude-banner")).toContainText(/Declared .* °API/);
     await expect(page.getByTestId("crude-banner")).toContainText(/Detected/);
-    const rows = page.locator(".l0-attn-item");
-    expect(await rows.count()).toBeGreaterThanOrEqual(1);
-    expect(await rows.count()).toBeLessThanOrEqual(5);
-    const first = rows.first();
-    await expect(first.locator(".l0-attn-time")).toHaveText(/\d{2}:\d{2}/);
-    await expect(first.locator(".l0-attn-cons")).not.toBeEmpty();
-    await expect(page.locator(".l0-attn-cons", { hasText: "Action required" })).toHaveCount(0);
   });
 
-  test("header shows shift · clock, language switch and Gemini Live", async ({ page }) => {
+  test("unit train: six flat tiles in process order, status as dot + word (no stripes, no pills), hero numeral, Δ vs plan, 1 px trend", async ({ page }) => {
     await openTwin(page);
-    await expect(page.locator(".l0-title")).toHaveText(/Refinery Digital Twin · Shift [ABC] · \d{2}:\d{2}/);
+    const tiles = page.getByTestId("unit-tile");
+    await expect(tiles).toHaveCount(6);
+    expect(await tiles.evaluateAll((els) => els.map((e) => e.getAttribute("data-unit")))).toEqual(
+      ["unit_1_furnace", "unit_2_riser", "unit_3_regenerator", "unit_4_fractionator", "unit_5_condenser", "unit_6_stabiliser"]);
+    for (const id of ["unit_1_furnace", "unit_2_riser", "unit_3_regenerator", "unit_4_fractionator", "unit_5_condenser", "unit_6_stabiliser"]) {
+      const t = page.locator(`[data-testid=unit-tile][data-unit="${id}"]`);
+      await expect(t.locator(".u2-val")).toHaveText(/\d/);
+      await expect(t.locator(".u2-state")).toHaveText(/In envelope|Drifting|Act now/);
+      await expect(t.locator(".u2-state .u2-dot")).toHaveCount(1);
+      await expect(t.getByTestId("unit-spark")).toBeVisible();
+      expect(["OK", "WATCH", "ACT"]).toContain(await t.getAttribute("data-state"));
+      await expect(t).toHaveAttribute("href", new RegExp(`/twin/unit/${id}\\?tag=`));
+      // register: no coloured left stripe, no pill
+      const stripe = await t.evaluate((el) => { const cs = getComputedStyle(el); return [cs.borderLeftWidth, cs.borderLeftStyle]; });
+      expect(stripe[0] === "0px" || stripe[1] === "none").toBe(true);
+      await expect(t.locator("[class*=twin-pill]")).toHaveCount(0);
+    }
+    // the whole home carries no pill borders and no primary (filled) buttons — one primary action per screen, and it lives on L1
+    const pillBorders = await page.locator("[class*=twin-pill], .l1-tag").evaluateAll((els) => els.map((e) => getComputedStyle(e).borderTopWidth));
+    for (const b of pillBorders) expect(b).toBe("0px");
+    await expect(page.locator("[data-testid=l0-root] .btn.primary")).toHaveCount(0);
+  });
+
+  test("detail pane: plant overview by default (needs attention + real Δ≠0 recommendations, holds summarised); hover/focus a unit opens its curve, N(μ,σ), since-why and recommendation; pin keeps it", async ({ page }) => {
+    await openTwin(page);
+    const pane = page.getByTestId("l0-pane");
+    await expect(pane).toHaveAttribute("data-mode", "plant");
+    await expect(pane.getByTestId("pane-plant")).toBeVisible();
+    const rows = pane.locator(".l0-attn-item");
+    expect(await rows.count()).toBeGreaterThanOrEqual(1);
+    expect(await rows.count()).toBeLessThanOrEqual(5);
+    await expect(rows.first().locator(".l0-attn-time")).toHaveText(/\d{2}:\d{2}/);
+    // no HOLD 0.0 filler is ever listed as a decision
+    for (const txt of await pane.getByTestId("pane-decision").allTextContents()) {
+      expect(txt).not.toMatch(/HOLD/);
+      expect(txt).not.toMatch(/[+−]0\.0 /);
+    }
+    await expect(pane.locator(".l0-attn-cons", { hasText: "Action required" })).toHaveCount(0);
+
+    // hover the fractionator → unit detail
+    await page.locator('[data-testid=unit-tile][data-unit="unit_4_fractionator"]').hover();
+    await expect(pane).toHaveAttribute("data-mode", "unit", { timeout: 3_000 });
+    const unit = pane.getByTestId("pane-unit");
+    await expect(unit).toHaveAttribute("data-unit", "unit_4_fractionator");
+    await expect(unit.locator("svg.gauss")).toBeVisible();
+    await expect(unit).toContainText(/P\(on-spec\)/);
+    await expect(unit).toContainText(/μ .* σ/);
+    await expect(unit.locator(".pane-spark svg")).toBeVisible();
+    await expect(unit).toContainText(/Since when, and why/);
+    // pin, move the pointer away, pane stays
+    await unit.getByTestId("pane-pin").click();
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(400);
+    await expect(pane).toHaveAttribute("data-mode", "unit");
+    await expect(unit.getByTestId("pane-open")).toHaveAttribute("href", /\/twin\/unit\/unit_4_fractionator/);
+    // keyboard focus also opens a pane (touch / a11y path)
+    await unit.getByTestId("pane-pin").click(); // unpin
+    await page.locator('[data-testid=unit-tile][data-unit="unit_3_regenerator"]').focus();
+    await expect(pane.getByTestId("pane-unit")).toHaveAttribute("data-unit", "unit_3_regenerator", { timeout: 3_000 });
+  });
+
+  test("header shows shift · clock, language switch and Gemini Live; demo controls live in the Scenario tray", async ({ page }) => {
+    await openTwin(page);
+    await expect(page.locator(".l0-title")).toHaveText(/Refinery · Shift [ABC] · \d{2}:\d{2}/);
     const seg = page.getByTestId("lang-toggle");
     await expect(seg.getByRole("button", { pressed: true })).toHaveText("EN");
     await seg.getByRole("button", { name: "हिंदी" }).click();
     await expect(seg.getByRole("button", { pressed: true })).toHaveText("हिंदी");
     await expect(page.getByRole("button", { name: /Gemini Live/ })).toBeVisible();
+    await expect(page.getByTestId("theme-seg")).toBeHidden();
+    await page.getByTestId("scenario-tray").locator("summary").click();
+    await expect(page.getByTestId("theme-seg")).toBeVisible();
+    await expect(page.locator("#run-select")).toBeVisible();
   });
 
   test("clicking the fractionator tile opens its workbench on the headline tag", async ({ page }) => {
@@ -117,14 +151,29 @@ test.describe("Level 0 — Refinery Twin home", () => {
     await expect(page.locator(".l0-title")).not.toHaveText(new RegExp(`${before}`)); // clock re-rendered from the new minute
   });
 
-  test("register: dark by default, light persists, no grey data colours, no horizontal scroll at 1440", async ({ page }) => {
+  test("footer answers Q4 (trust): provenance, cadence, mass closure without −0.00, decisions and flags", async ({ page }) => {
+    await openTwin(page);
+    const f = page.getByTestId("plant-strip");
+    await expect(f).toContainText(/Simulated data/);
+    await expect(f).toContainText(/1-min historian/);
+    await expect(f).toContainText(/Plant mass closure/);
+    await expect(f).not.toContainText(/−0\.00|-0\.00/);
+    await expect(f).toContainText(/open decision/);
+    await expect(f).toContainText(/proactive agent flag/);
+  });
+
+  test("register: dark by default, light persists, normal traces are neutral and abnormal ones coloured, no horizontal scroll at 1440", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openTwin(page);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
-    // loop lines and state pills must not be grey; boundary blocks and borders may be
-    const strokes = await page.locator(".pfd-svg g[stroke]:not(.pfd-flow-bnd)").evaluateAll((els) => els.map((e) => e.getAttribute("stroke") ?? ""));
-    for (const c of strokes) expect(c, `grey data stroke ${c}`).not.toMatch(GREY);
+    // ISA-101: colour only for abnormal — an OK tile's trend is the neutral trace colour, an ACT tile's is red
+    const ok = page.locator('[data-testid=unit-tile][data-state="OK"] .u2-spark-line').first();
+    const act = page.locator('[data-testid=unit-tile][data-state="ACT"] .u2-spark-line');
+    const okStroke = await ok.evaluate((e) => getComputedStyle(e).stroke);
+    expect(okStroke).toBe("rgb(159, 179, 200)");
+    if (await act.count()) expect(await act.first().evaluate((e) => getComputedStyle(e).stroke)).toBe("rgb(244, 63, 94)");
+    await page.getByTestId("scenario-tray").locator("summary").click();
     await page.locator("[data-testid=theme-seg] button[aria-pressed=false]").click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await page.reload();
@@ -212,6 +261,7 @@ test.describe("Level 1 — Unit workbench (SDD-L1-01..07)", () => {
     expect(strokes.length).toBeGreaterThan(0);
     for (const s of strokes) expect(s, `grey trace ${s}`).not.toMatch(/^rgb\((\d+), \1, \1\)$/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+    await page.getByTestId("scenario-tray").locator("summary").click();
     await page.locator("[data-testid=theme-seg] button[aria-pressed=false]").click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await expect(page.locator(".js-plotly-plot .cartesianlayer").first()).toBeVisible();

@@ -13,6 +13,7 @@ import { useDistribution } from "@/lib/api";
 import { modelColor, modelLabel, MODEL_ORDER } from "@/lib/theme";
 import { indexAtMin } from "@/lib/l1";
 import { pOnSpec, type GaussMember } from "@/lib/gauss";
+import { dg, useScreenPart } from "@/lib/screenPart";
 import type { TwinWorkbench } from "@/lib/twinTypes";
 import GaussianPdf from "@/components/twin/shared/GaussianPdf";
 
@@ -67,6 +68,13 @@ export default function TargetDistributionCard({ data, runId, timeMin }: { data:
   const belief = members.length === 1 ? members[0] : null;
   const pSpec = belief && spec ? pOnSpec(belief.mu, belief.sigma, spec.lo, spec.hi) : isU4 && dist.data ? dist.data.mixture.p_on_spec : null;
 
+  useScreenPart("l1.target_distribution", members.length ? {
+    tag: local.label, unit: local.unit,
+    members: members.map((m) => ({ model: m.label, mu: dg(m.mu), sigma: dg(m.sigma, 2), weight_pct: Math.round(m.weight * 100), shadow_or_not_admitted: !!m.dashed })),
+    plan: dg(local.plan), spec: spec ? { lo: dg(spec.lo), hi: dg(spec.hi), kind: spec.label } : null, measured_simulator_truth: dg(truth),
+    p_on_spec_pct: pSpec != null ? Math.round(pSpec * 100) : null, gate: gateLine,
+  } : null);
+
   return (
     <section className="l1-card l1-gauss" data-testid="target-distribution">
       <h3 className="l1-card-title">
@@ -80,6 +88,7 @@ export default function TargetDistributionCard({ data, runId, timeMin }: { data:
           measured={truth}
           unit={local.unit}
           height={150}
+          showP={false}
           ariaLabel={`Target distribution for ${local.label}`}
         />
       ) : (

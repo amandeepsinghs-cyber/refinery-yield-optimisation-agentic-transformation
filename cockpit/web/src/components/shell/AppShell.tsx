@@ -173,10 +173,19 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="topbar-spacer" />
         <div className="topbar-ctx">
-          <DemoGuideModal />
           <Provenance />
-          <RunPropertySelect />
-          <ThemeToggle />
+          {/* UI v2: demo / scenario controls live behind one tray so the ops header carries only provenance. */}
+          <details className="scenario-tray" data-testid="scenario-tray">
+            <summary aria-label="Scenario and display controls">Scenario</summary>
+            <div className="scenario-tray-body">
+              <span className="tray-label">Simulated run</span>
+              <div className="tray-row"><RunPropertySelect /></div>
+              <span className="tray-label">Display</span>
+              <div className="tray-row"><ThemeToggle /></div>
+              <span className="tray-label">Walkthrough</span>
+              <div className="tray-row"><DemoGuideModal /></div>
+            </div>
+          </details>
         </div>
       </header>
       <nav className="rail" aria-label={`${dash.label} pages`}>

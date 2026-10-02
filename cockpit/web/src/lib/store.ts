@@ -52,6 +52,18 @@ interface CockpitState {
   /** Chart panels currently on screen (L1) and the one highlighted by `?uc=` / `?tag=` — forwarded to Gemini as page context. */
   screenPanels: { panel_ids: string[]; highlighted: string | null };
   setScreenPanels: (panel_ids: string[], highlighted?: string | null) => void;
+  /**
+   * Screen digest (SDD-GEM-04): every rendered tile / panel / card registers a compact, structured description of
+   * exactly what it shows (values, plan, Δ, μ/σ, decision text, legends). Forwarded verbatim to Gemini so
+   * "explain what is on the screen" is answered from what the operator actually sees, not a server summary.
+   */
+  screenDigest: Record<string, unknown>;
+  setScreenPart: (id: string, payload: unknown | null) => void;
+  /** L0 hover / pinned unit (VN-6 progressive disclosure): the unit whose detail pane is open. */
+  hoverUnit: string | null;
+  pinnedUnit: string | null;
+  setHoverUnit: (u: string | null) => void;
+  setPinnedUnit: (u: string | null) => void;
 }
 
 function applyTheme(t: ThemeName) {
@@ -103,6 +115,27 @@ export const useCockpit = create<CockpitState>()(
         if (cur.highlighted === highlighted && cur.panel_ids.length === panel_ids.length && cur.panel_ids.every((p, i) => p === panel_ids[i])) return;
         set({ screenPanels: { panel_ids, highlighted } });
       },
+      screenDigest: {},
+      setScreenPart: (id, payload) => {
+        const cur = get().screenDigest;
+        if (payload == null) {
+          if (!(id in cur)) return;
+          const next = { ...cur };
+          delete next[id];
+          set({ screenDigest: next });
+          return;
+        }
+        try {
+          if (id in cur && JSON.stringify(cur[id]) === JSON.stringify(payload)) return;
+        } catch {
+          /* non-serialisable payload: always update */
+        }
+        set({ screenDigest: { ...cur, [id]: payload } });
+      },
+      hoverUnit: null,
+      pinnedUnit: null,
+      setHoverUnit: (hoverUnit) => { if (get().hoverUnit !== hoverUnit) set({ hoverUnit }); },
+      setPinnedUnit: (pinnedUnit) => set({ pinnedUnit }),
     }),
     {
       name: "fcc-cockpit-context",

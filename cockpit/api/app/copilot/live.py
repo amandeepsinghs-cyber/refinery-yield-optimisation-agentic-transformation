@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import logging
 import time
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -15,6 +16,8 @@ from ..knowledge.index import CITE_RE
 from ..state import get_state
 from .chat import system_instruction
 from .tools import ToolBox, declarations
+
+logger = logging.getLogger(__name__)
 
 VOICE_EXTRA = """
 VOICE MODE: answer in at most three short spoken sentences, then offer more detail. Speak numbers with units
@@ -127,6 +130,7 @@ async def live_ws(ws: WebSocket, ctx: dict) -> None:
     user_tx, model_tx = [], []
 
     async def upstream():
+        from .chat import screen_block
         while True:
             msg = await ws.receive_json()
             typ = msg.get("type")
@@ -136,6 +140,20 @@ async def live_ws(ws: WebSocket, ctx: dict) -> None:
             elif typ == "text" and msg.get("text"):
                 await session.send_client_content(turns=types.Content(role="user", parts=[types.Part(text=msg["text"])]),
                                                   turn_complete=True)
+            elif typ == "context" and isinstance(msg.get("screen"), dict):
+                # SDD-GEM-04: the UI pushes what is rendered (and the route) after `ready` and whenever it changes.
+                # Injected as user content without completing the turn, so the model has it for the next question
+                # but does not answer the update itself.
+                try:
+                    cctx = {**ctx, "page": msg.get("page") or ctx.get("page"), "time_min": msg.get("time_min", ctx.get("time_min")),
+                            "screen": msg["screen"], "lang": msg.get("lang") or ctx.get("lang")}
+                    block = screen_block(cctx)
+                    await session.send_client_content(
+                        turns=types.Content(role="user", parts=[types.Part(text=f"[SCREEN CONTEXT UPDATE — do not reply to this message; "
+                                                                                 f"use it for the operator's next question]\n{block}")]),
+                        turn_complete=False)
+                except Exception as e:  # noqa: BLE001 - never let a context update break the voice session
+                    logger.warning("live context update ignored: %s", str(e)[:120])
             elif typ == "end":
                 await session.send_realtime_input(audio_stream_end=True)
             elif typ == "close":

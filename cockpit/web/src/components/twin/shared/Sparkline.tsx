@@ -56,15 +56,15 @@ export default function Sparkline({ spark, height = 72, ariaLabel }: { spark: Tw
   return (
     <svg className="spark-fan" viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" role="img" aria-label={ariaLabel ?? title} data-testid="unit-spark">
       <title>{title}</title>
-      {band ? <path d={band} fill={hexA(P.band, theme === "dark" ? 0.2 : 0.14)} stroke="none" /> : null}
+      {band ? <path d={band} fill={hexA(P.band, theme === "dark" ? 0.1 : 0.08)} stroke="none" /> : null}
       {spark.spec_hi != null && spark.spec_hi >= lo && spark.spec_hi <= hi ? (
         <line x1={L} x2={W - R} y1={sy(spark.spec_hi)} y2={sy(spark.spec_hi)} stroke={P.spec} strokeWidth={1.2} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
       ) : null}
       {spark.plan != null ? (
         <line x1={L} x2={W - R} y1={sy(spark.plan)} y2={sy(spark.plan)} stroke={P.plan} strokeWidth={1.2} strokeDasharray="5 3" vectorEffect="non-scaling-stroke" />
       ) : null}
-      <path d={path(zip(spark.expected), sx, sy)} fill="none" stroke={P.expected} strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-      <path d={path(zip(spark.measured), sx, sy)} fill="none" stroke={P.measured} strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={path(zip(spark.expected), sx, sy)} fill="none" stroke={P.expected} strokeWidth={1.2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      <path d={path(zip(spark.measured), sx, sy)} fill="none" stroke={P.measured} strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
       {now != null && lastI >= 0 ? (
         <>
           <circle cx={sx(t[lastI])} cy={sy(now)} r={4.5} fill={hexA(P.measured, 0.25)} />
