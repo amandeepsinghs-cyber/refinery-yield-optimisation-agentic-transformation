@@ -23,6 +23,8 @@ import type { TwinAttention, TwinDecision, TwinOverview, TwinUnit } from "@/lib/
 import Sparkline from "@/components/twin/shared/Sparkline";
 import GaussianPdf from "@/components/twin/shared/GaussianPdf";
 import { KPI_NAME, STATE_WORD, UNIT_CODE, UNIT_NAME, fmt, signed, unitState } from "./UnitTrain";
+import { DecisionEvidence } from "./DecisionQueue";
+import type { Decision } from "@/lib/decisionsApi";
 
 const TRUST_RANK: Record<string, number> = { RED: 0, AMBER: 1, GREEN: 2 };
 
@@ -242,14 +244,16 @@ function PlantDefault({ data }: { data: TwinOverview }) {
   );
 }
 
-export default function DetailPane({ data }: { data: TwinOverview }) {
+/** Pane priority: hovered / pinned unit → that unit's detail; else the selected decision's evidence; else plant default. */
+export default function DetailPane({ data, decision = null }: { data: TwinOverview; decision?: Decision | null }) {
   const hover = useCockpit((s) => s.hoverUnit);
   const pinned = useCockpit((s) => s.pinnedUnit);
   const focus = pinned ?? hover;
   const unit = focus ? data.units.find((u) => u.unit_id === focus) : undefined;
+  const mode = unit ? "unit" : decision ? "decision" : "plant";
   return (
-    <aside className="l0-pane" data-testid="l0-pane" data-mode={unit ? "unit" : "plant"} aria-live="polite">
-      {unit ? <UnitDetail unit={unit} data={data} /> : <PlantDefault data={data} />}
+    <aside className="l0-pane" data-testid="l0-pane" data-mode={mode} aria-live="polite">
+      {unit ? <UnitDetail unit={unit} data={data} /> : decision ? <DecisionEvidence d={decision} data={data} /> : <PlantDefault data={data} />}
     </aside>
   );
 }

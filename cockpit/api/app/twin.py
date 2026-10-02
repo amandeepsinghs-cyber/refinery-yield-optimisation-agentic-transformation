@@ -656,7 +656,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     )
 
     dec_u2 = _make_decision_card(
-        rec_map, f"TWIN-{rid}-U2-{t_val}", rid, t_val, "Tr_riser_F", "unit_2_riser", "UC-08",
+        # UC-08 (BDD.md §UC table) = hydraulic / filter dP breakthrough: anchored on the reactor–main-column hydraulic dP;
+        # ROT is the lever that relieves it (anchor corrected from Tr_riser_F, DECISION_FIRST_REDESIGN §7.2 warning).
+        rec_map, f"TWIN-{rid}-U2-{t_val}", rid, t_val, "dP_reactor_frac", "unit_2_riser", "UC-08",
         "HOLD" if 966.0 <= tr_riser <= 974.0 else ("RAISE" if tr_riser < 966.0 else "LOWER"),
         "SP_T_riser_ROT_F (Slide Valve V3)",
         sp_t_riser, min(972.0, max(968.0, sp_t_riser)), round(min(972.0, max(968.0, sp_t_riser)) - sp_t_riser, 2), "°F",
@@ -786,12 +788,14 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         [_cite("WO-2025-118", "1.1", "Maintenance Work Order — Fractionator Draw Valve Positioner Calibration")],
     )
 
+    # UC-10 (BDD.md §UC table) = preheat furnace tube coking & hydraulic constraint on Unit 1: anchored on the firebox
+    # temperature against the 1620 °F tube-coking IOW (anchor corrected from dP_reactor_frac on the riser).
     dec_uc10 = _make_decision_card(
-        rec_map, f"TWIN-{rid}-UC10-{t_val}", rid, t_val, "dP_reactor_frac", "unit_2_riser", "UC-10",
-        "HOLD", "Plant-Wide IOW & Hydraulic Guardrail Envelope",
-        dp_reactor, dp_reactor, 0.0, "frac",
+        rec_map, f"TWIN-{rid}-UC10-{t_val}", rid, t_val, "T3_furnace_F", "unit_1_furnace", "UC-10",
+        "HOLD", "Furnace tube-coking margin (T3 vs 1620 °F IOW)",
+        t3_furnace, t3_furnace, 0.0, "°F",
         lco_gate, lco_trust,
-        f"All PINN physical conservation checks pass: hydraulic dP ratio = {hydraulic_dp_norm:.2f}x nominal, furnace T3 = {t3_furnace:.1f} °F (<= 1620 °F), cyclone Tcyc = {tcyc_f:.1f} °F (<= 1310 °F).",
+        f"Firebox T3 = {t3_furnace:.1f} °F, margin {1620.0 - t3_furnace:.1f} °F to the 1620 °F tube-coking IOW; preheat outlet T2 = {t2_preheat:.1f} °F, fuel F5 = {f5_fuel:.2f} lb/s.",
         {
             "yield_impact": "Prevents tray entrainment/flooding that would contaminate LCO with black bottom slurry oil.",
             "energy_impact": "Caps preheat furnace firing below tube-coking thermal flux limits.",
@@ -1039,7 +1043,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "recommendation": dec_u1,
             "tag_table": u1_tag_table,
             "chart_panels": u1_charts,
-            "decisions_needed": [dec_u1],
+            "decisions_needed": [dec_u1, dec_uc10],
         },
         {
             "unit_id": "unit_2_riser",
@@ -1099,7 +1103,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "recommendation": dec_u2,
             "tag_table": u2_tag_table,
             "chart_panels": u2_charts,
-            "decisions_needed": [dec_u2, dec_uc10],
+            "decisions_needed": [dec_u2],
         },
         {
             "unit_id": "unit_3_regenerator",
@@ -1595,18 +1599,18 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         {
             "id": "UC-08",
             "number": 8,
-            "title": "FCC Riser Reactor Severity, Conversion & Yield Selectivity",
-            "category": "Reactor / Regenerator Kinetics",
+            "title": "Hydraulic & Filter/Coalescer dP Breakthrough",
+            "category": "Reliability · Hydraulics (BDD UC-08; IOCL high-value #8)",
             "unit_id": "unit_2_riser",
             "unit_name": "Unit 2 · Riser Reactor & Standpipe",
             "status": units[1]["status"],
             "badge_text": units[1]["status_label"],
-            "problem_statement": "Feed API gravity shifts (dist_feed_API) alter cracking kinetics; running excessive Riser Outlet Temperature (ROT) over-cracks gasoline into dry gas (C1/C2) and coke, while low ROT leaves unconverted VGO slurry.",
-            "solution_summary": f"Tracks real-time conversion ({conv_pct:.2f}%), ROT ({tr_riser:.1f} °F vs SP {sp_t_riser:.1f} °F), feed API ({feed_api:.1f} °API), and regenerated catalyst circulation ({f_regen_cat:.0f} lb/min).",
+            "problem_statement": "Rising reactor-to-main-column hydraulic dP is the early sign of entrainment, tray flooding or fouled internals; once it breaks through, the LCO draw is contaminated and throughput must be cut. Severity (ROT) and feed rate are the levers that relieve it.",
+            "solution_summary": f"Tracks hydraulic dP ({dp_reactor:.3f}, {hydraulic_dp_norm:.2f}x nominal, IOW 0.48) against expected for the crude in the unit, with ROT ({tr_riser:.1f} °F vs SP {sp_t_riser:.1f} °F) and conversion ({conv_pct:.2f}%) as the relieving levers.",
             "kpis": [
+                {"label": "Hydraulic dP", "tag": "dP_reactor_frac", "value": round(dp_reactor, 3), "unit": "frac", "target": "<= 0.480 IOW"},
                 {"label": "Once-Through Conversion", "tag": "conversion_pct", "value": round(conv_pct, 2), "unit": "%", "target": "71.0–75.5%"},
                 {"label": "Riser Outlet Temp (ROT)", "tag": "Tr_riser_out_F", "value": round(tr_riser, 1), "unit": "°F", "target": "966.0–974.0 °F"},
-                {"label": "Feed API Gravity", "tag": "dist_feed_API", "value": round(feed_api, 2), "unit": "°API", "target": "22.0–28.0 °API"},
                 {"label": "Dry Gas Slip (C1+C2)", "tag": "eff_C1_C2", "value": round(eff_c1 + eff_c2, 3), "unit": "mol", "target": "<= 1.40"},
             ],
             "envelope": units[1]["envelope"],
@@ -1694,13 +1698,13 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         {
             "id": "UC-10",
             "number": 10,
-            "title": "Integrity Operating Windows (IOW), Flooding & Metallurgy Guardrails",
-            "category": "Asset Integrity & Fouling",
-            "unit_id": "unit_2_riser",
-            "unit_name": "Unit 1, 2, 3 & 4 · Plant-Wide IOW Supervision",
+            "title": "Preheat Furnace Tube Coking & Hydraulic Constraint",
+            "category": "Reliability · Fired heaters (BDD UC-10; IOCL high-value #10)",
+            "unit_id": "unit_1_furnace",
+            "unit_name": "Unit 1 · Feed Preheat Furnace (with plant-wide IOW supervision)",
             "status": "GREEN" if (flooding_status == "GREEN" and furnace_status == "GREEN" and mass_closure_ok) else "AMBER",
             "badge_text": "ALL IOW GUARDRAILS SATISFIED" if flooding_status == "GREEN" else "IOW BOUNDARY WATCH",
-            "problem_statement": "Pushing yield set points without simultaneous physics guardrails risks fractionator tray flooding (high dP_reactor_frac), furnace tube coking (T3 > 1620 °F), or regenerator cyclone metallurgy damage (Tcyc > 1310 °F).",
+            "problem_statement": "Coke builds inside the preheat furnace tubes when firebox temperature runs close to the 1620 °F tube-coking IOW; it narrows the heat-transfer and hydraulic margin and forces a mid-run decoke. The same guardrails also cover tray flooding and cyclone metallurgy.",
             "solution_summary": f"Enforces hard PINN physical conservation and IOW boundaries across all 6 units: hydraulic dP ratio = {hydraulic_dp_norm:.2f}x nominal, furnace T3 = {t3_furnace:.1f} °F, cyclone Tcyc = {tcyc_f:.1f} °F, and mass balance error = {mb_err_pct:+.2f}%.",
             "kpis": [
                 {"label": "Hydraulic Flooding Ratio", "tag": "hydraulic_dp_norm", "value": hydraulic_dp_norm, "unit": "x nom", "target": "<= 1.08x"},
@@ -1709,20 +1713,20 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 {"label": "PINN Mass Closure Error", "tag": "mass_balance_err_pct", "value": round(mb_err_pct, 3), "unit": "%", "target": "|err| <= 1.5%"},
             ],
             "envelope": {
-                "parameter": "dP_reactor_frac",
-                "label": "Riser / Main Fractionator Hydraulic Pressure Drop",
-                "unit": "psi frac",
-                "current_value": round(dp_reactor, 3),
-                "p50": round(dp_reactor, 3),
-                "p95": round(dp_reactor + 0.015, 3),
-                "sweet_spot_min": 0.39,
-                "sweet_spot_max": 0.45,
-                "spec_limit": 0.48,
-                "scale_min": 0.35,
-                "scale_max": 0.52,
-                "zone": "SWEET_SPOT" if dp_reactor <= 0.45 else "UNDER_TREATING",
-                "zone_label": "SAFE HYDRAULIC VAPOR/LIQUID TRAFFIC",
-                "advice": f"Hydraulic dP is {dp_reactor:.3f} ({hydraulic_dp_norm:.2f}x nominal) with 0 tray boiling inversions across Trays 1–20.",
+                "parameter": "T3_furnace_F",
+                "label": "Furnace Firebox Temperature vs Tube-Coking IOW",
+                "unit": "°F",
+                "current_value": round(t3_furnace, 1),
+                "p50": round(t3_furnace, 1),
+                "p95": round(t3_furnace + 8.0, 1),
+                "sweet_spot_min": 1500.0,
+                "sweet_spot_max": 1590.0,
+                "spec_limit": 1620.0,
+                "scale_min": 1450.0,
+                "scale_max": 1650.0,
+                "zone": "SWEET_SPOT" if t3_furnace <= 1590.0 else "UNDER_TREATING",
+                "zone_label": "TUBE-COKING MARGIN",
+                "advice": f"Firebox T3 is {t3_furnace:.1f} °F, {1620.0 - t3_furnace:.1f} °F below the 1620 °F tube-coking IOW; hydraulic dP {dp_reactor:.3f} ({hydraulic_dp_norm:.2f}x nominal).",
             },
             "recommendation": dec_uc10,
             "systems_ripple": dec_uc10["systems_ripple"],

@@ -13,12 +13,13 @@
 import { clock } from "@/lib/format";
 import { dg, useScreenPart } from "@/lib/screenPart";
 import type { TwinOverview } from "@/lib/twinTypes";
+import type { DecisionQueueResp } from "@/lib/decisionsApi";
 import { realDecisions } from "./DetailPane";
 import { KPI_NAME, UNIT_NAME, signed, unitState } from "./UnitTrain";
 
 const RANK = { ACT: 0, WATCH: 1, OK: 2 } as const;
 
-export function Headline({ data }: { data: TwinOverview }) {
+export function Headline({ data, queue = null }: { data: TwinOverview; queue?: DecisionQueueResp | null }) {
   const units = data.units;
   const ok = units.filter((u) => unitState(u) === "OK").length;
   const worst = [...units].sort((a, b) => RANK[unitState(a)] - RANK[unitState(b)] || Math.abs(b.kpi_vs_plan?.deviation ?? 0) - Math.abs(a.kpi_vs_plan?.deviation ?? 0))[0];
@@ -34,7 +35,12 @@ export function Headline({ data }: { data: TwinOverview }) {
   if (ws === "OK" || !worst || !k) issue = "all units tracking plan";
   else issue = `${UNIT_NAME[worst.unit_id] ?? worst.short_name} ${KPI_NAME[k.tag] ?? k.label} ${signed(k.deviation, 1)} ${k.unit} vs plan${since ? ` since ${since}` : ""}`;
   const cause = switchRecent && ws !== "OK" ? ` (crude switch ${c.declared_regime_id !== c.regime_id ? `${c.declared_regime_id}→` : ""}${c.regime_id} at ${clock(c.last_switch_min)})` : "";
-  const action = moves.length ? `${moves.length} recommendation${moves.length === 1 ? "" : "s"} to review` : "no set-point move needed";
+  // Decision-first: the action clause counts decisions from the spine (GET /api/decisions) when it is available.
+  const nOpen = queue?.counts.open ?? null;
+  const nNotYet = queue?.counts.withheld ?? 0;
+  const action = nOpen != null
+    ? `${nOpen === 0 ? "no decision" : `${nOpen} decision${nOpen === 1 ? "" : "s"}`} to take${nNotYet ? ` · ${nNotYet} not yet (data-limited)` : ""}`
+    : moves.length ? `${moves.length} recommendation${moves.length === 1 ? "" : "s"} to review` : "no set-point move needed";
 
   useScreenPart("headline", { units_in_envelope: `${ok} of ${units.length}`, issue: issue + cause, action, clock: data.plant.clock, shift: data.plant.shift_label });
 

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useConfig, useHealth, useRuns } from "@/lib/api";
 import { clock, propLabel } from "@/lib/format";
-import { DASHBOARDS, SHARED_PAGES, dashboardFor, isRailActive } from "@/lib/nav";
+import { SHARED_PAGES, dashboardFor, isRailActive } from "@/lib/nav";
 import { useCockpit } from "@/lib/store";
 import type { PropertyId } from "@/lib/types";
 import type { ThemeName } from "@/lib/theme";
@@ -147,7 +147,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const dash = dashboardFor(pathname);
 
   return (
-    <div className="app">
+    <div className="app no-rail">
       <a className="skip-link" href="#main">
         Skip to content
       </a>
@@ -159,54 +159,33 @@ export default function AppShell({ children }: { children: ReactNode }) {
             FCC <span className="brand-sub">Decision Cockpit</span>
           </span>
         </Link>
-        <nav className="tabs" aria-label="Dashboards">
-          {DASHBOARDS.map((d) => (
-            <Link
-              key={d.id}
-              href={d.href}
-              className="tab"
-              aria-current={dash.id === d.id && !pathname.startsWith("/audit") && !pathname.startsWith("/settings") ? "page" : undefined}
-            >
-              {d.label}
+        {/* No left rail (owner, 2 Oct): one slim strip — the plant, its six units, the record. */}
+        <nav className="strip-nav" aria-label="Pages">
+          {dash.pages.map((p) => (
+            <Link key={p.href} href={p.href} className="strip-link" aria-current={isRailActive(p.href, pathname) ? "page" : undefined}>
+              {p.label.replace(/^U\d · /, "")}
             </Link>
+          ))}
+          {SHARED_PAGES.filter((p) => !p.planned).map((p) => (
+            <Link key={p.href} href={p.href} className="strip-link subtle-link" aria-current={pathname === p.href ? "page" : undefined}>{p.label}</Link>
           ))}
         </nav>
         <div className="topbar-spacer" />
         <div className="topbar-ctx">
           <Provenance />
+          <ThemeToggle />
           {/* UI v2: demo / scenario controls live behind one tray so the ops header carries only provenance. */}
           <details className="scenario-tray" data-testid="scenario-tray">
             <summary aria-label="Scenario and display controls">Scenario</summary>
             <div className="scenario-tray-body">
               <span className="tray-label">Simulated run</span>
               <div className="tray-row"><RunPropertySelect /></div>
-              <span className="tray-label">Display</span>
-              <div className="tray-row"><ThemeToggle /></div>
               <span className="tray-label">Walkthrough</span>
               <div className="tray-row"><DemoGuideModal /></div>
             </div>
           </details>
         </div>
       </header>
-      <nav className="rail" aria-label={`${dash.label} pages`}>
-        <div className="rail-title">{dash.label}</div>
-        {dash.pages.map((p) => (
-          <Link key={p.href} href={p.href} className="rail-link" aria-current={isRailActive(p.href, pathname) ? "page" : undefined}>
-            <p.Icon />
-            {p.label}
-            {p.planned ? <span className="badge-planned">Demo+</span> : null}
-          </Link>
-        ))}
-        <div className="rail-foot">
-          {SHARED_PAGES.map((p) => (
-            <Link key={p.href} href={p.href} className="rail-link" aria-current={pathname === p.href ? "page" : undefined}>
-              <p.Icon />
-              {p.label}
-              {p.planned ? <span className="badge-planned">Demo+</span> : null}
-            </Link>
-          ))}
-        </div>
-      </nav>
       <main className="main" id="main" tabIndex={-1}>
         {children}
       </main>

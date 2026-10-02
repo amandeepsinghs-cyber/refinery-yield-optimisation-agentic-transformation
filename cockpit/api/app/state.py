@@ -24,7 +24,8 @@ class State:
         self.bundle: dict | None = None
         self._final = None
         self.knowledge = KnowledgeIndex(self.s)
-        self.db = audit_db(self.s.artifacts)
+        self._db_local = threading.local()
+        audit_db(self.s.artifacts).close()  # create tables once
         g = self.s["gemini"]
         self.gemini = {"project": g["project"], "location": g["location"], "text_model": g["text_model"],
                        "live_model": g["live_model"], "ok": False, "note": "not probed yet"}
@@ -33,6 +34,16 @@ class State:
         self.scoring = {"running": False, "last": None}
         self._lock = threading.Lock()
         self.load_bundle()
+
+    @property
+    def db(self):
+        """SQLite connection for the calling thread (a shared connection mixes cursors under concurrent requests)."""
+        con = getattr(self._db_local, "con", None)
+        if con is None:
+            con = audit_db(self.s.artifacts)
+            con.execute("PRAGMA busy_timeout = 5000")
+            self._db_local.con = con
+        return con
 
     # ------------------------------------------------------------------ artifacts
     def load_bundle(self):
