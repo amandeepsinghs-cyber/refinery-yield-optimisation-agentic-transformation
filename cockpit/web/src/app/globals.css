@@ -3366,3 +3366,61 @@ button.wr-item:hover { background: var(--hover); }
 .us-eng summary { cursor: pointer; width: fit-content; } .us-eng summary:hover { color: var(--ink); }
 .us-eng p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
 .us-gates li.nodata .nm, .us-gates li.nodata .val, .us-gates li.nodata .ok { color: var(--subtle); }
+/* unit page ②: which crude is running (classifier) and how it knows */
+.us-crude { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px; padding: 14px 0 18px; margin-bottom: 8px; border-bottom: 1px dashed var(--border); }
+.us-crude-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.us-crude-bars li { display: grid; grid-template-columns: 250px minmax(0, 1fr) 48px; gap: 12px; align-items: center; font-size: 13.5px; color: var(--muted); }
+.us-crude-bars li em { font-style: normal; color: var(--subtle); font-size: 12px; margin-left: 4px; }
+.us-crude-bars li i { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 18%, transparent); overflow: hidden; }
+.us-crude-bars li s { display: block; height: 100%; border-radius: 3px; background: color-mix(in srgb, var(--cyan) 45%, transparent); }
+.us-crude-bars li.on { color: var(--ink); } .us-crude-bars li.on s { background: var(--cyan); }
+.us-crude-bars li > b { text-align: right; color: var(--ink); font-weight: 600; }
+.us-crude-side .us-note b { color: var(--ink); } .us-crude-side .good { color: var(--green); } .us-crude-side .bad { color: var(--red); }
+.us-crude-side h3:not(:first-child) { margin-top: 12px; }
+.us-fp { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 6px 0 0; font-size: 12.5px; color: var(--subtle); }
+.us-fp b { color: var(--ink); font-weight: 600; }
+@media (max-width: 1100px) { .us-crude { grid-template-columns: 1fr; } }
+/* unit page — agreed items (2 Oct 11:01): estimate track, earlier decisions, what sets the move, missing data, tag list, actions */
+.us .us-foot { grid-template-columns: 1fr 1fr 1fr; }
+.us-track { margin: 18px 0 6px; padding: 12px 14px 8px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--card) 60%, transparent); }
+.us-track figcaption { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.us-track figcaption b { color: var(--ink); font-size: 13.5px; margin-right: auto; }
+.us-track .lg { display: inline-flex; align-items: center; gap: 6px; }
+.us-track .lg i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
+.us-track .k-est { background: var(--cyan); } .us-track .k-band { background: color-mix(in srgb, var(--cyan) 25%, transparent); height: 8px !important; }
+.us-track .k-truth { background: var(--m-gpr); } .us-track .k-spec { background: var(--red); }
+.us-track .k-lab { width: 9px !important; height: 9px !important; border-radius: 50% !important; background: var(--green); }
+.us-track svg { width: 100%; height: auto; display: block; }
+.us-track .g { stroke: var(--grid); } .us-track .ax { fill: var(--subtle); font-size: 8.5px; font-family: var(--font-mono, monospace); }
+.us-track .spec { stroke: var(--red); stroke-dasharray: 4 4; opacity: .8; }
+.us-track .band { fill: color-mix(in srgb, var(--cyan) 16%, transparent); }
+.us-track .est { fill: none; stroke: var(--cyan); stroke-width: 2; }
+.us-track .truth { fill: none; stroke: var(--m-gpr); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .85; }
+.us-track .lab circle { fill: var(--green); stroke: var(--bg); stroke-width: 2; }
+.us-track .lab.s-REJECT circle { fill: var(--bg); stroke: var(--red); stroke-width: 2; }
+.us-track .lab.s-HOLD circle { fill: var(--amber); }
+.us-earlier-h, .us-bind-h { margin-top: 16px !important; }
+.us-earlier { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.us-earlier li { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.us-earlier li .num { color: var(--subtle); font-size: 12px; min-width: 82px; }
+.us-earlier b { font-weight: 600; } .us-earlier .v-accepted { color: var(--green); } .us-earlier .v-held { color: var(--amber); } .us-earlier .v-declined { color: var(--red); }
+.us-earlier em { color: var(--ink); }
+.us-binding { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.us-binding li { display: grid; grid-template-columns: 96px 1fr; column-gap: 12px; font-size: 13px; }
+.us-binding li span { grid-row: span 2; font-size: 11px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--subtle); padding-top: 2px; }
+.us-binding li b { color: var(--ink); font-weight: 600; } .us-binding li em { font-style: normal; color: var(--muted); }
+.us-binding li.bind span { color: var(--adv); } .us-binding li.warn span { color: var(--amber); }
+.us-missing { margin-top: 14px; padding: 12px 14px; border-radius: 10px; border: 1px dashed var(--border-strong); }
+.us-missing ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.us-missing b { color: var(--ink); font-weight: 600; }
+.us-tags { margin-top: 14px; font-size: 13px; }
+.us-tags summary { cursor: pointer; color: var(--muted); width: fit-content; } .us-tags summary:hover { color: var(--ink); }
+.us-tags table { width: 100%; margin-top: 8px; border-collapse: collapse; }
+.us-tags th { text-align: left; font-size: 11px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--subtle); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.us-tags td { padding: 5px 8px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); color: var(--muted); }
+.us-tags td.mono { font-family: var(--font-mono, monospace); font-size: 12px; color: var(--ink); }
+.us-tags .r { text-align: right; } .us-tags td.r { color: var(--ink); }
+.us-acts li { display: grid; grid-template-columns: 1fr; gap: 2px; line-height: 1.4; }
+.us-acts li .num { display: block; white-space: nowrap; font-size: 11.5px; color: var(--subtle); }
+.us-acts li .what { display: block; }
+.us-more-link { display: inline-block; margin-top: 8px; font-size: 12.5px; color: var(--subtle); } .us-more-link:hover { color: var(--ink); }

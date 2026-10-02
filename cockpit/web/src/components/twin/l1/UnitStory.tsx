@@ -32,6 +32,7 @@ import ChartStack from "@/components/twin/l1/ChartStack";
 import { FLOW, NAME } from "@/components/twin/l0/UnitFlow";
 import UnitDrawing, { HAS_DRAWING } from "./UnitDrawings";
 import { SUSPECT, isSuspect } from "@/lib/suspect";
+import { EarlierDecisions, EstimateTrack, MissingData, TagList, UnitActions, WhatSetsTheMove, useUnitActions } from "./UnitStoryExtras";
 
 const RANK: Record<string, number> = { open: 0, held: 1, watch: 2, withheld: 3, accepted: 4, declined: 5 };
 const fx = (v: number | null | undefined, d?: number) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d ?? (Math.abs(v) >= 100 ? 1 : 2)));
@@ -48,6 +49,57 @@ function plainRegime(reason: string): string {
   if (!m) return reason;
   const label = m[2].replace(/\s*\((.*?)(-type)?\)\s*$/, " · $1").replace(/-/g, " ");
   return `Crude ${m[1]} (${label}) recognised. The physics-based models carry ${m[3]} % of the weight while the data-driven ones catch up.`;
+}
+
+
+/* Voice note 10 (owner): crude changes → first classify which crude it is (and how sure) → then the right settings for it. */
+const CRUDES: [string, string, string][] = [
+  ["R1", "Heavy", "Basrah Heavy type"],
+  ["R2", "Medium-heavy", "Urals type"],
+  ["R3", "Medium", "Arab Light type"],
+  ["R4", "Light", "Bonny Light type"],
+];
+const FP: [string, string, string, number][] = [
+  ["riser_dT_F", "Riser ΔT", "°F", 0], ["conversion_pct", "Conversion", "%", 1], ["coke_per_feed", "Coke / feed", "", 2],
+  ["Treg_F", "Regenerator T", "°F", 0], ["tray_dT_F", "Column ΔT", "°F", 0],
+];
+function CrudeBlock({ r, physicsPct }: { r: import("@/lib/twinTypes").TwinRegime; physicsPct: string | null }) {
+  const now = CRUDES.find((c) => c[0] === r.regime_id);
+  const match = r.declared_vs_detected === "match";
+  return (
+    <div className="us-crude">
+      <div>
+        <h3>Which crude is running — classifier</h3>
+        <ul className="us-crude-bars">
+          {CRUDES.map(([id, name, type]) => {
+            const v = r.p_regime?.[id] ?? 0;
+            return (
+              <li key={id} className={id === r.regime_id ? "on" : ""}>
+                <span><b>{id}</b> {name} <em>{type}</em></span>
+                <i><s style={{ width: `${Math.max(1, v * 100)}%` }} /></i>
+                <b className="num">{Math.round(v * 100)} %</b>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div className="us-crude-side">
+        <h3>How it knows</h3>
+        <p className="us-note">
+          The lab assay says <b>{r.declared_regime_id}</b> (API {fx(r.declared_api, 1)}); the unit&apos;s behaviour says <b>{r.regime_id}</b>
+          {" "}<span className={match ? "good" : "bad"}>{match ? "· they agree" : "· they disagree"}</span>.
+          {r.detected_at_min != null ? <> Switch picked up at <b className="num">{clock(r.detected_at_min)}</b>{r.detection_delay_min != null ? `, ${r.detection_delay_min} min after the new crude arrived` : ""}.</> : null}
+        </p>
+        {r.fingerprint ? (
+          <p className="us-fp">{FP.filter(([k]) => r.fingerprint?.[k] != null).map(([k, l, u, d]) => <span key={k}>{l} <b className="num">{r.fingerprint![k].toFixed(d)}{u ? ` ${u}` : ""}</b></span>)}</p>
+        ) : null}
+        <h3>What changes for {now ? `${now[1].toLowerCase()} crude` : "this crude"}</h3>
+        <p className="us-note">
+          The soft sensor re-weights its models for {r.regime_id}{physicsPct ? ` (physics-based models ${physicsPct} %)` : ""}, and the set-point search in step ③ looks for the right settings for this crude.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 /* ---------------------------------------------------------------------------------------------------------------- */
@@ -206,6 +258,8 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
     analysis: data.analysis.summary.en,
   } : null);
 
+  const actions = useUnitActions(unitId);
+
   if (error) return <div className="us us-msg" data-testid="l1-root" role="alert">Unit data unavailable: {error}</div>;
   if (!data) return <div className="us us-msg" data-testid="l1-root">Loading the unit…</div>;
 
@@ -215,6 +269,10 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
   const io = FLOW[unitId];
   const nTags = Object.keys(data.series.keys).filter((x) => !x.includes(":")).length;
   const lastLab = ds.find((x) => x.observed?.last_lab)?.observed?.last_lab ?? null;
+  const labels: Record<string, readonly [string, string]> = Object.fromEntries([
+    ...[...u.io.inputs, ...u.io.outputs].map((x) => [x.tag, [x.label, x.unit] as [string, string]] as const),
+    ...[...(io?.measured ?? []), ...(io?.levers ?? [])].map(([tg, n, un]) => [tg, [n, un] as [string, string]] as const),
+  ]);
 
   // Bell curves: committee members (fractionator) or the regime surrogate ŷ ± σ (other units).
   let members: GaussMember[] = [];
@@ -301,6 +359,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             <ul className="us-levers">{u.io.inputs.filter((x) => !x.tag.startsWith("SP_") && !x.tag.startsWith("MV_")).slice(0, 4).map((x) => <li key={x.tag}><span>{x.label}</span><b className="num">{fx(x.value)} <small>{x.unit}</small></b></li>)}</ul>
           </div>
         </div>
+        <TagList data={data} t={t} labels={labels} />
       </Step>
 
       {/* ② OBSERVE */}
@@ -314,6 +373,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           <div className="us-fact"><span>Likely driver</span><b>{a.root_cause[0] ? `${a.root_cause[0].label ?? a.root_cause[0].tag} ${a.root_cause[0].direction === "up" ? "↑" : "↓"}` : "—"}</b><em>largest contribution</em></div>
           {data.regime ? <div className="us-fact"><span>Crude</span><b>{data.regime.regime_id} {data.regime.regime_label.split(" ")[0]}</b><em>{Math.round((data.regime.p_regime?.[data.regime.regime_id] ?? 0) * 100)} % sure · since {clock(data.regime.detected_at_min)}</em></div> : null}
         </div>
+        {data.regime ? <CrudeBlock r={data.regime} physicsPct={committee?.reason?.match(/carry (\d+) %/)?.[1] ?? null} /> : null}
         <div className="us-grid observe">
           <div className="us-chart"><ChartStack data={data} panels={obsPanels} hoverMin={null} onHover={() => undefined} /></div>
           <div className="us-side">
@@ -325,6 +385,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             {committee?.reason ? <p className="us-note">{plainRegime(committee.reason)}</p> : null}
           </div>
         </div>
+        {isU4 ? <EstimateTrack runId={data.run_id ?? runId} prop={prop} t={t} label={TAGN[prop] ?? prop} /> : null}
         <button type="button" className="us-more" onClick={() => setShowCtx((v) => !v)} aria-expanded={showCtx}>{showCtx ? "Hide" : "Show"} levers, feed and products over the shift</button>
         {showCtx ? <div className="us-chart"><ChartStack data={data} panels={ctxPanels} hoverMin={null} onHover={() => undefined} /></div> : null}
       </Step>
@@ -363,6 +424,8 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 {d.action ? <span className="subtle">{d.action.action} at {d.action.time_label} · recorded in audit, nothing sent to the plant</span> : null}
               </div>
               <p className="us-uc">IOCL use case · {d.use_cases.map((x) => x.iocl_title).join(" · ")}<br /><span className="subtle">Problem it solves · {d.problem_text.join(" ")}</span></p>
+              <h3 className="us-earlier-h">Earlier on this decision</h3>
+              <EarlierDecisions rows={actions} d={d} />
             </div>
             <div className="us-lever-panel">
               {move && wi ? (
@@ -434,7 +497,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 <h3>What the multi-set-point search found — not shown as advice</h3>
                 <ul className="us-levers">{recipe.moves.map((m) => <li key={m.sp_tag}><span>{m.label}</span><b className="num">{fx(m.current, 1)} → {fx(m.recommended, 1)} <small>{m.unit}</small></b></li>)}</ul>
                 <p className="us-why">Blocked by the plausibility check: it predicts compressor power {recipe.d_power_MW >= 0 ? "+" : ""}{fx(recipe.d_power_MW, 1)} MW and LPG {recipe.d_yield_pct_feed?.LPG >= 0 ? "+" : ""}{fx(recipe.d_yield_pct_feed?.LPG, 1)} % feed, which is outside what this unit can physically do. {(recipe as { n_candidates?: number }).n_candidates ?? "Many"} candidates searched.</p>
-                <p className="us-note subtle">It becomes live advice once designed moves of these levers are in the training data (lever batch queued).</p>
+                <p className="us-note subtle">It becomes live advice once designed moves of these levers are in the training data (the lever simulation batch is running).</p>
               </>
             ) : move && p ? (
               <>
@@ -445,6 +508,8 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                   <li><span>Model</span>4-model soft sensor, weighted for the crude now ({data.regime?.regime_id ?? "—"})</li>
                   <li><span>Result</span>{fx(move.from, 1)} → {fx(move.to, 1)} {move.unit}: {pct(p.p_on_spec_before)} → {pct(p.p_on_spec_after)}, margin to spec {fx(p.margin_after, 1)} {move.unit}</li>
                 </ul>
+                <h3 className="us-bind-h">What sets the size of the move</h3>
+                {d ? <WhatSetsTheMove d={d} /> : null}
               </>
             ) : (
               <>
@@ -452,6 +517,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 <p className="us-note">{d?.proposed.sample ? "No set point moves here; the cheapest way to cut uncertainty is an earlier lab sample." : "Nothing to optimise on this unit right now."}</p>
               </>
             )}
+            {d?.status === "withheld" ? <MissingData d={d} levers={io?.levers ?? []} /> : null}
             {d?.evidence?.docs?.length ? <p className="us-note subtle">Backed by {d.evidence.docs.join(" · ")}{d.evidence.lakehouse ? ` · ${d.evidence.lakehouse}` : ""}</p> : null}
           </div>
         </div>
@@ -468,6 +534,10 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
         <div>
           <h3>Use cases on this unit</h3>
           <ul className="us-ucs">{u.use_cases.map((x) => <li key={x.id}><b>{x.id}</b> {x.title}</li>)}</ul>
+        </div>
+        <div>
+          <h3>Actions taken on this unit</h3>
+          <UnitActions rows={actions} />
         </div>
         <p className="home-prov subtle">Simulated data · run {data.run_id} · advisory only — nothing here writes to a control system</p>
       </footer>
