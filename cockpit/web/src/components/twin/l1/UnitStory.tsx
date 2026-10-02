@@ -41,6 +41,15 @@ const TAGN: Record<string, string> = { LCO_T98_F: "LCO T98", HN_T98_F: "HN T98" 
 const EVK: Record<string, string> = { cusum: "drifting (sustained)", change_point: "step change", recipe_ready: "move ready", regime_change: "crude switch", sigma3: "outside ±3σ" };
 const KIND: Record<string, string> = { agent: "Agent", ml: "ML", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
 
+
+/** "Regime R4 (Light (Bonny-Light-type)) detected with novelty 0.15: physics-anchored members carry 66 % …" → plain words. */
+function plainRegime(reason: string): string {
+  const m = reason.match(/Regime (\w+) \((.*)\) detected with novelty [\d.]+: physics-anchored members carry (\d+) %/);
+  if (!m) return reason;
+  const label = m[2].replace(/\s*\((.*?)(-type)?\)\s*$/, " · $1").replace(/-/g, " ");
+  return `Crude ${m[1]} (${label}) recognised. The physics-based models carry ${m[3]} % of the weight while the data-driven ones catch up.`;
+}
+
 /* ---------------------------------------------------------------------------------------------------------------- */
 /* ① the process drawing                                                                                              */
 
@@ -313,7 +322,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             {committee && isU4 ? (
               <ul className="us-weights">{(committee.weights ?? []).map((w) => <li key={w.member}><span>{w.label}</span><i style={{ width: `${Math.round(w.weight * 100)}%` }} /><b className="num">{Math.round(w.weight * 100)} %</b></li>)}</ul>
             ) : null}
-            {committee?.reason ? <p className="us-note">{committee.reason}</p> : null}
+            {committee?.reason ? <p className="us-note">{plainRegime(committee.reason)}</p> : null}
           </div>
         </div>
         <button type="button" className="us-more" onClick={() => setShowCtx((v) => !v)} aria-expanded={showCtx}>{showCtx ? "Hide" : "Show"} levers, feed and products over the shift</button>
@@ -335,7 +344,14 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
               <p className="us-q">{d.question}</p>
               <h3 className="us-headline">{d.headline}</h3>
               {d.urgency.consequence ? <p className="us-cons"><b>If nothing is done:</b> {d.urgency.consequence}{d.urgency.decide_by_label ? <> · decide by <b className="num">{d.urgency.decide_by_label}</b></> : null}</p> : null}
-              {d.diagnosed?.text ? <p className="us-note">{d.diagnosed.text}</p> : null}
+              {move && p?.p_on_spec_before != null ? (
+                <ul className="us-whyl">
+                  {d.observed?.estimate != null && p.spec_max != null ? <li>The estimate is <b className="num">{fx(d.observed.estimate, 1)} °F</b>, {fx(p.spec_max - d.observed.estimate, 1)} °F inside the {fx(p.spec_max, 0)} °F spec.</li> : null}
+                  <li>Chance on spec <b className="num">{pct(p.p_on_spec_before)}</b> now, <b className="num good">{pct(p.p_on_spec_after)}</b> after the move.</li>
+                  {d.gates.length ? <li><b>{nPass} of {d.gates.length}</b> trust checks pass, so the advice is shown. Advisory only; the operator decides.</li> : null}
+                </ul>
+              ) : null}
+              {d.diagnosed?.text ? <details className="us-eng"><summary>Engineer&apos;s note</summary><p>{d.diagnosed.text}</p></details> : null}
               {d.withheld_text ? <p className="us-why">Not advised yet, on purpose: {d.withheld_text}.</p> : null}
               <div className="uf-actions">
                 {canAct ? <>
@@ -365,7 +381,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                   <p className="us-result">Chance on spec <span className="num">{pct(p?.p_on_spec_before)}</span> → <b className={`num ${wi.p >= 0.95 ? "good" : wi.p < (p?.p_on_spec_before ?? 0) ? "bad" : ""}`}>{pct(wi.p)}</b>
                     {Math.abs(wi.s - move.to) > 1e-6 ? <span className="subtle"> · advised {fx(move.to, 1)} gives {pct(p?.p_on_spec_after)}</span> : <span className="subtle"> · the advised move</span>}</p>
                   <p className="us-note subtle">SOP: one step at most 5 °F, 30 min between moves. The cut-point controller follows its set point 1 : 1.</p>
-                  {p?.ripple?.length ? <p className="us-note subtle">Next units: {p.ripple.map((r) => `${r.what} — ${r.delta == null ? r.note : `${r.delta} ${r.unit}`}`).join("; ")}</p> : null}
+                  {p?.ripple?.some((r) => r.delta != null) ? <p className="us-note subtle">Next units: {p.ripple.filter((r) => r.delta != null).map((r) => `${r.what} ${r.delta} ${r.unit}`).join("; ")}</p> : null}
                 </>
               ) : d.proposed.sample ? (
                 <>
@@ -397,13 +413,16 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             <h3>{d?.gates.length ? `Checks before advising — ${nPass} of ${d.gates.length} pass` : "Checks before advising"}</h3>
             {d?.gates.length ? (
               <ul className="us-gates">{d.gates.map((g) => {
-                const r = g.value != null && g.limit ? Math.min(1.15, Math.abs(g.value) / Math.abs(g.limit)) : null;
+                const r = g.value == null || !g.limit ? null
+                  : g.op === "≥" ? (g.value === 0 ? 1.15 : Math.min(1.15, Math.abs(g.limit) / Math.abs(g.value)))
+                  : Math.min(1.15, Math.abs(g.value) / Math.abs(g.limit));
+                const noData = g.value == null;
                 return (
-                  <li key={g.id} className={g.pass ? "pass" : "fail"}>
+                  <li key={g.id} className={noData ? "nodata" : g.pass ? "pass" : "fail"}>
                     <span className="nm">{g.name ?? g.id}</span>
-                    <span className="bar">{r != null && g.op === "≤" ? <i style={{ width: `${(r / 1.15) * 100}%` }} /> : null}{g.op === "≤" ? <em style={{ left: `${(1 / 1.15) * 100}%` }} /> : null}</span>
-                    <span className="val num">{g.value == null ? "n/a" : fx(g.value)} {g.op} {fx(g.limit)}{g.unit ? ` ${g.unit}` : ""}</span>
-                    <span className="ok">{g.pass ? "pass" : "fail"}</span>
+                    <span className="bar">{r != null ? <i style={{ width: `${(r / 1.15) * 100}%` }} /> : null}{!noData ? <em style={{ left: `${(1 / 1.15) * 100}%` }} /> : null}</span>
+                    <span className="val num">{noData ? "no lab history yet" : `${fx(g.value)} ${g.op} ${fx(g.limit)}${g.unit ? ` ${g.unit}` : ""}`}</span>
+                    <span className="ok">{noData ? "skipped" : g.pass ? "pass" : "fail"}</span>
                   </li>
                 );
               })}</ul>

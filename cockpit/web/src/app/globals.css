@@ -3357,3 +3357,12 @@ button.wr-item:hover { background: var(--hover); }
 .dr-meta details[open] { flex-basis: 100%; margin-left: 0; }
 .dr-meta pre { margin: 6px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--card); border: 1px solid var(--border); font-size: 11.5px; overflow-x: auto; color: var(--muted); }
 @media (max-width: 1000px) { .dr-tiles { grid-template-columns: 1fr 1fr; } .dr-q { margin-left: 0; width: 100%; } }
+/* unit page: plain "why" under the decision; engineer's note tucked away; checks without data */
+.us-whyl { margin: 6px 0 2px; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13.5px; color: var(--muted); }
+.us-whyl li { padding-left: 14px; position: relative; }
+.us-whyl li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 5px; height: 5px; border-radius: 50%; background: var(--adv); }
+.us-whyl b { color: var(--ink); font-weight: 600; } .us-whyl b.good { color: var(--green); }
+.us-eng { margin: 4px 0 2px; font-size: 12px; color: var(--subtle); }
+.us-eng summary { cursor: pointer; width: fit-content; } .us-eng summary:hover { color: var(--ink); }
+.us-eng p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
+.us-gates li.nodata .nm, .us-gates li.nodata .val, .us-gates li.nodata .ok { color: var(--subtle); }
