@@ -10,7 +10,7 @@
 
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
-> **Source:** owner's words 09:48–11:34 UTC on 2 Oct (recovered from the crashed session) and Voice Note 11 (12:02), recorded in [verbatim.md](verbatim.md) Part 9.5. Code at `c694166`. Where any older section of this guide (Steps 5, 13, 18, the 30 Sep status box) describes a different screen layout, **this section wins**.
+> **Source:** owner's words 09:48–11:34 UTC on 2 Oct (recovered from the crashed session) and Voice Note 11 (12:02), recorded in [verbatim.md](verbatim.md) Part 9.5. Code at `2fc6402` (pushed to `origin/main` 2 Oct 12:59; production build passes). Where any older section of this guide (Steps 5, 13, 18, the 30 Sep status box) describes a different screen layout, **this section wins**.
 
 **The rule (09:48):** "The screen enables decisions and data is shown to back up those decisions." Decision first; data underneath. No role views (09:53). No value figures on screens (10:16). No left bar or admin template (10:41). Accept / Hold / Decline writes the audit log only, never a control system.
 
