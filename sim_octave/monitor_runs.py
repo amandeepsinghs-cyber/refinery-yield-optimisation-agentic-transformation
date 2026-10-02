@@ -61,9 +61,10 @@ def scan(batch: str, alive: dict[str, int]) -> list[dict]:
         r["rows"] = int(len(df))
         if len(df):
             for c in df.columns:
-                if df[c].dtype == object:
+                if not pd.api.types.is_numeric_dtype(df[c]):
                     df[c] = pd.to_numeric(df[c], errors="coerce")
-            r["valid_until"] = valid_until(df)
+            df = df[df["time_min"].notna()].reset_index(drop=True) if "time_min" in df.columns else df
+            r["valid_until"] = valid_until(df) if len(df) else None
             tags = [x for x in STATE_TAGS if x in df.columns]
             tail = df[tags].tail(61)
             same = (tail.diff().abs().sum(axis=1, min_count=1) == 0).to_numpy()[1:]

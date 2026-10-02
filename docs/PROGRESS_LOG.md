@@ -375,3 +375,10 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - First lake load of `lever_v1` (52 runs, 7,440 rows, partial; 19 min). API restarted on BigQuery with lever runs in the lake: demo decisions at s144 10:00 / 12:00 and s107 10:00 unchanged.
 - New `sim_octave/monitor_runs.py`: per-run rows, last write, process alive, first broken minute, share of copied failed-solver rows; `--heal` stops runs stuck in solver failure (≥ 80 % copied rows in the last hour; valid rows kept) and relaunches runs that never wrote a row. Stopped so far: s208 (stuck from minute 315), s210 (376), s205 (418).
 - Overnight: a check every 30 min (monitor + heal, GCS rsync to `_archive/lever_v1_live`), lake load every 3 h, and a final load + stage + refit + push when the last run ends.
+
+## 2026-10-02 19:30 — Google Cloud sign-in expired (owner action in the morning)
+
+- `gcloud` and Application Default Credentials both need re-authentication ("Reauthentication failed. cannot prompt during non-interactive execution"). Uploads to GCS / BigQuery pause until the owner runs `gcloud auth login` and `gcloud auth application-default login`.
+- Nothing lost: simulations keep running and are monitored / healed every 30 min; a rolling local snapshot `sim_octave/data/_snapshots/lever_v1_live.tar.gz` is refreshed each check instead. The last GCS sync was 19:00 and the last lake load 18:28 (7,440 lever rows).
+- The API keeps serving from its BigQuery cache (demo decisions return 200).
+- After sign-in, catch up with one command each: the GCS rsync and `load_lakehouse.py --batch lever_v1 --skip-knowledge --skip-audit --skip-models`.
