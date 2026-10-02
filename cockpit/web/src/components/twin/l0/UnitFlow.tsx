@@ -20,7 +20,7 @@ import GaussianPdf from "@/components/twin/shared/GaussianPdf";
 
 interface Io { in: string[]; out: string[]; measured: [string, string, string][]; levers: [string, string, string][] }
 // Process I/O per unit (simulator flowsheet, sim_octave). measured / levers: [tag, plain name, unit].
-const FLOW: Record<string, Io> = {
+export const FLOW: Record<string, Io> = {
   unit_1_furnace: { in: ["Fresh gas-oil feed"], out: ["Hot feed → riser"],
     measured: [["T2_preheat_F", "Preheat outlet", "°F"], ["T3_furnace_F", "Firebox", "°F"], ["fluegas_O2_pct", "Flue-gas O₂", "%"], ["F5_fuel", "Fuel gas", "lb/s"]],
     levers: [["SP_T_preheat_F", "Preheat set point", "°F"]] },
@@ -40,7 +40,7 @@ const FLOW: Record<string, Io> = {
     measured: [["eff_C5", "C5 recovery", "mol"], ["prod_LPG", "LPG make", "lb/min"], ["prod_LN", "Light naphtha", "lb/min"]],
     levers: [["SP_T_overhead", "Overhead T set point", "°F"]] },
 };
-const NAME: Record<string, string> = {
+export const NAME: Record<string, string> = {
   unit_1_furnace: "Feed furnace", unit_2_riser: "Riser reactor", unit_3_regenerator: "Regenerator",
   unit_4_fractionator: "Main fractionator", unit_5_condenser: "Gas plant", unit_6_stabiliser: "Stabiliser",
 };
@@ -109,11 +109,12 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
         {/* 2 OBSERVE */}
         <li className="uf-step">
           <div className="uf-h"><span className="uf-n">2</span>What we observe <Who k="agent">drift-watch agent</Who>{members.length ? <Who k="ml">soft sensor</Who> : null}</div>
+          {k ? <p className="uf-kicker">Measured now</p> : null}
           {k ? (
             <p className="uf-big">
               <span className="num">{n(k.value)}</span> <span className="uf-u">{k.unit}</span>
               <span className={`uf-dev s-${k.state} num`}>{k.deviation >= 0 ? "+" : "−"}{Math.abs(k.deviation).toFixed(1)}</span>
-              <span className="uf-vs">{k.label} vs plan {n(k.plan)}</span>
+              <span className="uf-vs">{k.label} · plan {n(k.plan)}</span>
             </p>
           ) : null}
           {att.length ? (
@@ -123,7 +124,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
             <>
               <GaussianPdf members={members.slice(0, 1)} spec={spec != null ? { hi: spec, label: "spec" } : null} target={d?.observed?.plan != null ? { value: d.observed.plan, label: "plan" } : null}
                 unit="°F" height={92} compact showMixture={false} showP={false} ariaLabel="estimate now" />
-              <p className="uf-note">Estimated every minute between labs: <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} °F</span>, chance on spec <b className="num">{pct(p.p_on_spec_before)}</b></p>
+              <p className="uf-note"><b>Soft-sensor estimate</b> (the lab comes every 8 h): <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} °F</span>, chance on spec <b className="num">{pct(p.p_on_spec_before)}</b></p>
             </>
           ) : null}
         </li>

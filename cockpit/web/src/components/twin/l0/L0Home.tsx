@@ -35,7 +35,7 @@ function WrongRibbon({ data, onUnit }: { data: TwinOverview; onUnit: (id: string
   const t = data.plant.time_min;
   const ok = data.units.filter((u) => (u.kpi_vs_plan?.state ?? "OK") === "OK").length;
   const recent = c?.last_switch_min != null && t - c.last_switch_min >= 0 && t - c.last_switch_min <= 720;
-  const items = data.needs_attention.slice(0, 3);
+  const items = data.needs_attention.slice(0, 2);
   return (
     <div className="wr" data-testid="what-went-wrong">
       <span className="wr-h">What went wrong</span>
