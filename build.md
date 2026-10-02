@@ -8,8 +8,69 @@
 
 ---
 
+## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
+
+> **Source:** owner's words 09:48–11:34 UTC on 2 Oct (recovered from the crashed session) and Voice Note 11 (12:02), recorded in [verbatim.md](verbatim.md) Part 9.5. Code at `c694166`. Where any older section of this guide (Steps 5, 13, 18, the 30 Sep status box) describes a different screen layout, **this section wins**.
+
+**The rule (09:48):** "The screen enables decisions and data is shown to back up those decisions." Decision first; data underneath. No role views (09:53). No value figures on screens (10:16). No left bar or admin template (10:41). Accept / Hold / Decline writes the audit log only, never a control system.
+
+### Screens
+
+| Screen | Route | What it shows (in order) | Built in |
+|---|---|---|---|
+| **Home** (10:43 brief) | `/twin` | Top view of the six units (Feed furnace → Riser reactor → Regenerator → Main fractionator → Gas plant → Stabiliser), no left bar → one line on **what went wrong**, the unit glows → **decisions pinned to their units**, Accept / Hold → the **four-step flow ①–④** under the drawing (how agents, ML, checks, optimiser and Gemini enable the decision) → **IOCL use-case band** | `994380a`, `beee022` (`components/twin/l0/L0Home.tsx`, `PlantCanvas.tsx`, `UnitFlow.tsx`, `DecisionQueue.tsx`, `HomeStory.tsx`) |
+| **Unit page** (10:48 flow, 11:01 spec) | `/twin/unit/{unit_id}` | **① Data in / out** (process drawing with live values, how fresh each reading is) · **② What we observe** (live vs expected band, four models' bell curves, crude switch) · **③ Decision and lever** (every decision on the unit, the lever, what-if slider, Accept / Hold / Decline) · **④ How the move is found** (goal, each check pass / fail) · **Footer** (IOCL use cases for this unit). Sticky 1-2-3-4 strip. Engineer's all-panels view at `?view=classic`. | `beee022`, `112aa48`, `11876cc` (`components/twin/l1/UnitStory.tsx`, `UnitDrawings.tsx`) |
+| **Decision record** | `/audit` | Every decision and the action taken on it (replaces the old audit log) | `112aa48` (`components/record/DecisionRecord.tsx`) |
+
+### Decisions D1–D9 and their real levers
+
+| ID | Decision | Unit | Lever (real tag) | Status today |
+|:-:|:---|:---|:---|:---|
+| D1 | Move the cut point now, or wait for the lab? | Main fractionator | `SP_LCO_T98`, `SP_HN_T98` | **Live** |
+| D2 | Can the estimate be trusted now? | Main fractionator | — (go / no-go on D1) | **Live** |
+| D9 | Pull an extra lab sample? | Main fractionator | sampling schedule | **Live** |
+| D4 | Which crude is in the unit; is the switch finished? | Riser reactor | — (confirm crude) | **Live** |
+| D8 | What first; what breaks downstream if nothing is done? | Plant | — | **Live** (watch items) |
+| D3 | Coordinated recipe for the new crude | Main fractionator / Riser | `SP_T_riser_ROT_F`, `MV_PA1..MV_PA4`, cut points | **Not yet**: withheld by the plausibility check; PA moves not in training data |
+| D5 | Regenerator air vs severity | Regenerator | `Fair` (via `SP_T_reg_F`), `SP_T_riser_ROT_F` | **Not yet**: air never moved in training data |
+| D6 | Furnace preheat / excess O₂ | Feed furnace | `SP_T_preheat_F` (no excess-O₂ set point exists) | **Not yet**: preheat never moved in training data |
+| D7 | Gas plant / stabiliser reflux, cooling water, overhead T | Gas plant, Stabiliser | `MV_reflux_ratio`, `MV_cw_flow`, `SP_T_overhead` | **Not yet**: never moved in training data |
+
+Full lever table with typical values and allowed ranges: [verbatim.md §9.5.3](verbatim.md).
+
+### Problems and IOCL use cases (one quiet line per decision, no badges, no value figures)
+
+| Problem | In plant words | Decisions | IOCL use cases (platform ID) |
+|:-:|:---|:---|:---|
+| P1 | Quality known only every 8 h from the lab | D1, D9 | UC-01 FCC product-quality inferential · UC-11 product soft sensor |
+| P2 | Crude changes every 12–48 h; set points for the new crude unknown | D4, D3, D6 | Feedstock evaluation · UC-01 · UC-05 · UC-10 |
+| P3 | A move in one unit shows up hours later in another | D3, D5, D6, D7, D8 | UC-04 regeneration · UC-02 stabiliser C5 · UC-03 C4/C5 split · UC-07 exchanger fouling · UC-06 energy · UC-08 filter / hydraulic · UC-09 rotating equipment |
+| P4 | An AI that always answers is dangerous | D2, D9 | UC-11 |
+
+### Done vs open
+
+| Item | Status |
+|---|---|
+| Decision API (`GET /api/decisions`, `GET /api/decisions/{id}`, `POST /api/decisions/{id}/act`, `GET /api/decisions-coverage`) | ☑ `994380a` |
+| Home page: top view, what went wrong, decisions on units, flow ①–④, use-case band | ☑ `994380a`, `beee022` |
+| Unit page four steps, all six units with drawings, reading freshness, bell curves, crude block, checks | ☑ `beee022`, `112aa48`, `11876cc` |
+| Decision record page (`/audit`) | ☑ `112aa48` |
+| Plain-words copy clean-up | ☑ `11876cc` |
+| Lever batch code (`scenario.m` 'lever', `run_lever_batch.sh`, surrogate event map) | ☑ `1edeb3e` |
+| Lever batch `lever_v1` (12 runs, seeds 200–211, `sim_octave/data/lever_v1/`) | ◐ launched 12:15 UTC 2 Oct, running |
+| Refit surrogates on `lever_v1` → D3, D5–D7 give real target values | ◐ back-end change ready 12:35 (fit now reads `lever_v1`, see Step 20); ☐ stage regimes + refit after the batch |
+| Run one recipe back through the simulator to confirm the predicted gain | ☐ after the refit |
+| ② Soft-sensor estimate over time with lab points | ☑ `c694166` |
+| ③ Earlier decisions on this unit (accepted / held / declined) | ☑ `c694166` |
+| ④ Which limits bind the move; for "Not yet", the exact missing data | ☑ `c694166` |
+| ① Full tag list (collapsible) | ☑ `c694166` |
+| Footer: history of actions on this unit | ☑ `c694166` |
+
+> [!WARNING]
+> **Superseded (kept for history):** the "Current status (2026-09-30)" box below, the Step 5 Decision / Modelling pages and the Step 18 L0 / L1 layout describe screens that the 2 Oct agreement replaced. Their engines and APIs still stand.
+
 > [!IMPORTANT]
-> **Current status (2026-09-30)**
+> **Current status (2026-09-30)** — *superseded by the 2026-10-02 section above*
 > - **Built and tested on fallback data:** simulator port + validation; manual cut-point mode, random campaigns and label columns; BigQuery loader + 1-h sample table; git repo; FastAPI back end with the whole soft-sensor pipeline in `cockpit/api/app/` (ridge, GPR, hybrid delta, PINN ensemble, Kalman bias, mixture, trust S1–S7, spread gate, PCA novelty, recommendations); **39 API tests pass**; Next.js pages **Decision, Technical, Modelling**; Copilot text + voice (UI and backend); knowledge corpus (46 docs), index and in-panel source preview.
 > - **Running now:** batch `full_v1` (54 runs `random_s100`–`random_s153`, 1,600 sim-min each), started 2026-09-30 13:30, ~30 h, **ETA ~2026-10-01 20:00**. Until enough runs are complete, the API serves the labelled fallback `frontend_sample_1h`.
 > - **Critical path to demo:** (1) process noise + `full_v1` load + retrain on labs → (2) demo-run selection (M1–M3) from held-out `random_s140`–`s153` → (3) **F24 Knowledge dashboard** + SHIFT logs regenerated on held-out runs → (4) rehearsal.
@@ -580,3 +641,16 @@ cd "$FCC_HOME/cockpit/web" && npx tsc --noEmit && npx vitest run
 ### Step 19 (P6): Gemini scope, Hindi-first, director script — `J8`
 1. `copilot/chat.py`: read `context.screen`; fetch the scope snapshot server-side (`engines/workbench.scope_snapshot`) and embed it in the system instruction — plant snapshot on L0 / other pages, unit snapshot on L1 — so Gemini always knows which screen is open yet can answer about the whole refinery; screen-specific suggestions; Hindi system prompt variants; Live voice `hi-IN` / `en-IN`. `adk_agent.py`: add `get_scope_snapshot`, `get_regime`, `get_recipe` to `ALL_TOOLS` (canonical 8 unchanged). Frontend `useCopilotChat.usePageContext` adds `screen` from the route.
 2. `demoflow.md`: 7-scene crude-switch storyline (BUILD_PLAN_v3 §6) with the exact run / minutes to use.
+
+## Step 20 (2026-10-02): Decision-first cockpit — home, four-step unit page, decision record
+
+> Spec: the [2026-10-02 agreement](#2026-10-02-agreement-supersedes-earlier-ui-sections-where-they-conflict) at the top of this guide. Acceptance: BDD-31..34. Supersedes the Step 18 screen layout (engines unchanged).
+
+1. ☑ `app/engines/decisions.py` + `app/routers/decisions.py`: Decision objects D1–D9 with problem (P1–P4) and IOCL use case; `POST /api/decisions/{id}/act` writes audit only (`994380a`).
+2. ☑ Home `/twin`: `PlantCanvas`, `UnitFlow`, `DecisionQueue`, `HomeStory` use-case band (`994380a`, `beee022`).
+3. ☑ Unit page `/twin/unit/{unit_id}`: `UnitStory.tsx` four steps + `UnitDrawings.tsx` for all six units (`beee022`, `112aa48`, `11876cc`).
+4. ☑ Decision record `/audit`: `components/record/DecisionRecord.tsx` (`112aa48`).
+5. ◐ `lever_v1` batch (`./sim_octave/run_lever_batch.sh 12 <minutes> data/lever_v1 200`), launched 12:15 UTC 2 Oct → ☐ refit surrogates → ☐ feed one recipe back through Octave to confirm the predicted gain → D3, D5–D7 become Live.
+   > [!WARNING]
+   > **Code gap found 2 Oct (fixed in code 12:35, awaiting commit: `surrogates.py` reads `lever_sNNN`, train s200–s209 / hold-out s210–s211, merges `lever_v1/_staged/regimes.csv`, version 6, auto-refit when lever runs change; `catalog.get` falls back to all runs):** the surrogate fit (`app/engines/surrogates.py`, `_fit_surrogates` / `_step_samples`) reads only runs of `data.primary_batch` (`full_v1`) and takes the seed from `random_sNNN` names, so `lever_sNNN` runs are skipped today; seeds ≥ `test_seed_min` (140) would also all be treated as hold-out, and the crude segments come from `full_v1/_staged/regimes.csv` only. The refit therefore needs a small back-end change (include `lever_v1`, give it a train / hold-out split, stage its regimes) plus a `SURROGATE_VERSION` bump. There is no `app/train_surrogates.py`; the fit runs lazily and is cached in `artifacts/engines/surrogates.pkl`.
+6. ☑ Front-end items: ② estimate over time with lab points · ③ earlier decisions · ④ binding limits and, for "Not yet", the exact missing data · ① full tag list · footer action history · crude classifier (`c694166`). Still open: home page at 1366 px, Hindi / Hinglish check on the new parts.

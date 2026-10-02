@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
+
+> **Source:** owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5). This walk-through **replaces §1 "Screens", §2 Cast and §4 Scenes 0–7 where they conflict** (L0 Refinery Twin / L1 Unit Workbench / Audit log → Home / Unit page / Decision record). §3 data requirements, §6 fallbacks, §7 things we never say and §8 checklist still apply.
+>
+> **Checked against the running API on 2 Oct** (`GET /api/decisions`): `random_s107` t 600 (10:00) returns 2 open (D1 lower LCO cut point −2.5 °F, 755.3 → 752.8; D9 extra LCO + HN samples, spread 13.7 °F, next lab in 240 min), 5 "Not yet" (D3 recipe withheld — predicted compressor power +22 MW fails the plausibility check; D5, D6, D7 ×2 — no designed moves in the training data) and 1 watch (D8 riser conversion). The old Scene 4 "recipe ISSUED at 10:00" **no longer holds**: the plausibility check now withholds it.
+
+**Story in one line:** *"Every screen starts with the decision; the data that backs it is one step below. When the models cannot back a decision, the cockpit says 'Not yet' and why."* No value figures. No role views. Accept / Hold / Decline writes the record only.
+
+| # | Screen · run · minute | What the audience sees | Say | Backend |
+|:-:|:---|:---|:---|:---|
+| A | **Home** `/twin` · `random_s107` · t 600 | Top view of the six units (Feed furnace → Riser reactor → Regenerator → Main fractionator → Gas plant → Stabiliser), no left bar. | *"This is the FCC as one system. Nothing to read yet except where it hurts."* | `GET /api/twin` |
+| B | Home | **What went wrong**, one line; the fractionator glows; pins on units: "1 Decide" on the fractionator, "Not yet" on furnace, regenerator, gas plant, stabiliser. | *"The crude switched at 07:25; the fractionator's cut point is drifting heavy. Four other units are drifting too — and for those the cockpit tells you it will not guess yet."* | `GET /api/decisions` |
+| C | Home | The D1 decision: *Lower LCO cut point −2.5 °F (755.3 → 752.8)* with Accept / Hold 30 min, one quiet line *IOCL use case · FCC product-quality inferential*. Under the drawing the flow ①–④: drift-watch agent → soft-sensor committee + crude model → trust checks → set-point search → Gemini. Use-case band at the bottom. | *"Decision first. Underneath: which agent saw it, which models estimated it, which checks passed, how the move was found — and which of your use cases it is."* | `GET /api/decisions`, `GET /api/decisions-coverage` |
+| D | **Unit page** `/twin/unit/unit_4_fractionator` · t 600 | **① Data in / out:** the column drawing with live tray temperatures, pumparounds `MV_PA1..4` and the two levers `SP_HN_T98`, `SP_LCO_T98`; how fresh each reading is (sensor every minute, lab every 8 h). | *"These are the numbers the decision stands on, and how old each one is."* | `GET /api/unit/unit_4_fractionator/workbench` |
+| E | Unit page | **② What we observe:** live vs expected band; the four models' bell curves against plan and spec with P(on-spec); the crude block (R3 → R4 Light, Bonny Light type). | *"Four different models, one answer, and the spread is inside 14 °F — so we are allowed to advise."* | workbench + `GET /api/distribution` |
+| F | Unit page | **③ Decision and lever:** D1 with the lever `SP_LCO_T98`, what-if slider, Accept / Hold / Decline; D9 "pull an extra sample"; D3 recipe as "Not yet". Click **Accept** → toast: recorded in the audit log only. | *"A person decides. Nothing is written to the control system."* | `POST /api/decisions/{id}/act` |
+| G | Unit page | **④ How the move is found:** the goal and every check with value, limit, pass / fail; checks without data shown as skipped. For D3: why the multi-set-point recipe is withheld (predicted compressor power +22 MW is not believable). Footer: this unit's IOCL use cases. | *"When the search produces something physically implausible, we show you that we threw it away."* | `GET /api/decisions/{id}` |
+| H | Unit page · **`random_s144`** · t 600 | D2 *"Not yet — hold the heavy-naphtha cut point; the estimate is too uncertain (spread W90 above the 14 °F limit)"*; D3 withheld for the same reason. | *"When the models disagree, the cockpit asks for a lab instead of averaging four guesses."* | `GET /api/decisions` |
+| I | Any unit page (e.g. Regenerator) | "Not yet" for D5: no designed moves of air in the training data. | *"We have not yet taught the models what air does. A dedicated simulator batch is running now; until it is in and checked, this stays 'Not yet'."* | `GET /api/decisions` |
+| J | **Decision record** `/audit` | The Accept from F, plus every time the trust checks held advice back and released it. Return to `/twin`. | *"Who decided what, when, on which unit — and every time the AI held back."* | audit log |
+
+**Gemini** (any screen): "Explain this decision and what happens if I hold" — in English, Hinglish or Hindi (unchanged from Scene 6).
+
+**Not in the demo yet (being built):** ② estimate over time with lab points · ③ earlier decisions on this unit · ④ which limits bind the move, and for "Not yet" the exact missing data · ① full tag list · footer action history. **After `lever_v1` + refit + one closed-loop simulator check:** D3, D5–D7 may show target values; until then, never present them as advice.
+
+> [!WARNING]
+> Never say on stage: dollar or rupee figures; "reformer", "LPG splitter", "CDU" (not in this build); cat-to-oil or excess-O₂ set points (not levers in the simulator); ROT targets above 985 °F (outside the allowed range).
+
+---
+
 ## 1. The Story in One Line
 
 **"The refinery changes crude every day or two, and every unit runs on yesterday's settings for hours. This twin detects the new crude from the plant's own response, re-weights its models, tells each unit what to move — with the consequence in plant units — and refuses when the models disagree."**
@@ -52,7 +82,7 @@ The demo run is picked from the **hold-out runs** (never used for training) afte
 - **Backend:** `GET /api/twin`
 
 ### Scene 1: The crude switch arrives — L0, "Where will it hit first?" (2 min) — `/twin` · random_s107 · t 445 → 600
-- **Screen:** crude banner (declared API 27.2 → detected regime), unit blocks turning WATCH in flow order, **Needs attention** lines with consequences (*"LCO heavier than spec: PA3 saturates in ~180 min; LCO yield −0.4 % feed if the cut point is not pulled back"*).
+- **Screen:** crude banner (declared API 27.2 → detected regime), unit blocks turning WATCH in flow order, **Needs attention** lines with consequences (*"LCO heavier than spec: PA3 saturates in ~180 min if the cut point is not pulled back"*).
 - **Click:** drag the shift timeline from 07:25 to 10:00 (or ▶). The banner flips to **R4 · match** at 07:39 (+14 min after the ramp). Switch the language toggle to Hinglish.
 - **Say:** *"The declared crude says light Bonny; the plant's response says the same fourteen minutes after the ramp. The twin shows where the change lands first and what breaks downstream if nobody acts — before the next lab result, which is still hours away."*
 - **Data moment:** crude switch R3 → R4 · **Backend:** `GET /api/twin?time_min=` (`crude_slate`, `needs_attention`, `timeline`) · **BDD-28** banner, timeline

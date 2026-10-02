@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
+
+> Owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5). The cockpit is **decision-first**: home = top view of the refinery (the FCC's six units) → what went wrong → decisions pinned to units → flow ①–④ (how AI / ML / agents enable them) → IOCL use-case band; unit page = ① Data in / out · ② What we observe · ③ Decision and lever · ④ How the move is found · footer; `/audit` = Decision record. No role views, no value figures, no left bar; actions are audit-only.
+>
+> **Specs: §14.6C `SDD-DEC-01..10`.** They override, where they conflict: §7 (four dashboards, left navigation rail SDD-UI-04, role-based landing SDD-UI-14), §14.6 SDD-L0-01/02 and SDD-L1-01..03/07 (L0 PFD + banner; L1 chart stack + right rail; four labelled zones), §14.6B (L0 v2 pane / one primary action). Engines (§5, §14.1–14.5), safety (§8) and Gemini (§14.6A) stand. Decision inventory D1–D9, levers, problems P1–P4 and status: [build.md](build.md) top section. Live: D1, D2, D4, D8, D9 · Not yet: D3, D5, D6, D7.
+
+---
+
 ## 1. Summary
 
 **This SDD specifies the Demo MVP (features.md §4.1) to implementation level, and it treats the Decision Cockpit front end as part of the core system.** Every component is built and tested on the **simulated data** from `sim_octave/`.
@@ -429,6 +437,8 @@ For each simulated minute: row → DQ → features → member `predict_dist` →
 ---
 
 ## 7. Cockpit (Front End): Integral Specification
+
+> *2026-10-02:* the screen layout in this section (four dashboards, left rail, role-based landing) is **superseded** by §14.6C (decision-first cockpit). Stack (§7.1), tokens, Gemini panel and quality rules still apply.
 
 The cockpit has **four dashboards** in one app: **Decision** (what to do now), **Technical** (time series and plant behaviour), **Modelling** (model numbers, parameters and confidence) and **Knowledge** (document library, full document at cited section and related records per run). The Knowledge dashboard (F24) shows the document library, the full document at the cited section and related records per run; the Gemini panel shows a compact preview with an Open in Knowledge link (§7.9). It shows **technical metrics only**; no financial figures appear anywhere. The binding API contract between `cockpit/web` and `cockpit/api` is [cockpit/API_CONTRACT.md](cockpit/API_CONTRACT.md).
 
@@ -937,6 +947,8 @@ cockpit: {sse_window_points: 720, default_speed: 10, ts_max_points: 2000, defaul
 
 ### 14.6 L0 / L1 screens (`SDD-L0-01..04`, `SDD-L1-01..06`)
 
+> *2026-10-02:* layout specs SDD-L0-01/02 and SDD-L1-01..03/07 are **superseded** by §14.6C; SDD-L0-03/04, SDD-L1-04..06 still apply.
+
 - **SDD-L0-01** Route `/twin` is the application home. It renders the flat PFD (6 units, 3 loops), one **crude-slate banner** (`declared_api`, `regime_label`, `transition_pct`, `declared_vs_detected`, `novelty`), per-unit KPI vs plan with status pill, decision and agent-flag counts, "Needs attention" list with systemic consequence lines from the Systems Agent, and a shift timeline of events.
 - **SDD-L0-02** *(amended 2026-10-02 per `verbatim.md` VN-1/VN-5 — supersedes the v3 "no chart" rule)* L0 is a **data-first systemic view**: every live unit block carries its headline-tag **live curve with the ŷ ± 2σ band** and a compact **N(μ,σ) PDF vs plan / spec**; a systemic row shows cause→effect ripples and the lakehouse→ML flow strip. Full chart stacks, committee members and residual analysis stay on L1. Clicking a unit navigates to `/twin/unit/[unit_id]`.
 - **SDD-L0-03** *(amended 2026-10-02 per `verbatim.md` VN-5 "make the standard to be black")* Theme: **dark (obsidian) default**, persisted light toggle via the segmented `🌙 AI Dark | ☀️ Light` switch in the top bar (`data-theme`), tokens from `theme.ts` / `globals.css` kept in sync (theme test); the dark register has its own high-chroma trace palette (`TRACE_PALETTE_DARK`).
@@ -965,7 +977,31 @@ cockpit: {sse_window_points: 720, default_speed: 10, ts_max_points: 2000, defaul
 - **SDD-L0-V2-04 Scenario tray.** Demo-only controls (run / property select, register toggle, demo guide) live in a collapsed tray in the top bar so they never compete with plant content.
 - **SDD-L0-V2-05 Verification.** `e2e/twin.spec.ts` asserts the pyramid order, headline grammar, dot + word status, neutral vs coloured spark strokes, pane default → hover → pin → focus, scenario tray, footer and both registers; CDP screenshots in `docs/ui/L0_v2_*.png`.
 
+### 14.6C Decision-first cockpit (`SDD-DEC-01..10`, 2026-10-02 agreement, Epic K, BDD-31..34)
+
+- **SDD-DEC-01 Decision object.** `app/engines/decisions.py → build(run_id, time_min)` SHALL return every decision live at that minute as a Decision object (API_CONTRACT_v3 §9.2): type D1–D9, question, headline, status (`open | watch | withheld | accepted | held | declined | expired`), urgency, observed, diagnosed, proposed (real set-point tags only), predicted, gates, evidence, withheld reason + plain text, problem (P1–P4) + text, IOCL use case(s), `enabled_by` chain, `advisory_only: true`. Ranked open → held → withheld → watch → accepted → declined → expired, then by time to consequence.
+- **SDD-DEC-02 Sources.** D1 / D2 / D9 from the soft-sensor recommendation + spread gate (W90 ≤ 14 °F) + trust S1–S7; D4 from `regime_at`; D3 from `recipe_for` only within 12 h of a detected crude switch; D5 / D6 / D7 / D8 from open sentinel events via `needs_attention`, with `recipe_for` tried for D5–D7.
+- **SDD-DEC-03 Honesty.** A decision the models cannot support SHALL still be returned with `status = withheld` and its reason. D3 SHALL be withheld as `implausible` if the predicted |Δ compressor power| > 3 MW, |Δ furnace fuel| > 50 lb/s or any |Δ yield| > 1.5 % feed. A cut-point ripple whose own-product yield sign is opposite to the move SHALL be shown without a number and with the reason. UI label for `withheld` is **"Not yet"**.
+- **SDD-DEC-04 Actions.** `POST /api/decisions/{id}/act {accept|hold|decline}` SHALL write the audit log (`control_system_write: false`) and `decision_actions` (with a JSON snapshot), and nothing else; accept on `withheld` / `watch` → 409; hold re-opens after 30 min.
+- **SDD-DEC-05 No value figures, no roles.** No currency or value-per-time field in any Decision object or screen; no owner-role field or role-based view. Problem and use case are one plain line, no badges.
+- **SDD-DEC-06 Home `/twin`.** Full-bleed, **no left bar**. Top-to-bottom: plant canvas of the six units in flow order (Feed furnace → Riser reactor → Regenerator → Main fractionator → Gas plant → Stabiliser), normal units recede, drifting unit glows amber, acting red, open decision blue halo, decision pins on their unit (`PlantCanvas.tsx`) → one "What went wrong" line (`L0Home.tsx`) → the selected decision with Accept / Hold 30 min / Decline and "Not yet" group (`HomeStory.tsx`, `DecisionQueue.tsx`) → flow ①–④ for the selected unit (`UnitFlow.tsx`) → IOCL use-case band from `GET /api/decisions-coverage` (`HomeStory.tsx → UseCaseBand`).
+- **SDD-DEC-07 Unit page `/twin/unit/[unit_id]`** (`UnitStory.tsx`). Same dark look, no side bar, sticky 1-2-3-4 strip. **① Data in / out:** process drawing for the unit (`UnitDrawings.tsx`; fractionator drawn in `UnitStory.tsx`) with live values where measured and the lever set points; freshness of each reading (sensor vs lab); suspect values flagged; *(open)* collapsible full tag list. **② What we observe:** live vs expected band; four models' bell curves vs plan / spec with P(on-spec); crude block (which crude, when it switched); *(open)* soft-sensor estimate over time with lab points. **③ Decision and lever:** every decision on this unit (tabs), lever with real tag, from → to, what-if slider, Accept / Hold / Decline; *(open)* earlier decisions on this unit from the record; lever allowed range from `config.yaml iow` (today slider ±5 °F). **④ How the move is found:** goal; each check with value, limit, pass / fail / skipped (no data); for "Not yet", why; *(open)* limits that bind the move and, for "Not yet", the exact missing data (levers with no designed moves). **Footer:** IOCL use cases for this unit; *(open)* actions taken on this unit. The engineer's all-panels view stays at `?view=classic`.
+- **SDD-DEC-08 Decision record `/audit`** (`components/record/DecisionRecord.tsx`): who did what, when, on which unit; every accept / hold / decline and every time the trust checks withheld or released advice.
+- **SDD-DEC-09 Levers.** Only levers that exist in the simulator SHALL be shown or proposed: `SP_LCO_T98`, `SP_HN_T98`, `SP_T_riser_ROT_F`, `SP_T_preheat_F`, `Fair` (via `SP_T_reg_F`), `MV_PA1..MV_PA4`, `MV_reflux_ratio`, `MV_cw_flow`, `SP_T_overhead`. Cat-to-oil and excess-O₂ are not set points in this build.
+- **SDD-DEC-10 Not yet → Live.** D3, D5–D7 MAY show target values only after (a) the `lever_v1` batch (12 runs, seeds 200–211) is included in the surrogate fit, (b) the surrogates are refit, and (c) one recipe has been replayed in the simulator with the observed change inside the predicted band (SDD-RCP-06).
+
+| Feature | SDD | BDD | Status |
+|---|---|---|---|
+| K1 Decision API | SDD-DEC-01..05 | BDD-31, BDD-33 | ✅ `994380a` |
+| K2 Home | SDD-DEC-06 | BDD-31 | ✅ `994380a`, `beee022` |
+| K3 Unit page four steps | SDD-DEC-07 | BDD-32 | ✅ `beee022`, `112aa48`, `11876cc` (open items marked) |
+| K4 Decision record | SDD-DEC-08 | BDD-33 | ✅ `112aa48` |
+| K5 / K9 "Not yet" | SDD-DEC-03, DEC-07 | BDD-34 | ✅ reason · ☐ exact missing data |
+| K11 Lever batch + refit | SDD-DEC-10, SDD-RCP-06 | BDD-27, BDD-34 | ◐ batch running |
+
 ### 14.7 Traceability (Epic J)
+
+> *2026-10-02:* J6 / J7 rows below are superseded by §14.6C (K2 / K3).
 
 | Feature | SDD | BDD |
 |---|---|---|

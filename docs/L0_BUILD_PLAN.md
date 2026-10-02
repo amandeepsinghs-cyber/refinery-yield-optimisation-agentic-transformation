@@ -1,5 +1,27 @@
 # L0 Refinery Twin — Build Plan (P5 / Step 18 / J6 · SDD-L0-01..04 · BDD-28)
 
+## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
+
+> [!WARNING]
+> **This plan's layout is superseded** by the owner's agreement of 2 Oct 09:48–11:34 UTC (and Voice Note 11). Its Pass A back-end work (`kpi_vs_plan`, counts, consequence rules in `app/engines/systems.py`, timeline) still stands and feeds the new home. Its "D1–D3" below are this plan's own questions, not the decision inventory D1–D9 and not the old decision numbering (hydrotreater / cut points / trust), which was renamed to OD1–OD3 on 2 Oct.
+
+**What the home is now (`/twin`, built `994380a`, `beee022`):**
+1. **Top view of the refinery** = the FCC's six units in flow order: Feed furnace → Riser reactor → Regenerator → Main fractionator → Gas plant → Stabiliser. **No left bar.** The whole-refinery hybrid PFD with muted CDU / VDU / reformer / alkylation blocks (this plan's D1 recommendation) is **not** used.
+2. **What went wrong:** one line; the affected unit glows (amber drifting, red act, blue halo for an open decision).
+3. **Decisions pinned to their units** with Accept / Hold 30 min (Decline on the card); "Not yet" decisions grouped with their reason. No value figures.
+4. **How AI / ML / agents enable it:** the four-step flow ① Data in / out → ② What we observe → ③ Decision and lever → ④ How the move is found, under the drawing.
+5. **IOCL use-case band** (`GET /api/decisions-coverage`), one quiet line per use case.
+
+**Click a unit → unit page (`/twin/unit/{unit_id}`):** the same four steps in full, plus a footer with the unit's use cases (`beee022`, `112aa48`, `11876cc`). **`/audit`** is now the Decision record (`112aa48`).
+
+**Decisions on the home:** D1 cut point now or wait (`SP_LCO_T98`, `SP_HN_T98`), D2 trust, D4 which crude, D8 what first, D9 extra lab sample — **Live**. D3 recipe (`SP_T_riser_ROT_F`, `MV_PA1..4`), D5 regenerator air (`Fair`), D6 furnace preheat (`SP_T_preheat_F`), D7 gas plant / stabiliser (`MV_reflux_ratio`, `MV_cw_flow`, `SP_T_overhead`) — **Not yet** until the `lever_v1` batch (launched 12:15 UTC 2 Oct) and a surrogate refit. Problems P1–P4 and the IOCL mapping: [build.md](../build.md) top section.
+
+**Open:** ② estimate over time with lab points · ③ earlier decisions on this unit · ④ binding limits and, for "Not yet", the exact missing data · ① full tag list · footer action history.
+
+---
+
+*Original plan (2026-10-01), kept for history:*
+
 **Recommendation: build L0 in two short passes — first make `/api/twin` actually deliver the L0 contract (today it returns placeholders), then rebuild the screen to the approved mockup with the 6 simulator units mapped onto the whole-refinery PFD and everything else shown as "boundary data only".** Three decisions below need your call before I start; the rest is execution.
 
 > [!IMPORTANT]

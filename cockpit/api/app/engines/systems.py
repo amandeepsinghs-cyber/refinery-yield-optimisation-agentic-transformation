@@ -80,8 +80,8 @@ CONSEQUENCE_RULES: dict[tuple[str, str, str], tuple[str, str, str]] = {
                                           "afterburn follows in ~{h} min"),
     # --- hydrocarbon loop --------------------------------------------------------------------------------------------
     ("unit_4_fractionator", "LCO_T98_F", "up"): (
-        "hydrocarbon", "unit_4_fractionator", "LCO heavier than spec: PA3 saturates in ~{h} min; LCO yield −0.4 % "
-                                              "feed if the cut point is not pulled back"),
+        "hydrocarbon", "unit_4_fractionator", "LCO heavier than spec: PA3 saturates in ~{h} min "
+                                              "if the cut point is not pulled back"),
     ("unit_4_fractionator", "LCO_T98_F", "down"): (
         "hydrocarbon", "unit_4_fractionator", "LCO cut too light: {v} quality giveaway to slurry; recoverable LCO yield "
                                               "lost every hour it persists"),

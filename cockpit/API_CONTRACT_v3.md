@@ -2,6 +2,8 @@
 
 > Binding for Epic J (SDD §1A, §14; BDD-24..28). Extends [API_CONTRACT.md](API_CONTRACT.md) — nothing there is removed.
 > All numbers are engineering units. No financial fields anywhere. Advisory only: no endpoint writes to control systems.
+>
+> **2026-10-02 agreement (supersedes earlier UI sections where they conflict):** the cockpit is now decision-first (home → unit page four steps → decision record). Its API is **§9 Decisions** (`GET /api/decisions`, `GET /api/decisions/{id}`, `POST /api/decisions/{id}/act`, `GET /api/decisions-coverage`). §5 workbench and §6 twin payloads still feed the unit page's ① and ② steps.
 
 ## 0. Unit vocabulary (unchanged ids)
 
@@ -124,7 +126,7 @@ payload so a fresh browser can persist it.
           "top_flag":"Riser conversion","units_act":0,"units_watch":1},
  "needs_attention":[{"unit_id":"unit_4_fractionator","unit_label":"Fractionator","severity":"warn","kind":"cusum","tag":"LCO_T98_F",
                      "time_min":503,"time_label":"08:23","line":"LCO T98 +4.8 °F above expected (sustained shift) since 08:23",
-                     "consequence":"LCO heavier than spec: PA3 saturates in ~90 min; LCO yield −0.4 % feed if the cut point is not pulled back",
+                     "consequence":"LCO heavier than spec: PA3 saturates in ~90 min if the cut point is not pulled back",
                      "loop":"Hydrocarbon loop","downstream_unit_id":"unit_4_fractionator","horizon_min":90,"event_id":"...","recipe_id":"..."}],
  "timeline":[{"time_min":427,"time_label":"07:07","kind":"regime_change","severity":"info","unit_id":null,"label":"Crude switch started (R3→R2)","event_id":"..."}],
  "units":[{"...existing...","events_open":1,"flags":1,"decisions_open":1,
@@ -164,3 +166,99 @@ Suggestions (`suggestions(ctx)`) are screen-specific: L0 → plant questions; L1
 | yields | LCO `#1d4ed8`, HN `#047857`, LN `#ca8a04`, LPG `#9333ea`, slurry `#7c2d12` |
 
 Grid, axes and borders may be grey; data traces may not.
+
+## 9. Decisions API (2026-10-02, as implemented in `app/routers/decisions.py` + `app/engines/decisions.py`, commit `994380a`)
+
+> The spine of the decision-first cockpit (home `/twin`, unit page `/twin/unit/{unit_id}`, decision record `/audit`). Advisory only: acting writes the SQLite audit log and the `decision_actions` table, never a control system. No financial fields. For the agreed screens this replaces `POST /api/twin/decision`, which is still served (`routers/twin.py`) for the older views.
+
+### 9.1 `GET /api/decisions?run_id&time_min`
+
+`run_id` defaults to the configured run; `time_min` defaults to the last minute of the run. Returns every decision live at that minute, ranked: status order `open → held → withheld → watch → accepted → declined → expired`, then by `urgency.time_to_consequence_min`.
+
+```json
+{"run_id":"random_s107","time_min":600,"clock":"10:00",
+ "counts":{"open":2,"watch":1,"withheld":5,"accepted":0,"held":0,"declined":0,"expired":0},
+ "decisions":[ /* Decision objects, 9.2 */ ],
+ "problems":{"P1":"Product quality is known only every 8 h from the lab, so the unit runs blind in between.","P2":"…","P3":"…","P4":"…"},
+ "advisory_only":true,
+ "provenance":{"source":"simulated","engines":["soft-sensor committee","spread gate S1–S7","regime E1","surrogates E2","sentinels E3","recipe E4"]}}
+```
+
+### 9.2 Decision object (real example, trimmed: `random_s107` t 600)
+
+```json
+{"id":"D1-u4-lco-random_s107-0575","type":"D1","type_name":"Cut point: move now or wait for the lab",
+ "run_id":"random_s107","time_min":600,"created_min":575,"created_label":"09:35",
+ "unit_id":"unit_4_fractionator","unit_label":"Fractionator",
+ "question":"Lower the LCO cut point now, or wait for the lab?",
+ "headline":"Lower LCO cut point -2.5 °F (755.3 → 752.8)",
+ "status":"open",
+ "urgency":{"rank":1,"time_to_consequence_min":180,"consequence":"LCO heavier than spec: PA3 saturates in ~180 min; …","decide_by_label":"10:30"},
+ "observed":{"tag":"LCO_T98_F","label":"LCO T98","estimate":760.94,"sigma":4.24,"plan":755.33,"delta_vs_plan":5.61,"q95":767.18,"spec_max":765.0,"unit":"°F",
+             "since_label":"09:42","line":"LCO T98 +2.5 °F above expected (sustained shift) since 09:42",
+             "last_lab":{"sample_id":"random_s107-LCO_T98_F-360","value":759.72,"status":"REJECT","drawn_label":"06:00","reported_label":"06:49","status_reason":"…"},
+             "next_lab_label":"14:00","next_lab_in_min":240},
+ "diagnosed":{"text":"Mixture q95 767.2 °F vs LCO T98 spec 765 °F … trust GREEN …","trust":"GREEN","conservative":false},
+ "proposed":{"moves":[{"tag":"SP_LCO_T98","label":"LCO T98 set point","from":755.33,"to":752.83,"delta":-2.5,"unit":"°F"}],
+             "alternative":"Wait for the lab — next lab 14:00 (in 240 min); estimate stays at P(on-spec) 83 % meanwhile"},
+ "predicted":{"mu_before":760.94,"mu_after":758.44,"sigma":4.24,"p_on_spec_before":0.828,"p_on_spec_after":0.96,"w90":13.74,"spec_max":765.0,"margin_after":0.32,
+              "ripple":[{"what":"LCO yield","delta":null,"unit":"% feed","source":"regime surrogate","note":"not shown: this simulator's yield response has the opposite sign to plant practice …"}]},
+ "gates":[{"id":"spread","name":"spread W90","op":"≤","pass":true,"value":13.74,"limit":14.0,"unit":"°F"},
+          {"id":"S1","name":"models agree","op":"≤","pass":true,"value":0.43,"limit":0.5}, "… S2–S7"],
+ "evidence":{"tags":["LCO_T98_F","SP_LCO_T98"],"labs":["random_s107-LCO_T98_F-360"],"docs":["SOP-FRAC-003 r4 §4"],"lakehouse":"fcc_gold.lab_alignment · run random_s107"},
+ "withheld_reason":null,"withheld_text":null,"outcome":null,"action":null,
+ "problem":["P1"],"problem_text":["Product quality is known only every 8 h from the lab, …"],
+ "use_case":{"platform_id":"UC-01","iocl_row":"High-value #1","iocl_title":"FCC / RFCC / INDMAX product-quality inferential"},
+ "use_cases":[{"platform_id":"UC-01","…":"…"},{"platform_id":"UC-11","…":"…"}],
+ "why_this_exists":"Lab every 8 h → estimate every minute with a probability of staying on spec",
+ "advisory_only":true,
+ "enabled_by":[{"kind":"agent","name":"Drift-watch agent","did":"Flagged LCO T98 moving away from expected at 09:42 …"},
+               {"kind":"ml","name":"Soft-sensor committee (4 models)","did":"…"},{"kind":"check","name":"Trust checks","did":"…"},
+               {"kind":"optimiser","name":"Set-point search","did":"…"},{"kind":"genai","name":"Gemini","did":"…"}]}
+```
+
+| Field | Values / rule |
+|---|---|
+| `id` | `{type}-{key}-{run_id}-{onset:04d}`; one D9 per run merges LCO + HN (`D9-lab-{run}-{onset}`, with `related[]`) |
+| `type` | `D1` cut point now or wait · `D2` trust the estimate · `D3` coordinated recipe · `D4` which crude · `D5` regenerator air vs severity · `D6` furnace preheat / excess O₂ · `D7` overhead condenser and stabiliser · `D8` what first, downstream · `D9` extra lab sample |
+| `status` | `open` · `watch` · `withheld` (UI label "Not yet") · `accepted` · `held` · `declined` · `expired` |
+| `withheld_reason` | `wide` · `bimodal` · `spread_gate` · `novelty` · `insufficient_data` · `infeasible` · `no_gain` · `implausible` · `transition` · `trust_red`; `withheld_text` is the plain sentence |
+| `proposed` | `moves[]` (real set-point tags, from → to, unit); D9 carries `sample`; D4 carries `confirm`; always an `alternative` |
+| `action` | last action from `decision_actions` at or before `time_min`: `{time_min, time_label, action, user, note, ts, audit_id, reopened?}`; a `hold` re-opens after 30 min (`reopened: true`) |
+| `enabled_by[].kind` | `agent` · `ml` · `check` · `optimiser` · `genai` |
+| D3 plausibility | recipe withheld as `implausible` if \|Δ compressor power\| > 3 MW, \|Δ furnace fuel\| > 50 lb/s or any \|Δ yield\| > 1.5 % feed; only raised within 12 h of a detected crude switch |
+| `unit_label` | API short label (`Furnace`, `Riser`, `Regenerator`, `Fractionator`, `Overhead condenser`, `Stabiliser`); the front end shows its own names (`Gas plant` for `unit_5_condenser`) |
+
+### 9.3 `GET /api/decisions/{decision_id}?run_id&time_min`
+
+The single Decision object (9.2). `404 {"detail":"decision '<id>' is not live at this minute"}` if absent.
+
+### 9.4 `POST /api/decisions/{decision_id}/act`
+
+Body (`ActBody`):
+```json
+{"action":"accept","run_id":"random_s107","time_min":600,"user":"operator","note":""}
+```
+`action ∈ {accept, hold, decline}`; `user` defaults to `"operator"`, `note` to `""`; `run_id` / `time_min` default as in 9.1.
+
+Response `200`:
+```json
+{"ok":true,"audit_id":123,"decision_id":"D1-u4-lco-random_s107-0575","status":"accept",
+ "note":"recorded in the audit log only; nothing is written to any control system"}
+```
+Side effects: one audit row (`"decision <action>"`, payload `{note, type, unit_id, moves, problem, use_case, control_system_write:false}`) and one `decision_actions` row with a JSON snapshot of the decision. Errors: `400` bad action · `404` decision not live at that minute · `409` `"decision is withheld; there is no move to accept"` (accept on `withheld` or `watch`).
+
+Note: `status` in the response echoes the action verb (`accept` / `hold` / `decline`); the decision itself then reads `accepted` / `held` / `declined` in 9.1.
+
+### 9.5 `GET /api/decisions-coverage?run_id&time_min`
+
+IOCL use-case lens for the home band.
+```json
+{"run_id":"random_s107","rows":[
+  {"platform_id":"UC-01","iocl_row":"High-value #1","iocl_title":"FCC / RFCC / INDMAX product-quality inferential",
+   "decisions":[{"id":"D1-u4-lco-random_s107-0575","type":"D1","status":"open"},{"id":"D3-recipe-random_s107-0459","type":"D3","status":"withheld"}],
+   "state":"active"},
+  "… UC-02 … UC-11, FEED …",
+  {"platform_id":null,"iocl_row":"—","iocl_title":"Coker, alkylation, gas turbines, flare, pipelines","decisions":[],"state":"not claimed"}]}
+```
+`state`: `active` (a decision open / held / accepted) · `watching` (only withheld / watch) · `quiet` (none) · `not claimed`.

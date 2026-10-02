@@ -6,6 +6,37 @@ this file records what actually happened and the state things were left in.
 
 ---
 
+## 2026-10-02 12:25 — Decision-first cockpit agreed and built; session crash at 11:36 (no work lost); `lever_v1` launched; docs aligned
+
+**Finding first:** the owner's agreement of 09:48–11:34 UTC (decision first, data underneath; home = top view of the refinery → what went wrong → decisions → how AI / ML / agents enable them → IOCL use cases; unit page = four steps) is built for all six units and committed. The session that built it crashed at 11:36. No work was lost: `994380a`, `1edeb3e` and `beee022` were committed before the crash, and `112aa48` (11:44) and `11876cc` (11:57) were committed after it. Five agreed front-end items are still open, and decisions D3, D5–D7 stay "Not yet" until the lever batch is in and the surrogates are refit.
+
+### What was built (commits, 2 Oct)
+- `994380a` 11:02 — decision API (`engines/decisions.py`, `routers/decisions.py`, D1–D9 with P1–P4 and IOCL use case, audit-only actions) + refinery home redesign (`PlantCanvas`, `UnitFlow`, `DecisionQueue`, `HomeStory`).
+- `1edeb3e` 11:02 — lever scenario in `scenario.m` (events 7–12), `run_lever_batch.sh`, surrogate `EVENT_INPUT` map, lakehouse loader.
+- `beee022` 11:21 — four-step unit page (`UnitStory.tsx`) + home polish.
+- `112aa48` 11:44 — process drawings for all six units (`UnitDrawings.tsx`), suspect-value flags, `/audit` restyled as the Decision record.
+- `11876cc` 11:57 — plain-words copy (why-list under the decision, engineer's note tucked away, checks without data shown as skipped).
+
+### The crash (11:36)
+- **Cause:** a full-page screenshot of 1600 × 2600 px was attached to the conversation; 2600 px is over the 2576 px limit for conversations carrying many images, and the session stopped.
+- **Impact:** none on code or data; the owner had to re-state the agreement (Voice Note 11, 12:02). The agreement was recovered word for word from the crashed session's log.
+- **Fix:** the screenshot script is now capped at 2400 px on the long side.
+
+### Data
+- `lever_v1` launched 12:15 UTC: 12 runs, seeds 200–211, `sim_octave/data/lever_v1/lever_s200…s211.csv`. Adds designed moves of preheat, regenerator T (air), PA2, reflux, cooling water and overhead T.
+- **Gap found while updating docs:** the surrogate fit (`engines/surrogates.py → _step_samples`) only reads `full_v1` runs named `random_sNNN`, so it will skip `lever_sNNN` runs as written. It needs a small change (include `lever_v1`, train / hold-out split, staged regimes) and a `SURROGATE_VERSION` bump before the refit.
+
+### Docs (uncommitted)
+- `verbatim.md` Part 9.5 (add-only): corrects Part 9's invented tags (`MV_cat_oil_ratio`, `SP_Fair_kNm3h`, `MV_PA_duty_MMBtu`, `SP_stab_reflux_ratio`, `SP_column_P_delta`, `SP_excess_O2_pct`), numbers (ROT really ≈ 966–969 °F, allowed 955–985; preheat 616 °F), unit train and dollar figures; real lever → decision table.
+- 2026-10-02 sections added to `build.md`, `features.md` (Epic K), `BDD.md` (BDD-31..34), `checklist.md` (Phase 22), `SDD.md`, `BUILD_PLAN_v3.md`, `docs/L0_BUILD_PLAN.md`, `demoflow.md`, `DECISIONS.md`, `cockpit/API_CONTRACT_v3.md` (§9 decisions API).
+
+### Next
+- [ ] Front end (in progress): ② estimate over time with lab points · ③ earlier decisions on this unit · ④ binding limits and, for "Not yet", the exact missing data · ① full tag list · footer action history.
+- [ ] Teach the surrogate fit to read `lever_v1`; refit when the batch finishes; feed one recipe back through Octave to confirm the predicted gain; then D3, D5–D7 may show target values.
+- [ ] Owner to approve committing the doc updates.
+
+---
+
 ## 2026-10-02 04:45 — UI v2 "instrument, not dashboard" (Voice Note 6) + Gemini can now describe the screen; Playwright 20 / 20
 
 **Finding first:** the owner's Voice Note 6 asked for the L0 to be simplified to *units + in / out of envelope* with the curves one hover away, and for Gemini to be able to "explain what is going on on the screen in full detail". Both are in. The home is now the Pyramid top-to-bottom — one-sentence headline (n of 6 in envelope · worst deviation since when · k recommendations), crude line, six flat tiles in process order (hero numeral, Δ vs plan, 1 px trend), shift timeline, trust footer — with a right-hand **detail pane** that shows the plant overview by default and swaps to a unit's fan curve, N(μ,σ), since-why lines and recommendation on hover / focus (📌 to pin). Colour is spent only on abnormality (ISA-101): pills and left stripes are gone everywhere, status is a dot + word, normal traces are neutral grey-blue, WATCH / ACT traces coloured. Demo controls (run, register, guide) moved into a collapsed "Scenario" tray. SDD-L0-V2-01..05, BDD-29 (question tree) and BDD-30 (screen-aware Gemini).

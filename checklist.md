@@ -6,8 +6,16 @@
 
 ---
 
+## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
+
+> Owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5; [build.md](build.md) top section). Home = top view of the refinery → what went wrong → decisions on units → flow ①–④ → IOCL use-case band. Unit page = ① Data in / out · ② What we observe · ③ Decision and lever · ④ How the move is found · footer. `/audit` = Decision record. Decisions D1, D2, D4, D8, D9 **Live**; D3, D5, D6, D7 **Not yet** (until `lever_v1` + refit). Tick list: **Phase 22** at the end of this file. Phases 18, 20, 21 screen layouts are superseded by Phase 22 (their engines stay).
+
+| Done (commit) | Open |
+|---|---|
+| ☑ Decision API + home redesign `994380a` · ☑ lever-batch code `1edeb3e` · ☑ four-step unit page `beee022` · ☑ six unit drawings + decision record `112aa48` · ☑ plain-words copy `11876cc` · ☑ ② estimate over time + labs, ③ earlier decisions, ④ binding limits + exact missing data, ① full tag list, footer action history, crude classifier `c694166` · ◐ surrogate fit reads `lever_v1` (code ready, uncommitted, 12:35) | ◐ `lever_v1` running (launched 12:15 UTC) · ☐ stage `lever_v1` regimes + refit · ☐ closed-loop simulator check · ☐ home page at 1366 px ("What went wrong" chips cut off) · ☐ Hindi / Hinglish check on the new parts |
+
 > [!IMPORTANT]
-> **Current status (2026-10-01 05:25 UTC):**
+> **Current status (2026-10-01 05:25 UTC):** *(superseded for screens by the 2026-10-02 section above)*
 > - **100% of Application Code Built & Tested (`208` pytest + `55` vitest pass):** Simulator port + validation (`A2`), controller auto/manual trim (`L4`), process-measurement noise (`L6`), steady-state filter (`A5`), prewhitened CCF lags (`A6`), 4-family committee + mixture (`B1/B4/B5/B6/B9/B10`), 7-signal trust + PCA novelty + spread gate + fallback chain (`C1/C2/C4/C7`), recommendations (`D5`), all **4 dashboards & 13 views** (`Decision`, `Technical`, `Modelling`, `Knowledge` + What-If `F7`, Labs `F10/E2`, Data Quality `F11`, Drift Sentinel `E1`, Demo Report Export `F14`, Job-record track `H6`, Wall Mode `F25`, and Topbar **7-Scene Demo & UI Guide** `DemoGuideModal.tsx`), 46-doc Knowledge corpus (`H1–H4`), Copilot text + ADK `root_agent` (`E5`), and Gemini Live voice (`F23`).
 > - **Batch `full_v1` Status (54/54 running, ZERO regeneration):** 45 main-wave runs at **660–780 / 1,600 min** (~45%–49% done, ETA **~15:00–16:00 UTC** today; `s139` & `s142` fast-resumed at min 601 & 661) + 9 recovery-wave runs at **60–120 / 1,600 min**. Disk space hardened (`~9–10 GB` free; remaining CSV writes need only `~50 MB`).
 > - **Remaining Critical Path (4 post-simulation steps, ~25 mins total, delegated per `delegation.md`):**
@@ -390,3 +398,51 @@ curl -s localhost:8010/api/health | python3 -m json.tool | grep -A3 knowledge
 - ☑ **Playwright**: `e2e/twin.spec.ts` L0 block rewritten for v2 (pyramid order, headline Q1, train register incl. stroke `rgb(159,179,200)` OK / `rgb(244,63,94)` ACT, pane default → hover → pin → focus, scenario tray, footer Q4, dark default / light persists) — **20 / 20 passed** (2026-10-02 04:31)
 - ☑ Screens: `docs/ui/L0_v2_home_dark.png`, `L0_v2_pane_dark.png` (U4 hovered), `L0_v2_home_light.png`, `L1_v2_u4_dark.png`
 - ☐ Optional polish carried forward: lower ChartStack band alpha (0.13 → ~0.08); MV panel reads flat in the demo run because the MVs are genuinely held (honest, not a bug)
+
+### Phase 22: Decision-first cockpit (owner agreement 2026-10-02 09:48–11:34 · Voice Note 11 · BDD-31..34 · Epic K)
+
+Agreement (owner's words, in order)
+- ☑ 09:48 decision first, data underneath · 09:53 redesign yes, owner roles not now · 10:16 each decision names its problem and IOCL use case, no value figures · 10:41 no left bar · 10:43 home brief · 10:48 four-step flow · 11:01 unit page spec · 11:20 commit then build all six units · 11:34 finish the front end first
+
+Back end
+- ☑ `app/engines/decisions.py` + `app/routers/decisions.py`: D1–D9 Decision objects with P1–P4 + IOCL use case; `GET /api/decisions`, `GET /api/decisions/{id}`, `POST /api/decisions/{id}/act` (audit only, 409 on withheld / watch), `GET /api/decisions-coverage`; `tests/test_decisions.py` — `994380a`
+- ☑ Honesty calls in code: D3 recipe withheld by the plausibility check (`PLAUSIBLE`); LCO-yield ripple hidden because the simulator sign is opposite to plant practice (`_ripple`) — `994380a`
+
+Home (`/twin`)
+- ☑ Top view of the six units, no left bar (`PlantCanvas.tsx`) — `994380a`
+- ☑ What went wrong, one line, unit glows (`L0Home.tsx`, `PlantCanvas.tsx`) — `994380a`
+- ☑ Decisions pinned to units, Accept / Hold 30 min (`PlantCanvas.tsx`, `HomeStory.tsx`, `DecisionQueue.tsx`) — `994380a`
+- ☑ Flow ①–④ under the drawing (`UnitFlow.tsx`) — `994380a`, `beee022`
+- ☑ IOCL use-case band (`HomeStory.tsx → UseCaseBand`) — `994380a`
+
+Unit page (`/twin/unit/{unit_id}`, `UnitStory.tsx`)
+- ☑ Four steps with sticky 1-2-3-4 strip, same dark look — `beee022`
+- ☑ ① Process drawing with live values for all six units (`UnitDrawings.tsx`), reading freshness, suspect-value flags — `beee022`, `112aa48`
+- ☑ ① Full tag list (collapsible) — `c694166`
+- ☑ ② Live vs expected band · four models' bell curves · crude-switch block — `beee022`, `11876cc`
+- ☑ ② Soft-sensor estimate over time with lab points (U4) — `c694166`
+- ☑ ② Crude classifier R1–R4 with "how it knows" — `c694166`
+- ☑ ③ Every decision for the unit (tabs), lever, what-if slider, Accept / Hold / Decline — `beee022`
+- ☑ ③ Earlier decisions on this decision (accepted / held / declined, with note) — `c694166`
+- ◐ ③ Lever allowed range — slider ±5 °F; SOP text only
+- ☑ ③ Ripple to next units hidden on purpose (honesty call) — `994380a`
+- ☑ ④ Goal and every check pass / fail; checks without data shown as skipped — `beee022`, `11876cc`
+- ☑ ④ Which limits actually bind the move — `c694166`
+- ☑ ④ For "Not yet": exactly what data is missing, how it gets fixed, what happens until then — `c694166`
+- ☑ Footer: IOCL use cases for this unit — `beee022`
+- ☑ Footer: history of actions on this unit — `c694166`
+
+Decision record and copy
+- ☑ `/audit` restyled as the Decision record (`components/record/DecisionRecord.tsx`) — `112aa48`
+- ☑ Client-facing text cleaned (developer notes, jargon removed; why-list under the decision; engineer's note tucked away) — `11876cc`
+
+Data for D3, D5–D7
+- ☑ Lever scenario in `sim_octave/scenario.m` (events 7–12: preheat, regenerator T / air, PA2, reflux, cooling water, overhead T), `run_lever_batch.sh`, surrogate `EVENT_INPUT` map — `1edeb3e`
+- ◐ `lever_v1` batch: 12 runs, seeds 200–211, `sim_octave/data/lever_v1/`, launched 12:15 UTC 2 Oct
+- ◐ Surrogate fit to include `lever_v1` — code ready 12:35 (reads `lever_sNNN`, train s200–s209 / hold-out s210–s211 via `training.lever_test_seed_min`, merges `lever_v1/_staged/regimes.csv`, refits automatically when the set of lever runs changes, `SURROGATE_VERSION` 6); awaiting commit
+- ☐ Stage `lever_v1` regimes after the batch (`sim_octave/stage_regimes.py --batch lever_v1`) and restart the API
+- ☐ Refit → D3, D5–D7 give real target values
+- ☐ Feed one recipe back through the simulator; observed change within the predicted band
+
+Docs
+- ☑ `verbatim.md` Part 9.5 corrections; build / features / BDD / SDD / checklist / BUILD_PLAN_v3 / L0_BUILD_PLAN / PROGRESS_LOG / demoflow / DECISIONS / API_CONTRACT_v3 updated to the agreement (2026-10-02, uncommitted)

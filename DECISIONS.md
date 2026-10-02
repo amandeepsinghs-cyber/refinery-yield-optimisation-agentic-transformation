@@ -4,7 +4,30 @@
 >
 > **Order of authority:** `DECISIONS.md` (facts) → `demoflow.md` (what we show) → `features.md` (what we build) → `SDD.md` (how) → `BDD.md` (acceptance) → `build.md` (order) → `checklist.md` (progress).
 
-Last updated: 2026-09-30 (Lead).
+Last updated: 2026-09-30 (Lead). **2026-10-02:** section 0 added (owner agreement 09:48–11:34 UTC).
+
+## 0. 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
+
+Owner's words recovered from the crashed session and confirmed by Voice Note 11; see [verbatim.md](verbatim.md) Part 9.5. **This section overrides P1 below** (four dashboards) and the older scope numbering in S1 (`D1` hydrotreater · `D2` cut points · `D3` trust), which is a different list from the decision inventory D1–D9 used in the cockpit; that old numbering was **renamed to OD1–OD3 on 2 Oct** (features.md, BDD.md); S1 keeps its original wording for history. The data facts D1–D9 in §2 are also a separate list.
+
+| # | Decision | Owner's words · time |
+|---|---|---|
+| U1 | **Decision first.** Every screen opens on a decision; the data that backs it sits underneath. | "The screen enables decisions and data is shown to back up those decisions." · 09:48 |
+| U2 | **No owner / role views** (no operator / shift-super / plant-manager screens or labels). | "Yes to the design reorganisation. Owner roles — not now." · 09:53 |
+| U3 | **No value figures on screens.** Each decision names its plant problem (P1–P4) and IOCL use case in one quiet line, no badges. IOCL's own benefit figures stay only in `refinery_optimisation_use_cases.md`, attributed to IOCL. Extends S2. | "Spell out the use case… without being tacky." · 10:16 |
+| U4 | **No left bar, no admin template.** | "I seriously loathe the design… left bar…" · 10:41 |
+| U5 | **Home** = top view of the refinery (the FCC's six units) → what went wrong → decisions pinned to units → how AI / ML / agents enable them (flow ①–④) → IOCL use-case band. | 10:43 |
+| U6 | **Unit page** = ① Data in / out · ② What we observe · ③ Decision and lever · ④ How the move is found · footer (use cases, action history). Fractionator first, then all six units. | 10:48, 11:00–11:01, 11:20 |
+| U7 | **Audit-only actions.** Accept / Hold 30 min / Decline write the audit log and the decision record (`/audit`); `control_system_write = false`; nothing reaches a control system or another person. Restates S3. | — |
+| U8 | **Honesty call — multi-set-point recipe withheld by the plausibility check.** If the predicted effect exceeds ±3 MW compressor power, ±50 lb/s furnace fuel or ±1.5 % of feed on any yield, D3 is shown as "Not yet" with the reason, not as advice. | 10:36 |
+| U9 | **Honesty call — LCO-yield ripple hidden.** The simulator's yield response to a cut-point move has the opposite sign to plant practice; the ripple entry shows no number and says why. | 10:36 |
+| U9a | **D1 consequence no longer states an LCO-yield number.** The consequence line reads "LCO heavier than spec: PA3 saturates in ~180 min if the cut point is not pulled back". | 2 Oct, owner approved |
+| U10 | **"Not yet" is a first-class answer.** D3, D5, D6, D7 stay "Not yet" until `lever_v1` (12 runs, seeds 200–211, launched 12:15 UTC 2 Oct) is in, the surrogates are refit and one recipe has been run back through the simulator to confirm the predicted gain. | Voice Note 10–11 |
+| U11 | **Front end first, then back end.** | "Just build the front end, then we fix the back end." · 11:34 |
+
+**Decision inventory (cockpit):** D1 cut point now or wait (`SP_LCO_T98`, `SP_HN_T98`) · D2 trust the estimate · D3 coordinated recipe (`SP_T_riser_ROT_F`, `MV_PA1..4`) · D4 which crude · D5 regenerator air (`Fair` via `SP_T_reg_F`) · D6 furnace preheat (`SP_T_preheat_F`) · D7 gas plant / stabiliser (`MV_reflux_ratio`, `MV_cw_flow`, `SP_T_overhead`) · D8 what first · D9 extra lab sample. Live: D1, D2, D4, D8, D9. Not yet: D3, D5, D6, D7.
+
+**Problems:** P1 quality known only every 8 h · P2 crude changes every 12–48 h · P3 a move in one unit shows up hours later in another · P4 an AI that always answers is dangerous.
 
 ## 1. Scope
 

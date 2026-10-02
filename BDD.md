@@ -2,7 +2,17 @@
 
 > **Companion documents:** [Demo case](BCC.md) · [Features](features.md) · [SDD](SDD.md) · [Build guide](build.md) · [Checklist](checklist.md) · [Problem statement](fcc_soft_sensor_problem_statement.md) · [Solution design](fcc_ai_driven_soft_sensor_solutions.md)
 >
+> **Legend (2 Oct):** OD1 hydrotreater · OD2 cut points · OD3 trust (old decision numbering; D1–D9 now means the decision inventory).
+>
 > **Purpose:** turn the design into **testable behaviours** written in Gherkin (Given / When / Then). Each scenario is an acceptance criterion, automated with `pytest-bdd` (back end) and Playwright (cockpit). **All `@demo` scenarios run on the simulated data** in `sim_octave/data/<batch>/` (BigQuery `fcc_sim_minute`).
+
+---
+
+## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
+
+> Owner 09:48–11:34 UTC 2 Oct and Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5). The acceptance tests for the agreed screens are **BDD-31 Home**, **BDD-32 Unit page four steps**, **BDD-33 Decision record and audit-only actions**, **BDD-34 "Not yet" behaviour** (§9). They override, where they conflict: BDD-16 (Decision dashboard layout), BDD-23 (unit workspaces), BDD-28 (L0 / L1 four zones) and BDD-29 (L0 question tree — in particular "the home contains no filled primary button": the agreed home **does** carry Accept / Hold on each decision). Safety (BDD-1), gate (BDD-15) and engine scenarios are unchanged.
+>
+> **Decision IDs:** in §9, D1–D9 are the decision inventory (D1 cut point now or wait · D2 trust · D3 coordinated recipe · D4 which crude · D5 regenerator air · D6 furnace · D7 gas plant / stabiliser · D8 what first · D9 extra lab sample). The older tags (hydrotreater severity / cut points / trust) were renamed `@OD1 @OD2 @OD3` on 2 Oct; Epic D feature IDs (D1–D5) in the traceability matrix are unchanged.
 
 ---
 
@@ -20,7 +30,7 @@ Tags:
 
 | Tag | Meaning |
 |---|---|
-| `@D1` `@D2` `@D3` | Decision supported: hydrotreater severity / cut points / trust |
+| `@OD1` `@OD2` `@OD3` | Decision supported: hydrotreater severity / cut points / trust |
 | `@demo` | Runs today on simulated data (a simulated batch, run and minute are named in the scenario or step) |
 | `@phase0` … `@phase4` | Site delivery phase (BCC §8) |
 | `@safety` | Must pass before any deployment |
@@ -142,7 +152,7 @@ Feature: Training and bias updates use correctly aligned, clean simulated data
     And it is still used for evaluation
 ```
 
-### BDD-3: Multi-Model Probabilistic Estimation `@D1 @D2`
+### BDD-3: Multi-Model Probabilistic Estimation `@OD1 @OD2`
 
 ```gherkin
 Feature: Real-time estimates with distributions from several model families
@@ -150,35 +160,35 @@ Feature: Real-time estimates with distributions from several model families
   I want an estimate and its probability distribution between lab results
   So that I stop running blind and can see how sure the system is
 
-  @D2 @demo
+  @OD2 @demo
   Scenario: Every model returns a distribution every minute
     Given the replay of simulated run "random_s140"
     When one simulated minute is processed
     Then Bayesian ridge, Hybrid delta, PINN ensemble and GPR each return a mean and a sigma > 0
     And a mixture distribution with q05, q50, q95, W90 and p_on_spec is published
 
-  @D2 @demo
+  @OD2 @demo
   Scenario: Estimate tracks a cut-point set-point move
     Given a simulated window with event_code = 5 (LCO T98 set-point move)
     When the fractionator responds
     Then the mixture median moves in the same direction as simulator truth
     And it lags truth by no more than the identified delay plus 5 minutes
 
-  @D1 @D2 @demo
+  @OD1 @OD2 @demo
   Scenario: Mixture combines admitted members by weight
     Given admitted members with recent MSE 1, 2 and 4 and a shadow member
     When the mixture is computed
     Then the weights are 0.571, 0.286 and 0.143, and the shadow member has weight 0
     And the mixture variance equals the within-member variance plus the between-member variance plus the bias variance
 
-  @D1 @phase3
+  @OD1 @phase3
   Scenario: Sulfur estimate responds to feed sulfur
     Given the blended assay sulfur in the 220-350 °C cut rises by 20%
     When the new feed reaches the riser
     Then the LCO sulfur mixture median increases, consistent with the regime slope
 ```
 
-### BDD-4: Trust Score `@D3`
+### BDD-4: Trust Score `@OD3`
 
 ```gherkin
 Feature: Calibrated trust level on every estimate
@@ -186,13 +196,13 @@ Feature: Calibrated trust level on every estimate
   I want to know whether I can act on an estimate before the lab confirms it
   So that I use good estimates and ignore bad ones
 
-  @D3 @demo
+  @OD3 @demo
   Scenario: All seven signals within limits
     Given committee spread, novelty, physics, track record, sensor health, regime familiarity and distribution spread all pass
     When the trust score is evaluated for the current simulated minute
     Then the trust level is GREEN
 
-  @D3 @demo
+  @OD3 @demo
   Scenario: One signal outside limits
     Given only the committee spread exceeds its limit
     When the trust score is evaluated for the current simulated minute
@@ -200,7 +210,7 @@ Feature: Calibrated trust level on every estimate
     And the displayed band is widened
     And an extra lab sample is requested
 
-  @D3 @demo
+  @OD3 @demo
   Scenario: Unfamiliar crude is flagged, not silently mispredicted
     Given the models were trained on simulated runs without the heavy crude family (API < 22)
     When a held-out simulated run enters API < 22
@@ -208,13 +218,13 @@ Feature: Calibrated trust level on every estimate
     And the trust level is AMBER or RED
     And the reason reads "new crude family (heavy), 0 labs in regime"
 
-  @D3 @demo
+  @OD3 @demo
   Scenario: Sensor fault drives RED
     Given key tag T_tray13_F is frozen in a replayed simulated run
     When the replay continues with the frozen tag
     Then within 30 minutes the sensor-health signal is severe and the trust level is RED
 
-  @D3 @demo
+  @OD3 @demo
   Scenario: Trust levels are calibrated
     Given estimates for all held-out simulated minutes with simulator truth
     When trust levels are compared with the simulator-truth errors
@@ -222,7 +232,7 @@ Feature: Calibrated trust level on every estimate
     And at least 80% of errors larger than 2R are WITHHELD or RED
 ```
 
-### BDD-5: Fallback Hierarchy `@safety @D3`
+### BDD-5: Fallback Hierarchy `@safety @OD3`
 
 ```gherkin
 Feature: Graceful degradation when estimates cannot be trusted
@@ -366,38 +376,38 @@ Feature: Several model families run, and only calibrated, accurate ones get weig
     Then the PINN sigma squared equals the mean member variance plus the variance of member means
 ```
 
-### BDD-10: Feed-Change Foresight `@D1 @phase3`
+### BDD-10: Feed-Change Foresight `@OD1 @phase3`
 
 ```gherkin
 Feature: Upcoming feed changes are anticipated
 
-  @D1 @phase3
+  @OD1 @phase3
   Scenario: Tank switch with a refractory recycle
     Given the schedule shows a tank switch and a CHGO recycle increase at 14:00
     When the agent runs the blend calculation
     Then it predicts feed S +18% and N +25% arriving at about 14:40
     And it publishes the 220-350 °C cut assay feature to the soft sensor
 
-  @D1 @phase3
+  @OD1 @phase3
   Scenario: Crude family with no training history
     Given a scheduled crude family with fewer than 3 training labs
     When Feed-Change Foresight assigns the regime label
     Then the agent flags "low regime familiarity" to the trust score
 ```
 
-### BDD-11: Cross-Unit Orchestrator `@D1 @phase3`
+### BDD-11: Cross-Unit Orchestrator `@OD1 @phase3`
 
 ```gherkin
 Feature: FCC quality forecasts become hydrotreater recommendations
 
-  @D1 @phase3
+  @OD1 @phase3
   Scenario: Recommendation ahead of the disturbance
     Given a GREEN, gate-PASS LCO sulfur forecast rising 15% over 2 hours
     When the Orchestrator evaluates the hydrotreater targets
     Then the Orchestrator recommends a WABT and H2/oil change timed to the feed arrival
     And it respects the catalyst end-of-run WABT limit
 
-  @D1 @phase3 @gate
+  @OD1 @phase3 @gate
   Scenario: No recommendation when the spread is too wide
     Given the LCO sulfur mixture is WITHHELD by the spread gate
     When the Orchestrator evaluates the hydrotreater targets
@@ -405,7 +415,7 @@ Feature: FCC quality forecasts become hydrotreater recommendations
     And it relays the spread-gate message
 ```
 
-### BDD-12: Gemini Copilot `@copilot @D3`
+### BDD-12: Gemini Copilot `@copilot @OD3`
 
 ```gherkin
 Feature: A live Gemini agent explains estimates and supports decisions
@@ -845,7 +855,7 @@ Feature: Voice questions to the Copilot through the Gemini Live API
 
 ## 4. Traceability Matrix
 
-| BDD | Features (features.md) | SDD | D1 | D2 | D3 | Safety |
+| BDD | Features (features.md) | SDD | OD1 | OD2 | OD3 | Safety |
 |---|---|---|---|---|---|---|
 | BDD-1 Safety | C3, C5 | SAF, API-01 | | | | ✅ |
 | BDD-2 Data & labs | A1–A5 | RAW, LAB, DQ, SS | ✅ | ✅ | ✅ | |
@@ -1354,3 +1364,184 @@ Feature: Gemini describes exactly what the operator is looking at
     Then the client sends {type:"context", page, time_min, lang, screen} (debounced 1.5 s, de-duplicated) and immediately on "ready"
     And the server injects the screen block as user content without completing the turn, so the next spoken question is answered for the current screen
 ```
+
+
+## 9. v5 Features: Decision-First Cockpit (`BDD-31` to `BDD-34`, 2026-10-02 agreement)
+
+> Rule (owner, 09:48): "The screen enables decisions and data is shown to back up those decisions." No role views, no value figures, no left bar. Status today: ✅ = passes on the built code (`11876cc`); ⏳ = item still being built.
+
+### BDD-31: Home — top view of the refinery, what went wrong, decisions on units `@ui @decision` (NEW)
+
+```gherkin
+Feature: The home shows the refinery, what went wrong and the decisions to take, in that order
+  As anyone opening the cockpit
+  I want to see the plant, the problem and the decision without hunting
+  So that the first thing I read is what to decide, with the data one click below
+
+  @ui @demo  # ✅
+  Scenario: Top view without a left bar
+    When the user opens /twin (random_s107, t 600)
+    Then the page shows the six units in flow order: Feed furnace, Riser reactor, Regenerator, Main fractionator, Gas plant, Stabiliser
+    And there is no left navigation bar and no admin-template side panel
+    And no unit outside these six (CDU, hydrocracker, reformer, alkylation) is drawn
+
+  @ui @demo  # ✅
+  Scenario: What went wrong, in one line
+    Given a unit has a sustained drift or an open decision
+    Then a single "What went wrong" line names it
+    And that unit glows on the drawing (amber drifting, red act, blue halo for an open decision)
+    And clicking the item opens that unit's flow
+
+  @ui @demo  # ✅
+  Scenario: Decisions pinned to their units
+    Given GET /api/decisions returns an open D1 for the main fractionator
+    Then a pin "1 Decide" sits on the main fractionator
+    And the decision shows its question, the lever move (set point from → to, °F) and Accept / Hold 30 min
+    And withheld decisions are pinned as "Not yet" and grouped under "Not yet — the cockpit will not guess"
+    And no decision card shows a currency amount or a value-per-year figure
+
+  @ui @demo  # ✅
+  Scenario: How AI, ML and agents make the decision possible
+    When the user selects a decision on the home
+    Then the four-step flow ① Data in / out → ② What we observe → ③ Decision and lever → ④ How the move is found appears under the drawing
+    And step ④ lists the chain that produced it (agent, ML model, checks, optimiser, Gemini) in plain words
+
+  @ui @demo  # ✅
+  Scenario: IOCL use-case band, quiet
+    Then a band lists the IOCL use cases from GET /api/decisions-coverage with state active / watching / quiet / not claimed
+    And each decision names its use case in one plain line, with no badges and no value figures
+    And "Coker, alkylation, gas turbines, flare, pipelines" is shown as not claimed
+```
+
+### BDD-32: Unit page — the four steps `@ui @decision` (NEW)
+
+```gherkin
+Feature: Clicking a unit opens its four steps, top to bottom
+  As a process engineer
+  I want the data, what we see, the decision and how the move was found for one unit
+  So that I can check the decision before I accept it
+
+  Background:
+    Given the user opens /twin/unit/unit_4_fractionator (random_s107, t 600)
+
+  @ui @demo  # ✅
+  Scenario: Same look, sticky step strip
+    Then the page has the same dark look as the home and no side bar
+    And a sticky strip shows 1 Data · 2 Observe · 3 Decide · 4 Optimise and jumps to each step
+
+  @ui @demo  # ✅ (tag list ⏳)
+  Scenario: ① Data in / out
+    Then the process drawing shows live values where the unit is measured and the lever set points
+    And each reading says how fresh it is (sensor every minute vs lab every 8 h)
+    And suspect readings are marked "under review"
+    # ⏳ And a collapsible list shows every tag for this unit
+
+  @ui @demo  # ✅ (estimate trend ⏳)
+  Scenario: ② What we observe
+    Then the live value is drawn against its expected band
+    And the four models' bell curves are shown against plan and spec with P(on-spec)
+    And the crude block says which crude is in the unit and when it switched
+    # ⏳ And the soft-sensor estimate is drawn over time with the lab results marked on it
+
+  @ui @demo  # ✅ (history ⏳)
+  Scenario: ③ Decision and lever
+    Then every decision for this unit is listed (open first)
+    And the selected decision shows the lever with its real tag (e.g. SP_LCO_T98), from → to, and a what-if slider
+    And Accept / Hold 30 min / Decline are available for an open decision
+    # ⏳ And decisions accepted, held or declined earlier on this unit are listed from the record
+
+  @ui @demo  # ✅ (binding limits ⏳)
+  Scenario: ④ How the move is found
+    Then the goal is stated and each check is shown with its value, limit and pass / fail
+    And checks without data are shown as skipped, not as passed
+    # ⏳ And the limits that actually constrain the move are named
+
+  @ui @demo  # ✅ (action history ⏳)
+  Scenario: Footer
+    Then the footer lists the IOCL use cases this unit serves
+    # ⏳ And the actions taken on this unit are listed
+
+  @ui  # ✅
+  Scenario: Every unit has a page
+    When the user opens each of the six unit pages
+    Then each shows a process drawing and the same four steps
+```
+
+### BDD-33: Decision record and audit-only actions `@safety @decision` (NEW)
+
+```gherkin
+Feature: Acting on a decision writes the record, never a control system
+  @safety @demo  # ✅
+  Scenario: Accept writes audit only
+    Given an open decision D1-u4-lco-random_s107-<onset>
+    When POST /api/decisions/{id}/act {"action": "accept", "run_id": "random_s107", "time_min": 600}
+    Then the response has ok = true, an audit_id and the note "recorded in the audit log only; nothing is written to any control system"
+    And the audit entry carries control_system_write = false, the decision type, unit, moves, problem and use case
+    And GET /api/decisions at the same minute shows that decision as "accepted"
+
+  @safety  # ✅
+  Scenario: Nothing to accept on a withheld or watch decision
+    Given a decision with status "withheld" or "watch"
+    When POST /api/decisions/{id}/act {"action": "accept"}
+    Then the API answers 409 "decision is withheld; there is no move to accept"
+
+  @demo  # ✅
+  Scenario: Hold re-opens after 30 minutes
+    When the user holds an open decision at minute t
+    Then it shows "Held" until t + 30 and is open again afterwards
+
+  @api  # ✅
+  Scenario: Bad input
+    Then action other than accept | hold | decline → 400
+    And a decision id not live at that minute → 404
+
+  @ui @demo  # ✅
+  Scenario: Decision record page
+    When the user opens /audit
+    Then it is titled as the decision record and lists who did what, when, on which unit
+    And it includes every time the trust checks held advice back ("Advice withheld") and released it
+```
+
+### BDD-34: "Not yet" — the cockpit says when it will not guess `@gate @decision` (NEW)
+
+```gherkin
+Feature: A decision the models cannot support is shown, with the reason, and no move
+  @gate @demo  # ✅
+  Scenario: Spread too wide
+    Given the LCO estimate's spread W90 is above 14 °F
+    Then D2 "Can the LCO estimate be trusted right now?" is shown with status "Not yet" and the plain reason
+    And no set-point move is offered
+    And D9 "Pull an extra sample" is offered when the next lab is at least 120 min away
+
+  @gate @demo  # ✅
+  Scenario: Coordinated recipe withheld by the plausibility check
+    Given a crude switch within the last 12 h
+    And the multi-set-point search predicts compressor power beyond ±3 MW, furnace fuel beyond ±50 lb/s or any yield beyond ±1.5 % of feed
+    Then D3 is shown as "Not yet" with "the model extrapolates beyond physical range (…); needs the lever-move batch"
+
+  @gate @demo  # ✅
+  Scenario: Levers with no designed moves in the training data
+    Given the regenerator, furnace, gas plant or stabiliser drifts
+    Then D5, D6 or D7 is shown as "Not yet" with "the training data has no designed moves of these set points"
+    # ⏳ And the card names the exact levers missing (e.g. Fair, SP_T_preheat_F, MV_reflux_ratio, MV_cw_flow, SP_T_overhead) and that the lever_v1 batch adds them
+
+  @gate @demo  # ✅
+  Scenario: Ripple with the wrong sign is hidden
+    Given a cut-point move whose simulated LCO-yield response has the opposite sign to plant practice
+    Then the ripple entry shows no number and says why ("verify on plant data before quoting")
+
+  @gate  # ⏳ after lever_v1 refit
+  Scenario: Not yet becomes Live only after a closed-loop check
+    Given the surrogates are refit on lever_v1
+    When one D3 recipe is run back through the simulator
+    Then the observed change is within the predicted band before D3, D5–D7 may show target values
+```
+
+#### Traceability (Epic K)
+
+| BDD | Features | Code |
+|---|---|---|
+| BDD-31 | K2, K1 | `components/twin/l0/L0Home.tsx`, `PlantCanvas.tsx`, `UnitFlow.tsx`, `HomeStory.tsx`, `DecisionQueue.tsx` |
+| BDD-32 | K3, K6–K10 | `components/twin/l1/UnitStory.tsx`, `UnitDrawings.tsx` |
+| BDD-33 | K1, K4 | `api/app/engines/decisions.py` (`act`), `api/app/routers/decisions.py`, `components/record/DecisionRecord.tsx`, `api/tests/test_decisions.py` |
+| BDD-34 | K5, K9, K11 | `decisions.py` (`GATE_TEXT`, `PLAUSIBLE`, `_ripple`) |

@@ -5,6 +5,37 @@
 
 ---
 
+## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
+
+> Owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([`verbatim.md`](verbatim.md) Part 9.5). **§4 Screens and §6 Demo storyline below are superseded** (§0–§3 problem, data, use cases and engines still stand). Demo walk-through: [`demoflow.md`](demoflow.md) 2026-10-02 section.
+
+**Rule:** the screen enables a decision; data backs it up. No role views, no value figures, no left bar; Accept / Hold / Decline → audit log only.
+
+**Screens (replace §4):**
+* **Home `/twin`** — top view of the six units (Feed furnace → Riser reactor → Regenerator → Main fractionator → Gas plant → Stabiliser) → what went wrong (one line, unit glows) → decisions pinned to units (Accept / Hold) → four-step flow ①–④ (how agents, ML, checks, optimiser, Gemini enable it) → IOCL use-case band.
+* **Unit page `/twin/unit/{unit_id}`** — ① Data in / out · ② What we observe · ③ Decision and lever · ④ How the move is found · footer with this unit's use cases. Replaces the L1 workbench zones (Data · Analysis · Models · Decisions); the old view stays at `?view=classic`.
+* **Decision record `/audit`**.
+
+**Decisions and real levers (the recipe in §3 E4 is D3):**
+
+| Decision | Lever (real tag) | Problem | Use case | Status |
+|---|---|:-:|---|---|
+| D1 cut point now or wait | `SP_LCO_T98`, `SP_HN_T98` | P1 | UC-01, UC-11 | Live |
+| D2 trust the estimate | — | P4 | UC-11 | Live |
+| D9 extra lab sample | sampling | P1, P4 | UC-11 | Live |
+| D4 which crude | — | P2 | Feedstock evaluation | Live |
+| D8 what first | — | P3 | UC-06, UC-08, UC-09 | Live (watch items) |
+| D3 coordinated recipe | `SP_T_riser_ROT_F`, `MV_PA1..4`, cut points | P2, P3 | UC-01, UC-06 | Not yet (plausibility check; PA never moved) |
+| D5 regenerator air | `Fair` (via `SP_T_reg_F`) | P3 | UC-04 | Not yet |
+| D6 furnace preheat / O₂ | `SP_T_preheat_F` (no O₂ set point) | P2, P3 | UC-05, UC-10 | Not yet |
+| D7 gas plant / stabiliser | `MV_reflux_ratio`, `MV_cw_flow`, `SP_T_overhead` | P3 | UC-02, UC-03, UC-07 | Not yet |
+
+Note on §3 E4: cat-to-oil is not a set point in the simulator, and `Fair` is moved through `SP_T_reg_F`.
+
+**Done:** `994380a` decision API + home · `1edeb3e` lever batch code · `beee022` four-step unit page · `112aa48` six drawings + decision record · `11876cc` plain words. **Open:** `lever_v1` (12 runs, seeds 200–211) running since 12:15 UTC 2 Oct → surrogate refit (the fit must first be taught to read `lever_v1`) → one recipe back through Octave (the §5 P3 acceptance "replaying recipe in simulator beats hold" — still not done) → D3, D5–D7 Live. Front end: ② estimate over time + labs · ③ earlier decisions on the unit · ④ binding limits + exact missing data · ① full tag list · footer action history.
+
+---
+
 ## 0. The problem we are solving (re-anchored)
 
 Refineries change crude slate / tank blend every 12–48 h. Models trained on historical averages and lab feedback that lags 4–12 h leave every unit running on sub-optimal parameters through and after each switch — losing high-value yield (LCO, naphtha, LPG/C5) and wasting energy, coke and quality giveaway.
@@ -93,7 +124,7 @@ Agents: **Refinery Systems Agent** (consequence rules over the 3 loops: catalyst
 
 ---
 
-## 4. Screens (sober, light default + dark toggle, no grey curves)
+## 4. Screens (sober, light default + dark toggle, no grey curves) — *superseded 2026-10-02, see top section*
 
 * **L0 Refinery Twin** — whole-plant flat PFD (approved mockup); **crude-slate banner** (declared vs detected, transition %); per-block KPI vs plan, status, decisions/flags; "Needs attention" with systemic consequence lines; shift timeline. No charts.
 * **L1 Unit Workbench** (per unit, FCC fractionator first) — I/O strip · aligned trends: measured vs expected (plan ± tol, spec), residual with breach marker, MVs, disturbances, **yield row** · event ribbon · right rail: **Regime & model-adaptation panel**, **Recipe card** (multi-SP), model evidence (members, physics checks, gate), decision, Gemini scoped (Hindi-first).
@@ -115,7 +146,7 @@ Agents: **Refinery Systems Agent** (consequence rules over the 3 loops: catalyst
 
 ---
 
-## 6. Demo storyline (what the plant head sees)
+## 6. Demo storyline (what the plant head sees) — *superseded 2026-10-02: the coordinated recipe is "Not yet" today; see [`demoflow.md`](demoflow.md)*
 1. L0: plant green; crude banner "Declared: Arab Light · Detected: Arab Light 100 %".
 2. 02:10 a tank switch starts (12 h ramp). 02:40 banner: "Detected: Basrah-type 35 % → novelty 0.4"; Systems Agent: "Riser ΔT rising; expect LCO T98 to drift above plan in ~90 min; fractionator PA3 will saturate if unadjusted."
 3. Click FCC → workbench: residual breach at 03:05 (before 06:00 lab); recipe card: 5 coordinated SP moves; P(on-spec) 96 %; +0.4 % LCO yield; fuel −0.3 lb/s.
@@ -132,3 +163,8 @@ Agents: **Refinery Systems Agent** (consequence rules over the 3 loops: catalyst
 - **Section contract added (SDD-L1-07):** clicking a section shows Data · Analysis · Models · Decisions for that section only, served by `GET /api/unit/{unit_id}/workbench` (API_CONTRACT_v3 §5).
 - **Screen-scoped Gemini added (SDD-GEM-01..04):** Gemini always knows which screen is open (L0 → plant snapshot, L1 → unit snapshot) and may still answer about the whole refinery.
 - Binding contract for the build: [`cockpit/API_CONTRACT_v3.md`](cockpit/API_CONTRACT_v3.md). Design references: [`design/`](design/README.md).
+
+**2026-10-02 (decision-first agreement).**
+- Owner agreement 09:48–11:34 UTC recovered after the session crash and written into the docs (top section of this file; `verbatim.md` Part 9.5 corrects the invented tags and numbers in Part 9).
+- Built: decision API + home (`994380a`), lever-batch code (`1edeb3e`), four-step unit page (`beee022`), six unit drawings + decision record (`112aa48`), plain-words copy (`11876cc`).
+- `lever_v1` launched 12:15 UTC (12 runs, seeds 200–211) to give D3, D5–D7 real data; refit and one closed-loop simulator check follow.
