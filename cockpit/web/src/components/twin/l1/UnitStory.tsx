@@ -32,6 +32,8 @@ import ChartStack from "@/components/twin/l1/ChartStack";
 import { FLOW, NAME } from "@/components/twin/l0/UnitFlow";
 import UnitDrawing, { HAS_DRAWING } from "./UnitDrawings";
 import { SUSPECT, isSuspect } from "@/lib/suspect";
+import { StepHowStrip, UnitUseCases } from "@/components/how/UseCaseExplainer";
+import type { StepKey } from "@/lib/howItWorks";
 import { EarlierDecisions, EstimateTrack, MissingData, TagList, UnitActions, WhatSetsTheMove, useUnitActions } from "./UnitStoryExtras";
 
 const RANK: Record<string, number> = { open: 0, held: 1, watch: 2, withheld: 3, accepted: 4, declined: 5 };
@@ -212,10 +214,11 @@ function GenericDrawing({ data }: { data: TwinWorkbench }) {
 
 /* ---------------------------------------------------------------------------------------------------------------- */
 
-function Step({ n, id, title, who, children }: { n: number; id: string; title: string; who?: React.ReactNode; children: React.ReactNode }) {
+function Step({ n, id, title, who, k, children }: { n: number; id: string; title: string; who?: React.ReactNode; k: StepKey; children: React.ReactNode }) {
   return (
     <section className="us-sec" id={id} aria-labelledby={`${id}-h`}>
       <header className="us-sec-h"><span className="us-n">{n}</span><h2 id={`${id}-h`}>{title}</h2>{who ? <span className="us-whos">{who}</span> : null}</header>
+      <StepHowStrip k={k} />
       {children}
     </section>
   );
@@ -371,15 +374,17 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           <LangToggle />
         </div>
         <nav className="us-steps" aria-label="Steps">
-          <a href="#s-data"><i>1</i>Data</a><a href="#s-observe"><i>2</i>Observe</a>
+          <a href="#s-why"><i>?</i>What it solves</a><a href="#s-data"><i>1</i>Data</a><a href="#s-observe"><i>2</i>Observe</a>
           <a href="#s-decide" className={d?.status === "open" ? "hot" : ""}><i>3</i>Decide{ds.filter((x) => x.status === "open").length ? <b className="num">{ds.filter((x) => x.status === "open").length}</b> : null}</a>
           <a href="#s-optimise"><i>4</i>Optimise</a>
           <Link href={`/twin/unit/${unitId}?view=classic`} className="us-classic">Engineer view (all panels)</Link>
         </nav>
       </header>
 
+      <UnitUseCases unitId={unitId} />
+
       {/* ① DATA */}
-      <Step n={1} id="s-data" title="Data in and out" who={<><Who k="data">historian · every minute</Who><Who k="data">lab · every 8 h</Who></>}>
+      <Step n={1} k="data" id="s-data" title="Data in and out" who={<><Who k="data">historian · every minute</Who><Who k="data">lab · every 8 h</Who></>}>
         <div className="us-grid data">
           <div className="us-drawwrap">{isU4 ? <FracDrawing at={at} /> : HAS_DRAWING.has(unitId) ? <UnitDrawing unitId={unitId} at={at} /> : <GenericDrawing data={data} />}</div>
           <div className="us-side">
@@ -403,7 +408,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
       </Step>
 
       {/* ② OBSERVE */}
-      <Step n={2} id="s-observe" title="What we observe" who={<><Who k="agent">drift-watch agent</Who><Who k="ml">soft sensor</Who><Who k="ml">crude-regime model</Who></>}>
+      <Step n={2} k="observe" id="s-observe" title="What we observe" who={<><Who k="agent">drift-watch agent</Who><Who k="ml">soft sensor</Who><Who k="ml">crude-regime model</Who></>}>
         <div className="us-facts">
           {d?.observed?.estimate != null ? (
             <div className="us-fact big"><span>Estimate now</span><b className="num">{fx(d.observed.estimate, 1)} <small>± {fx(d.observed.sigma, 1)} {d.observed.unit}</small></b><em>chance on spec {pct(p?.p_on_spec_before)}</em></div>
@@ -435,7 +440,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
       </Step>
 
       {/* ③ DECIDE */}
-      <Step n={3} id="s-decide" title="Decision and lever">
+      <Step n={3} k="decide" id="s-decide" title="Decision and lever">
         {ds.length > 1 ? (
           <div className="us-tabs" role="tablist">{ds.map((x) => (
             <button key={x.id} type="button" role="tab" aria-selected={x.id === d?.id} className={`us-tab p-${x.status} ${x.id === d?.id ? "on" : ""}`} onClick={() => setSel(x.id)}>
@@ -467,7 +472,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 <button type="button" className="hs-btn ghost" onClick={() => ask(`Explain decision "${d.headline}" (${d.id}): what we observe, the lever, what happens if we hold.`)}>Ask Gemini</button>
                 {d.action ? <span className="subtle">{d.action.action} at {d.action.time_label} · recorded in audit, nothing sent to the plant</span> : null}
               </div>
-              <p className="us-uc">IOCL use case · {d.use_cases.map((x) => x.iocl_title).join(" · ")}<Link className="us-how" href={`/how-it-works#${d.type}`}>How this decision is made →</Link><br /><span className="subtle">Problem it solves · {d.problem_text.join(" ")}</span></p>
+              <p className="us-uc">IOCL use case · {d.use_cases.map((x) => x.iocl_title).join(" · ")}<a className="us-how" href="#s-why">How this is solved ↑</a><br /><span className="subtle">Problem it solves · {d.problem_text.join(" ")}</span></p>
               <h3 className="us-earlier-h">Earlier on this decision</h3>
               <EarlierDecisions rows={actions} d={d} />
             </div>
@@ -513,7 +518,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
       </Step>
 
       {/* ④ OPTIMISE */}
-      <Step n={4} id="s-optimise" title="How the move is found" who={<><Who k="optimiser">optimiser</Who><Who k="check">trust checks</Who></>}>
+      <Step n={4} k="optimise" id="s-optimise" title="How the move is found" who={<><Who k="optimiser">optimiser</Who><Who k="check">trust checks</Who></>}>
         {d?.enabled_by?.length ? (
           <ol className="us-chain">{d.enabled_by.map((s, i) => (
             <li key={i} className={`k-${s.kind}`}><span className="hs-kind">{KIND[s.kind] ?? s.kind}</span><b>{s.name}</b><span>{s.did}</span></li>

@@ -109,7 +109,6 @@ export function isRailActive(pageHref: string, pathname: string): boolean {
 
 export const SHARED_PAGES: NavPage[] = [
   { href: "/audit", label: "Decision record", Icon: IconAudit },
-  { href: "/how-it-works", label: "How it works", Icon: IconAudit },
   { href: "/settings", label: "Settings", Icon: IconGear, planned: true },
 ];
 

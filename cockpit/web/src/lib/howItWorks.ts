@@ -348,3 +348,59 @@ export const UC_DETAIL: Record<string, UseCaseDetail> = {
     valueArea: "Reliability",
   },
 };
+
+/* ---------------------------------------------------------------- on-screen explainers (owner, 14:49)
+ * "We have a product build and different screens; we need a how it works there, not as a separate dangler." The unit
+ * page carries its own use cases (top) and a how-this-step-works strip under each step ①–④. Use cases always in IOCL
+ * order (#1 … #11, then the catalogue). */
+
+const ioclRank = (row: string) => (row.startsWith("#") ? Number(row.slice(1)) : 99);
+USE_CASES.sort((a, b) => ioclRank(a.row) - ioclRank(b.row));
+
+/** IOCL use cases each unit page explains, in IOCL order. */
+export const UNIT_UCS: Record<string, string[]> = {
+  refinery: ["UC-06", "FEED"],
+  unit_1_furnace: ["UC-05", "UC-10"],
+  unit_2_riser: ["UC-06", "UC-08", "UC-09"],
+  unit_3_regenerator: ["UC-04"],
+  unit_4_fractionator: ["UC-01", "UC-06", "UC-11", "FEED"],
+  unit_5_condenser: ["UC-02", "UC-03", "UC-07"],
+  unit_6_stabiliser: ["UC-02", "UC-03"],
+};
+
+export type StepKey = "data" | "observe" | "decide" | "optimise";
+
+export interface StepHow {
+  q: string;
+  by: string;
+  parts: PartId[];
+  io: [string, string];
+  read: string;
+}
+
+export const STEP_HOW: Record<StepKey, StepHow> = {
+  data: {
+    q: "What is the unit reading right now, and how fresh is it?",
+    by: "Plant historian (every minute) and the lab (every 8 h)", parts: [],
+    io: ["Every sensor tag on this unit", "The numbers every later step stands on"],
+    read: "The drawing shows each live reading where it is measured. The list shows every tag, its value and how old it is.",
+  },
+  observe: {
+    q: "Is something off, which crude is running, and what is the quality now?",
+    by: "", parts: ["watch", "crude", "estimators"],
+    io: ["The tags from step ①", "How far the unit has drifted and since when · the crude, with a % · the quality now ± its spread and the chance on spec"],
+    read: "Top chart: measured against expected. When the two lines part, the unit has drifted. Second chart: the gap, with its ±3σ limits (dashed) and CUSUM (orange). Crossing a dashed line is a breach; a CUSUM that keeps climbing is a slow, lasting drift. Bell curves: what the models believe now, against plan and spec (four estimators on the fractionator, the crude model on other units). The more they overlap, the more the estimate can be trusted.",
+  },
+  decide: {
+    q: "What should be moved, and by how much?",
+    by: "", parts: ["response", "optimiser"],
+    io: ["The estimate from step ② and the lever’s limits", "The move (from → to) and the chance on spec before → after. Accept / Hold / Decline goes to the decision record only."],
+    read: "The slider tries another move and shows what it would do. Solid bell = now; dashed bell = after the move. The bar under “Levers” shows where the lever sits in its allowed range.",
+  },
+  optimise: {
+    q: "Why this move, and is it safe to advise?",
+    by: "", parts: ["checks", "optimiser", "gemini"],
+    io: ["The proposed move and the models’ spread", "Every check with its value and limit, and which limit set the size of the move"],
+    read: "Green bars pass. If any check fails, the advice turns into “Not yet” with the reason. “What sets the size of the move” says whether the goal, the SOP step or the room to the limit decided it.",
+  },
+};

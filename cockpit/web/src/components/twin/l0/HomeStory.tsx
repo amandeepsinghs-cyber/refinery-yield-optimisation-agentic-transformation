@@ -6,7 +6,6 @@
  * and, underneath, the IOCL use cases this shift is exercising. Every number comes from /api/twin and /api/decisions.
  */
 
-import Link from "next/link";
 import UseCaseExplainer from "@/components/how/UseCaseExplainer";
 import { UC_DETAIL } from "@/lib/howItWorks";
 import { useEffect, useState } from "react";
@@ -150,8 +149,7 @@ export function UseCaseBand({ rows, selected }: { rows: CoverageRow[]; selected:
   useScreenPart("use_cases", rows.map((r) => ({ use_case: r.iocl_title, row: r.iocl_row, state: r.state })));
   return (
     <section className="ucb" data-testid="use-case-band" aria-label="IOCL use cases">
-      <h2 className="hs-h">IOCL use cases this shift <span className="ucb-hint">click one to see how it is solved</span>
-        <Link href="/how-it-works#usecases" className="us-how">All, stage by stage →</Link></h2>
+      <h2 className="hs-h">IOCL use cases this shift <span className="ucb-hint">click one to see how it is solved</span></h2>
       <ul className="ucb-list">
         {rows.map((r) => {
           const id = r.platform_id;

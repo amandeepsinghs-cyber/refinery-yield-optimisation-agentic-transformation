@@ -21,6 +21,7 @@ import PlantCanvas from "./PlantCanvas";
 import ShiftTimeline from "./ShiftTimeline";
 import UnitFlow from "./UnitFlow";
 import { UseCaseBand } from "./HomeStory";
+import { UnitUseCases } from "@/components/how/UseCaseExplainer";
 
 const SHORT: Record<string, string> = {
   unit_1_furnace: "Furnace", unit_2_riser: "Riser", unit_3_regenerator: "Regenerator",
@@ -134,6 +135,7 @@ export default function L0Home() {
           runId={runId} timeMin={t} onActed={refresh} />
       ) : null}
 
+      <UnitUseCases unitId="refinery" />
       {coverage.length ? <UseCaseBand rows={coverage} selected={dec} /> : null}
 
       <section className="dpath" aria-label="Data path">

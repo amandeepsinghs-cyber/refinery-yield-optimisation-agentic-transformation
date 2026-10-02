@@ -179,8 +179,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <div className="scenario-tray-body">
               <span className="tray-label">Simulated run</span>
               <div className="tray-row"><RunPropertySelect /></div>
-              <span className="tray-label">Walkthrough</span>
-              <div className="tray-row"><Link href="/how-it-works" className="strip-link">How it works</Link></div>
             </div>
           </details>
         </div>

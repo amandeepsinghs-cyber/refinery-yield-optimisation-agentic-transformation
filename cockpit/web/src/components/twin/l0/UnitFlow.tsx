@@ -176,7 +176,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
               <ul className="uf-opt">
                 <li><span>Goal</span>keep the product on spec (≥ 95 %) with the smallest move</li>
                 <li><span>Limits</span>SOP step ≤ 5 °F, 30 min between moves, set-point range</li>
-                <li><span>Model</span>4-model soft-sensor committee, weights for crude {d.enabled_by?.find((s) => s.name.startsWith("Crude"))?.did.match(/R\d[^;]*/)?.[0] ?? "in unit"}</li>
+                <li><span>Model</span>{d.predicted?.model ?? `4-model soft-sensor committee, weights for crude ${d.enabled_by?.find((s) => s.name.startsWith("Crude"))?.did.match(/R\d[^;]*/)?.[0] ?? "in unit"}`}</li>
                 <li><span>Checks</span>{d.gates.filter((g) => g.pass).length} of {d.gates.length} pass before advising</li>
               </ul>
               <GaussianPdf members={members} spec={spec != null ? { hi: spec, label: "spec" } : null} unit="°F" height={84} compact showMixture={false} showP={false} ariaLabel="before and after" />
