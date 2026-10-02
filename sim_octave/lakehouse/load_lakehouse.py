@@ -482,7 +482,7 @@ def knowledge_zone(dry: bool, work: pathlib.Path, embed: bool = True) -> dict:
                          "tags": ",".join(meta.get("tags", [])) if isinstance(meta.get("tags"), list) else str(meta.get("tags") or ""),
                          "source_system": "knowledge-corpus"})
     # repo documentation that explains the system (architecture, BDD/SDD, data flow) → knowledge/documentation
-    for name in ("data_and_analytics_flow.md", "BDD.md", "SDD.md", "DECISIONS.md", "refinery_optimisation.md", "demoflow.md"):
+    for name in ("data_and_analytics_flow.md", "BDD.md", "SDD.md", "DECISIONS.md", "refinery_optimisation_use_cases.md", "demoflow.md"):
         p = REPO / name
         if p.exists():
             gcs_cp(p, f"gs://{BUCKET}/knowledge/documentation/{name}", dry)
@@ -643,7 +643,7 @@ def main() -> None:
         status()
         return
     in_dir = pathlib.Path(a.in_dir) if a.in_dir else HERE.parent / "data" / a.batch
-    runs = sorted(p for p in in_dir.glob("*.csv") if p.stem.startswith("random_") or p.stem.startswith("crude_") or p.stem.startswith("scenario_"))
+    runs = sorted(p for p in in_dir.glob("*.csv") if p.stem.startswith(("random_", "crude_", "scenario_", "lever_")))
     if a.runs:
         keep = set(a.runs.split(","))
         runs = [p for p in runs if p.stem in keep]

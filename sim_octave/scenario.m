@@ -60,6 +60,24 @@ switch name
     SP(3) = p.sp_hn(m); SP(4) = p.sp_lco(m);
     s.crude_id = p.crude_id(m); s.event = p.event(m);
     s.lab = p.lab(m); s.cut_auto = p.cut_auto(m);
+
+  % ---------------- lever-coverage batch (lever_v1) ----------------
+  % Same crude walk / labs / cut-point schedule as 'random', plus designed ramped moves of the levers the
+  % full_v1 batch never moves, so the regime surrogates (E2) and the recipe (E4) learn their effect:
+  %   7 preheat SP ufcc(10)   8 regenerator T SP ufcc(13) (air demand follows)   9 PA2 duty MV(4)
+  %  10 reflux MV(1)         11 cooling-water flow MV(2)                         12 overhead T SP SP(2)
+  case 'lever'
+    if ~isfield(s, 'prof')
+      s.prof = build_random(base, 1, 360, 480, 'lever');
+    end
+    p = s.prof; m = min(minute, numel(p.api));
+    dist(2) = p.api(m); ufcc(1) = p.feed(m); ufcc(15) = p.rot(m);
+    dist(3) = p.tfeed(m); dist(4) = p.cond(m);
+    SP(3) = p.sp_hn(m); SP(4) = p.sp_lco(m);
+    ufcc(10) = p.preheat(m); ufcc(13) = p.treg(m);
+    MV(4) = p.pa2(m); MV(1) = p.reflux(m); MV(2) = p.cw(m); SP(2) = p.tover(m);
+    s.crude_id = p.crude_id(m); s.event = p.event(m);
+    s.lab = p.lab(m); s.cut_auto = p.cut_auto(m);
   otherwise
     error('unknown scenario: %s', name);
 end
@@ -113,6 +131,23 @@ for r = 1:size(specs, 1)
     ev = [ev; t, code, sampler(), rmp]; t = t + u(gap(1), gap(2)) * 60 * tscale;
   end
 end
+if strcmp(mode, 'lever')
+  sgn = @() 2 * (rand() < 0.5) - 1;           % random direction, magnitude bounded away from zero
+  lever = { % code, first(h), gap(h), sampler, ramp
+    7,  [1 6], [4 8], @() base.ufcc(10) + sgn() * u(3, 8), 30;
+    8,  [1 6], [4 8], @() base.ufcc(13) + sgn() * u(4, 10), 30;
+    9,  [1 6], [4 8], @() base.MV(4) * (1 + sgn() * u(0.03, 0.08)), 30;
+    10, [1 6], [4 8], @() base.MV(1) * (1 + sgn() * u(0.03, 0.08)), 30;
+    11, [1 6], [4 8], @() base.MV(2) * (1 + sgn() * u(0.03, 0.06)), 30;
+    12, [1 6], [4 8], @() base.SP(2) + sgn() * u(2, 5), 20};
+  for r = 1:size(lever, 1)
+    [code, first, gap, sampler, rmp] = lever{r, :};
+    t = u(first(1), first(2)) * 60 * tscale;
+    while t < Tmax
+      ev = [ev; t, code, sampler(), rmp]; t = t + u(gap(1), gap(2)) * 60 * tscale;
+    end
+  end
+end
 ev = sortrows(ev, 1);
 ev(1, 1) = max(ev(1, 1), 30);
 for i = 2:size(ev, 1)          % enforce spacing between consecutive moves
@@ -128,6 +163,12 @@ p.rot = pw_profile(tt, base.ufcc(15), ev(ev(:, 2) == 3, :));
 p.tfeed = pw_profile(tt, base.dist(3), ev(ev(:, 2) == 4, :));
 p.sp_lco = pw_profile(tt, base.SP(4), ev(ev(:, 2) == 5, :));
 p.sp_hn = pw_profile(tt, base.SP(3), ev(ev(:, 2) == 6, :));
+p.preheat = pw_profile(tt, base.ufcc(10), ev(ev(:, 2) == 7, :));
+p.treg = pw_profile(tt, base.ufcc(13), ev(ev(:, 2) == 8, :));
+p.pa2 = pw_profile(tt, base.MV(4), ev(ev(:, 2) == 9, :));
+p.reflux = pw_profile(tt, base.MV(1), ev(ev(:, 2) == 10, :));
+p.cw = pw_profile(tt, base.MV(2), ev(ev(:, 2) == 11, :));
+p.tover = pw_profile(tt, base.SP(2), ev(ev(:, 2) == 12, :));
 p.cond = base.dist(4) - u(0, 0.045) * (tt / Tmax);   % slow condenser fouling
 p.crude_id = 1 + arrayfun(@(x) sum(ev(ev(:, 2) == 1, 1) <= x), tt);
 p.event = zeros(Tmax, 1);

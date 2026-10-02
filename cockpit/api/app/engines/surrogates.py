@@ -53,7 +53,10 @@ OUTPUTS = [
 INPUTS = CANDIDATE_INPUTS  # legacy name
 
 # designed-move event codes in scenario.m -> the set point they ramp
-EVENT_INPUT = {3: "SP_T_riser_ROT_F", 5: "SP_LCO_T98", 6: "SP_HN_T98"}
+EVENT_INPUT = {3: "SP_T_riser_ROT_F", 5: "SP_LCO_T98", 6: "SP_HN_T98",
+               # lever_v1 batch (scenario 'lever'): 8 ramps the regenerator T set point; the air controller moves Fair,
+               # so the learned lever is the measured regenerator air
+               7: "SP_T_preheat_F", 8: "Fair", 9: "MV_PA2", 10: "MV_reflux_ratio", 11: "MV_cw_flow", 12: "SP_T_overhead"}
 # disturbance events (2 = feed rate, 4 = feed temperature) give the same step-response estimate for disturbances
 DISTURBANCE_EVENT_INPUT = {2: "feed_flow_lb_s", 4: "dist_T_feed_in_F"}
 # cut-point set points: controller gain 1 to the own T98, yields via the auto-window response (see module doc)
