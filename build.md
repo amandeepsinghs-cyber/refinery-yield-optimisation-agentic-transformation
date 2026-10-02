@@ -82,6 +82,7 @@ Full lever table with typical values and allowed ranges: [verbatim.md §9.5.3](v
 | Valid-range cut (simulator breakdown) in training, regime fit, surrogates; `breakdown_from_min` in the BigQuery run registry | ☑ 2 Oct 17:40 |
 | Soft-sensor retrain on valid rows (held-out LCO 16.6 °F, HN 36.5 °F); crude classifier 15 of 15 held-out switches | ☑ 2 Oct 17:10 |
 | Lever runs: 52 in parallel (seeds 200–251) | ◐ running, ~14–17 h |
+| Surrogates refit on the lever data on hand (11 runs, 6–8 h each); regenerator air / PA2 / reflux / cooling water / overhead T moves rejected by the fit (moves too close together in `scenario.m`) — D5–D7 stay scripted | ☑ 2 Oct 17:52 · ☐ fit or scenario fix |
 | Demo scenes repointed: recipe → `random_s144` 10:00; honesty (D2 "Not yet", D3 withheld) → `random_s144` 12:00 | ☑ 2 Oct 17:40 |
 
 > [!NOTE]

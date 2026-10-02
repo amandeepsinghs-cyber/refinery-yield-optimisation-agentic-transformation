@@ -359,3 +359,10 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Tests: the 8 engine tests pinned to the old behaviour now check the new one — real recipe ISSUED on hold-out `random_s147` t300 (one of the few minutes where the spread gate passes and the move is plausible; the real engine withholds every s144 minute); spread-gate withhold on s144 t720; scripted D3 on s144 t600; `implausible` accepted as a gate reason (imported from `engines/recipe.py`); D1 LCO check on s144 t600; novel-crude check on s107 t800 (s107 breaks down at minute 851).
 - API restarted (Hindi wording fix live).
 - Checks: 290 back-end pass (2 skipped), 82 front-end pass, tsc and eslint clean.
+
+## 2026-10-02 17:55 — work with the lever data on hand (owner: "whatever data we have we work with that")
+
+- Staged `lever_v1` now instead of waiting (`sim_octave/stage_regimes.py --batch lever_v1`): 11 runs with 6–8 h each (s200–s206, s208–s211); s207 (5 h) and s212–s251 (no rows yet) skipped. Backup `api/artifacts/model_backup_20261002_1752/engines`.
+- Surrogates refit on API restart: `lever_runs` = 11; 64 train / 16 hold-out moves; cut-point yield fit hold-out R² LCO 0.90, HN 0.81, conversion 0.82.
+- Finding: the ~50 lever moves of codes 7–12 in these runs (≈ 8–9 per lever) are almost all rejected by the fit — only 1 preheat move used. `scenario.m` spaces consecutive moves ramp + 30 min apart, while the fit needs 15 min before and 60 min after with no other move. More simulated hours add more moves with the same spacing, so waiting does not fix it. D5–D7 stay scripted (labelled) as before.
+- Demo scenes unchanged (s144 10:00 recipe, s144 12:00 "Not yet", s107 10:00).

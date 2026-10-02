@@ -466,5 +466,6 @@ Simulator breakdown cut and retrain (17:00–17:40 2 Oct)
 - ☑ 40 more lever runs (seeds 212–251) — 52 simulations running in parallel
 - ☑ Demo repointed: recipe scene → `random_s144` 10:00, honesty scene (D2 "Not yet" + D3 withheld) → `random_s144` 12:00 (`DemoGuideModal.tsx`, `demoflow.md`)
 - ☑ 8 engine tests moved to the new behaviour (real recipe ISSUED checked on `random_s147` t300; spread-gate on s144 t720; scripted D3 on s144 t600; `implausible` accepted as a gate reason)
-- ☐ Stage `lever_v1` regimes once the lever runs pass 6 h, then restart the API (cards show `lever_runs: 0` until then)
+- ☑ `lever_v1` staged with the data on hand (17:52): 11 runs with 6–8 h each (s200–s206, s208–s211; s207 has 5 h, s212–s251 no rows yet); surrogates refit, `lever_runs` = 11; demo scenes unchanged
+- ☐ Lever moves 8–12 (regenerator air, PA2, reflux, cooling water, overhead T) are not usable by the fit: `scenario.m` spaces moves only ramp + 30 min apart, but the fit needs 15 min before + 60 min after with no other move. Waiting for more rows does not fix this. Fix options: fit on the 30-min gap between moves, or re-space the moves in `scenario.m` and rerun. D5–D7 stay scripted until then
 - ☐ Known limit: soft-sensor estimates are nearly flat; truth is pinned at the simulator ceiling for 22 % (LCO) / 6 % (HN) of held-out minutes
