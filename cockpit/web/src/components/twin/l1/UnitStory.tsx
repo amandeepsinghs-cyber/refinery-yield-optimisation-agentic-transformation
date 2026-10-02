@@ -374,14 +374,12 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           <LangToggle />
         </div>
         <nav className="us-steps" aria-label="Steps">
-          <a href="#s-why"><i>?</i>What it solves</a><a href="#s-data"><i>1</i>Data</a><a href="#s-observe"><i>2</i>Observe</a>
+          <a href="#s-data"><i>1</i>Data</a><a href="#s-observe"><i>2</i>Observe</a>
           <a href="#s-decide" className={d?.status === "open" ? "hot" : ""}><i>3</i>Decide{ds.filter((x) => x.status === "open").length ? <b className="num">{ds.filter((x) => x.status === "open").length}</b> : null}</a>
-          <a href="#s-optimise"><i>4</i>Optimise</a>
+          <a href="#s-optimise"><i>4</i>Optimise</a><a href="#s-why"><i>?</i>What it solves</a>
           <Link href={`/twin/unit/${unitId}?view=classic`} className="us-classic">Engineer view (all panels)</Link>
         </nav>
       </header>
-
-      <UnitUseCases unitId={unitId} />
 
       {/* ① DATA */}
       <Step n={1} k="data" id="s-data" title="Data in and out" who={<><Who k="data">historian · every minute</Who><Who k="data">lab · every 8 h</Who></>}>
@@ -472,7 +470,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 <button type="button" className="hs-btn ghost" onClick={() => ask(`Explain decision "${d.headline}" (${d.id}): what we observe, the lever, what happens if we hold.`)}>Ask Gemini</button>
                 {d.action ? <span className="subtle">{d.action.action} at {d.action.time_label} · recorded in audit, nothing sent to the plant</span> : null}
               </div>
-              <p className="us-uc">IOCL use case · {d.use_cases.map((x) => x.iocl_title).join(" · ")}<a className="us-how" href="#s-why">How this is solved ↑</a><br /><span className="subtle">Problem it solves · {d.problem_text.join(" ")}</span></p>
+              <p className="us-uc">IOCL use case · {d.use_cases.map((x) => x.iocl_title).join(" · ")}<a className="us-how" href="#s-why">What this solves ↓</a><br /><span className="subtle">Problem it solves · {d.problem_text.join(" ")}</span></p>
               <h3 className="us-earlier-h">Earlier on this decision</h3>
               <EarlierDecisions rows={actions} d={d} />
             </div>
@@ -575,6 +573,9 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           </div>
         </div>
       </Step>
+
+      {/* what this screen solves — below the figures, expandable (owner, 15:15) */}
+      <UnitUseCases unitId={unitId} />
 
       {/* footer */}
       <footer className="us-foot">

@@ -3604,9 +3604,15 @@ button.ucb-chip.on { border-color: var(--accent); background: color-mix(in srgb,
 .uce-foot b { color: var(--ink); margin-right: 4px; }
 @media (max-width: 1200px) { .uce-flow { grid-template-columns: 1fr 1fr; } .uce-ps { grid-template-columns: 1fr; gap: 8px; } }
 /* on-screen explainers on the unit page (owner, 14:49) */
-.uuc { margin: 18px 0 6px; padding-bottom: 14px; border-bottom: 1px solid var(--border); scroll-margin-top: 150px; }
-.uuc-h { margin: 0 0 10px; font-size: 16px; font-weight: 650; color: var(--ink); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.uuc-h span { font-size: 12.5px; font-weight: 400; color: var(--subtle); }
+.uuc { scroll-margin-top: 150px; margin: 22px 0 6px; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--card) 60%, transparent); }
+.uuc[open] { padding: 0 14px 12px; }
+.uuc-h { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding: 14px 16px; margin: 0; }
+.uuc[open] > .uuc-h { padding: 14px 2px 12px; }
+.uuc-h::-webkit-details-marker { display: none; }
+.uuc-t { font-size: 16px; font-weight: 650; color: var(--ink); }
+.uuc-n { font-size: 13px; color: var(--ink); }
+.uuc-sub { flex: 1; font-size: 12.5px; color: var(--subtle); }
+.uuc-more { font-size: 12px; color: var(--accent); }
 .uuc-item { margin: 0 0 8px; }
 .uuc-item > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--border);
   border-radius: 10px; font-size: 13.5px; color: var(--ink); }

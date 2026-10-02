@@ -8,6 +8,7 @@
  */
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   DECISIONS, PARTS, PART_NAME, STATUS_LABEL, STEP_HOW, UC_DETAIL, UNIT_UCS, USE_CASES,
   type PartId, type StepKey,
@@ -73,16 +74,29 @@ export default function UseCaseExplainer({ id, onUnit = false, unitId }: { id: s
   );
 }
 
-/** Top of a unit page: the IOCL use cases this unit solves, in IOCL order; the first is open. */
+/** "What this screen solves": an expandable panel placed below the figures (owner, 15:15), closed by default. It opens
+ *  when clicked or when the page is sent to #s-why (step nav, the link in step ③). Use cases in IOCL order. */
 export function UnitUseCases({ unitId }: { unitId: string }) {
   const ids = (UNIT_UCS[unitId] ?? []).filter((i) => UC_DETAIL[i]);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const check = () => { if (window.location.hash === "#s-why") setOpen(true); };
+    const t = setTimeout(check, 0);
+    window.addEventListener("hashchange", check);
+    return () => { clearTimeout(t); window.removeEventListener("hashchange", check); };
+  }, []);
   if (!ids.length) return null;
   const home = unitId === "refinery";
   return (
-    <section className="uuc" id="s-why" aria-label="What this screen solves">
-      <h2 className="uuc-h">What this screen solves <span>{home
-        ? "Use cases only the whole-plant view can solve, in IOCL order. Every use case this shift is in the row below, and each unit page explains its own."
-        : "IOCL use cases, in IOCL order. Each shows the problem, how it is solved, and which step below does the work."}</span></h2>
+    <details className="uuc" id="s-why" open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="uuc-h">
+        <span className="uuc-t">What this screen solves</span>
+        <span className="uuc-n">{ids.length} IOCL use case{ids.length > 1 ? "s" : ""}: {ids.map((i) => USE_CASES.find((x) => x.id === i)!.row).join(" · ")}</span>
+        <span className="uuc-sub">{home
+          ? "Use cases only the whole-plant view can solve. Each unit page explains its own."
+          : "Problem, how it is solved, and which step above does the work."}</span>
+        <span className="uuc-more">{open ? "Close ▴" : "Open ▾"}</span>
+      </summary>
       {ids.map((i, n) => {
         const u = USE_CASES.find((x) => x.id === i)!;
         return (
@@ -92,7 +106,7 @@ export function UnitUseCases({ unitId }: { unitId: string }) {
           </details>
         );
       })}
-    </section>
+    </details>
   );
 }
 
