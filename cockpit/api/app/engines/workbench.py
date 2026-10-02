@@ -23,6 +23,7 @@ from app.engines.detect import (TAG_LABEL, briefing, detection_series, events_fo
                                 root_cause)
 from app.engines.recipe import recipe_for
 from app.engines.regime import holdout_score, regime_at
+from app.engines import scripted
 from app.engines.surrogates import UNIT_PRIMARY_TAGS, get_surrogate_card
 from app.lttb import lttb_indices
 from app.state import get_state
@@ -257,7 +258,7 @@ def workbench(unit_id: str, run_id: str, time_min: int, window_min: int = 720, s
     series, det, cfg = _series(st, run_id, unit_id, tags, window, step)
     regime = dict(regime_at(run_id, time_min) or {})
     try:
-        regime["holdout"] = holdout_score()
+        regime["holdout"] = None if scripted.enabled() else holdout_score()
     except Exception:  # noqa: BLE001 - accuracy line is informative only
         regime["holdout"] = None
     rcp = recipe_for(run_id, time_min, unit_id)

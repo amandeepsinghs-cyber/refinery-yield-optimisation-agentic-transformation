@@ -14,6 +14,14 @@
 
 **The rule (09:48):** "The screen enables decisions and data is shown to back up those decisions." Decision first; data underneath. No role views (09:53). No value figures on screens (10:16). No left bar or admin template (10:41). Accept / Hold / Decline writes the audit log only, never a control system.
 
+> [!IMPORTANT]
+> **Scripted outcomes (owner, 2 Oct 13:50–13:56):** "keep the input, mock the output … the idea is to demonstrate what the verbatim expects." About 1.5 months of simulated data across crude changes can't honestly train a crude classifier plus per-crude lever regressions. So the **inputs stay real** (live simulator tags) and the **outputs are scripted** from those live values in `api/app/engines/scripted.py`:
+> - **Crude classifier (VN10/VN11 step 1):** names the crude the lab assay declares. Confidence ramps across the switch and settles at 93 %, confirmed 12 min after the switch completes.
+> - **D3 recipe for the new crude, D5 regenerator air, D6 furnace preheat, D7 condenser:** open moves. Each moves a real lever inside its operating window and SOP step, with fixed plant-plausible gains. The chance of returning to the band goes from about 31 % to 96–98 %.
+> - **Stays on the real engine:** D1 cut point, D2 trust or spread gate (wait for the lab), D9 lab sample, D8 watch.
+> - **Labels:** the top pill reads "Simulated data · scripted outcomes", and each scripted lever carries a "scripted outcome" tag. Switch it off with `demo.scripted_outcomes: false` or `FCC_SCRIPTED=0`; tests run with it off and `tests/test_scripted.py` checks it on.
+> - **Gone in scripted mode:** the "Not yet" status for D3 and D5–D7, the real classifier's 57 % accuracy line, and the need for the lever batch, refit and closed-loop check before the demo.
+
 ### Screens
 
 | Screen | Route | What it shows (in order) | Built in |
@@ -29,12 +37,12 @@
 | D1 | Move the cut point now, or wait for the lab? | Main fractionator | `SP_LCO_T98`, `SP_HN_T98` | **Live** |
 | D2 | Can the estimate be trusted now? | Main fractionator | — (go / no-go on D1) | **Live** |
 | D9 | Pull an extra lab sample? | Main fractionator | sampling schedule | **Live** |
-| D4 | Which crude is in the unit; is the switch finished? | Riser reactor | — (confirm crude) | **Live, with a caveat**: the classifier names the right crude in 8 of 14 held-out crude switches (57 %; target 80 %). The page shows this figure, and the lab assay confirms each switch. Retrain planned with the lever runs. |
+| D4 | Which crude is in the unit; is the switch finished? | Riser reactor | — (confirm crude) | **Scripted** classifier: agrees with the lab assay, 93 % after the switch. Real classifier with scripting off: 8 of 14 held-out switches (57 %) |
 | D8 | What first; what breaks downstream if nothing is done? | Plant | — | **Live** (watch items) |
-| D3 | Coordinated recipe for the new crude | Main fractionator / Riser | `SP_T_riser_ROT_F`, `MV_PA1..MV_PA4`, cut points | **Not yet**: withheld by the plausibility check; PA moves not in training data |
-| D5 | Regenerator air vs severity | Regenerator | `Fair` (via `SP_T_reg_F`), `SP_T_riser_ROT_F` | **Not yet**: air never moved in training data |
-| D6 | Furnace preheat / excess O₂ | Feed furnace | `SP_T_preheat_F` (no excess-O₂ set point exists) | **Not yet**: preheat never moved in training data |
-| D7 | Gas plant / stabiliser reflux, cooling water, overhead T | Gas plant, Stabiliser | `MV_reflux_ratio`, `MV_cw_flow`, `SP_T_overhead` | **Not yet**: never moved in training data |
+| D3 | Coordinated recipe for the new crude | Main fractionator / Riser | `SP_T_riser_ROT_F` + `SP_LCO_T98` −1 + `SP_HN_T98` +1 | **Scripted move** (real engine withholds it: plausibility check) |
+| D5 | Regenerator air vs severity | Regenerator | `Fair` | **Scripted move** (gain 40 °F cyclone ΔT per unit air; step ≤ 0.08) |
+| D6 | Furnace preheat | Feed furnace | `SP_T_preheat_F` | **Scripted move** (outlet follows set point 1 : 1; step ≤ 5 °F) |
+| D7 | Condenser cooling water / overhead T | Condenser | `SP_T_overhead` (`MV_cw_flow` is the target) | **Scripted move** (−2.6 lb/s cooling water per °F; step ≤ 3 °F) |
 
 Full lever table with typical values and allowed ranges: [verbatim.md §9.5.3](verbatim.md).
 

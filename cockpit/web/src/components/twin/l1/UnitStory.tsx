@@ -119,13 +119,14 @@ function LeverRanges({ levers, bare }: { levers?: LeverRow[]; bare?: boolean }) 
         {levers.map((l) => {
           const has = l.lo != null && l.hi != null && l.current != null && l.hi > l.lo;
           const pos = has ? Math.min(100, Math.max(0, ((l.current! - l.lo!) / (l.hi! - l.lo!)) * 100)) : null;
+          const dp = has && l.hi! - l.lo! < 2 ? 2 : 1;
           return (
             <li key={l.tag} title={l.tag}>
               <span>{l.label}</span>
-              <b className="num">{fx(l.current, 1)} <small>{l.unit}</small></b>
+              <b className="num">{fx(l.current, dp)} <small>{l.unit}</small></b>
               {has ? (
                 <em className="us-lr num">
-                  {fx(l.lo, 1)}<i><s style={{ left: `${pos}%` }} /></i>{fx(l.hi, 1)}
+                  {fx(l.lo, dp)}<i><s style={{ left: `${pos}%` }} /></i>{fx(l.hi, dp)}
                 </em>
               ) : <em className="us-lr subtle">no limit set</em>}
             </li>
@@ -325,20 +326,25 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
   // What-if for a set-point move: the cut-point controller follows its set point 1:1 (gain 1 °F/°F), σ unchanged.
   const p = d?.predicted ?? null;
   // P(on-spec) on the same basis as the decision engine: the 4-model committee mixture, every member shifted by the move.
-  const committeeMembers = isU4 && move?.tag.startsWith("SP_") ? members.filter((m) => !m.dashed) : [];
+  const committeeMembers = isU4 && d?.type === "D1" && move?.tag.startsWith("SP_") ? members.filter((m) => !m.dashed) : [];
+  const gain = p?.gain ?? 1;
   const pAt = (delta: number) => {
     const hi = p?.spec_max ?? null;
     if (committeeMembers.length) {
       const W = committeeMembers.reduce((acc, m) => acc + m.weight, 0) || 1;
       return committeeMembers.reduce((acc, m) => acc + m.weight * pOnSpec(m.mu + delta, m.sigma, null, hi), 0) / W;
     }
-    return pOnSpec((p?.mu_before ?? 0) + delta, p?.sigma ?? 1, null, hi);
+    return pOnSpec((p?.mu_before ?? 0) + gain * delta, p?.sigma ?? 1, p?.spec_min ?? null, hi);
   };
   const wi = move && p?.mu_before != null && p.sigma ? (() => {
     const s = sp ?? move.to;
     const dl = s - move.from;
-    return { s, mu: p.mu_before! + dl, p: Math.abs(s - move.to) < 1e-6 && p.p_on_spec_after != null ? p.p_on_spec_after : pAt(dl), d: dl };
+    return { s, mu: p.mu_before! + gain * dl, p: Math.abs(s - move.to) < 1e-6 && p.p_on_spec_after != null ? p.p_on_spec_after : pAt(dl), d: dl };
   })() : null;
+  const stepMax = p?.step_max ?? 5;
+  const stepSize = p?.step ?? 0.5;
+  const nd = stepSize < 0.1 ? 2 : 1;
+  const goal = p?.goal_label ?? "Chance on spec";
   const canAct = d?.status === "open" && (d.proposed.moves.length > 0 || !!d.proposed.sample);
   const act = async (x: "accept" | "hold" | "decline") => {
     if (!d) return;
@@ -442,7 +448,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
               {move && p?.p_on_spec_before != null ? (
                 <ul className="us-whyl">
                   {d.observed?.estimate != null && p.spec_max != null ? <li>The estimate is <b className="num">{fx(d.observed.estimate, 1)} °F</b>, {fx(p.spec_max - d.observed.estimate, 1)} °F inside the {fx(p.spec_max, 0)} °F spec.</li> : null}
-                  <li>Chance on spec <b className="num">{pct(p.p_on_spec_before)}</b> now, <b className="num good">{pct(p.p_on_spec_after)}</b> after the move.</li>
+                  <li>{goal} <b className="num">{pct(p.p_on_spec_before)}</b> now, <b className="num good">{pct(p.p_on_spec_after)}</b> after the move.</li>
                   {d.gates.length ? <li><b>{nPass} of {d.gates.length}</b> trust checks pass, so the advice is shown. Advisory only; the operator decides.</li> : null}
                 </ul>
               ) : null}
@@ -464,20 +470,20 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             <div className="us-lever-panel">
               {move && wi ? (
                 <>
-                  <div className="us-lever-h"><span>Lever</span><b>{move.label}</b></div>
-                  <div className="us-lever-big num">{fx(move.from, 1)} <i>→</i> <b>{fx(wi.s, 1)}</b> <small>{move.unit}</small><span className="us-lever-d">{wi.d >= 0 ? "+" : "−"}{Math.abs(wi.d).toFixed(1)}</span></div>
+                  <div className="us-lever-h"><span>Lever</span><b>{move.label}</b>{d.scripted ? <em className="us-scripted">scripted outcome</em> : null}</div>
+                  <div className="us-lever-big num">{fx(move.from, nd)} <i>→</i> <b>{fx(wi.s, nd)}</b> <small>{move.unit}</small><span className="us-lever-d">{wi.d >= 0 ? "+" : "−"}{Math.abs(wi.d).toFixed(nd)}</span></div>
                   <label className="us-slider">
                     <span>Try another move</span>
-                    <input type="range" min={move.from - 5} max={move.from + 5} step={0.5} value={wi.s} onChange={(e) => setSp(Number(e.target.value))} aria-label="what-if set point" />
-                    <span className="us-range num"><em>{fx(move.from - 5, 1)}</em><em>now {fx(move.from, 1)}</em><em>{fx(move.from + 5, 1)}</em></span>
+                    <input type="range" min={move.from - stepMax} max={move.from + stepMax} step={stepSize} value={wi.s} onChange={(e) => setSp(Number(e.target.value))} aria-label="what-if set point" />
+                    <span className="us-range num"><em>{fx(move.from - stepMax, nd)}</em><em>now {fx(move.from, nd)}</em><em>{fx(move.from + stepMax, nd)}</em></span>
                   </label>
                   <GaussianPdf members={[
                     { id: "now", label: "now", mu: p!.mu_before!, sigma: p!.sigma!, weight: 1, color: modelColor("hybrid_delta_v1", theme) },
                     { id: "after", label: "after", mu: wi.mu, sigma: p!.sigma!, weight: 1, color: modelColor("pinn_ens_v1", theme), dashed: true },
-                  ]} spec={p?.spec_max != null ? { hi: p.spec_max, label: "spec" } : null} unit={move.unit} height={120} compact showMixture={false} showP={false} ariaLabel="before and after the move" />
-                  <p className="us-result">Chance on spec <span className="num">{pct(p?.p_on_spec_before)}</span> → <b className={`num ${wi.p >= 0.95 ? "good" : wi.p < (p?.p_on_spec_before ?? 0) ? "bad" : ""}`}>{pct(wi.p)}</b>
-                    {Math.abs(wi.s - move.to) > 1e-6 ? <span className="subtle"> · advised {fx(move.to, 1)} gives {pct(p?.p_on_spec_after)}</span> : <span className="subtle"> · the advised move</span>}</p>
-                  <p className="us-note subtle">SOP: one step at most 5 °F, 30 min between moves. The cut-point controller follows its set point 1 : 1.</p>
+                  ]} spec={p?.spec_max != null || p?.spec_min != null ? { hi: p?.spec_max ?? null, lo: p?.spec_min ?? null, label: p?.goal_label ? "band" : "spec" } : null} unit={p?.unit ?? move.unit} height={120} compact showMixture={false} showP={false} ariaLabel="before and after the move" />
+                  <p className="us-result">{goal} <span className="num">{pct(p?.p_on_spec_before)}</span> → <b className={`num ${wi.p >= 0.95 ? "good" : wi.p < (p?.p_on_spec_before ?? 0) ? "bad" : ""}`}>{pct(wi.p)}</b>
+                    {Math.abs(wi.s - move.to) > 1e-6 ? <span className="subtle"> · advised {fx(move.to, nd)} gives {pct(p?.p_on_spec_after)}</span> : <span className="subtle"> · the advised move</span>}</p>
+                  <p className="us-note subtle">{d.proposed.sop ?? "SOP: one step at most 5 °F, 30 min between moves. The cut-point controller follows its set point 1 : 1."}</p>
                   {p?.ripple?.some((r) => r.delta != null) ? <p className="us-note subtle">Next units: {p.ripple.filter((r) => r.delta != null).map((r) => `${r.what} ${r.delta} ${r.unit}`).join("; ")}</p> : null}
                   <LeverRanges levers={d.levers} />
                 </>
@@ -530,7 +536,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             ) : <p className="us-note">{d?.status === "withheld" ? d.withheld_text : "No checks needed for this item."}</p>}
           </div>
           <div>
-            {d?.type === "D3" && recipe ? (
+            {d?.type === "D3" && d.status !== "open" && recipe ? (
               <>
                 <h3>What the multi-set-point search found — not shown as advice</h3>
                 <ul className="us-levers">{recipe.moves.map((m) => <li key={m.sp_tag}><span>{m.label}</span><b className="num">{fx(m.current, 1)} → {fx(m.recommended, 1)} <small>{m.unit}</small></b></li>)}</ul>
@@ -541,13 +547,13 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
               <>
                 <h3>The search, in plain words</h3>
                 <ul className="uf-opt">
-                  <li><span>Goal</span>chance on spec ≥ 95 % with the smallest move of {move.label.toLowerCase()}</li>
-                  <li><span>Limits</span>SOP step ≤ 5 °F · 30 min between moves · set-point range</li>
-                  <li><span>Model</span>4-model soft sensor, weighted for the crude now ({data.regime?.regime_id ?? "—"})</li>
-                  <li><span>Result</span>{fx(move.from, 1)} → {fx(move.to, 1)} {move.unit}: {pct(p.p_on_spec_before)} → {pct(p.p_on_spec_after)}, margin to spec {fx(p.margin_after, 1)} {move.unit}</li>
+                  <li><span>Goal</span>{goal.toLowerCase()} ≥ 95 % with the smallest move of {move.label.toLowerCase()}</li>
+                  <li><span>Limits</span>SOP step ≤ {fx(stepMax, nd)} {move.unit} · time between moves · lever window</li>
+                  <li><span>Model</span>{p.model ?? `4-model soft sensor, weighted for the crude now (${data.regime?.regime_id ?? "—"})`}</li>
+                  <li><span>Result</span>{fx(move.from, nd)} → {fx(move.to, nd)} {move.unit}: {pct(p.p_on_spec_before)} → {pct(p.p_on_spec_after)}, margin {fx(p.margin_after, 1)} {p.unit ?? move.unit}</li>
                 </ul>
                 <h3 className="us-bind-h">What sets the size of the move</h3>
-                {d ? <WhatSetsTheMove d={d} /> : null}
+                {d ? <WhatSetsTheMove d={d} stepLimit={stepMax} /> : null}
               </>
             ) : (
               <>

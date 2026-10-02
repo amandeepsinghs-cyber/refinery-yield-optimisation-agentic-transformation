@@ -135,7 +135,8 @@ def detection_series(run_id: str, unit_id: str, tag: str) -> dict | None:
     source = "committee" if unit_id == "unit_4_fractionator" and st.run(run_id) is not None else "regime surrogate"
     reg = get_run_regimes(run_id)
     regime_now = reg["detected_regime"][-1] if reg else "R3"
-    floor = max(0.25 * float(get_surrogate_card(regime_now).get("resid_sd", {}).get(tag, 1.0) or 1.0), 0.2)
+    rsd = float(get_surrogate_card(regime_now).get("resid_sd", {}).get(tag, 1.0) or 1.0)
+    floor = max(0.25 * min(rsd, 8.0), 0.2)  # cap: simulator artefacts in the fit data inflate resid_sd (LCO ~645 °F)
     sigma = _trailing_mad_sigma(res, floor)
     cus = _cusum(res, sigma)
     breach = np.abs(res) > BREACH_SIGMAS * sigma

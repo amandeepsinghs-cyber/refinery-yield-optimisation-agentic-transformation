@@ -295,7 +295,8 @@ def regime_at(run_id: str, time_min: int | None) -> dict:
     
     feats = res["features"].iloc[idx]
     
-    return {
+    from app.engines import scripted  # local: scripted imports regime lazily
+    return scripted.regime({
         "run_id": run_id,
         "time_min": t,
         "regime_id": det_reg_id,
@@ -326,7 +327,7 @@ def regime_at(run_id: str, time_min: int | None) -> dict:
         ],
         "detected_at_min": detected_at_min,
         "detection_delay_min": detection_delay_min
-    }
+    })
 
 def regime_timeseries(run_id: str, step: int = 5) -> dict:
     res = get_run_regimes(run_id)

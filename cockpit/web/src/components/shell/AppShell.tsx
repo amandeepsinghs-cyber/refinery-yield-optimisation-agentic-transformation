@@ -77,7 +77,7 @@ function Provenance() {
   const run = runs.data?.find((r) => r.run_id === runId);
   const up = health.isSuccess;
   const text = run
-    ? `Simulated data · ${run.batch} · ${run.run_id} · t ${timeMin ?? "—"} min (${clock(timeMin)})`
+    ? `Simulated data · scripted outcomes · ${run.run_id} · ${clock(timeMin)}`
     : health.isError
       ? "Simulated data · API offline"
       : "Simulated data · no run selected";

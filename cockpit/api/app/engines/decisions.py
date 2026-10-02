@@ -27,6 +27,7 @@ import numpy as np
 
 from app.engines.detect import TAG_LABEL, events_for_run, next_lab_min
 from app.engines.recipe import _label_unit, _row_at, plausibility_issue, recipe_for, whatif
+from app.engines import scripted
 from app.engines.regime import regime_at
 from app.engines.systems import UNIT_SHORT, clock, needs_attention
 from app.state import get_state, now_iso
@@ -623,13 +624,15 @@ def build(run_id: str, time_min: int) -> dict:
     covered = {d["observed"]["tag"] for d in decisions if d.get("observed") and d["observed"].get("tag")}
     covered |= set(PROPS) if v else set()
     decisions += _watch(run_id, t, attention, covered)
+    df = st.catalog.load(run_id)
+    row = _row_at(df, t)[0] if not df.empty else {}
+    decisions = scripted.apply(decisions, row)
     acts = _actions(run_id)
     decisions = [_overlay(d, acts, t) for d in decisions]
     reg = regime_at(run_id, t) or {}
-    df = st.catalog.load(run_id)
-    row = _row_at(df, t)[0] if not df.empty else {}
     for d in decisions:
-        d["enabled_by"] = _enabled_by(d, reg)
+        if not d.get("scripted"):
+            d["enabled_by"] = _enabled_by(d, reg)
         d["levers"] = _levers(d, row)
     big = 10 ** 6
     decisions.sort(key=lambda d: (_ORDER.get(d["status"], 9), d["urgency"].get("time_to_consequence_min") or big))

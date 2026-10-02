@@ -3203,6 +3203,7 @@ button.wr-item:hover { background: var(--hover); }
 .us-levers li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
 .us-levers b { color: var(--ink); font-weight: 500; } .us-levers small { color: var(--subtle); }
 .us-lranges { margin-top: 12px; }
+.us-scripted { margin-left: auto; font-style: normal; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: var(--subtle); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
 .us-lranges h4 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .us-lranges .us-levers li { display: grid; grid-template-columns: 1fr auto 150px; align-items: center; }
 .us-lr { font-style: normal; font-size: 11px; color: var(--subtle); display: flex; align-items: center; gap: 6px; justify-content: flex-end; }

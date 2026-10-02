@@ -37,11 +37,13 @@ export interface Decision {
   };
   diagnosed: null | { text?: string | null; trust?: string | null; trust_reason?: string | null };
   related?: { property: string; w90: number | null; p_on_spec: number | null; estimate: number | null; sigma: number | null }[];
-  proposed: { moves: DecisionMove[]; alternative: string | null; sample?: { properties?: string[]; property?: string; when: string } };
+  proposed: { moves: DecisionMove[]; alternative: string | null; sample?: { properties?: string[]; property?: string; when: string }; sop?: string };
   predicted: null | {
     mu_before?: number | null; mu_after?: number | null; sigma?: number | null; p_on_spec_before?: number | null;
     p_on_spec_after?: number | null; w90?: number | null; spec_max?: number | null; margin_after?: number | null; ripple?: RippleItem[];
+    spec_min?: number | null; gain?: number; unit?: string; step?: number; step_max?: number; goal_label?: string; model?: string;
   };
+  scripted?: boolean;
   gates: DecisionGate[];
   evidence: { tags: string[]; labs: string[]; docs: string[]; lakehouse: string | null; event_id?: string };
   withheld_reason: string | null;

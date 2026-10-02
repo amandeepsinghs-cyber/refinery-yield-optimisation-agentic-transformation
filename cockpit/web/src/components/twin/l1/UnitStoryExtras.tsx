@@ -172,23 +172,26 @@ export function WhatSetsTheMove({ d, stepLimit = 5 }: { d: Decision; stepLimit?:
     .filter((g) => g.value != null && g.limit)
     .map((g) => ({ g, r: g.op === "≥" ? Math.abs(g.limit!) / Math.max(1e-9, Math.abs(g.value!)) : Math.abs(g.value!) / Math.abs(g.limit!) }))
     .sort((a, b) => b.r - a.r)[0];
+  const nd = (p.step ?? 0.5) < 0.1 ? 2 : 1;
+  const tu = p.unit ?? mv.unit;
+  const lim = p.spec_max ?? p.spec_min;
   return (
     <ul className="us-binding">
       <li className="bind">
         <span>Sets the move</span>
-        <b>Chance on spec must reach 95 %</b>
-        <em>The search stops at the smallest move that gets there: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used)} {mv.unit} gives {Math.round((p.p_on_spec_after ?? 0) * 100)} %.</em>
+        <b>{p.goal_label ?? "Chance on spec"} must reach 95 %</b>
+        <em>The search stops at the smallest move that gets there: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} gives {Math.round((p.p_on_spec_after ?? 0) * 100)} %.</em>
       </li>
       <li>
         <span>Not limiting</span>
-        <b>SOP step ≤ {stepLimit} {mv.unit}</b>
-        <em>{fx(used)} of {stepLimit} {mv.unit} used.</em>
+        <b>SOP step ≤ {fx(stepLimit, nd)} {mv.unit}</b>
+        <em>{fx(used, nd)} of {fx(stepLimit, nd)} {mv.unit} used.</em>
       </li>
-      {p.margin_after != null ? (
-        <li className={p.margin_after < 1 ? "warn" : ""}>
-          <span>{p.margin_after < 1 ? "Tight" : "Room"}</span>
-          <b>Margin to the {fx(p.spec_max, 0)} {mv.unit} spec after the move</b>
-          <em>{fx(p.margin_after)} {mv.unit} at the most likely value{p.margin_after < 1 ? " — little room; the lab at the next sample confirms it." : "."}</em>
+      {p.margin_after != null && lim != null ? (
+        <li className={p.margin_after < 1 && !p.goal_label ? "warn" : ""}>
+          <span>{p.margin_after < 1 && !p.goal_label ? "Tight" : "Room"}</span>
+          <b>Margin to the {fx(lim, 1)} {tu} {p.goal_label ? "band edge" : "spec"} after the move</b>
+          <em>{fx(p.margin_after)} {tu} at the most likely value{p.margin_after < 1 && !p.goal_label ? " — little room; the lab at the next sample confirms it." : "."}</em>
         </li>
       ) : null}
       {near && near.r > 0.85 ? (
