@@ -107,3 +107,28 @@ def test_consequence_rules_cover_every_primary_tag_both_directions():
     assert short_line(ev).startswith("LCO T98 +4.8 °F above expected (sustained shift) since ")
     assert "since" not in short_line(ev, with_time=False)
     assert consequence_for({"unit_id": "unit_9", "tag": "x", "residual": 1}) is None
+
+
+def test_every_unit_carries_a_live_spark_with_band_and_moments():
+    """Pass H: each L0 tile is a mini-L1 — 4 h window of measured + expected ± 2σ, plus N(μ,σ) for the bell."""
+    body = _twin()
+    for u in body["units"]:
+        s = u.get("spark")
+        assert s is not None, f"{u['unit_id']} has no spark"
+        n = len(s["time_min"])
+        assert n >= 60, (u["unit_id"], n)
+        for key in ("measured", "expected", "band_lo", "band_hi"):
+            assert len(s[key]) == n, (u["unit_id"], key)
+        assert s["tag"] == u["kpi_vs_plan"]["tag"]
+        assert s["sigma"] > 0 and s["mu"] == s["mu"]  # finite, non-degenerate
+        assert all(lo <= hi for lo, hi in zip(s["band_lo"], s["band_hi"]) if lo == lo and hi == hi)
+        assert s["time_min"][-1] <= T and s["time_min"][0] >= T - 240
+
+
+def test_crude_slate_posterior_sums_to_one():
+    """Pass I: L0 crude-adaptation card shows the regime posterior, not a label."""
+    body = _twin()
+    p = body["crude_slate"].get("p_regime")
+    assert isinstance(p, dict) and set(p) >= {"R1", "R2", "R3", "R4"}
+    assert abs(sum(p.values()) - 1.0) < 0.02, p
+    assert all(0.0 <= v <= 1.0 for v in p.values())

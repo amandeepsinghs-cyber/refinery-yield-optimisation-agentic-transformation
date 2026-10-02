@@ -1984,6 +1984,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "regime_id": reg_info.get("regime_id"),
             "regime_label": reg_info.get("regime_label"),
             "p_max": max(reg_info.get("p_regime", {}).values()) if reg_info.get("p_regime") else 0.0,
+            "p_regime": {k: round(float(v), 4) for k, v in (reg_info.get("p_regime") or {}).items()},
             "novelty": reg_info.get("novelty"),
             "transition_pct": reg_info.get("transition_pct"),
             "declared_vs_detected": reg_info.get("declared_vs_detected"),

@@ -14,26 +14,50 @@ async function openTwin(page: Page) {
 }
 
 test.describe("Level 0 — Refinery Twin home", () => {
-  test("root redirects to /twin and the page has no charts", async ({ page }) => {
+  test("root redirects to /twin; the home is data-first (SVG curves, no Plotly) and scrolls only vertically", async ({ page }) => {
     await page.goto(`${BASE}/`);
     await expect(page).toHaveURL(/\/twin$/);
     await expect(page.locator(".l0-loading")).toHaveCount(0, { timeout: 30_000 });
     await expect(page.locator(".js-plotly-plot")).toHaveCount(0);
+    await expect(page.getByTestId("unit-spark")).toHaveCount(6);
+    await expect(page.getByTestId("flow-strip")).toBeVisible();
+    await expect(page.getByTestId("unit-flow")).toBeVisible();
   });
 
-  test("six live unit blocks with KPI vs plan, status pill and counts", async ({ page }) => {
+  test("six unit tiles: KPI vs plan, status pill, 4 h fan sparkline, N(μ,σ) bell, P(on-spec) and counts", async ({ page }) => {
     await openTwin(page);
-    const live = page.locator(".pfd-live");
-    await expect(live).toHaveCount(6);
+    const tiles = page.getByTestId("unit-tile");
+    await expect(tiles).toHaveCount(6);
     for (const id of ["unit_1_furnace", "unit_2_riser", "unit_3_regenerator", "unit_4_fractionator", "unit_5_condenser", "unit_6_stabiliser"]) {
-      const b = page.locator(`.pfd-live[data-unit="${id}"]`);
-      await expect(b).toHaveCount(1);
-      await expect(b.locator(".pfd-kpi-plan")).toContainText("vs plan");
-      await expect(b.locator(".pfd-pill")).toHaveText(/IN ENVELOPE|DRIFT|ACT NOW/);
-      await expect(b.locator(".pfd-counts")).toContainText(/agent flag/);
-      expect(["OK", "WATCH", "ACT"]).toContain(await b.getAttribute("data-state"));
+      const t = page.locator(`[data-testid=unit-tile][data-unit="${id}"]`);
+      await expect(t).toHaveCount(1);
+      await expect(t.locator(".u-tile-kpi-val")).toHaveText(/\d/);
+      await expect(t.locator(".u-tile-pill")).toHaveText(/IN ENVELOPE|DRIFT|ACT NOW/);
+      await expect(t.getByTestId("unit-spark")).toBeVisible();
+      await expect(t.locator("svg.gauss")).toBeVisible();
+      await expect(t.locator(".u-tile-foot")).toContainText(/μ .* σ/);
+      await expect(t.locator(".u-tile-foot")).toContainText(/P\(on-spec\)/);
+      expect(["OK", "WATCH", "ACT"]).toContain(await t.getAttribute("data-state"));
+      await expect(t).toHaveAttribute("href", new RegExp(`/twin/unit/${id}\\?tag=`));
     }
-    await expect(page.locator(".pfd-boundary")).toHaveCount(9);
+    // process connectors are drawn between tiles (hydrocarbon train, catalyst loop, heat recovery)
+    expect(await page.locator("[data-testid=unit-flow] svg.u-flow-links path").count()).toBeGreaterThanOrEqual(6);
+  });
+
+  test("systemic view: pipeline flow strip, cause → effect ripple, open decisions and crude adaptation", async ({ page }) => {
+    await openTwin(page);
+    const strip = page.getByTestId("flow-strip");
+    for (const id of ["flow-regime", "flow-committee", "flow-optimiser", "flow-agents"]) await expect(strip.getByTestId(id)).toBeVisible();
+    await expect(page.getByTestId("ripple-card")).toContainText(/Cause → effect/);
+    const dec = page.getByTestId("open-decisions");
+    await expect(dec).toBeVisible();
+    expect(await dec.getByTestId("open-decision").count()).toBeGreaterThanOrEqual(1);
+    await expect(dec.getByTestId("l0-accept").first()).toBeVisible();
+    await expect(dec.getByTestId("l0-decline").first()).toBeVisible();
+    await expect(page.getByTestId("crude-adaptation")).toContainText(/R[1-4]/);
+    // full PFD is still reachable behind a disclosure
+    await page.getByTestId("full-flowsheet").locator("summary").click();
+    await expect(page.locator(".pfd-live")).toHaveCount(6);
   });
 
   test("crude-slate banner, plant strip and needs-attention lines with consequences", async ({ page }) => {
@@ -62,10 +86,10 @@ test.describe("Level 0 — Refinery Twin home", () => {
     await expect(page.getByRole("button", { name: /Gemini Live/ })).toBeVisible();
   });
 
-  test("clicking the fractionator opens its workbench", async ({ page }) => {
+  test("clicking the fractionator tile opens its workbench on the headline tag", async ({ page }) => {
     await openTwin(page);
-    await page.locator('.pfd-live[data-unit="unit_4_fractionator"]').click();
-    await expect(page).toHaveURL(/\/twin\/unit\/unit_4_fractionator$/);
+    await page.locator('[data-testid=unit-tile][data-unit="unit_4_fractionator"]').click();
+    await expect(page).toHaveURL(/\/twin\/unit\/unit_4_fractionator\?tag=/);
   });
 
   test("timeline scrubs the twin clock", async ({ page }) => {
@@ -109,7 +133,9 @@ test.describe("Level 1 — Unit workbench (SDD-L1-01..07)", () => {
     const panels = page.getByTestId("chart-panel");
     await expect(panels).toHaveCount(5);
     expect(await panels.evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")))).toEqual(["measured_vs_expected", "residual", "mv", "disturbance", "yield"]);
-    for (const id of ["rail-regime", "rail-evidence", "rail-optimisation", "rail-decision", "rail-gemini"]) await expect(page.getByTestId(id)).toBeVisible();
+    for (const id of ["rail-decision", "target-distribution", "rail-optimisation", "rail-regime", "rail-evidence", "rail-gemini"]) await expect(page.getByTestId(id)).toBeVisible();
+    await expect(page.getByTestId("target-distribution").locator("svg.gauss")).toBeVisible();
+    await expect(page.getByTestId("target-distribution")).toContainText(/P\(on-spec\)/);
     await expect(page.locator(".l1-section-label", { hasText: "Data" })).toBeVisible();
     await expect(page.locator(".l1-section-label", { hasText: "Analysis" })).toBeVisible();
     await expect(page.locator(".l1-section-label", { hasText: "Models" })).toBeVisible();

@@ -108,14 +108,6 @@ export default function GaussianPdf({ members, target, spec, measured, unit = ""
           {!compact ? <text x={sx(measured)} y={box.yBase + 12} textAnchor="middle" className="gauss-lbl" fill={P.measured}>now {fmt(measured)}</text> : null}
         </g>
       ) : null}
-      {/* μ labels on peaks */}
-      {!compact
-        ? curves.map((m) => {
-            const px = sx(m.mu);
-            const py = box.yBase - (box.yBase - box.yTop) * (1 / (m.sigma * Math.sqrt(2 * Math.PI)) / peak);
-            return <text key={`mu-${m.id}`} x={px} y={py - 3} textAnchor="middle" className="gauss-mu" fill={m.color}>{fmt(m.mu)}</text>;
-          })
-        : null}
       {/* axis ticks */}
       {!compact ? (
         <>
@@ -123,8 +115,8 @@ export default function GaussianPdf({ members, target, spec, measured, unit = ""
           <text x={box.x1} y={H - 5} className="gauss-tick" textAnchor="end">{fmt(g1)} {unit}</text>
         </>
       ) : null}
-      {pSpec != null ? (
-        <text x={box.x1} y={T + (compact ? 8 : 22)} textAnchor="end" className={compact ? "gauss-p compact" : "gauss-p"} fill={pSpec >= 0.9 ? "var(--green)" : pSpec >= 0.6 ? "var(--amber)" : "var(--red)"}>
+      {pSpec != null && !compact ? (
+        <text x={box.x0 + 2} y={box.yBase - (compact ? 3 : 5)} textAnchor="start" className={compact ? "gauss-p compact" : "gauss-p"} fill={pSpec >= 0.9 ? "var(--green)" : pSpec >= 0.6 ? "var(--amber)" : "var(--red)"}>
           P(on-spec) {Math.round(pSpec * 100)} %
         </text>
       ) : null}

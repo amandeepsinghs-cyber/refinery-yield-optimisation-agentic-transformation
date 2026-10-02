@@ -152,6 +152,24 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
 
   let mvIdx = 0, distIdx = 0, yieldIdx = 0, trayIdx = 0;
   const yTitles = new Set<string>();
+  // Manipulated-variable panels mix scales (pumparound lb/min vs setpoint °F vs valve fraction). When the spans differ by
+  // more than 20× AND at least one MV genuinely moves (span ≫ its robust noise), plot each MV as % of its own window range
+  // so the move has visible shape; hover keeps the raw value. Held-constant MVs stay raw: flat lines honestly read "held".
+  const mvRaw = panel.kind === "mv"
+    ? (panel.traces ?? []).filter((tr) => tr.role === "mv" && keys[tr.key]).map((tr) => {
+        const vals = keys[tr.key].filter((v): v is number => v != null && Number.isFinite(v));
+        const lo = Math.min(...vals), hi = Math.max(...vals);
+        const sorted = [...vals].sort((a, b) => a - b);
+        const med = sorted[Math.floor(sorted.length / 2)] ?? 0;
+        const dev = vals.map((v) => Math.abs(v - med)).sort((a, b) => a - b);
+        const mad = dev[Math.floor(dev.length / 2)] ?? 0;
+        return { key: tr.key, lo, hi, mag: Math.max(Math.abs(lo), Math.abs(hi)), moving: hi - lo > 8 * 1.4826 * mad && hi - lo > 0 };
+      })
+    : [];
+  const mvMags = mvRaw.map((r) => r.mag).filter((m) => Number.isFinite(m) && m > 0);
+  const mvNormalise = mvMags.length > 1 && Math.max(...mvMags) / Math.min(...mvMags) > 20 && mvRaw.some((r) => r.moving);
+  const mvRange = Object.fromEntries(mvRaw.map((r) => [r.key, r]));
+
   panel.traces?.forEach((tr) => {
     if (tr.role === "band_lo" || tr.role === "band_hi") return;
     let y: Series | undefined = keys[tr.key];
@@ -166,6 +184,16 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
     }
     let onY2 = tr.role === "cusum" || (panel.kind === "combustion" && tr.key.includes("CO"));
     if (onY2) y2Title = tr.role === "cusum" ? "CUSUM" : "CO ppm";
+    let hovertemplate = `%{y:.2f}<extra>${tr.label ?? tr.key}</extra>`;
+    let customdata: (number | null)[] | undefined;
+    if (mvNormalise && tr.role === "mv" && mvRange[tr.key]) {
+      const r = mvRange[tr.key];
+      const span = r.hi - r.lo;
+      customdata = y;
+      y = span > 0 ? y.map((v) => (v == null ? null : ((v - r.lo) / span) * 100)) : y.map((v) => (v == null ? null : 50));
+      hovertemplate = `%{customdata:.2f} ${tr.unit ?? ""} · %{y:.0f} % of window range<extra>${tr.label ?? tr.key}</extra>`;
+      yTitle = "% of own window range";
+    }
     if (panel.kind === "yield") {
       const ax = yieldAxis(tr.key, tr.unit);
       if (ax.scale === "feed" && feedLbMin) {
@@ -187,7 +215,8 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
       line: { color, width: tr.role === "measured" || tr.role === "residual" ? 2.2 : tr.role === "expected" ? 1.8 : 1.7, dash: tr.role === "expected" ? "solid" : "solid", shape: "spline", smoothing: 0.6 },
       name: tr.label ?? tr.key,
       yaxis: onY2 ? "y2" : "y",
-      hovertemplate: `%{y:.2f}<extra>${tr.label ?? tr.key}</extra>`,
+      customdata: customdata as unknown as PlotData["customdata"],
+      hovertemplate,
     });
   });
   if (panel.kind === "yield") {

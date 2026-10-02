@@ -3,7 +3,7 @@
 /**
  * L1 Unit Workbench (SDD-L1-01..07, BDD-28). One call — GET /api/unit/{unit_id}/workbench — renders:
  *   header · I/O strip · [Data] chart stack on one cursor · [Analysis] strip + event ribbon
- *   rail: [Models] regime, evidence · [Decisions] optimisation, decision · Gemini
+ *   rail (decisions first — verbatim VN-5 "where are the decisions?"): [Decisions] decision, N(μ,σ) target distribution, optimisation · [Models] regime, evidence · Gemini
  * `?uc=UC-05` scrolls to that use case's signature panel and highlights it (SDD-L1-04).
  */
 
@@ -23,6 +23,7 @@ import OptimisationCard from "./OptimisationCard";
 import ModelEvidenceCard from "./ModelEvidenceCard";
 import DecisionCard from "./DecisionCard";
 import AskGeminiCard from "./AskGeminiCard";
+import TargetDistributionCard from "./TargetDistributionCard";
 
 function L1Content({ unitId }: { unitId: string }) {
   const searchParams = useSearchParams();
@@ -111,12 +112,13 @@ function L1Content({ unitId }: { unitId: string }) {
           <EventRibbon events={data.analysis.events} />
         </div>
         <aside className="l1-rail" data-testid="l1-rail">
+          <div className="l1-zone-label"><span className="l1-section-label">Decisions</span><span className="muted">what to do · why · how sure</span></div>
+          <DecisionCard decision={decision} recipe={data.recipe} citations={ucCites.length ? ucCites : data.citations} runId={resolvedRun} timeMin={resolvedMin} />
+          <TargetDistributionCard data={data} runId={resolvedRun} timeMin={resolvedMin} />
+          <OptimisationCard recipe={data.recipe} decision={decision} inputs={data.unit.io.inputs} unitId={data.unit.unit_id} runId={resolvedRun} timeMin={resolvedMin} />
           <div className="l1-zone-label"><span className="l1-section-label">Models</span></div>
           <RegimeCard regime={data.regime} committee={data.models.committee} />
           <ModelEvidenceCard models={data.models} />
-          <div className="l1-zone-label"><span className="l1-section-label">Decisions</span></div>
-          <OptimisationCard recipe={data.recipe} decision={decision} inputs={data.unit.io.inputs} unitId={data.unit.unit_id} runId={resolvedRun} timeMin={resolvedMin} />
-          <DecisionCard decision={decision} recipe={data.recipe} citations={ucCites.length ? ucCites : data.citations} runId={resolvedRun} timeMin={resolvedMin} />
           <AskGeminiCard liveTags={Object.keys(data.series.keys).length} docChips={docChips} unitLabel={data.unit.short_name.replace(/^\d+\.\s*/, "")} />
         </aside>
       </div>

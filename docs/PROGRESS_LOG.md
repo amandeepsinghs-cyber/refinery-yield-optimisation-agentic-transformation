@@ -6,6 +6,31 @@ this file records what actually happened and the state things were left in.
 
 ---
 
+## 2026-10-02 02:55 — UI remediation Pass G (N(μ,σ)) + Pass I (decisions first) + Pass H (L0 systemic view)
+
+**Finding first:** L0 is now a data-first systemic home — six unit tiles each carrying a 4-h fan sparkline (measured over ŷ ± 2σ, plan, spec) and a compact N(μ,σ) bell, process connectors between them, a lakehouse → ML → agents flow strip, a cause → effect ripple card, an Open-decisions rail with Accept / Decline, and a crude-adaptation card with the regime posterior. L1's rail is reordered decisions-first and gains a Target-distribution card. This closes verbatim Part 6 §3 (bell curves), §4 (decisions visible) and §5 (systemic thinking) in code; the Playwright run is still outstanding.
+
+**Pass G — N(μ,σ)**
+- `web/src/lib/gauss.ts` (pdf / cdf / `pOnSpec` / `mixtureMoments` / `gaussPath` / `sharedPeak`, 5 vitest cases) + `twin/shared/GaussianPdf.tsx` (pure SVG, theme palette, plan dashed gold, spec dotted rose, measured cyan marker, P(on-spec) coloured by ≥ 90 / ≥ 60 %).
+- `twin/l1/TargetDistributionCard.tsx`: U4 — the four committee members + weighted mixture from `/api/distribution` with spec_max and the W90 gate; other units — ŷ ± σ at the cursor minute from the detection band (`expected: / band_lo: / band_hi:`), tolerance from the plan hline. In-chart P text hidden in compact (tile) mode; P label moved bottom-left so it does not collide with the "now" marker.
+
+**Pass I — decisions first**
+- `L1Workbench.tsx` rail: zone *Decisions* (Decision → Target distribution → Optimisation) above zone *Models* (Regime → Model evidence → Ask Gemini). SDD-L1-03 amended.
+- L0 `OpenDecisionsCard.tsx`: every OPEN recommendation across the six units with unit, UC id, risk pill, gate, one-line rationale, Accept / Decline (`postTwinDecision`) and "Open workbench →" (`?uc=` deep link). `CrudeAdaptationCard.tsx` shows declared vs detected assay and the regime posterior `p_regime` (new on `/api/twin crude_slate`).
+- **Not done**: Gemini page-context `panel_ids` + highlighted panel (critic finding) — left for a later pass.
+
+**Pass H — L0 systemic view**
+- API `engines/systems.py unit_spark(run_id, unit_id, time_min, kpi)` → `{tag, label, unit, source, time_min[], measured[], expected[], band_lo[], band_hi[], mu, sigma, plan, tol, spec_hi, spec_lo, breach_open}` over the last 240 min at 2-min step, reusing the cached detection series (Pass F band); `l0_fields` attaches it as `units[].spark`. Payload 217 KB, 0.7 s cold / 0.02 s cached. `/api/twin` `crude_slate.p_regime` added. Tests `test_every_unit_carries_a_live_spark_with_band_and_moments`, `test_crude_slate_posterior_sums_to_one`.
+- Web: `twin/shared/Sparkline.tsx` (SVG fan, `data-testid="unit-spark"`), `twin/l0/UnitTile.tsx` (28 px KPI numeral, deviation chip, sparkline + compact bell, μ/σ, P(on-spec), counts; links `/twin/unit/{id}?tag=`), `UnitFlowGrid.tsx` (3 × 2 grid with a measured SVG overlay: hydrocarbon U1→U2→U4→U5→U6 animated dash, catalyst U2⇄U3, heat recovery U4→U1), `FlowStrip.tsx` (Historian → Bigtable → BigQuery → Regime → Committee → Optimiser → Agents → Decisions with live states), `RippleCard.tsx` (primary move + per-domain before → after bars), `L0Home.tsx` recomposed (main column: tiles → ripple → PFD behind a `<details>`; sticky rail: Open decisions → Needs attention → Crude adaptation).
+- Fixes found by screenshot: legacy `.spark {76 × 22 px}` rule was squashing the fan chart (renamed `.spark-fan`); U2 → U4 connector landed in the gutter (`bc.x` → `b.x`); flow-strip stage text overlapped at 1440 (ellipsis + shorter labels); tiles in a row now equal height; state pills `nowrap`.
+- L1 MV panel: per-trace "% of own window range" normalisation when scales differ > 20× **and** at least one MV genuinely moves (span > 8 × robust σ); held MVs stay raw so flat lines honestly read "held" (the first cut normalised noise into a hairball — reverted to the gated version).
+
+**Verification**: `tsc` 0 errors · vitest 82/82 · pytest `test_twin_l0 + test_workbench + test_detect` 21 passed · API restarted on :8010 with the new payload · CDP (random_s107 @ 600): L0 dark 1440 × 1000 `plotly:0 · live:6 · greyTraces:0 · hscroll:false`, L0 light 1920 × 1080 `hscroll:false`, L1 U4 / U2 dark `plotly:5 · railCards:5 · greyTraces:0`. As-built: `docs/ui/H_L0_systemic_dark_asbuilt.png`, `H_L0_systemic_light_1920_asbuilt.png`, `G_L1_u4_target_distribution_asbuilt.png`, `I_L1_u2_decisions_first_asbuilt.png`. `e2e/twin.spec.ts` L0 scenarios rewritten for the new home (tiles, sparks, flow strip, ripple, open decisions, PFD disclosure) and L1 rail check extended — **not executed** (runner not installed).
+
+**Observed while verifying**: `/api/health` reports `full_v1` **53 / 54 runs complete** (`random_s101` at 540 / 550 rows), `retrain_recommended: false`; Gemini probe fails with "Reauthentication is needed" — `gcloud auth application-default login` is required before the Gemini / Live demo.
+
+---
+
 ## 2026-10-02 02:35 — UI remediation Pass E (dark register) + Pass F (band bug) — response to the owner's "2/10" review
 
 **Finding first:** the owner rated the UI 2/10 and pointed at `verbatim.md`. All four complaints in verbatim Part 6 were true in the code and three of them were *spec-driven*: SDD-L0-02 forbade charts on L0, SDD-L0-03 mandated a light default, and the mockups were light / flat / chart-less. An independent critic subagent (`scratch/ui_critic_report.md`) reached the same four root causes. Remediation plan approved by the owner ("yes for all"): dark default, charts + model output on L0, autonomous passes E → F → G → I → H with a push per pass.

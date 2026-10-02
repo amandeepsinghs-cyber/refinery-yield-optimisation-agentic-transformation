@@ -46,6 +46,66 @@ export interface TwinUnit {
   decisions_open?: number;
   kpi_vs_plan?: TwinKpiVsPlan | null;
   tag_table?: TwinUnitTag[];
+  /** L0 tile curve + N(μ,σ) belief (SDD-L0-02 amended). */
+  spark?: TwinSpark | null;
+  decisions_needed?: TwinDecision[];
+}
+
+/** Headline tag, last 240 min: measured, ŷ and ±2σ band, belief at the cursor, plan ± tol and spec. */
+export interface TwinSpark {
+  tag: string;
+  label: string;
+  unit: string;
+  source: string;
+  time_min: number[];
+  measured: (number | null)[];
+  expected: (number | null)[];
+  band_lo: (number | null)[];
+  band_hi: (number | null)[];
+  mu: number | null;
+  sigma: number | null;
+  plan: number | null;
+  tol: number | null;
+  spec_hi?: number | null;
+  spec_lo?: number | null;
+  breach_open?: boolean;
+}
+
+export interface TwinSystemLoop {
+  loop_id: string;
+  name: string;
+  path: string[];
+  flow_label: string;
+  conservation_metric: string;
+  status: "GREEN" | "AMBER" | "RED" | string;
+}
+
+export interface TwinRippleMetric {
+  label: string;
+  before: number;
+  after: number;
+  delta: number;
+  unit: string;
+  direction: "up" | "down" | "flat" | string;
+}
+
+export interface TwinSystemsRipple {
+  rec_id: string;
+  time_min: number;
+  gate_status: string;
+  primary_move?: { unit_id: string; parameter: string; action: string; sp_before: number; sp_after: number; delta_F: number } | null;
+  domains?: Record<string, { title: string; summary: string; metrics: TwinRippleMetric[] }>;
+}
+
+export interface TwinAgent {
+  agent_id: string;
+  name: string;
+  role: string;
+  unit_id?: string | null;
+  use_case_ids?: string[];
+  status: "GREEN" | "AMBER" | "RED" | string;
+  priority_rank?: number;
+  proactive_alert?: string | null;
 }
 
 export interface TwinPanelTrace {
@@ -355,6 +415,7 @@ export interface TwinOverview {
     regime_id: string;
     regime_label: string;
     p_max: number;
+    p_regime?: Record<string, number>;
     novelty: number;
     transition_pct: number;
     declared_vs_detected: string;
@@ -365,5 +426,9 @@ export interface TwinOverview {
   needs_attention: TwinAttention[];
   timeline: TwinTimelineItem[];
   units: TwinUnit[];
+  system_loops?: TwinSystemLoop[];
+  systems_ripple?: TwinSystemsRipple | null;
+  agent_fleet?: TwinAgent[];
+  provenance?: { source: string; batch_id: string; run_id: string; time_min: number; advisory_only?: boolean };
   downstream_cases_summary?: { number: number; title: string; tier: string; boundary_tag: string; boundary_value: string }[];
 }

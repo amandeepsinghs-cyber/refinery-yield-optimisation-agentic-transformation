@@ -36,6 +36,7 @@ DEFAULT_TOL = {"T2_preheat_F": 5.0, "conversion_pct": 1.0, "dT_cyc_reg_F": 10.0,
                "HN_T98_F": 3.0, "MV_cw_flow": 15.0, "eff_C5": 1.5}
 UNIT_FALLBACK = {"MV_cw_flow": "lb/s"}  # tag metadata reports "-" for this one
 SEV_RANK = {"alarm": 0, "warn": 1, "info": 2}
+SPARK_WINDOW_MIN, SPARK_STEP = 240, 2   # L0 tile sparkline: last 4 h at 2-min step (SDD-L0-02 amended)
 MAX_ATTENTION = 5
 MAX_LABEL = 60
 
@@ -266,14 +267,53 @@ def plant_strip(time_min: int, units: list[dict], open_events: list[dict], mass_
             "units_watch": sum(1 for u in units if (u.get("kpi_vs_plan") or {}).get("state") == "WATCH")}
 
 
+def unit_spark(run_id: str, unit_id: str, time_min: int, kpi: dict | None, window_min: int = SPARK_WINDOW_MIN,
+               step: int = SPARK_STEP) -> dict | None:
+    """L0 tile data (SDD-L0-02 amended): the headline tag's last `window_min` minutes — measured, expected ŷ and the
+    ±2σ band — plus the N(μ,σ) belief at the cursor, plan ± tol and the spec limit. ≈ 120 points per unit."""
+    if not kpi:
+        return None
+    tag = kpi["tag"]
+    d = detection_series(run_id, unit_id, tag)
+    if d is None:
+        return None
+    t = np.asarray(d["time_min"], float)
+    i1 = int(np.clip(np.searchsorted(t, time_min, side="right") - 1, 0, len(t) - 1))
+    i0 = int(np.clip(np.searchsorted(t, time_min - window_min, side="left"), 0, i1))
+    idx = np.arange(i0, i1 + 1, max(1, step))
+    if idx[-1] != i1:
+        idx = np.append(idx, i1)
+
+    def _ser(a):
+        v = np.asarray(a, float)[idx]
+        return [None if not np.isfinite(x) else round(float(x), 3) for x in v]
+
+    e_now, lo_now, hi_now = float(d["expected"][i1]), float(d["band_lo"][i1]), float(d["band_hi"][i1])
+    sigma = (hi_now - lo_now) / 4 if np.isfinite(lo_now) and np.isfinite(hi_now) else float(d["sigma"][i1])
+    specs = (get_state().s.get("specs", {}) or {}).get(tag, {}) or {}
+    return {"tag": tag, "label": kpi["label"], "unit": kpi["unit"], "source": d["expected_source"],
+            "time_min": [int(x) for x in t[idx]], "measured": _ser(d["measured"]), "expected": _ser(d["expected"]),
+            "band_lo": _ser(d["band_lo"]), "band_hi": _ser(d["band_hi"]),
+            "mu": None if not np.isfinite(e_now) else round(e_now, 3), "sigma": None if not np.isfinite(sigma) else round(max(sigma, 1e-6), 4),
+            "plan": kpi["plan"], "tol": kpi["tol"],
+            "spec_hi": specs.get("max") if isinstance(specs, dict) else None,
+            "spec_lo": specs.get("min") if isinstance(specs, dict) else None,
+            "breach_open": bool(d["breach"][i1]) if i1 < len(d["breach"]) else False}
+
+
 def l0_fields(run_id: str, time_min: int, units: list[dict], row: dict, events: list[dict],
               mass_balance_err_pct: float | None) -> dict[str, Any]:
-    """Mutates `units` in place (kpi_vs_plan + counts) and returns the plant-level L0 fields (contract §6)."""
+    """Mutates `units` in place (kpi_vs_plan + counts + spark) and returns the plant-level L0 fields (contract §6)."""
     st = get_state()
     tolerances = (st.s.raw.get("plan_tolerances") or {}) if hasattr(st.s, "raw") else {}
     open_events = [e for e in events if e.get("status") == "open"]
     for u in units:
         u["kpi_vs_plan"] = kpi_vs_plan(run_id, u["unit_id"], time_min, row, tolerances)
         u.update(unit_counts(u, open_events))
+        try:
+            u["spark"] = unit_spark(run_id, u["unit_id"], time_min, u["kpi_vs_plan"])
+        except Exception:  # a tile without a curve is better than a failed /api/twin
+            u["spark"] = None
     return {"needs_attention": needs_attention(open_events), "timeline": timeline(events),
             "plant": plant_strip(time_min, units, open_events, mass_balance_err_pct)}
+
