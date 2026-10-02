@@ -37,7 +37,7 @@ from app.state import get_state
 
 logger = logging.getLogger(__name__)
 
-SURROGATE_VERSION = 5
+SURROGATE_VERSION = 6
 
 CANDIDATE_INPUTS = [
     "SP_T_preheat_F", "SP_T_riser_ROT_F", "Fair", "MV_PA1", "MV_PA2", "MV_PA3", "MV_PA4", "MV_reflux_ratio",
@@ -82,12 +82,37 @@ AUTO_MIN_LEN, AUTO_MIN_SD, AUTO_MIN_WINDOWS, AUTO_MIN_R2 = 60, 1.0, 3, 0.3
 
 
 def _seed_of(run_id: str) -> int | None:
-    if "random_s" not in run_id:
-        return None
-    try:
-        return int(run_id.split("random_s")[-1])
-    except ValueError:
-        return None
+    for stem in ("random_s", "lever_s"):
+        if stem in run_id:
+            try:
+                return int(run_id.split(stem)[-1])
+            except ValueError:
+                return None
+    return None
+
+
+def _lever_runs(st) -> list[str]:
+    """Complete runs of the lever batches (designed moves of the levers the random batch never moves)."""
+    lever = set(st.s["training"].get("lever_batches") or [])
+    min_rows = int(st.s["data"].get("min_rows", 1500))
+    runs = getattr(st.catalog, "all_runs", {}) or {}
+    return sorted(r for r, i in runs.items() if i.batch in lever and i.n_minutes >= min_rows)
+
+
+def _regime_table(st) -> pd.DataFrame | None:
+    """Regime segments of the primary batch plus every lever batch that has been staged (stage_regimes.py)."""
+    root = st.s.data_root
+    frames = []
+    for b in [st.s["data"]["primary_batch"], *(st.s["training"].get("lever_batches") or [])]:
+        f = root / b / "_staged" / "regimes.csv"
+        if f.exists():
+            frames.append(pd.read_csv(f))
+        elif b == st.s["data"]["primary_batch"]:
+            logger.warning("surrogates: missing %s", f)
+            return None
+        else:
+            logger.info("surrogates: %s not staged yet (run sim_octave/stage_regimes.py --batch %s)", b, b)
+    return pd.concat(frames, ignore_index=True)
 
 
 def _regime_at_minutes(seg_df: pd.DataFrame, run_id: str, t: np.ndarray) -> np.ndarray:
@@ -135,13 +160,15 @@ def _step_samples(st, seg_df: pd.DataFrame, *, holdout: bool) -> tuple[list[dict
     """One sample per designed move (input tag, regime, Δx, Δy per output), one sample per clean auto-trim window
     (regime, within-window demeaned T98s and outputs), and the steady-state envelope data."""
     test_min = int(st.s["training"].get("test_seed_min", 140))
+    lever_test_min = int(st.s["training"].get("lever_test_seed_min", 210))
+    staged = set(seg_df["run_id"])
     samples, autos, X_env, Y_env = [], [], [], []
     jT = [OUTPUTS.index(c) for c in CUTPOINT_T98]
-    for run_id, info in st.catalog.runs.items():
-        if info.batch != st.s["data"]["primary_batch"]:
-            continue
+    candidates = [(r, i, test_min) for r, i in st.catalog.runs.items() if i.batch == st.s["data"]["primary_batch"]]
+    candidates += [(r, st.catalog.get(r), lever_test_min) for r in _lever_runs(st) if r in staged]
+    for run_id, info, cut_seed in candidates:
         seed = _seed_of(run_id)
-        if seed is None or (seed >= test_min) != holdout:
+        if seed is None or (seed >= cut_seed) != holdout:
             continue
         df = st.catalog.load(run_id)
         need = CANDIDATE_INPUTS + OUTPUTS + ["event_code", "time_min"]
@@ -232,17 +259,19 @@ def _fit_surrogates() -> None:
     st = get_state()
     out_dir = st.s.artifacts / "engines"
     pkl_path, card_path = out_dir / "surrogates.pkl", out_dir / "surrogate_card.json"
+    seg_df = _regime_table(st)
+    if seg_df is None:
+        return
+    # the cache is valid only for the same code version and the same set of (staged, complete) lever runs, so the
+    # fit is redone automatically once the lever batch lands and is staged
+    lever_used = [r for r in _lever_runs(st) if r in set(seg_df["run_id"])]
     if pkl_path.exists() and card_path.exists():
         try:
-            if json.loads(card_path.read_text()).get("_meta", {}).get("version") == SURROGATE_VERSION:
+            meta = json.loads(card_path.read_text()).get("_meta", {})
+            if meta.get("version") == SURROGATE_VERSION and meta.get("lever_runs", []) == lever_used:
                 return
         except json.JSONDecodeError:
             pass
-    regimes_csv = st.s.data_root / st.s["data"]["primary_batch"] / "_staged" / "regimes.csv"
-    if not regimes_csv.exists():
-        logger.warning("surrogates: missing %s", regimes_csv)
-        return
-    seg_df = pd.read_csv(regimes_csv)
     train, autos, Xe, Ye = _step_samples(st, seg_df, holdout=False)
     if not train:
         logger.warning("surrogates: no designed-move windows in the training batch")
@@ -291,7 +320,7 @@ def _fit_surrogates() -> None:
                     "outputs_used": [o for k, o in enumerate(OUTPUTS) if keep[k] and o not in CUTPOINT_T98]}
 
     B_pool, MAD_pool, n_pool = table(train)
-    models, card = {}, {"_meta": {"version": SURROGATE_VERSION, "kind": "step_response_sensitivity + structural cut points",
+    models, card = {}, {"_meta": {"version": SURROGATE_VERSION, "lever_runs": lever_used, "kind": "step_response_sensitivity + structural cut points",
                                   "inputs": supported, "unsupported_inputs": unsupported, "outputs": OUTPUTS,
                                   "n_events_train": len(train), "n_events_holdout": len(hold),
                                   "events_per_input": counts, "window_min": [BEFORE_MIN, SETTLE_MIN, AFTER_MIN],

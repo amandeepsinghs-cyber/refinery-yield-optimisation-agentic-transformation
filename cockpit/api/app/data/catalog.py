@@ -230,9 +230,12 @@ class Catalog:
         return sorted({r.batch for r in self.runs.values()})
 
     def get(self, run_id: str) -> RunInfo:
-        if run_id not in self.runs:
-            raise KeyError(run_id)
-        return self.runs[run_id]
+        if run_id in self.runs:
+            return self.runs[run_id]
+        # runs outside the active batch (e.g. lever_v1, read only by the surrogate fit) stay loadable by id
+        if run_id in getattr(self, "all_runs", {}):
+            return self.all_runs[run_id]
+        raise KeyError(run_id)
 
     def _expected_rows(self, info: RunInfo) -> int | None:
         D = self.s["data"]
