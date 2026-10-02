@@ -30,6 +30,8 @@ import LangToggle from "@/components/twin/LangToggle";
 import GaussianPdf from "@/components/twin/shared/GaussianPdf";
 import ChartStack from "@/components/twin/l1/ChartStack";
 import { FLOW, NAME } from "@/components/twin/l0/UnitFlow";
+import UnitDrawing, { HAS_DRAWING } from "./UnitDrawings";
+import { SUSPECT, isSuspect } from "@/lib/suspect";
 
 const RANK: Record<string, number> = { open: 0, held: 1, watch: 2, withheld: 3, accepted: 4, declined: 5 };
 const fx = (v: number | null | undefined, d?: number) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d ?? (Math.abs(v) >= 100 ? 1 : 2)));
@@ -57,7 +59,7 @@ function FracDrawing({ at }: { at: (k: string) => number | null }) {
       {trays.map((t) => (
         <g key={t}>
           <path d={`M${x0 - 6} ${ty(t)} h-14`} className="us-tick" />
-          <text x={x0 - 24} y={ty(t) + 4} textAnchor="end" className="us-v"><tspan className="us-k">Tray {t} </tspan>{fx(at(`T_tray${String(t).padStart(2, "0")}_F`), 0)} °F</text>
+          <text x={x0 - 24} y={ty(t) + 4} textAnchor="end" className="us-v"><tspan className="us-k">Tray {t} </tspan>{(() => { const tg = `T_tray${String(t).padStart(2, "0")}_F`; return SUSPECT[tg] ? <tspan className="us-suspect">{fx(at(tg), 0)} °F ?<title>{SUSPECT[tg]}</title></tspan> : <>{fx(at(tg), 0)} °F</>; })()}</text>
         </g>
       ))}
       {/* pumparound loops (right side, short) */}
@@ -254,7 +256,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
         <div className="us-title">
           <h1>{NAME[unitId] ?? u.short_name}</h1>
           {k ? (
-            <p className="us-kpi">{k.label} <b className="num">{fx(k.value)}</b> {k.unit}
+            <p className="us-kpi">{k.label} <b className="num">{fx(k.value)}</b> {k.unit}{isSuspect(data.analysis.primary_tag) ? <span className="suspect-mark" title={SUSPECT[data.analysis.primary_tag]}>under review</span> : null}
               <span className={`us-dev s-${k.state} num`}> {k.value - k.plan >= 0 ? "+" : "−"}{Math.abs(k.value - k.plan).toFixed(1)}</span>
               <span className="subtle"> vs plan {fx(k.plan)}</span></p>
           ) : null}
@@ -272,7 +274,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
       {/* ① DATA */}
       <Step n={1} id="s-data" title="Data in and out" who={<><Who k="data">historian · every minute</Who><Who k="data">lab · every 8 h</Who></>}>
         <div className="us-grid data">
-          <div className="us-drawwrap">{isU4 ? <FracDrawing at={at} /> : <GenericDrawing data={data} />}</div>
+          <div className="us-drawwrap">{isU4 ? <FracDrawing at={at} /> : HAS_DRAWING.has(unitId) ? <UnitDrawing unitId={unitId} at={at} /> : <GenericDrawing data={data} />}</div>
           <div className="us-side">
             <h3>How fresh the data is</h3>
             <ul className="us-fresh">
@@ -298,7 +300,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           {d?.observed?.estimate != null ? (
             <div className="us-fact big"><span>Estimate now</span><b className="num">{fx(d.observed.estimate, 1)} <small>± {fx(d.observed.sigma, 1)} {d.observed.unit}</small></b><em>chance on spec {pct(p?.p_on_spec_before)}</em></div>
           ) : k ? <div className="us-fact big"><span>{k.label} now</span><b className="num">{fx(k.value)} <small>{k.unit}</small></b><em>plan {fx(k.plan)}</em></div> : null}
-          <div className="us-fact"><span>Away from expected</span><b className="num">{a.residual_now >= 0 ? "+" : "−"}{fx(Math.abs(a.residual_now), 1)} <small>{k?.unit}</small></b><em>{fx(a.sigma_now ? Math.abs(a.residual_now) / a.sigma_now : null, 1)} σ</em></div>
+          <div className="us-fact"><span>Away from expected</span><b className="num">{Math.abs(a.residual_now) < 0.05 ? "" : a.residual_now > 0 ? "+" : "−"}{fx(Math.abs(a.residual_now), 1)} <small>{k?.unit}</small></b><em>{fx(a.sigma_now ? Math.abs(a.residual_now) / a.sigma_now : null, 1)} σ</em></div>
           <div className="us-fact"><span>Sustained drift (CUSUM)</span><b className="num">{fx(a.cusum_now, 1)}</b><em>{a.breach_open ? `since ${clock(a.first_breach_min)}` : "no breach open"}</em></div>
           <div className="us-fact"><span>Likely driver</span><b>{a.root_cause[0] ? `${a.root_cause[0].label ?? a.root_cause[0].tag} ${a.root_cause[0].direction === "up" ? "↑" : "↓"}` : "—"}</b><em>largest contribution</em></div>
           {data.regime ? <div className="us-fact"><span>Crude</span><b>{data.regime.regime_id} {data.regime.regime_label.split(" ")[0]}</b><em>{Math.round((data.regime.p_regime?.[data.regime.regime_id] ?? 0) * 100)} % sure · since {clock(data.regime.detected_at_min)}</em></div> : null}

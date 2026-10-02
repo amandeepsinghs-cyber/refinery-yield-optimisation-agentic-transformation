@@ -38,7 +38,7 @@ export const TWIN_UNITS: { unit_id: string; short: string; label: string }[] = [
   { unit_id: "unit_2_riser", short: "U2", label: "Riser" },
   { unit_id: "unit_3_regenerator", short: "U3", label: "Regenerator" },
   { unit_id: "unit_4_fractionator", short: "U4", label: "Fractionator" },
-  { unit_id: "unit_5_condenser", short: "U5", label: "Condenser" },
+  { unit_id: "unit_5_condenser", short: "U5", label: "Gas plant" },
   { unit_id: "unit_6_stabiliser", short: "U6", label: "Stabiliser" },
 ];
 
@@ -108,7 +108,7 @@ export function isRailActive(pageHref: string, pathname: string): boolean {
 }
 
 export const SHARED_PAGES: NavPage[] = [
-  { href: "/audit", label: "Audit log", Icon: IconAudit },
+  { href: "/audit", label: "Decision record", Icon: IconAudit },
   { href: "/settings", label: "Settings", Icon: IconGear, planned: true },
 ];
 

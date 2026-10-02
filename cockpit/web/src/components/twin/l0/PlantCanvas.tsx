@@ -9,6 +9,7 @@
 
 import type { Decision } from "@/lib/decisionsApi";
 import type { TwinUnit } from "@/lib/twinTypes";
+import { SUSPECT } from "@/lib/suspect";
 
 const VB_W = 1400, VB_H = 330, BASE = 250;
 export const UNIT_X: Record<string, number> = {
@@ -118,6 +119,7 @@ export default function PlantCanvas({ units, decisions, selectedId, onSelect, se
                 <text y={54} className="pc-kpi" textAnchor="middle">
                   {KPI[k.tag] ?? k.label} {k.value.toFixed(Math.abs(k.value) >= 100 ? 1 : 2)}
                   <tspan className={`pc-dev s-${s}`}> {k.deviation >= 0 ? "+" : "−"}{Math.abs(k.deviation).toFixed(1)}</tspan>
+                  {SUSPECT[k.tag] ? <tspan className="us-suspect"> ?<title>{SUSPECT[k.tag]}</title></tspan> : null}
                 </text>
               ) : null}
             </g>
