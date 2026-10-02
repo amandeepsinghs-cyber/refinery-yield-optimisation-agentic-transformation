@@ -152,6 +152,10 @@ async def live_ws(ws: WebSocket, ctx: dict) -> None:
                         turns=types.Content(role="user", parts=[types.Part(text=f"[SCREEN CONTEXT UPDATE — do not reply to this message; "
                                                                                  f"use it for the operator's next question]\n{block}")]),
                         turn_complete=False)
+                    vis = msg["screen"].get("visible") or {}
+                    regions = sorted(vis.keys()) if isinstance(vis, dict) else []
+                    logger.info("live context: page=%s t=%s regions=%d chars=%d", cctx["page"], cctx["time_min"], len(regions), len(block))
+                    await ws.send_json({"type": "context_ack", "page": cctx["page"], "time_min": cctx["time_min"], "regions": regions})
                 except Exception as e:  # noqa: BLE001 - never let a context update break the voice session
                     logger.warning("live context update ignored: %s", str(e)[:120])
             elif typ == "end":

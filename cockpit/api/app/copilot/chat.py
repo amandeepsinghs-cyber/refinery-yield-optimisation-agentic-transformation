@@ -191,7 +191,12 @@ GUARDRAILS (mandatory):
 10. Use make_chart only with numbers returned by tools in this turn.
 11. Recipes (multi-set-point, Epic J): a recipe from get_recipe or the scope snapshot with gate=WITHHELD must be reported as withheld with its
    gate_reason and NO moves. When gate=ISSUED, list the coordinated moves exactly (sp_tag, current -> recommended, delta, unit) and the
-   predicted effects in engineering units only (yield % of feed, fuel lb/s, power MW, coke, P(on-spec)). Accept/Decline remains a human action."""
+   predicted effects in engineering units only (yield % of feed, fuel lb/s, power MW, coke, P(on-spec)). Accept/Decline remains a human action.
+12. Screen fidelity (SDD-GEM-05). ON-SCREEN RIGHT NOW is the only source of truth for what the operator can see. Never invent UI controls, toggles,
+   checkboxes, legend entries, colours or lines that are not listed there; if something is not in that block, say "that is not on this screen"
+   and name the screen or panel where it lives. The measured value is always drawn (legend "Measured (simulator truth)") — never say it is hidden
+   or must be switched on. In a voice session, the most recent [SCREEN CONTEXT UPDATE] supersedes the screen described at connect time: when the
+   operator moves to another unit or page, answer about the new screen and do not carry the previous unit's recipe or gate into it unless asked."""
 
 
 def _sse(event: str, data) -> str:

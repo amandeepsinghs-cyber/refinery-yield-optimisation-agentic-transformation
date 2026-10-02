@@ -48,6 +48,8 @@ export function useLiveVoice() {
   const [level, setLevel] = useState(0);
   const [mode, setMode] = useState<VoiceMode>("ptt");
   const [model, setModel] = useState<string | null>(null);
+  /** Last screen context the server confirmed it handed to Gemini (SDD-GEM-05 proof-of-sight for the drawer). */
+  const [seen, setSeen] = useState<{ page: string; time_min: number | null; regions: string[]; at: number } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const micCtxRef = useRef<AudioContext | null>(null);
@@ -278,6 +280,9 @@ export function useLiveVoice() {
           case "audio":
             if (typeof msg.data === "string") playChunk(msg.data);
             break;
+          case "context_ack":
+            setSeen({ page: String(msg.page ?? ""), time_min: (msg.time_min as number | null) ?? null, regions: Array.isArray(msg.regions) ? (msg.regions as string[]) : [], at: Date.now() });
+            break;
           case "transcript":
             upsertTranscript(msg.role === "user" ? "user" : "model", String(msg.text ?? ""), Boolean(msg.final));
             break;
@@ -392,6 +397,7 @@ export function useLiveVoice() {
     mode,
     setMode,
     model,
+    seen,
     startTalking,
     stopTalking,
     disconnect,

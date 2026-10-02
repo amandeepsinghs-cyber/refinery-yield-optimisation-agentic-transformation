@@ -11,20 +11,24 @@ FIN = re.compile(r"[$€£₹]\s?\d|USD|EUR|NPV|ROI|payback|\bcost|budget|price|
 
 
 def test_screen_inference_from_route():
-    assert screen_of({"page": "/twin"}) == {"level": "L0", "unit_id": None, "window_min": 720}
+    s0 = screen_of({"page": "/twin"})
+    assert (s0["level"], s0["unit_id"], s0["window_min"], s0.get("focus_unit")) == ("L0", None, 720, None)
     assert screen_of({"page": "/twin/unit/unit_4_fractionator"})["unit_id"] == "unit_4_fractionator"
     assert screen_of({"page": "/twin/unit/unit_4_fractionator"})["level"] == "L1"
     assert screen_of({"page": "/modelling/models"})["level"] == "other"
     # explicit screen wins, unknown unit degrades to L0
     assert screen_of({"page": "/x", "screen": {"level": "L1", "unit_id": "unit_9_bogus"}})["level"] == "L0"
-    assert screen_of({"page": "/x", "screen": {"level": "L1", "unit_id": "unit_1_furnace", "window_min": 240}}) == \
-        {"level": "L1", "unit_id": "unit_1_furnace", "window_min": 240}
+    s1 = screen_of({"page": "/x", "screen": {"level": "L1", "unit_id": "unit_1_furnace", "window_min": 240}})
+    assert (s1["level"], s1["unit_id"], s1["window_min"]) == ("L1", "unit_1_furnace", 240)
+    # SDD-GEM-05: the pinned / hovered unit on L0 travels as focus_unit; it is dropped off L0
+    assert screen_of({"page": "/twin", "screen": {"level": "L0", "focus_unit": "unit_4_fractionator"}})["focus_unit"] == "unit_4_fractionator"
 
 
 def test_system_instruction_states_open_screen_and_embeds_snapshot():
     l0 = system_instruction({"page": "/twin", "time_min": 600})
-    assert "OPEN SCREEN: Level 0 Refinery Twin" in l0
+    assert "OPEN SCREEN: Level 0 Refinery home" in l0
     assert "SCOPE SNAPSHOT" in l0
+    assert "12. Screen fidelity" in l0 and "never say it is hidden" in l0  # guardrail from the 2026-10-02 Live transcript
     l1 = system_instruction({"page": "/twin/unit/unit_4_fractionator", "time_min": 600})
     assert "OPEN SCREEN: Level 1 Unit Workbench for Main fractionator (unit_4_fractionator)" in l1
     assert "unit_4_fractionator" in l1.split("SCOPE SNAPSHOT")[1][:3000]

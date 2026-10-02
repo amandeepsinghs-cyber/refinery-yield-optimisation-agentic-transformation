@@ -1,0 +1,58 @@
+# Dataplex auto data-quality rules for fcc_silver.tag_minute (the silver data contract, machine-checked).
+# Create / update:
+#   gcloud dataplex datascans create data-quality tag-minute-dq --location=us-central1 --project=fcc-soft-sensor \
+#     --data-source-resource=//bigquery.googleapis.com/projects/fcc-soft-sensor/datasets/fcc_silver/tables/tag_minute \
+#     --data-quality-spec-file=sim_octave/lakehouse/dq_tag_minute.yaml --labels=datacloud=jetski,layer=silver
+#   gcloud dataplex datascans run tag-minute-dq --location=us-central1 --project=fcc-soft-sensor
+samplingPercent: 10
+rules:
+  - column: run_id
+    dimension: COMPLETENESS
+    nonNullExpectation: {}
+    threshold: 1.0
+    name: run-id-not-null
+  - column: tag_id
+    dimension: COMPLETENESS
+    nonNullExpectation: {}
+    threshold: 1.0
+    name: tag-id-not-null
+  - column: ts
+    dimension: COMPLETENESS
+    nonNullExpectation: {}
+    threshold: 1.0
+    name: ts-not-null
+  - column: quality_flag
+    dimension: VALIDITY
+    setExpectation:
+      values: [GOOD, MISSING, TRUTH_ONLY]
+    threshold: 1.0
+    name: quality-flag-in-set
+  - column: time_min
+    dimension: VALIDITY
+    rangeExpectation:
+      minValue: "0"
+      maxValue: "1600"
+      strictMinEnabled: false
+      strictMaxEnabled: false
+    threshold: 1.0
+    name: time-min-in-run-window
+  - column: unit_id
+    dimension: VALIDITY
+    setExpectation:
+      values: [unit_1_furnace, unit_2_riser, unit_3_regenerator, unit_4_fractionator, unit_5_condenser, unit_6_stabiliser, fcc-complex]
+    threshold: 1.0
+    name: unit-id-is-isa95-unit
+  - dimension: UNIQUENESS
+    tableConditionExpectation:
+      sqlExpression: "COUNT(*) = COUNT(DISTINCT CONCAT(run_id, '|', tag_id, '|', CAST(time_min AS STRING)))"
+    name: one-row-per-tag-per-minute
+  - column: value
+    dimension: VALIDITY
+    rowConditionExpectation:
+      sqlExpression: "quality_flag <> 'GOOD' OR (value IS NOT NULL AND NOT IS_NAN(value) AND NOT IS_INF(value))"
+    threshold: 1.0
+    name: good-rows-have-finite-value
+  - dimension: ACCURACY
+    tableConditionExpectation:
+      sqlExpression: "(SELECT MAX(ABS(value)) FROM `fcc-soft-sensor.fcc_silver.tag_minute` WHERE tag_id = 'mass_balance_err_pct' AND quality_flag = 'GOOD') < 5"
+    name: plant-mass-balance-closes-within-5pct

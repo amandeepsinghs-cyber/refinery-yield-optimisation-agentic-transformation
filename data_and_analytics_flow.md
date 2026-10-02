@@ -249,3 +249,154 @@ Operator Interface        Next.js Cockpit on localhost:3001                Next.
 Supervisory Control       Writes to local SQLite audit log                 Writes to OPC UA Client -> DCS APC Supervisor
 ========================================================================================================================
 ```
+
+---
+
+## Errata & Consistency Notes (added 2026-10-02, lakehouse build)
+
+> [!NOTE]
+> Sections 1–6 above are kept verbatim as the production narrative. The notes below correct points where that text drifted from what the repository actually does today, so the document can be read as *production architecture* **and** *as-built truth* side by side. Nothing above was removed.
+
+| Where | Text above says | As built today (verified in code / GCP) |
+| :--- | :--- | :--- |
+| §2 Crude Slate Variations | 3 discrete API steps R1 < 22, R2 22–26, R3 > 26 | **4 declared regimes R1 Heavy / R2 Medium-heavy / R3 Base / R4 Light**, each switch a **60-min API ramp** (`sim_octave/stage_regimes.py`, `fcc_silver.crude_assay_registry.transition_start_min/transition_end_min/ramp_min`). |
+| §2 Data Generation Source | "46 differential-algebraic equations" | The Octave model exposes **46 validated process signals + set points** (112 CSV columns incl. truth twins and meta); the DAE count is not what the pipeline keys on. |
+| §1 / §5 Gemini | "Gemini 1.5 Pro Copilot" | `cockpit/api/config.yaml`: text **`gemini-2.5-flash`**, voice **`gemini-live-2.5-flash-native-audio`** (with fallbacks), API-side embeddings **`gemini-embedding-001`**; BigQuery-side embeddings **`text-embedding-005`** via the `fcc-lake` connection (`fcc_gold.text_embedding`). |
+| §6 Analytical Lakehouse row | "SQLite / Local Parquet & CSV" | The cockpit still reads local CSV + SQLite `audit.db`; **in addition** the same data is now loaded into a real GCS + BigLake Iceberg + BigQuery medallion lakehouse (§7) and catalogued in Dataplex. |
+| §1 Dual-Tier (Bigtable / Pub/Sub / Dataflow) | Drawn as present tense | **Production-only.** For this build nothing streams: Octave writes 1-min CSV, the loader stages it to GCS. Bigtable/Pub/Sub/Dataflow/Manufacturing Connect remain the target architecture (§8 matrix). |
+| §3 Lab rows | "Minutes 360, 840, 1320" | Correct — 3 draws per 1,600-min run × 2 properties = 6 `lab_results` rows per run (verified in `fcc_gold.v_run_coverage`). |
+
+---
+
+## 7. As-Built Medallion Lakehouse (GCP project `fcc-soft-sensor`, `us-central1`)
+
+### 7.1 Why this is a *lakehouse* and not a warehouse
+
+A warehouse is a database that owns its files (the earlier `fcc_soft_sensor.fcc_sim_minute_sample` table was exactly that). A lakehouse keeps **object storage as the system of record**, puts an **open table format** on top so engines other than BigQuery can read it, and layers **one catalog + governance** over both. As built:
+
+* **GCS is the lake** — one bucket `gs://fcc-soft-sensor-sim-data` with zone prefixes. Bronze is immutable as-received files (Parquet **and** the original CSV); the knowledge zone holds the unstructured documents; model bundles live under `models/`.
+* **Silver is BigLake Iceberg** (`fcc_silver.*`, `table_format='ICEBERG'`, `storage_uri=gs://…/silver/<table>`) — BigQuery manages the table, but the Parquet + Iceberg metadata sit in the bucket and are readable by Spark / Trino / DuckDB.
+* **Gold is BigQuery-native** (partitioned/clustered serving tables + views) plus two gold file products (knowledge chunks, model registry) that are also persisted in GCS.
+* **One catalog**: Dataplex lake **`fcc-refinery`** with zones `raw` (asset = the bucket) and `curated` (assets = `fcc_bronze`, `fcc_silver`, `fcc_gold`), plus a data-quality scan `tag-minute-dq` that machine-checks the silver contract.
+
+### 7.2 Zone map
+
+```
+gs://fcc-soft-sensor-sim-data/
+├── bronze/                                  immutable landing — never updated in place
+│   ├── historian/source=simulator/site=demo-refinery/area=fcc-complex/batch=full_v1/run=<run_id>/minute.parquet (+ <run_id>.csv)
+│   ├── lims/source=…/site=…/batch=full_v1/lab_results.parquet (+ .csv)
+│   ├── assay/…/regimes.parquet (+ .csv)      crude regime schedule (R1–R4, 60-min ramps)
+│   ├── events/…/events.parquet               event_code transitions / crude switches
+│   ├── tag_registry/source=simulator/tag_registry.parquet
+│   ├── audit/{audit,decisions,agent_events}/<yyyy-mm-dd>/*.jsonl   exported from cockpit audit.db
+│   └── _manifests/full_v1.json               what was loaded, sha256 per run, run_status
+├── knowledge/                               unstructured context (the "where do SOPs live" answer)
+│   ├── sop/ incidents/ moc/ iow/ lab/ shift_logs/ work_orders/ references/   47 markdown docs with front-matter
+│   └── documentation/                        this file, BDD.md, SDD.md, DECISIONS.md, refinery_optimisation.md, demoflow.md
+├── silver/<table>/                          BigLake Iceberg data + metadata, written only by BigQuery DML
+├── gold/{knowledge_chunks,model_registry}/  gold file products
+├── models/full_v1/                          bundle.json + pickled committee members + lags.json
+└── _schemas/<table>.json  +  <zone>/_README.md   data contracts and zone READMEs
+```
+
+### 7.3 Table inventory
+
+| Layer | Dataset.table | Kind | Grain / purpose |
+| :--- | :--- | :--- | :--- |
+| Bronze | `fcc_bronze.historian_minute` | External (Parquet, Hive partitions `source/site/area/batch/run`) | As-received wide minute rows, 112 columns |
+| Bronze | `fcc_bronze.lab_results_raw`, `crude_regimes_raw`, `events_raw`, `tag_registry_raw` | External (Parquet) | LIMS, assay/regime schedule, events, tag registry exactly as staged |
+| Bronze | `fcc_bronze.knowledge_objects` | **Object table** over `knowledge/*` | Every SOP / incident / MOC / IOW / lab method / shift log / work order as a governed row (uri, size, updated) |
+| Silver | `fcc_silver.tag_minute` | **BigLake Iceberg**, cluster `run_id, unit_id, tag_id, dt` | **1 row per tag per minute**: `value`, `value_true` (simulator truth where exposed), `eng_unit`, `quality_flag GOOD/MISSING/TRUTH_ONLY`, `sample_count`. The analytics path. |
+| Silver | `fcc_silver.telemetry_minute` | Iceberg | 1 row per minute with the whole wide record as JSON string — the ML feature path |
+| Silver | `fcc_silver.lab_results` | Iceberg | 1 row per lab sample per property (`LCO_T98_F`, `HN_T98_F`), ASTM D86 (simulated) |
+| Silver | `fcc_silver.crude_assay_registry` | Iceberg | 1 row per run per crude segment (regime, API target, ramp window) |
+| Silver | `fcc_silver.events`, `tag_registry`, `run_registry` | Iceberg | Events on the run clock; tag → unit/label/unit-of-measure; **which runs are loaded and whether `complete` or `partial`** |
+| Gold | `fcc_gold.unit_kpi_minute` | Native, partition `dt`, cluster `run_id, unit_id` | The headline number per L0 tile per minute with the plan set point and delta |
+| Gold | `fcc_gold.lab_alignment` | Native | Every lab result beside simulator truth and plan at the draw minute |
+| Gold | `fcc_gold.v_run_coverage`, `v_crude_switches`, `v_mass_balance` | Views | Provenance footer, crude switch list, plant mass closure |
+| Gold | `fcc_gold.knowledge_chunks_text` → `fcc_gold.knowledge_chunks` | Native (+ `ARRAY<FLOAT64>` embedding) | Section-level chunks of all knowledge docs, embedded with `text-embedding-005` through remote model `fcc_gold.text_embedding`; queried with `VECTOR_SEARCH` (brute force — a vector index needs ≥ 5,000 rows) |
+| Gold | `fcc_gold.audit_events`, `decisions_audit`, `agent_events` | Native | Operator Accept/Decline decisions and agent traces exported from `audit.db` |
+| Gold | `fcc_gold.model_registry` | Native | One row per committee member per property with its model card JSON and bundle URI |
+
+### 7.4 Loader & idempotency
+
+`sim_octave/lakehouse/load_lakehouse.py` (Makefile: `make lakehouse-load | lakehouse-dry | lakehouse-status`). Every run is loaded as `DELETE … WHERE run_id IN UNNEST(runs)` **then** `INSERT`, so a run that is still being simulated loads today with `run_status='partial'` and is replaced byte-for-byte when the Octave batch finishes — no need to wait for all runs before building the lakehouse. The bronze manifest records a sha256 per CSV so a reload can be proven identical.
+
+---
+
+## 8. As-Built vs Production — Component Matrix
+
+| Capability | As built for this pitch | Production target (unchanged from §1) | Gap to close |
+| :--- | :--- | :--- | :--- |
+| OT ingestion | Octave batch → CSV → `gcloud storage cp` | Manufacturing Connect (OPC UA) → Pub/Sub → Dataflow | Replace the loader's `stage_bronze()` with a Dataflow sink writing the same Hive layout |
+| Hot tier | none (cockpit holds last 400 points in memory) | Bigtable, 1 s raw, 72 h TTL | Add when sub-minute sentinels are in scope |
+| 1-min aggregation | simulator emits exact minutes (`sample_count = 1`) | Dataflow 60 s tumbling window (mean/min/max/sd/last) | Schema already carries `sample_count`; add `min/max/stddev/last` columns when real data arrives |
+| Lake | GCS single bucket, zone prefixes, ISA-95 Hive keys | Same, one bucket per site + CMEK | Keys `site=/area=/unit=` are already in the paths |
+| Open table format | BigLake Iceberg (silver) | Same | — |
+| Serving | BigQuery native gold + views | Same + BI Engine / Looker | — |
+| Unstructured | Object table + BQ embeddings | Same + Document AI for scanned SOPs | — |
+| Catalog / DQ | Dataplex lake, 2 zones, 1 DQ scan | Dataplex + Data Lineage API + policy tags | Add lineage + column-level policy tags |
+| Models | Pickled committee in `models/`, registry table | Vertex AI Model Registry + Feature Store | Register bundle → Vertex Model Registry |
+| Decisions | SQLite `audit.db` → JSONL → BigQuery | Write-through from Cloud Run to BigQuery + OPC UA write-back | Replace export with streaming insert |
+| Copilot | Gemini 2.5 Flash / Live native-audio, screen-context-aware | Same, grounded on gold + `VECTOR_SEARCH` | Point RAG at `fcc_gold.knowledge_chunks` instead of local cache |
+
+---
+
+## 9. Data Contracts (silver)
+
+Machine-readable copies live in `gs://fcc-soft-sensor-sim-data/_schemas/*.json`; BigQuery column descriptions carry the same wording.
+
+* **`tag_minute`** — key `(run_id, tag_id, time_min)`; `ts = 2026-09-01T00:00Z + time_min` (synthetic clock; production uses the historian timestamp); `value` is the measured/noisy signal, `value_true` the noise-free simulator twin where the simulator exposes one (`*_dup` columns and T98 truths); `quality_flag ∈ {GOOD, MISSING, TRUTH_ONLY}`; `unit_id` is the ISA-95 unit that owns the tag or `fcc-complex`.
+* **`lab_results`** — key `sample_id = <run>-<minute>-<property>`; `property ∈ {LCO_T98_F, HN_T98_F}`; `method = 'ASTM D86 (simulated)'`.
+* **`crude_assay_registry`** — key `(run_id, t_start_min)`; `regime_id ∈ {R1,R2,R3,R4}`, `transition_complete` tells whether the 60-min ramp finished inside the run.
+* **`run_registry`** — key `run_id`; `run_status ∈ {complete, partial}`, `rows_loaded`, `t_last_min`, `expected_minutes = 1600`, `csv_sha256_16`.
+* **`tag_registry`** — key `tag_id`; `is_setpoint`, `is_truth`, `eng_unit`, `tag_group`.
+
+Dataplex scan `tag-minute-dq` enforces: keys non-null, `quality_flag` and `unit_id` in their enums, `0 ≤ time_min ≤ 1600`, one row per (run, tag, minute), finite values on GOOD rows, `|mass_balance_err_pct| < 5`.
+
+---
+
+## 10. Data-Generation Status & Run-Completion Policy
+
+* Batch `full_v1`: 54 run CSVs present at load time; the Octave batch may still be appending minutes to a few of them. The loader marks any run with `rows < 1600` as `partial`.
+* Policy: **load now, reload on completion.** `make lakehouse-load` is safe to re-run at any time; only the affected runs are rewritten. `fcc_gold.v_run_coverage` is the single place to answer "how much of the batch is in the lake".
+* Training/evaluation splits (`artifacts/bundle.json: train_runs/test_runs`) are recorded in `fcc_gold.model_registry`, so any model can be traced back to exactly which runs — complete or partial — it saw.
+
+---
+
+## 11. Lineage
+
+```mermaid
+flowchart LR
+    OCT["Octave batch<br/>sim_octave/data/full_v1/*.csv"] --> STG["stage_bronze()<br/>Parquet + CSV + manifest"]
+    STG --> B1["bronze/historian … run=<id>"]
+    STG --> B2["bronze/lims · assay · events · tag_registry"]
+    KC["knowledge/corpus/*.md (47)"] --> K1["knowledge/<type>/"]
+    AUD["cockpit audit.db"] --> B3["bronze/audit/*.jsonl"]
+    MOD["artifacts/bundle.json + models/"] --> M1["models/full_v1/"]
+    B1 & B2 --> EXT["fcc_bronze.* external tables"]
+    K1 --> OBJ["fcc_bronze.knowledge_objects (object table)"]
+    EXT --> S["fcc_silver.* BigLake Iceberg<br/>UNPIVOT → tag_minute · telemetry_minute · lab_results · crude_assay_registry · events · run_registry · tag_registry"]
+    S --> G1["fcc_gold.unit_kpi_minute · lab_alignment · v_*"]
+    K1 --> G2["fcc_gold.knowledge_chunks_text → ML.GENERATE_EMBEDDING → knowledge_chunks"]
+    B3 --> G3["fcc_gold.audit_events · decisions_audit · agent_events"]
+    M1 --> G4["fcc_gold.model_registry"]
+    S & G1 & G2 & G3 & G4 --> DP["Dataplex lake fcc-refinery<br/>zones raw / curated · scan tag-minute-dq"]
+    G1 & G2 --> UI["Cockpit L0/L1 + Gemini"]
+```
+
+---
+
+## 12. Cost & Scale (as built → production)
+
+| Item | As built | Production (10,000 tags, 1-min) |
+| :--- | :--- | :--- |
+| Silver `tag_minute` rows | ≈ 54 runs × 1,600 min × 107 tags ≈ **9.2 M rows** (~0.2 GB Iceberg Parquet) | 14.4 M rows/day → 5.3 B rows/year (~100 GB/yr compressed) |
+| Storage | pennies/month (GCS Standard, us-central1) | ~$2–3/month per year of history |
+| Query | gold tables partitioned by `dt`, clustered by `run_id, unit_id` → a unit-day scan reads MBs | same pattern; BI Engine for the cockpit |
+| Embeddings | 47 docs → a few hundred chunks, one-off `ML.GENERATE_EMBEDDING` call | re-embed on document revision only |
+| Dataplex | lake/zones free; DQ scan billed per BigQuery bytes scanned (10 % sample) | scheduled daily |
+
+> [!IMPORTANT]
+> Nothing in the as-built stack is a running service with an hourly charge: no Bigtable instance, no Dataflow job, no Cloud Run revision. The only cost drivers are GCS bytes and BigQuery bytes scanned.

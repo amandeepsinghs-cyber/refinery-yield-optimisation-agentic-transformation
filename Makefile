@@ -13,8 +13,17 @@ help: ## Show this help message
 sim-status: ## Check Octave simulation process count and latest log progress
 	ps -eo args | grep "[o]ctave-cli" | grep -c random; for f in sim_octave/data/full_v1/logs/*.log; do tail -1 "$$f"; done | tail -5
 
-load-full: ## Ingest full_v1 simulation batch into BigQuery
+load-full: ## (legacy) Ingest full_v1 into the flat warehouse table fcc_soft_sensor.fcc_sim_minute
 	cd sim_octave && python3 load_to_bq.py --in-dir data/full_v1 --batch-id full_v1 --expected-minutes 1500
+
+# --- lakehouse (GCS bronze/silver/gold + BigLake Iceberg + knowledge/audit/models zones) ---------------------------------
+LAKE := PYTHONPATH=cockpit/api cockpit/api/.venv/bin/python sim_octave/lakehouse/load_lakehouse.py
+lakehouse-load: ## Idempotent medallion load of $(BATCH) (default full_v1; RUNS=a,b to restrict; EXTRA="--skip-knowledge")
+	$(LAKE) --batch $(or $(BATCH),full_v1) $(if $(RUNS),--runs $(RUNS)) $(EXTRA)
+lakehouse-dry: ## Print the lakehouse commands/SQL without touching GCP
+	$(LAKE) --batch $(or $(BATCH),full_v1) $(if $(RUNS),--runs $(RUNS)) --dry-run $(EXTRA)
+lakehouse-status: ## Row counts per silver/gold table
+	$(LAKE) --status
 
 # --- backend (cockpit/api) ---------------------------------------------------------------------------------------------
 api-test: ## Run FastAPI test suite

@@ -191,6 +191,13 @@ function VoiceBar({ v }: { v: LiveVoice }) {
           {v.mode === "ptt" ? "Hold the mic (or Space) while speaking" : "Speak naturally — Gemini detects turns"}
           {v.model ? ` · ${v.model}` : " · Gemini Live"}
         </div>
+        {v.state !== "idle" && v.state !== "error" ? (
+          <div className="voice-sub mono" data-testid="voice-seen">
+            {v.seen
+              ? `Gemini sees: ${v.seen.page.startsWith("/twin/unit/") ? (TWIN_UNITS.find((u) => u.unit_id === v.seen!.page.split("/").pop())?.label ?? v.seen.page) : "Refinery"} · t ${v.seen.time_min ?? "—"} · ${v.seen.regions.length} regions`
+              : "Gemini sees: — (screen context not yet acknowledged)"}
+          </div>
+        ) : null}
       </div>
       {v.error ? (
         <div className="banner error" role="alert" style={{ padding: "8px 12px", width: "100%" }}>
