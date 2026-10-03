@@ -48,7 +48,7 @@ export interface Decision {
   evidence: { tags: string[]; labs: string[]; docs: string[]; lakehouse: string | null; event_id?: string };
   withheld_reason: string | null;
   withheld_text: string | null;
-  levers?: { tag: string; label: string; unit: string; current: number | null; lo: number | null; hi: number | null; source?: string }[];
+  levers?: { tag: string; label: string; unit: string; current: number | null; lo: number | null; hi: number | null; source?: string; role?: string | null }[];
   outcome: null | Record<string, unknown>;
   action: null | { action: "accept" | "hold" | "decline"; time_min: number; time_label: string; user: string; note: string; reopened?: boolean };
   problem: string[];
@@ -67,6 +67,7 @@ export interface DecisionQueueResp {
   counts: Record<DecisionStatus, number>;
   decisions: Decision[];
   problems: Record<string, string>;
+  never_recommended?: { setting: string; why: string }[];
 }
 
 export async function getDecisions(runId?: string | null, timeMin?: number | null): Promise<DecisionQueueResp> {

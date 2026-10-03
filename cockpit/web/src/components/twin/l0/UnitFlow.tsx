@@ -23,22 +23,24 @@ interface Io { in: string[]; out: string[]; measured: [string, string, string][]
 export const FLOW: Record<string, Io> = {
   unit_1_furnace: { in: ["Fresh gas-oil feed"], out: ["Hot feed → riser"],
     measured: [["T2_preheat_F", "Preheat outlet", "°F"], ["T3_furnace_F", "Firebox", "°F"], ["fluegas_O2_pct", "Flue-gas O₂", "%"], ["F5_fuel", "Fuel gas", "lb/s"]],
-    levers: [["SP_T_preheat_F", "Preheat set point", "°F"]] },
+    levers: [["SP_T_preheat_F", "Feed preheat", "°F"]] },
   unit_2_riser: { in: ["Hot feed", "Regenerated catalyst"], out: ["Cracked vapour → fractionator", "Spent catalyst → regenerator"],
     measured: [["Tr_riser_F", "Riser outlet T", "°F"], ["conversion_pct", "Conversion", "%"], ["dP_reactor_frac", "Hydraulic dP", "frac"]],
-    levers: [["SP_T_riser_ROT_F", "Riser outlet T set point", "°F"]] },
+    levers: [["SP_T_riser_ROT_F", "Riser outlet temperature", "°F"]] },
   unit_3_regenerator: { in: ["Spent catalyst", "Combustion air"], out: ["Regenerated catalyst → riser", "Flue gas"],
     measured: [["Treg_F", "Bed temperature", "°F"], ["dT_cyc_reg_F", "Afterburn ΔT", "°F"], ["C_regen_cat", "Carbon on catalyst", "wt"]],
-    levers: [["Fair", "Air flow", "lb/s"]] },
+    levers: [["Fair", "Regenerator air (excess O₂ / afterburn)", "lb/s"]] },
   unit_4_fractionator: { in: ["Cracked vapour"], out: ["Heavy naphtha", "LCO (diesel)", "Slurry", "Overhead vapour → gas plant"],
     measured: [["T_tray13_F", "LCO draw tray", "°F"], ["T_tray06_F", "HN draw tray", "°F"], ["MV_PA3", "Pumparound 3", "klb/h"], ["LCO_T98_F", "LCO T98 (lab every 8 h)", "°F"]],
-    levers: [["SP_LCO_T98", "LCO cut-point set point", "°F"], ["SP_HN_T98", "HN cut-point set point", "°F"], ["MV_PA2", "Pumparound 2", "klb/h"]] },
+    levers: [["SP_LCO_T98", "LCO cut-point target (via LCO draw)", "°F"], ["SP_HN_T98", "HN cut-point target (via HN draw)", "°F"], ["MV_PA2", "Pumparound 2 duty", "klb/h"]] },
   unit_5_condenser: { in: ["Overhead vapour"], out: ["Wet gas → compressor", "Reflux", "Unstabilised naphtha"],
-    measured: [["dist_condenser_eff", "Condenser efficiency", "frac"], ["MV_cw_flow", "Cooling water", "lb/s"], ["power_WGC", "Compressor power", "MW"]],
-    levers: [["MV_cw_flow", "Cooling-water flow", "lb/s"], ["MV_reflux_ratio", "Reflux ratio", "L/D"]] },
+    measured: [["dist_condenser_eff", "Condenser efficiency", "frac"], ["MV_cw_flow", "Cooling water (fixed duty)", "lb/s"], ["power_WGC", "Compressor power", "MW"]],
+    // Cooling-water flow is not a lever: it runs at fixed duty in practice (owner, 3 Oct). The overhead temperature
+    // target is what operators move.
+    levers: [["SP_T_overhead", "Overhead temperature target", "°F"], ["MV_reflux_ratio", "Reflux ratio", "L/D"]] },
   unit_6_stabiliser: { in: ["Unstabilised naphtha"], out: ["LPG", "Stabilised light naphtha"],
     measured: [["eff_C5", "C5 recovery", "mol"], ["prod_LPG", "LPG make", "lb/min"], ["prod_LN", "Light naphtha", "lb/min"]],
-    levers: [["SP_T_overhead", "Overhead T set point", "°F"]] },
+    levers: [["SP_T_overhead", "Overhead temperature target", "°F"]] },
 };
 export const NAME: Record<string, string> = {
   unit_1_furnace: "Feed furnace", unit_2_riser: "Riser reactor", unit_3_regenerator: "Regenerator",

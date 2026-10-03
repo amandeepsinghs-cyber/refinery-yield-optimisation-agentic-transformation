@@ -470,3 +470,11 @@ Simulator breakdown cut and retrain (17:00–17:40 2 Oct)
 - ☑ Data secured 18:35: local + GCS snapshot, BigQuery backup `fcc_backup_20261002_1800`, full_v1 top-up, lever_v1 in the lake; overnight monitor `sim_octave/monitor_runs.py` (30-min checks, heal, 3-hourly lake loads)
 - ☐ Lever moves 8–12 (regenerator air, PA2, reflux, cooling water, overhead T) are not usable by the fit: `scenario.m` spaces moves only ramp + 30 min apart, but the fit needs 15 min before + 60 min after with no other move. Waiting for more rows does not fix this. Fix options: fit on the 30-min gap between moves, or re-space the moves in `scenario.m` and rerun. D5–D7 stay scripted until then
 - ☐ Known limit: soft-sensor estimates are nearly flat; truth is pinned at the simulator ceiling for 22 % (LCO) / 6 % (HN) of held-out minutes
+
+Real-world lever check and data wrap-up (owner, 3 Oct 02:49)
+- ☑ Every lever on the unit page states it is one of the main settings operators adjust on that unit, and why (`decisions.py` `LEVER_ROLE` → `levers[].role`, shown in `UnitStory.tsx`)
+- ☑ Line under every lever list: "Settings the cockpit never recommends: condenser cooling-water flow (fixed duty), feed rate (set by planning), catalyst addition (not in the simulator)" (also `never_recommended` in `GET /api/decisions`)
+- ☑ D7 (gas plant): cooling-water flow is the fouling symptom and a limit, never a lever; lever = overhead temperature target; question "Move the overhead temperature target to keep the condenser inside its cooling duty?"; goal "condenser back inside its fixed cooling duty"
+- ☑ D6 (feed furnace): no longer circular; preheat is moved to set catalyst-to-oil and regenerator temperature for the crude, inside the feed-nozzle limit
+- ☑ Labels: "LCO / HN cut-point target (via draw)", "Regenerator air (excess O₂ / afterburn)", "Feed preheat", "Riser outlet temperature"; cooling water drawn as "fixed duty", not as a lever
+- ☑ All simulations stopped 02:49 (owner: stop and wrap up). Final lever data loaded to BigQuery and synced to GCS

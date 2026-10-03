@@ -382,3 +382,16 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Nothing lost: simulations keep running and are monitored / healed every 30 min; a rolling local snapshot `sim_octave/data/_snapshots/lever_v1_live.tar.gz` is refreshed each check instead. The last GCS sync was 19:00 and the last lake load 18:28 (7,440 lever rows).
 - The API keeps serving from its BigQuery cache (demo decisions return 200).
 - After sign-in, catch up with one command each: the GCS rsync and `load_lakehouse.py --batch lever_v1 --skip-knowledge --skip-audit --skip-models`.
+
+## 2026-10-03 02:49–03:15 — simulations stopped; real-world lever check (owner: "yes" to both)
+
+- **All simulations stopped at 02:49** (owner: stop and wrap up the data). Overnight watch cancelled. Lever runs end with ~25,900 rows (~22,500 valid) and about 285 test moves (≈ 45–50 per lever setting). Runs stopped earlier as stuck in solver failure keep their valid rows.
+- Data secured: lake load of `lever_v1` 02:35–02:53 (52 runs, partial; non-real cells in s203/s206/s207/s237/s247 loaded as missing); a last load and GCS rsync to `_archive/lever_v1_live` after the stop; final snapshot `sim_octave/data/_snapshots/sim_data_20261003_0256.tar.gz` (29 MB) also in `gs://fcc-soft-sensor-sim-data/_archive/`.
+- `lever_v1` restaged with all 52 runs (67 segments, 15 crude switches); engine backup `api/artifacts/model_backup_20261003_0256`; API restarted (surrogates refit). Demo moments unchanged: s144 10:00 (D1 ×2, D3 recipe, D5, D7, D9 open; D6 withheld), s144 12:00 (D2 ×2 / D3 "Not yet"), s107 10:00 (D6, D1, D5, D7, D9 open).
+- **Real-world lever check (owner 02:49):** the cockpit only recommends settings operators actually move on that unit.
+  - Each lever row on the unit page now says it is one of the main settings operators adjust on that unit, and why (`decisions.py` `LEVER_ROLE` → `levers[].role`; `UnitStory.tsx`).
+  - Line under every lever list, and `never_recommended` in `GET /api/decisions`: condenser cooling-water flow (fixed duty), feed rate (planning), catalyst addition (not in the simulator).
+  - D7: cooling-water flow is the fouling symptom and a limit, never a lever. Question "Move the overhead temperature target to keep the condenser inside its cooling duty?"; goal "condenser back inside its fixed cooling duty". Cooling water drawn as "fixed duty", removed from the gas plant's lever list.
+  - D6: no longer circular. Preheat is moved to set catalyst-to-oil and regenerator temperature for the crude, inside the feed-nozzle limit.
+  - Labels: "LCO / HN cut-point target (via draw)", "Regenerator air (excess O₂ / afterburn)", "Feed preheat", "Riser outlet temperature".
+- Checks: 290 back-end pass (2 skipped), 82 front-end pass, tsc and eslint clean. Screenshot of the gas plant ③ checked.

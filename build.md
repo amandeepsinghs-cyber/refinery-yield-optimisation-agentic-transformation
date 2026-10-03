@@ -58,6 +58,21 @@ Full lever table with typical values and allowed ranges: [verbatim.md §9.5.3](v
 | P3 | A move in one unit shows up hours later in another | D3, D5, D6, D7, D8 | UC-04 regeneration · UC-02 stabiliser C5 · UC-03 C4/C5 split · UC-07 exchanger fouling · UC-06 energy · UC-08 filter / hydraulic · UC-09 rotating equipment |
 | P4 | An AI that always answers is dangerous | D2, D9 | UC-11 |
 
+### 2026-10-03 real-world lever check (owner 02:49)
+
+The cockpit recommends only settings that operators actually move day to day on that unit. Each lever on the unit page says so, with the reason (`levers[].role`). Never recommended: condenser cooling-water flow (fixed duty), feed rate (planning), catalyst addition (not in the simulator).
+
+| Unit | Main setting the cockpit may recommend | Decision |
+|---|---|---|
+| Feed furnace | Feed preheat (sets catalyst-to-oil and regenerator temperature) | D6 |
+| Riser reactor | Riser outlet temperature (main severity setting) | D3 |
+| Regenerator | Regenerator air (excess O₂ / afterburn) | D5 |
+| Main fractionator | LCO / HN cut-point targets (via draw); pumparound duty | D1, D2, D3 |
+| Gas plant | Overhead temperature target (cooling water stays at fixed duty) | D7 |
+| Stabiliser | Stabiliser reflux / overhead temperature | D7 |
+
+All simulations were stopped on 3 Oct 02:49; the demo works with the data on hand. D3 and D5–D7 outcomes stay scripted and labelled.
+
 ### Done vs open
 
 | Item | Status |

@@ -434,8 +434,9 @@ def _watch(run_id: str, t: int, attention: list[dict], covered: set[str]) -> lis
             d["use_case"] = _use_case(UC_BY_UNIT[uid])
         down = UNIT_SHORT.get(a.get("downstream_unit_id"), "")
         d["question"] = {"D5": "Rebalance regenerator air against riser severity?",
-                         "D6": "Trim the furnace preheat for the new crude?",
-                         "D7": ("Raise the overhead temperature or the cooling water?" if uid == "unit_5_condenser"
+                         "D6": "Trim the feed preheat to set catalyst-to-oil for the new crude?",
+                         "D7": ("Move the overhead temperature target to keep the condenser inside its cooling duty?"
+                                if uid == "unit_5_condenser"
                                 else "Adjust the stabiliser overhead temperature for C5 recovery?"),
                          }.get(dtype, f"Act on the {UNIT_SHORT.get(uid, '').lower()} now, before it reaches the "
                                       f"{down.lower()}?")
@@ -574,7 +575,37 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
 # The set points / manipulated variables each decision would move (unit page ③ "each lever with its allowed range").
 _LEVERS_BY_TAG = {"LCO_T98_F": ["SP_LCO_T98"], "HN_T98_F": ["SP_HN_T98"], "T2_preheat_F": ["SP_T_preheat_F"],
                   "dT_cyc_reg_F": ["Fair"], "Treg_F": ["Fair"], "conversion_pct": ["SP_T_riser_ROT_F"],
-                  "MV_cw_flow": ["MV_cw_flow", "SP_T_overhead"], "eff_C5": ["MV_reflux_ratio"]}
+                  "MV_cw_flow": ["SP_T_overhead"], "eff_C5": ["MV_reflux_ratio"]}
+
+# Real-world check (owner, 3 Oct): the cockpit only recommends settings that operators actually move day to day on that
+# unit. Each lever carries a plain label and the reason it is one of the unit's main settings.
+_PA = ("Pumparound duty", "One of the main settings on the main fractionator: removes heat and sets the internal "
+       "traffic of the column. Usually moved by advanced process control.")
+LEVER_ROLE: dict[str, tuple[str, str]] = {
+    "SP_T_riser_ROT_F": ("Riser outlet temperature", "The main setting operators adjust on the riser reactor: sets "
+                         "severity — conversion, gasoline, LPG and coke. Moved every shift."),
+    "SP_LCO_T98": ("LCO cut-point target (via LCO draw)", "One of the main settings operators adjust on the main "
+                   "fractionator: the LCO end point is held through the LCO draw rate and draw temperature."),
+    "SP_HN_T98": ("Heavy-naphtha cut-point target (via HN draw)", "One of the main settings operators adjust on the main "
+                  "fractionator: the heavy-naphtha end point is held through its draw rate and draw temperature."),
+    "SP_T_preheat_F": ("Feed preheat", "One of the main settings operators adjust on the feed furnace: lower preheat "
+                       "means more catalyst circulation (catalyst-to-oil), more conversion and a cooler regenerator. "
+                       "Bounded by the feed-nozzle (licensor) limit."),
+    "Fair": ("Regenerator air (excess O₂ / afterburn)", "One of the main settings operators adjust on the regenerator: "
+             "sets the coke burn and excess O₂; air is trimmed when cyclone temperatures (afterburn) rise."),
+    "SP_T_overhead": ("Overhead temperature target", "One of the main settings operators adjust at the column overhead: "
+                      "sets the gasoline end point and the load on the condenser. Cooling water itself stays at fixed "
+                      "duty."),
+    "MV_reflux_ratio": ("Stabiliser reflux", "One of the main settings operators adjust on the stabiliser: sets the "
+                        "LPG / gasoline split and C5 recovery."),
+    "MV_PA1": _PA, "MV_PA2": _PA, "MV_PA3": _PA, "MV_PA4": _PA,
+}
+# Real handles the cockpit never recommends — fixed in practice, set by planning, or not in the simulator.
+NEVER_RECOMMENDED = [
+    {"setting": "Condenser cooling-water flow", "why": "kept at fixed duty; watched only as a limit"},
+    {"setting": "Feed rate", "why": "set by the planning department; treated as a limit"},
+    {"setting": "Catalyst addition", "why": "a real handle, but not in the simulator"},
+]
 
 
 def _lever_tags(d: dict) -> list[str]:
@@ -583,16 +614,18 @@ def _lever_tags(d: dict) -> list[str]:
         tags = [t for t in (d.get("evidence") or {}).get("tags", []) if t.startswith(("SP_", "MV_")) or t == "Fair"]
     if not tags:
         tags = _LEVERS_BY_TAG.get(((d.get("observed") or {}).get("tag")) or "", [])
-    return list(dict.fromkeys(tags))
+    # Never offer a setting that is static in practice as a lever.
+    return [t for t in dict.fromkeys(tags) if t != "MV_cw_flow"]
 
 
 def _levers(d: dict, row: dict) -> list[dict]:
-    """Each lever: label, current value and its allowed range (integrity operating window from config.yaml)."""
+    """Each lever: label, current value, its allowed range (integrity operating window from config.yaml) and why it is
+    one of the unit's main operator settings."""
     iow = get_state().s.get("iow", {}) or {}
     out = []
     for tag in _lever_tags(d):
         label, unit = _label_unit(tag)
-        unit = "lb/s" if tag == "MV_cw_flow" and unit in ("-", "") else unit
+        label, role = LEVER_ROLE.get(tag, (label, None))
         cur = row.get(tag)
         cur = float(cur) if cur is not None and np.isfinite(float(cur)) else None
         w = iow.get(tag)
@@ -603,7 +636,7 @@ def _levers(d: dict, row: dict) -> list[dict]:
             lo, hi = cur * (1 - float(w["rel"])), cur * (1 + float(w["rel"]))
         out.append({"tag": tag, "label": label, "unit": unit, "current": None if cur is None else round(cur, 2),
                     "lo": None if lo is None else round(lo, 2), "hi": None if hi is None else round(hi, 2),
-                    "source": "integrity operating window" if w is not None else None})
+                    "source": "integrity operating window" if w is not None else None, "role": role})
     return out
 
 
@@ -646,7 +679,7 @@ def build(run_id: str, time_min: int) -> dict:
         d["urgency"]["rank"] = i
     counts = {s: sum(d["status"] == s for d in decisions) for s in STATUSES}
     return {"run_id": run_id, "time_min": t, "clock": clock(t), "counts": counts, "decisions": decisions,
-            "problems": PROBLEMS, "advisory_only": True,
+            "problems": PROBLEMS, "advisory_only": True, "never_recommended": NEVER_RECOMMENDED,
             "provenance": {"source": "simulated", "engines": ["soft-sensor committee", "spread gate S1–S7",
                                                               "regime E1", "surrogates E2", "sentinels E3", "recipe E4"]}}
 

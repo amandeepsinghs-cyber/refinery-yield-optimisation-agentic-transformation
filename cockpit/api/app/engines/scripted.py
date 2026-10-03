@@ -21,22 +21,35 @@ from app.state import get_state
 
 # lever, target, gain (target units per lever unit), lever step, SOP max step, SOP text, model text
 SPEC = {
+    # Real-world check (3 Oct, owner): only recommend settings operators actually move day to day. Feed preheat is
+    # moved to set catalyst-to-oil and regenerator temperature for the crude — not to chase its own outlet reading.
     "D6": dict(lever="SP_T_preheat_F", target="T2_preheat_F", gain=1.0, step=0.5, step_max=5.0, sigma_min=0.4,
-               sop="SOP-FURN-002: preheat set point at most 5 °F per step, 20 min between steps.",
-               model="Furnace response model for this crude: outlet follows its set point 1 : 1 within 15 min"),
+               sop="SOP-FURN-002: preheat set point at most 5 °F per step, 20 min between steps; stay inside the "
+                   "feed-nozzle (licensor) temperature limit.",
+               model="Feed-preheat response model for this crude: lower preheat means more catalyst circulation "
+                     "(higher catalyst-to-oil), more conversion and a cooler regenerator; higher preheat does the "
+                     "opposite. The furnace outlet reaches the new set point within 15 min",
+               goal="Chance the preheat sits at this crude's target (catalyst-to-oil and regenerator temperature)"),
     "D5": dict(lever="Fair", target="dT_cyc_reg_F", gain=40.0, step=0.01, step_max=0.08, sigma_min=0.3,
                sop="SOP-REG-004: air rate at most 3 % per step, 15 min between steps; flue-gas O₂ stays in its window.",
-               model="Regenerator response model for this crude: cyclone ΔT moves 0.4 °F per 0.01 air step"),
+               model="Regenerator response model for this crude: cyclone ΔT (afterburn) moves 0.4 °F per 0.01 air "
+                     "step; excess O₂ follows the air rate"),
+    # Cooling-water flow is the symptom (a fouled condenser needs more water for the same load) and a limit — the
+    # condenser runs at fixed cooling duty, so the cockpit never recommends changing it. The lever is the overhead
+    # temperature target, which operators do move.
     "D7": dict(lever="SP_T_overhead", target="MV_cw_flow", gain=-2.6, step=0.5, step_max=3.0, sigma_min=1.0,
-               sop="SOP-GAS-006: overhead temperature set point at most 3 °F per step; watch receiver pressure.",
-               model="Condenser response model: cooling-water demand falls 2.6 lb/s per °F of overhead set point"),
+               sop="SOP-GAS-006: overhead temperature set point at most 3 °F per step; watch receiver pressure and "
+                   "the gasoline end point. Cooling water stays at its fixed duty.",
+               model="Condenser response model: each 1 °F on the overhead temperature target takes 2.6 lb/s off the "
+                     "condenser's cooling-water demand. Cooling water itself is not adjusted (fixed duty)",
+               goal="Chance the condenser is back inside its fixed cooling duty"),
     "D3": dict(lever="SP_T_riser_ROT_F", target="conversion_pct", gain=0.12, step=0.5, step_max=5.0, sigma_min=0.1,
                sop="SOP-RX-001: riser outlet T at most 5 °F per step, 30 min between steps; cut points follow 1 : 1.",
                model="Crude-specific response model: conversion +0.12 % per °F of riser outlet T",
                dev=-0.4, extra=(("SP_LCO_T98", -1.0), ("SP_HN_T98", 1.0))),
 }
 _UNIT = {"MV_cw_flow": "lb/s", "conversion_pct": "%"}
-_SHORT = {"T2_preheat_F": "preheat outlet", "dT_cyc_reg_F": "cyclone ΔT", "MV_cw_flow": "cooling-water demand",
+_SHORT = {"T2_preheat_F": "preheat outlet", "dT_cyc_reg_F": "cyclone ΔT", "MV_cw_flow": "condenser cooling demand",
           "conversion_pct": "conversion"}
 _DEV = re.compile(r"([-+−]?\d+(?:\.\d+)?)\s*\S*\s*(above|below) expected")
 
@@ -113,7 +126,7 @@ def _script(d: dict, row: dict) -> dict:
     head = f"{verb} {l_label[0].lower() + l_label[1:]} {sign(delta)} {l_unit} ({cur:.{nd}f} → {to:.{nd}f})"
     if len(moves) > 1:
         head = "Recipe for this crude: " + "; ".join(f"{m['label']} {sign(m['delta'])} {m['unit']}" for m in moves)
-    goal = f"Chance {_SHORT.get(target, t_label.lower())} is back in its band"
+    goal = spec.get("goal") or f"Chance {_SHORT.get(target, t_label.lower())} is back in its band"
     w90 = 2 * 1.645 * sigma
     gates = [
         {"id": "spread", "name": "spread W90", "op": "≤", "pass": True, "value": round(w90, 2),

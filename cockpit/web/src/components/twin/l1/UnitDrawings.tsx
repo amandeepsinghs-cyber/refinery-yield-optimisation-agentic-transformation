@@ -129,7 +129,7 @@ function GasPlant({ at }: { at: At }) {
       <Line d="M40 150 H160" prod />
       <L x={40} y={172} k="Overhead vapour" />
       <L x={40} y={188} k="from fractionator" />
-      <L x={150} y={92} k="Cooling water" v={fx(at("MV_cw_flow"))} u="lb/s" lever />
+      <L x={150} y={92} k="Cooling water (fixed duty)" v={fx(at("MV_cw_flow"))} u="lb/s" />
       <L x={150} y={74} k="Ambient" v={fx(at("dist_T_ambient_F"), 0)} u="°F" small />
       {/* drum */}
       <path d="M300 230 h140 a30 30 0 0 1 0 60 h-140 a30 30 0 0 1 0 -60 z" className="us-vessel" />

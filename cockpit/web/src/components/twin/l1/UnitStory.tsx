@@ -112,6 +112,8 @@ function CrudeBlock({ r, physicsPct }: { r: import("@/lib/twinTypes").TwinRegime
 
 /* ---------------------------------------------------------------------------------------------------------------- */
 type LeverRow = NonNullable<import("@/lib/decisionsApi").Decision["levers"]>[number];
+// Real-world check (owner, 3 Oct): the cockpit recommends only settings operators actually move on that unit.
+const NEVER_RECOMMENDED = "Settings the cockpit never recommends: condenser cooling-water flow (fixed duty), feed rate (set by planning), catalyst addition (not in the simulator).";
 function LeverRanges({ levers, bare }: { levers?: LeverRow[]; bare?: boolean }) {
   if (!levers?.length) return null;
   return (
@@ -123,7 +125,7 @@ function LeverRanges({ levers, bare }: { levers?: LeverRow[]; bare?: boolean }) 
           const pos = has ? Math.min(100, Math.max(0, ((l.current! - l.lo!) / (l.hi! - l.lo!)) * 100)) : null;
           const dp = has && l.hi! - l.lo! < 2 ? 2 : 1;
           return (
-            <li key={l.tag} title={l.tag}>
+            <li key={l.tag} title={l.tag} className={l.role ? "us-lever-role" : undefined}>
               <span>{l.label}</span>
               <b className="num">{fx(l.current, dp)} <small>{l.unit}</small></b>
               {has ? (
@@ -131,10 +133,12 @@ function LeverRanges({ levers, bare }: { levers?: LeverRow[]; bare?: boolean }) 
                   {fx(l.lo, dp)}<i><s style={{ left: `${pos}%` }} /></i>{fx(l.hi, dp)}
                 </em>
               ) : <em className="us-lr subtle">no limit set</em>}
+              {l.role ? <small className="us-role subtle" style={{ gridColumn: "1 / -1", display: "block", fontSize: 11.5, lineHeight: 1.35, marginTop: 2 }}>{l.role}</small> : null}
             </li>
           );
         })}
       </ul>
+      <p className="us-note subtle" style={{ fontSize: 11.5, marginTop: 6 }}>{NEVER_RECOMMENDED}</p>
     </div>
   );
 }
