@@ -515,3 +515,13 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 
 - `STORY.md` §7 row and room line: LCO MAE 7.5 °F / RMSE 17.1 / coverage 79 %; HN 13.2 / 24.5 / 59 %, with footnote (ceiling minutes excluded; all-minute 9.1 / 19.2 °F, 62 / 56 %). DECISIONS P12; checklist ticked.
 
+
+## 2026-10-03 19:35 — Cloud Run, lake-only (owner 18:22 "deploy on cloud run", 19:06–19:12 "use BigQuery … fetch from GCS", 19:19 "push with v0.51")
+
+- Live: https://fcc-cockpit-1099437687941.us-central1.run.app (revision fcc-cockpit-00001, image `cockpit:v0.51`, 4 GiB / 2 CPU, min 0 / max 1, IAP). DECISIONS P13, P14.
+- Lake-only serving: image holds code only (upload 244 MB → 4 MB). `catalog.py` lists runs from `fcc_silver.run_registry` (`FCC_RUN_INDEX=bigquery`); `surrogates.py` reads crude segments from BigQuery and never refits in serving (`FCC_FREEZE_ENGINES=1`); `deploy/hydrate.py` pulls `gs://fcc-soft-sensor-sim-data/models/serving/v0.5/` (62 MB, 134 files, checksum manifest) and `knowledge/` (47 files) at start-up (~1 s on Cloud Run); `deploy/publish_release.sh` publishes a release (archives the old one first).
+- Document search: new `knowledge/bq_search.py` — BigQuery `VECTOR_SEARCH` over `fcc_gold.knowledge_chunks` (already current: 46 docs, 381 chunks), question embedded in the same query; median 1.6 s; keyword fallback. Decision cards now cite SOPs only (both backends), which fixed a work-order citation on the LCO withheld card. Comparison: brain artifact `knowledge_backend_comparison.md`.
+- Checks: lake-only API gives identical demo decisions (fingerprint 293ce76a…); 321 backend tests pass; front end tsc/eslint/82 vitest pass. Voice WebSocket now uses the page's own host (`useLiveVoice.ts`), untested on Cloud Run.
+- Build fixes: lock file pointed at internal Airlock npm mirror → rewritten to the public registry inside the image build only; npm 10.8 crash → npm 11.
+- IAM: SA `fcc-cockpit-run` (BigQuery dataViewer + jobUser, Vertex AI user, Storage objectViewer, logWriter, connectionUser on `fcc-lake`). APIs enabled: run, artifactregistry, cloudbuild, iap, cloudresourcemanager.
+- Open: `domain:google.com` IAP access rejected by org policy `iam.allowedPolicyMemberDomains` (owner decision). Decision record resets on each redeploy (starts from the published seed).

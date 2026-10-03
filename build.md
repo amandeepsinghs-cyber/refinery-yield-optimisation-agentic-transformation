@@ -485,7 +485,7 @@ EOF
 | Demo Report PDF (technical KPIs only) | F14 | `POST /api/report` |
 | Accessibility & wall mode | F25 | SDD-UI-08, 11 |
 | Executable BDD, Playwright, Lighthouse | — | BDD.md |
-| Cloud Run + IAP (project `fcc-soft-sensor`, `us-central1`; API with session affinity and 3600 s timeout for Live) | F17 | SDD-DEP-02 |
+| Cloud Run + IAP (project `fcc-soft-sensor`, `us-central1`; API with session affinity and 3600 s timeout for Live) — **built 2026-10-03, `v0.51`**: one service `fcc-cockpit` (https://fcc-cockpit-1099437687941.us-central1.run.app), nginx → API + web; lake-only serving (`deploy/`: Dockerfile, hydrate.py, publish_release.sh); min 0 / max 1 instances; IAP admin account (google.com blocked by org policy) | F17 | SDD-DEP-02 |
 
 ---
 

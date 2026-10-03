@@ -302,7 +302,7 @@ curl -s localhost:8010/api/health | python3 -m json.tool | grep -A3 knowledge
 - ☑ Accessibility & wall mode (F25) — control-room wall mode + role switcher in `SettingsView` (`/settings`)
 - ☑ In-App Interactive 7-Scene Demo & UI/Graph Guide (`DemoGuideModal.tsx` + `ui_guide.py`)
 - ☑ Executable BDD acceptance suite (`cockpit/api/tests/test_bdd_acceptance.py` covering `BDD-1` through `BDD-17`)
-- ☐ *(Optional)* Cloud Run + IAP in `fcc-soft-sensor`, us-central1 (F17)
+- ☑ Cloud Run + IAP in `fcc-soft-sensor`, us-central1 (F17) — 2026-10-03, image `v0.51`, https://fcc-cockpit-1099437687941.us-central1.run.app (DECISIONS P13/P14). Lake-only: code-only image; runs from BigQuery, models + documents from GCS, document search by BigQuery `VECTOR_SEARCH`. Access: admin account ✔; `domain:google.com` ☐ blocked by org policy `iam.allowedPolicyMemberDomains` (owner decision). Scale to zero (first visit after idle waits).
 
 
 ---

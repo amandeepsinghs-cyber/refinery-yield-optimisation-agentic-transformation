@@ -18,7 +18,14 @@ import { uid, usePageContext } from "./useCopilotChat";
 export type VoiceState = "idle" | "connecting" | "ready" | "listening" | "speaking" | "error";
 export type VoiceMode = "ptt" | "handsfree";
 
-const WS_BASE = process.env.NEXT_PUBLIC_API_WS || "ws://localhost:8010";
+const WS_ENV = process.env.NEXT_PUBLIC_API_WS;
+/** Local dev: ws://localhost:8010. Deployed (one container behind nginx): NEXT_PUBLIC_API_WS=same-origin. */
+function wsBase(): string {
+  if (WS_ENV === "same-origin" && typeof window !== "undefined") {
+    return `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`;
+  }
+  return WS_ENV && WS_ENV !== "same-origin" ? WS_ENV : "ws://localhost:8010";
+}
 const CHUNK_SAMPLES = MIC_TARGET_RATE / 10; // 100 ms per WebSocket frame
 
 /** Merge an incoming transcript piece: servers send either deltas or cumulative text. */
@@ -249,7 +256,7 @@ export function useLiveVoice() {
       let settled = false;
       let ws: WebSocket;
       try {
-        ws = new WebSocket(`${WS_BASE}/api/live?${q.toString()}`);
+        ws = new WebSocket(`${wsBase()}/api/live?${q.toString()}`);
       } catch (e) {
         setState("error");
         setError(`Could not open the voice connection: ${(e as Error).message}`);

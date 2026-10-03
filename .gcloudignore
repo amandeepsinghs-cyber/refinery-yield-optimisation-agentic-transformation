@@ -1,0 +1,25 @@
+# Upload set for `gcloud builds submit` (deploy/cloudbuild.yaml). CODE ONLY: data, models and documents are read from
+# the lake (BigQuery + gs://fcc-soft-sensor-sim-data) at runtime — see deploy/Dockerfile.
+.git
+.gitignore
+.gcloudignore
+**/node_modules/
+**/.next/
+**/.next-build/
+**/.next-*/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+*.md
+docs/
+meity_compliance/
+knowledge/
+sim_octave/
+scripts/
+cockpit/api/artifacts/
+cockpit/api/tests/
+cockpit/web/tests/
+cockpit/web/dev.log
+cockpit/web/artifacts/
+cockpit/web/test-results/
+cockpit/web/playwright-report/

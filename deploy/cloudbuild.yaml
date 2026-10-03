@@ -1,0 +1,10 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "deploy/Dockerfile", "-t", "us-central1-docker.pkg.dev/fcc-soft-sensor/fcc-cockpit/cockpit:$_TAG", "."]
+images:
+  - us-central1-docker.pkg.dev/fcc-soft-sensor/fcc-cockpit/cockpit:$_TAG
+substitutions:
+  _TAG: v0.5
+options:
+  machineType: E2_HIGHCPU_8
+timeout: 3600s

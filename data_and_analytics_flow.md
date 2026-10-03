@@ -339,7 +339,8 @@ gs://fcc-soft-sensor-sim-data/
 | Catalog / DQ | Dataplex lake, 2 zones, 1 DQ scan | Dataplex + Data Lineage API + policy tags | Add lineage + column-level policy tags |
 | Models | Pickled committee in `models/`, registry table | Vertex AI Model Registry + Feature Store | Register bundle → Vertex Model Registry |
 | Decisions | SQLite `audit.db` → JSONL → BigQuery | Write-through from Cloud Run to BigQuery + OPC UA write-back | Replace export with streaming insert |
-| Copilot | Gemini 2.5 Flash / Live native-audio, screen-context-aware | Same, grounded on gold + `VECTOR_SEARCH` | Point RAG at `fcc_gold.knowledge_chunks` instead of local cache |
+| Copilot | Gemini 2.5 Flash / Live native-audio, screen-context-aware | Same, grounded on gold + `VECTOR_SEARCH` | **Closed on Cloud Run (3 Oct, DECISIONS P14):** `FCC_KNOWLEDGE_BACKEND=bigquery` searches `fcc_gold.knowledge_chunks` with `VECTOR_SEARCH` (question embedded in the same query, ~1.6 s median); keyword fallback if BigQuery is unreachable. Local development still uses the local cache by default |
+| Serving inputs | Cloud Run image holds code only (P14) | Same | Runs from `fcc_silver`; models / engines / scored runs from `gs://…/models/serving/<release>/`; documents from `gs://…/knowledge/` |
 
 ---
 

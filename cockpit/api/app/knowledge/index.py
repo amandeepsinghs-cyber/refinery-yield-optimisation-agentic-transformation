@@ -2,7 +2,14 @@
 
 Chunking: one chunk per `###` section; documents without `###` headings are chunked per `##` section.
 Index: Vertex AI embeddings (config gemini.embed_model, then fallbacks) cached to artifacts/knowledge/; BM25
-fallback (rank_bm25) whenever embeddings are unavailable. Empty corpus -> mode "empty", no errors."""
+fallback (rank_bm25) whenever embeddings are unavailable. Empty corpus -> mode "empty", no errors.
+
+Search backend (config knowledge.search_backend or env FCC_KNOWLEDGE_BACKEND, default local):
+  * local    - the index above (unchanged).
+  * bigquery - search() runs one VECTOR_SEARCH query over fcc_gold.knowledge_chunks (bq_search.py); no Vertex
+               embedding calls at startup. On any BigQuery error: BM25 over the local documents, mode "bm25" and
+               note "keyword search (BigQuery unreachable)"; BigQuery is retried after BQ_RETRY_S.
+manifest()/get_doc()/records() always read the document files under knowledge_dir."""
 from __future__ import annotations
 
 import datetime as _dt
@@ -10,12 +17,18 @@ import hashlib
 import json
 import re
 import threading
+import time
 from pathlib import Path
 
 import numpy as np
 from rank_bm25 import BM25Okapi
 
 from ..config import get_settings
+from .bq_search import DESCRIPTION as BQ_DESCRIPTION
+from .bq_search import BQKnowledgeSearch, search_backend
+
+BQ_RETRY_S = 30.0
+BQ_DOWN_NOTE = "keyword search (BigQuery unreachable)"
 
 CITE_RE = re.compile(r"\[([A-Z]+-[A-Z0-9]+(?:-[A-Z0-9]+)*) r(\d+) §([\d.]+)\]")
 HEAD_RE = re.compile(r"^(#{2,4})\s+(\d+(?:\.\d+)*)?\.?\s*(.*)$")
@@ -85,6 +98,9 @@ class KnowledgeIndex:
         self.bm25 = None
         self.note = None
         self._lock = threading.Lock()
+        self.backend = search_backend(self.s)
+        self.bq = BQKnowledgeSearch(self.s) if self.backend == "bigquery" else None
+        self._bq_down_until = 0.0
 
     # ---------------------------------------------------------------- loading
     def load(self, embed: bool = True, background: bool = True) -> None:
@@ -106,6 +122,13 @@ class KnowledgeIndex:
         with self._lock:
             self.docs, self.chunks = docs, chunks
             self.emb = None
+            if self.bq is not None:
+                # gold lake is the retrieval source; local docs only serve manifest/get_doc/records + BM25 fallback
+                self.bq.clear()
+                self.bm25 = BM25Okapi([_tok(c["title"] + " " + c["section_title"] + " " + c["text"]) for c in chunks]) \
+                    if chunks else None
+                self.mode, self.note, self._bq_down_until = "embedding", None, 0.0
+                return
             if not chunks:
                 self.mode, self.bm25 = "empty", None
                 return
@@ -160,9 +183,38 @@ class KnowledgeIndex:
 
     # ---------------------------------------------------------------- queries
     def info(self) -> dict:
-        return {"docs": len(self.docs), "chunks": len(self.chunks), "mode": self.mode}
+        out = {"docs": len(self.docs), "chunks": len(self.chunks), "mode": self.mode}
+        if self.bq is not None:
+            out["backend"] = BQ_DESCRIPTION
+            out["note"] = self.note
+            if self.bq.last_ms is not None:
+                out["last_query_ms"] = self.bq.last_ms
+        return out
+
+    def _search_bq(self, q: str, doc_type: str | None, k: int) -> list[dict] | None:
+        """VECTOR_SEARCH rows with above_threshold, or None when BigQuery failed (caller falls back to BM25)."""
+        if time.time() < self._bq_down_until:
+            return None
+        try:
+            rows = self.bq.search(q.strip(), doc_type, k)
+        except Exception as e:  # noqa: BLE001 - any BigQuery/auth/network error -> keyword fallback
+            with self._lock:
+                self._bq_down_until = time.time() + BQ_RETRY_S
+                self.mode, self.note = "bm25", f"{BQ_DOWN_NOTE}: {type(e).__name__}: {str(e)[:160]}"
+            return None
+        with self._lock:
+            self.mode, self.note = "embedding", None
+        thr = float(self.s["knowledge"]["min_score_embedding"])     # cosine similarity = 1 - COSINE distance
+        return [{**r, "score": round(float(r["score"]), 4), "above_threshold": bool(r["score"] >= thr)} for r in rows]
 
     def search(self, q: str, doc_type: str | None = None, k: int = 8) -> list[dict]:
+        if self.bq is not None and q and q.strip():
+            res = self._search_bq(q, doc_type, k)
+            if res is not None:
+                return [{kk: r[kk] for kk in ("doc_id", "revision", "section", "title", "section_title", "doc_type",
+                                               "snippet", "score", "above_threshold")} for r in res]
+            if self.bm25 is None:
+                return []
         if self.mode == "empty" or not q or not q.strip():
             return []
         idx = [i for i, c in enumerate(self.chunks) if not doc_type or str(c["doc_type"]).upper() == doc_type.upper()]

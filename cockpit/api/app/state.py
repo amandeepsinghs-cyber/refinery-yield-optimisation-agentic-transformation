@@ -151,7 +151,9 @@ class State:
             if action == "WITHHELD":
                 q = f"{short} T98 soft sensor estimate uncertain no recommendation request lab sample"
             try:
-                self._cite_cache[key] = self.knowledge.citations(q, k=2)
+                # a decision card cites the operating procedure (SOP) for the move; incidents / work orders are for the
+                # copilot. Same rule for both search backends (local embeddings, BigQuery VECTOR_SEARCH).
+                self._cite_cache[key] = self.knowledge.citations(q, k=2, doc_type="SOP")
             except Exception:  # noqa: BLE001
                 self._cite_cache[key] = []
         return self._cite_cache[key]

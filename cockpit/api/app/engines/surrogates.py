@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from functools import lru_cache
 
 import joblib
@@ -307,10 +308,25 @@ def _lever_key(st, used: list[str]) -> list[str]:
 
 
 def _regime_table(st) -> pd.DataFrame | None:
-    """Regime segments of the primary batch plus every lever batch that has been staged (stage_regimes.py)."""
+    """Regime segments of the primary batch plus every lever batch that has been staged (stage_regimes.py).
+    Lake-only serving (FCC_RUN_INDEX=bigquery): read from fcc_bronze.crude_regimes_raw instead of local files."""
     root = st.s.data_root
+    lake = os.environ.get("FCC_RUN_INDEX", "").lower() == "bigquery"
     frames = []
     for b in [st.s["data"]["primary_batch"], *(st.s["training"].get("lever_batches") or [])]:
+        if lake:
+            from ..data.bq_source import get_bq
+            try:
+                df = get_bq(st.s).staged("regimes", b)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("surrogates: regimes for %s not readable from BigQuery (%s)", b, e)
+                df = pd.DataFrame()
+            if len(df):
+                frames.append(df)
+                continue
+            if b == st.s["data"]["primary_batch"]:
+                return None
+            continue
         f = root / b / "_staged" / "regimes.csv"
         if f.exists():
             frames.append(pd.read_csv(f))
@@ -469,6 +485,8 @@ def _fit_surrogates() -> None:
     gap = gap_fit_enabled(st)
     out_dir = _out_dir(st)
     pkl_path, card_path = out_dir / "surrogates.pkl", out_dir / "surrogate_card.json"
+    if os.environ.get("FCC_FREEZE_ENGINES") == "1" and pkl_path.exists() and card_path.exists():
+        return   # serving: the published fit (pulled from the lake's model zone) is used as-is, never refit here
     seg_df = _regime_table(st)
     if seg_df is None:
         return

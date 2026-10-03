@@ -51,7 +51,7 @@ Numbers were checked against the running API on **3 Oct 2026, 05:16 UTC**.
 | ✔ | Step | Command / where | Must be true |
 |:-:|---|---|---|
 | ☐ | API up | `ss -ltnp \| grep :8010` | One `python` listener |
-| ☐ | Web up | open `http://localhost:3001/` | Redirects to `/platform` |
+| ☐ | Web up | **Cloud Run:** open https://fcc-cockpit-1099437687941.us-central1.run.app ~5 min early (scale to zero: first load after idle takes ~1–2 min; sign in as admin). **Local fallback:** `http://localhost:3001/` | Redirects to `/platform` |
 | ☐ | Data source | top bar pill | Reads **Simulated data · BigQuery · scripted outcomes**. If it says *Local copy (BigQuery unreachable)*, restart the API after any lake load finishes |
 | ☐ | Clear test clicks | `cd cockpit/api && .venv/bin/python scripts/reset_decision_record.py` | Prints archived file + human actions removed; `system:*` rows kept |
 | ☐ | Browser | Chrome, 1440 px wide, zoom 100 %, dark theme | No horizontal scroll |

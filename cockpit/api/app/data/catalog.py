@@ -6,11 +6,15 @@
 - Events come from `event_code` transitions (112-column schema) or, for the fixed legacy scenarios
   (108-column schema, no metadata columns), from the scenario definitions in sim_octave/scenario.m.
 - Synthetic labs per SDD §4.3 (truth + seeded noise); status is assigned later by the pipeline.
+- Cloud Run (FCC_RUN_INDEX=bigquery): no local files at all — the run list comes from fcc_silver.run_registry and
+  every run's rows from fcc_silver.telemetry_minute.
 """
 from __future__ import annotations
 
 import fnmatch
 import hashlib
+import logging
+import os
 import re
 import threading
 from dataclasses import dataclass, field
@@ -21,6 +25,8 @@ import pandas as pd
 
 from ..config import Settings, get_settings
 from .bq_source import data_source, get_bq
+
+logger = logging.getLogger(__name__)
 
 EVENT_LABELS = {
     1: "Crude change", 2: "Feed rate change", 3: "Riser outlet temperature move",
@@ -154,11 +160,53 @@ class Catalog:
         self.scan()
 
     # ------------------------------------------------------------------ scanning
+    def _lake_index(self) -> bool:
+        """FCC_RUN_INDEX=bigquery (set on Cloud Run): discover runs from fcc_silver.run_registry, not local folders."""
+        return data_source(self.s) == "bigquery" and os.environ.get("FCC_RUN_INDEX", "").lower() == "bigquery"
+
+    def _scan_lake(self) -> dict[str, RunInfo]:
+        """One RunInfo per run in the lake's run registry (rows_loaded > 0). Columns are filled after the first fetch."""
+        root = self.s.data_root
+        runs: dict[str, RunInfo] = {}
+        try:
+            reg = get_bq(self.s).registry()
+        except Exception as e:  # noqa: BLE001 — no lake, no runs; data_mode reports the error
+            logger.error("catalog: run registry unreachable (%s)", e)
+            self.store = {"source": "bigquery", "lake_runs": 0, "error": f"{type(e).__name__}: {e}"[:300]}
+            return runs
+        for run_id, e in sorted(reg.items()):
+            n = int(e.get("rows_loaded") or 0)
+            batch = e.get("batch_id") or "root"
+            if n < 2:
+                continue
+            runs[run_id] = RunInfo(run_id=run_id, batch=batch, path=root / batch / f"{run_id}.csv",
+                                   scenario=_scenario_for(run_id, batch), n_minutes=n, schema="v2",
+                                   mtime=0.0, size=0, columns=[])
+        return runs
+
+    def _fill_lake_columns(self) -> None:
+        """Lake runs carry no CSV header: take the column list from one fetched run (all runs share the schema)."""
+        empty = [i for i in self.runs.values() if not i.columns]
+        if not empty:
+            return
+        for info in self.runs.values():
+            if info.lake:
+                try:
+                    cols = list(self.load_true(info.run_id).columns)
+                except Exception as e:  # noqa: BLE001
+                    logger.warning("catalog: could not read columns of %s from the lake (%s)", info.run_id, e)
+                    continue
+                schema = "v2" if all(c in cols for c in META_COLS) else "v1"
+                for i in list(self.runs.values()) + list(getattr(self, "all_runs", {}).values()):
+                    if not i.columns:
+                        i.columns, i.schema = cols, schema
+                return
+
     def scan(self) -> dict[str, RunInfo]:
         root = self.s.data_root
         skip = set(self.s["data"].get("skip_dirs", []))
-        runs: dict[str, RunInfo] = {}
-        if root.exists():
+        runs: dict[str, RunInfo] = self._scan_lake() if self._lake_index() else {}
+        if not self._lake_index() and root.exists():
             for p in sorted(root.rglob("*.csv")):
                 rel = p.relative_to(root)
                 if any(part in skip for part in rel.parts[:-1]):
@@ -221,7 +269,8 @@ class Catalog:
         except Exception as e:  # noqa: BLE001
             self.store["error"] = f"{type(e).__name__}: {e}"[:300]
             return
-        for r, info in self.runs.items():
+        pool = self.all_runs if self._lake_index() else self.runs   # lake-only: lever runs are read from the lake too
+        for r, info in pool.items():
             e = reg.get(r)
             if e and e.get("batch_id") == info.batch and int(e.get("rows_loaded") or 0) > 0:
                 info.lake = e
@@ -231,6 +280,8 @@ class Catalog:
             get_bq(self.s).prefetch({r: i.lake for r, i in self.runs.items() if i.lake})
         except Exception as e:  # noqa: BLE001 — runs then fall back one by one in load_true()
             self.store["error"] = f"{type(e).__name__}: {e}"[:300]
+        if self._lake_index():
+            self._fill_lake_columns()
 
     @property
     def data_mode(self) -> dict:

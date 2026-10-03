@@ -396,6 +396,18 @@ flowchart LR
 - Nothing writes back to the plant automatically. The only path back to the DCS is a person.
 - The cockpit reads about 300–500 FCC tags every minute, every lab result as it's reported, assays when a crude is scheduled, and the advanced controller's targets and limits.
 
+**Where the cockpit reads from: the lake, nothing else (owner, 3 Oct 19:06–19:12).** The cockpit service holds code only. Everything it shows comes out of the lakehouse:
+
+| What | Where it lives | How the cockpit gets it |
+|---|---|---|
+| Unit data, minute by minute | BigQuery silver (`telemetry_minute`, `run_registry`) | Queried when a screen needs it |
+| Lab results, crude segments | BigQuery bronze over the landed files | Queried |
+| Soft-sensor models, lever response gains, held-out scores | Lake model zone in Cloud Storage, one folder per release with a checksum list | Pulled when the service starts; never refitted inside the service. Training and refits run offline, are checked, then published as a new release |
+| SOPs, incidents, MOC, operating limits, lab methods, shift logs, work orders | Lake knowledge zone in Cloud Storage | Pulled when the service starts, so a cited document opens at the cited section |
+| "Which document answers this?" | BigQuery gold `knowledge_chunks`: every section already embedded inside BigQuery | `VECTOR_SEARCH` in BigQuery, the question embedded in the same query. The text is embedded once, when a document is added or revised, not by the cockpit |
+
+Why search in BigQuery and not inside the app: the documents are embedded once, where they land, and every agent (the cockpit, the copilot, later use cases) searches the same index under the same access rules. Nothing is copied into the app. The demo on Cloud Run already works this way. In a plant the pattern is the same; only the region (India) and the feed (streaming from the historian, not simulator files) change, and a vector index is added in BigQuery as the document set grows.
+
 ### 11.3 The execution plan, step by step
 
 | Phase | Weeks (indicative) | What we do | Who from IOCL | What IOCL gets (deliverable) | Gate to the next phase |

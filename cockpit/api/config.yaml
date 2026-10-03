@@ -105,7 +105,7 @@ gemini:
   embed_fallbacks: [gemini-embedding-001, text-embedding-005]
   probe_on_startup: true
   voice: Aoede
-knowledge: {min_score_embedding: 0.35, min_score_bm25: 0.35}
+knowledge: {min_score_embedding: 0.35, min_score_bm25: 0.35, search_backend: local}   # search_backend: local | bigquery (env FCC_KNOWLEDGE_BACKEND); bigquery = VECTOR_SEARCH over fcc_gold.knowledge_chunks
 cors_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
 recipe:                               # E4 (SDD-RCP-02..06) — advisory recipe search; effects in % of feed, penalties per training sd
   weights: {LCO: 1.0, HN: 0.8, LPG: 0.4}
