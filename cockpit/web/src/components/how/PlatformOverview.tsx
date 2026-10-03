@@ -9,6 +9,7 @@
  */
 import Link from "next/link";
 import { STAGES, USE_CASES, DECISIONS, type Status } from "@/lib/howItWorks";
+import { PILOT_LINE } from "@/lib/proofEvidence";
 
 const LAYERS: { n: number; name: string; job: string; here: string }[] = [
   { n: 1, name: "Unified lakehouse", job: "One source of truth: every sensor, lab result, crude assay, event and decision, governed in one place.",
@@ -121,6 +122,17 @@ export default function PlatformOverview() {
           <p className="pf-note">Basis: MeitY OM 9(3)/2025-EG-II of 20 Mar 2026 (para 6: the department classifies its data). This demo uses simulated data only — no IOCL data. The edge gateway is a design, not part of this build.</p>
         </section>
       </div>
+
+      <section className="pf-band pf-proof" aria-labelledby="pf-proof-h">
+        <h2 id="pf-proof-h" className="pf-h2">How do we know a move works? — predict, decide, measure, learn</h2>
+        <ol className="pf-steps" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+          <li className="on"><b>Predict</b><span>Models trained on the unit&apos;s data give the expected effect of a move and how sure they are. When they disagree: “Not yet”.</span></li>
+          <li className="on"><b>Decide</b><span>A person accepts, holds or declines. Recorded; nothing sent to the plant.</span></li>
+          <li className="on"><b>Measure</b><span>The next lab sample, or the unit&apos;s own instruments, show what really happened. Inside the predicted band = confirmed.</span></li>
+          <li className="on"><b>Learn</b><span>Each lab result re-anchors the soft sensor; accepted moves and their results refit the lever models.</span></li>
+        </ol>
+        <p className="pf-note">Shown today on simulated data, with one recipe fed back through the simulator to test its prediction. <b>On your plant:</b> {PILOT_LINE.replace(/^On your plant, /, "")}</p>
+      </section>
 
       <p className="pf-cta"><Link href="/twin" className="btn primary">Open the refinery →</Link></p>
     </main>

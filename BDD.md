@@ -34,6 +34,29 @@ Feature: The opening page ties the platform back to IOCL's use cases
     And it says "designed for MeitY", not "certified"
 ```
 
+### 2026-10-03 05:00 — "How do we know?"
+
+```gherkin
+Feature: The cockpit shows how a move is proven, not just predicted
+  Scenario: Proof loop on an open decision
+    Given run random_s107 at 10:00 and the feed furnace page
+    When I scroll to step 4
+    Then I see "How do we know the move works?" with Predict, Decide, Measure and Learn
+    And Predict reads "Scripted gain" because D6 is scripted
+    And Measure reads "Shown, not run in the replay"
+    And I see the recipe check with its status and the pilot line
+
+  Scenario: No proof loop on a withheld decision
+    Given a decision that reads "Not yet"
+    Then no proof loop is shown for it
+
+  Scenario: Crude switch walkthrough is labelled
+    Given run random_s107 at 10:00 and the main fractionator page
+    Then step 2 shows "How a crude switch plays out on this run" marked "scripted walkthrough"
+    And it lists 06:25 new crude, 06:25–07:25 behaviour shifts, 07:37 crude named
+    And the classifier header is marked "scripted"
+```
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > Owner 09:48–11:34 UTC 2 Oct and Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5). The acceptance tests for the agreed screens are **BDD-31 Home**, **BDD-32 Unit page four steps**, **BDD-33 Decision record and audit-only actions**, **BDD-34 "Not yet" behaviour** (§9). They override, where they conflict: BDD-16 (Decision dashboard layout), BDD-23 (unit workspaces), BDD-28 (L0 / L1 four zones) and BDD-29 (L0 question tree — in particular "the home contains no filled primary button": the agreed home **does** carry Accept / Hold on each decision). Safety (BDD-1), gate (BDD-15) and engine scenarios are unchanged.

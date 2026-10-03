@@ -1,0 +1,60 @@
+# Probing Questions — Honest Answers for the IOCL Room
+
+**Purpose:** the questions IOCL is likely to ask, each with a short answer to say out loud, what the demo shows today, and what only a pilot on their plant can prove. Owner ask, 3 Oct 2026 04:24: *"they will ask probing questions. Is our system answering those questions?"*
+
+**Rule for every answer:** say which of three it is.
+- **Shown** — runs on real models over simulated data.
+- **Scripted** — real inputs, scripted outcome, labelled on screen.
+- **Pilot** — only provable on IOCL's plant.
+
+No value figures. No claim about IOCL's plant.
+
+---
+
+## A. "Will this setting actually maximise the yield?" (the big one)
+
+| # | Question | Say this | Status |
+|:-:|---|---|---|
+| A1 | How do you know a move will increase yield? | "Every move goes round one loop: **predict, decide, measure, learn**. The model predicts the effect and how sure it is. A person decides. The next lab sample or the unit's instruments measure what happened. The result re-anchors the model. We don't ask you to trust the first prediction; we show you the measurement." | Predict and decide: **Shown**. Measure and learn: **Shown** for the soft sensor (each lab re-anchors it); lever models refit from accepted moves: **Pilot** |
+| A2 | Have you tested a prediction? | "Yes, in the simulator. We took the recipe the cockpit proposed and replayed the same run twice, once with the recipe and once without, so the difference is the recipe alone." Result: *(fill in when the check finishes, ~11:00 and ~13:00 UTC 3 Oct)*. | **Shown** (simulator) |
+| A3 | How is the "ideal" temperature found? | "A search tries many combinations of the settings operators really move. It scores each one: more LCO, heavy naphtha and LPG, less energy and coke, inside the equipment and procedure limits. It keeps the best one that the trust checks allow." | Method: **Shown**. The size of the riser-temperature and feed-preheat gains: **Scripted** (labelled) |
+| A4 | Why are some outcomes scripted? | "The simulator data has few clean test moves of those settings. Rather than show a number the data can't back, we label it scripted. On your plant, a short step-test pilot measures each gain." | Honest |
+| A5 | What will you do on our plant to prove it? | "A pilot: small step tests of each lever inside your operating procedure, measured by your lab. Every gain the cockpit uses then comes from your own plant." | **Pilot** |
+
+## B. Crude type
+
+| # | Question | Say this | Status |
+|:-:|---|---|---|
+| B1 | How do you know which crude is running? | "Two sources: your lab assay, and the unit's behaviour, a pattern in riser temperature rise, conversion, coke and regenerator temperature. A crude is named only after it has held for 15 minutes, so noise doesn't flip it. When the two sources disagree, the cockpit flags it." | **Scripted** in the demo: the crude name follows the assay with a ~12 min lag, labelled |
+| B2 | Does the classifier work on its own? | *(Only if pressed.)* "On the simulated data it names the right crude in 8 of 15 held-out crude switches. There aren't enough switches in the data yet, so we don't show it as the source. On site it confirms the assay rather than replacing it." | Honest: **8 / 15 (53 %)**, 45 min after each held-out switch |
+| B3 | What happens on a crude you've never seen? | "A novelty check flags it. The physics-based models get more weight, the spread widens, and if it crosses the limit the cockpit says 'Not yet' and asks for a lab sample instead of advising a move." | **Shown** |
+
+## C. Trust and safety
+
+| # | Question | Say this | Status |
+|:-:|---|---|---|
+| C1 | What if the model is wrong? | "Three brakes. Seven trust checks run before any advice is shown. If the models disagree beyond a 14 °F spread, the advice becomes 'Not yet'. And a person decides every time. Nothing is written to the control system." | **Shown** (e.g. run s144 at 12:00 shows "Not yet") |
+| C2 | Will the AI change our plant settings? | "No. It advises. A person accepts, holds or declines, and that is recorded. There is no write path to the DCS." | **Shown** |
+| C3 | Why should operators trust it? | "It only recommends settings operators really move on that unit, and it says what it never recommends: cooling-water flow, feed rate, catalyst addition. Every card shows its evidence and its checks." | **Shown** |
+| C4 | What about a bad lab result? | "Suspect lab results are screened before they touch the model, and the screen shows why a result was rejected." | **Shown** |
+
+## D. Data
+
+| # | Question | Say this | Status |
+|:-:|---|---|---|
+| D1 | What data did you use? | "Simulated data only, from a physics-based FCC simulator: 54 runs (about 83,000 one-minute rows) for the soft sensor, plus 52 runs (about 26,600 rows, about 285 designed lever moves) for the lever models. No IOCL data." | Facts |
+| D2 | How were the models checked? | "Trained on 40 runs and checked on 14 held-out runs they never saw." | **Shown** |
+| D3 | What data do you need from us? | "Read-only historian tags for the FCC, lab results and crude assays, plus a short step-test window. Nothing from the safety or control systems." | **Pilot** scope (to agree with IOCL) |
+| D4 | Where does our data go? (MeitY) | "Category A, meaning control, safety, raw tag names and cargo names, stays on site. An edge gateway de-identifies the data and sends it one way only. Category B goes to India cloud regions with customer-managed keys. This is designed for MeitY; the gateway is a design, and the demo uses simulated data." | Design. **Not built**; demo lake is in `us-central1` |
+
+## E. Architecture
+
+| # | Question | Say this | Status |
+|:-:|---|---|---|
+| E1 | Is this one big application? | "One screen; separate agents behind it, one per use case, sharing one source of truth. Modular by design; deployed as one service for this demo." | Honest |
+| E2 | Is it streaming live? | "The demo loads simulator data in batches. On site it reads the historian every minute." | Gap, say it |
+| E3 | Which use cases are real today? | "The cut-point quality inferential and soft sensor (IOCL rows #1 and #11) run on real models. The others are shown with real inputs and scripted outcomes, or as watch-only. The Overview page marks each one." | See `/platform` |
+
+---
+
+**Where these answers live on screen:** Overview `/platform` (layers, use cases, person in the loop, MeitY, predict-decide-measure-learn, pilot line); each unit page step ② (crude walkthrough) and step ④ ("How do we know the move works?").

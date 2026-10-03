@@ -22,6 +22,20 @@ Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use c
 | Edge gateway / de-identification (MeitY) | — | Design only, not built |
 | Each agent as its own service (ADK on Agent Engine / Cloud Run) | — | Path only; demo runs as one service |
 
+### 2026-10-03 05:00 — "How do we know?" — proof loop, crude walkthrough, probing questions, pilot line
+
+Owner, 04:24: *"no flow of how will we actually know if a particular parameter will actually maximise the yield? … they will ask probing questions. Is our system answering those questions?"* Answer: partly — predict and decide were built; measure-and-learn was not shown, and the crude classifier in the demo is scripted. Owner, 04:58: "yes add".
+
+| Item | Where | Status |
+|---|---|---|
+| **Proof loop** on unit page step ④ for every decision with a move or sample: Predict → Decide → Measure → Learn, each stage chipped *Built* / *Scripted gain* / *Shown, not run in the replay* / *Pilot on site*; evidence so far (recipe check, lever gap fit); pilot line | `components/twin/l1/ProofLoop.tsx` (`ProofLoop`), `lib/proofEvidence.ts` (single place to record check results), `pl-*` CSS | Done |
+| **Crude-switch walkthrough** on step ② (5 steps from the run's own segments: crude arrives → behaviour shifts → named after 15-min hold → soft sensor re-weights → advice changes), labelled *scripted walkthrough* | `ProofLoop.tsx` (`CrudeSwitchStory`); `TwinRegime` gains `scripted` + transition fields | Done |
+| Crude classifier header now shows **scripted** when the crude name follows the lab assay (it does in the demo); "12 min after the blend settled" wording fix | `UnitStory.tsx` | Done |
+| **Overview band** "How do we know a move works?" (predict, decide, measure, learn) + pilot line | `PlatformOverview.tsx` | Done |
+| **Probing-questions sheet**: 20 likely IOCL questions with what to say and status (Shown / Scripted / Pilot) | `PROBING_QUESTIONS.md` | Done; A2 result to fill in |
+| Fill in the recipe-check result | `lib/proofEvidence.ts` `RECIPE_CHECK` + `PROBING_QUESTIONS.md` A2 | Pending (~11:00 and ~13:00 UTC) |
+| Real fact recorded: the live crude classifier names **8 of 15** held-out crude switches (53 %) 45 min after the switch — too few switches in the data, so the demo uses the scripted crude name | `regime.holdout_score()` run 3 Oct 04:59 | Recorded |
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > **Source:** owner's words 09:48–11:34 UTC on 2 Oct (recovered from the crashed session) and Voice Note 11 (12:02), recorded in [verbatim.md](verbatim.md) Part 9.5. Code at `2fc6402` (pushed to `origin/main` 2 Oct 12:59; production build passes). Where any older section of this guide (Steps 5, 13, 18, the 30 Sep status box) describes a different screen layout, **this section wins**.

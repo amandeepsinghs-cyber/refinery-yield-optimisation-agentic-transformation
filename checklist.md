@@ -22,6 +22,17 @@ Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use c
 - [ ] Confirm "Overview" as the first screen of the demo.
 - [ ] Gaps to say out loud: batch loads (not streaming); one service; D3/D5–D7 scripted; MeitY gateway not built and demo lake in `us-central1`.
 
+### 2026-10-03 05:00 — "How do we know?"
+
+Owner, 04:24: *"no flow of how will we actually know if a particular parameter will actually maximise the yield? … they will ask probing questions. Is our system answering those questions?"* Answer: partly — predict and decide were built; measure-and-learn was not shown, and the crude classifier in the demo is scripted. Owner, 04:58: "yes add".
+
+- [x] Proof loop on unit step ④ (`ProofLoop.tsx`, `proofEvidence.ts`).
+- [x] Crude-switch walkthrough on step ②, labelled scripted; classifier header shows "scripted".
+- [x] Overview band "How do we know a move works?" + pilot line.
+- [x] `PROBING_QUESTIONS.md` (sections A–E).
+- [ ] Recipe-check result into `RECIPE_CHECK` and Q&A A2 (~11:00 / ~13:00 UTC).
+- [ ] Rehearse the answers to A1, B1, B2 out loud (B2 only if pressed: 8 of 15).
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > Owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5; [build.md](build.md) top section). Home = top view of the refinery → what went wrong → decisions on units → flow ①–④ → IOCL use-case band. Unit page = ① Data in / out · ② What we observe · ③ Decision and lever · ④ How the move is found · footer. `/audit` = Decision record. Decisions D1, D2, D4, D8, D9 **Live**; D3, D5, D6, D7 **Not yet** (until `lever_v1` + refit). Tick list: **Phase 22** at the end of this file. Phases 18, 20, 21 screen layouts are superseded by Phase 22 (their engines stay).

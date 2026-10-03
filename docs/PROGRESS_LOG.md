@@ -407,3 +407,11 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - **Background (Lever Fit Engineer):** gap fit behind `FCC_SURROGATE_GAP_FIT=1`; usable moves per lever 0–2 → 22–30 (+4–7 hold-out). D6 gain ≈ 1.0 (matches script; conversion barely moves and the regenerator temperature is held by its controller). D5's designed move ramps the regenerator-temperature set point, not air (fit: cyclone dT −0.34 ± 0.07 °F/°F). D7: cooling water is an open-loop input in the simulator; no basis for the scripted gain. Candidate artifacts in `api/artifacts/engines_v7_candidate/`; decisions unchanged.
 - Recipe check launched 03:27 (recipe + same-seed control, s144, ~50–70 s per sim-minute): ROT / conversion verdict ~15:00 UTC, T98 ~20:00 UTC.
 
+## 2026-10-03 04:24–05:10 — "How do we know?" (owner: probing questions)
+
+- Owner asked whether the system answers the probing questions: crude classification, ideal temperature, and how we know a setting maximises yield. Honest answer: partly. Predict and decide were built; measure-and-learn was not shown; the demo crude name is scripted (follows the assay). Owner: "yes add".
+- Fact found: the live crude classifier names 8 of 15 held-out crude switches (53 %) 45 min after the switch (`regime.holdout_score()`), so the scripted crude name stays and is now labelled "scripted" on screen.
+- Built: proof loop on unit step ④ (`ProofLoop.tsx`, `lib/proofEvidence.ts`); crude-switch walkthrough on step ② (scripted walkthrough, from the run's segments); Overview band "How do we know a move works?" + pilot line; `PROBING_QUESTIONS.md` (A–E, 20 questions).
+- Recipe check (subagent, 04:35): both runs replay s144 exactly for the first 120 min; ~34 s per sim-minute; ROT / conversion answer ~10:30–11:30 UTC, T98 and end ~12:30–13:30 UTC.
+- Checks: tsc, eslint, front-end tests; screenshots `proof_furnace.png`, `crude_story.png`, `platform_proof.png`.
+

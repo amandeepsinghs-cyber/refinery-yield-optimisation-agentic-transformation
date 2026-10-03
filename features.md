@@ -16,6 +16,14 @@ Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use c
 
 **F-OV Opening page (`/platform`, nav "Overview").** First screen. Shows (1) the six layers left to right with what each is in this build; (2) one card per IOCL use case (rows #1–#11 + feedstock evaluation) with its agent, its decision and a status chip — Live / Scripted / Partly / Watch — plus a "Not claimed" card (coker, alkylation, gas turbines, flare, pipelines); each card opens its unit page; (3) a person-in-the-loop band: Advise (this build) → Assist (only if IOCL asks) → Act within an envelope (never in this pitch); (4) a MeitY band: Category A stays on site, the edge gateway de-identifies, Category B in India cloud regions — marked "designed for", not certified; (5) "Open the refinery". No value figures.
 
+### 2026-10-03 05:00 — "How do we know?"
+
+Owner, 04:24: *"no flow of how will we actually know if a particular parameter will actually maximise the yield? … they will ask probing questions. Is our system answering those questions?"* Answer: partly — predict and decide were built; measure-and-learn was not shown, and the crude classifier in the demo is scripted. Owner, 04:58: "yes add".
+
+**F-PROOF Proof loop (unit step ④).** For each decision with a move or a sample (not "Not yet" / watch): four stages Predict → Decide → Measure → Learn with an honesty chip each; a line that the replay does not apply accepted moves; evidence so far from `lib/proofEvidence.ts`; the pilot line.
+**F-CRUDE Crude-switch walkthrough (unit step ②).** Shown when the run has had a crude switch by the current minute; five timed steps from the run's own segments; labelled *scripted walkthrough*; a note when the crude name follows the lab assay.
+**F-OV+ Overview "How do we know a move works?" band** with the pilot line.
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > **Source:** owner 09:48–11:34 UTC 2 Oct (crashed session, recovered) and Voice Note 11 — see [verbatim.md](verbatim.md) Part 9.5 for the lever table checked against the code. Features for this agreement are catalogued as **Epic K** (§10). Where Epic F (Decision / Technical / Modelling dashboards), Epic I (I13 workspaces) or Epic J (J6 L0, J7 L1 four zones) describe a different screen layout, **Epic K wins**; their engines and APIs remain.

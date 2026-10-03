@@ -19,6 +19,15 @@ Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use c
 
 Never say: "agents act", "MeitY-certified", "real IOCL data", "modular services in production" (say *"modular by design; deployed as one service for this demo"*).
 
+### 2026-10-03 05:00 — "How do we know?" — talk track for the probing questions
+
+Owner, 04:24: *"no flow of how will we actually know if a particular parameter will actually maximise the yield? … they will ask probing questions. Is our system answering those questions?"* Answer: partly — predict and decide were built; measure-and-learn was not shown, and the crude classifier in the demo is scripted. Owner, 04:58: "yes add".
+
+- **Scene 0 (Overview):** end on the band "How do we know a move works?": *"We don't ask you to trust the first prediction. Every move goes predict, decide, measure, learn. On your plant a short pilot proves each lever first."*
+- **Fractionator step ②:** point at the crude walkthrough: new crude 06:25, behaviour shifts until 07:25, named at 07:37 after a 15-minute hold. It's labelled scripted. Say *"the name follows your lab assay; the unit's behaviour confirms it."* Don't volunteer the 8-of-15 classifier figure; use `PROBING_QUESTIONS.md` B2 only if pressed.
+- **Furnace step ④:** scroll to the proof loop: Predict (scripted gain), Decide (built), Measure (shown), Learn (pilot). Then the evidence: recipe fed back through the simulator.
+- Keep `PROBING_QUESTIONS.md` open on a second screen.
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > **Source:** owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5). This walk-through **replaces §1 "Screens", §2 Cast and §4 Scenes 0–7 where they conflict** (L0 Refinery Twin / L1 Unit Workbench / Audit log → Home / Unit page / Decision record). §3 data requirements, §6 fallbacks, §7 things we never say and §8 checklist still apply.

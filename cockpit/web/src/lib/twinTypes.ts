@@ -250,8 +250,11 @@ export interface TwinRegime {
   detected_at_min: number | null;
   detection_delay_min: number | null;
   fingerprint?: Record<string, number>;
-  segments?: { crude_id: string; regime_id: string; t_start_min: number; t_end_min: number }[];
-  holdout?: { correct: number; total: number; rate: number; what?: string };
+  segments?: { crude_id: string; regime_id: string; t_start_min: number; t_end_min: number;
+    transition_start_min?: number | null; transition_end_min?: number | null }[];
+  holdout?: { correct: number; total: number; rate: number; what?: string } | null;
+  /** true when the crude name follows the lab assay (scripted mode), not the live classifier */
+  scripted?: boolean;
 }
 
 export interface TwinCitation {

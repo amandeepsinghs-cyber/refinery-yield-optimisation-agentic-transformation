@@ -35,6 +35,7 @@ import { SUSPECT, isSuspect } from "@/lib/suspect";
 import { StepHowStrip, UnitUseCases } from "@/components/how/UseCaseExplainer";
 import type { StepKey } from "@/lib/howItWorks";
 import { EarlierDecisions, EstimateTrack, MissingData, TagList, UnitActions, WhatSetsTheMove, isGiveBack, useUnitActions } from "./UnitStoryExtras";
+import { CrudeSwitchStory, ProofLoop } from "./ProofLoop";
 
 const RANK: Record<string, number> = { open: 0, held: 1, watch: 2, withheld: 3, accepted: 4, declined: 5 };
 const fx = (v: number | null | undefined, d?: number) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d ?? (Math.abs(v) >= 100 ? 1 : 2)));
@@ -71,7 +72,7 @@ function CrudeBlock({ r, physicsPct }: { r: import("@/lib/twinTypes").TwinRegime
   return (
     <div className="us-crude">
       <div>
-        <h3>Which crude is running — classifier</h3>
+        <h3>Which crude is running — classifier{r.scripted ? <em className="us-scripted">scripted</em> : null}</h3>
         <ul className="us-crude-bars">
           {CRUDES.map(([id, name, type]) => {
             const v = r.p_regime?.[id] ?? 0;
@@ -90,7 +91,7 @@ function CrudeBlock({ r, physicsPct }: { r: import("@/lib/twinTypes").TwinRegime
         <p className="us-note">
           The lab assay says <b>{r.declared_regime_id}</b> (API {fx(r.declared_api, 1)}); the unit&apos;s behaviour says <b>{r.regime_id}</b>
           {" "}<span className={match ? "good" : "bad"}>{match ? "· they agree" : "· they disagree"}</span>.
-          {r.detected_at_min != null ? <> Switch picked up at <b className="num">{clock(r.detected_at_min)}</b>{r.detection_delay_min != null ? `, ${r.detection_delay_min} min after the new crude arrived` : ""}.</> : null}
+          {r.detected_at_min != null ? <> Switch picked up at <b className="num">{clock(r.detected_at_min)}</b>{r.detection_delay_min != null ? `, ${r.detection_delay_min} min after the blend settled` : ""}.</> : null}
         </p>
         {r.fingerprint ? (
           <p className="us-fp">{FP.filter(([k]) => r.fingerprint?.[k] != null).map(([k, l, u, d]) => <span key={k}>{l} <b className="num">{r.fingerprint![k].toFixed(d)}{u ? ` ${u}` : ""}</b></span>)}</p>
@@ -425,6 +426,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           {data.regime ? <div className="us-fact"><span>Crude</span><b>{data.regime.regime_id} {data.regime.regime_label.split(" ")[0]}</b><em>{Math.round((data.regime.p_regime?.[data.regime.regime_id] ?? 0) * 100)} % sure · since {clock(data.regime.detected_at_min)}</em></div> : null}
         </div>
         {data.regime ? <CrudeBlock r={data.regime} physicsPct={committee?.reason?.match(/carry (\d+) %/)?.[1] ?? null} /> : null}
+        {data.regime ? <CrudeSwitchStory r={data.regime} physicsPct={committee?.reason?.match(/carry (\d+) %/)?.[1] ?? null} /> : null}
         <div className="us-grid observe">
           <div className="us-chart"><ChartStack data={data} panels={obsPanels} hoverMin={null} onHover={() => undefined} /></div>
           <div className="us-side">
@@ -577,6 +579,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             {d?.evidence?.docs?.length ? <p className="us-note subtle">Backed by {d.evidence.docs.join(" · ")}{d.evidence.lakehouse ? ` · ${d.evidence.lakehouse}` : ""}</p> : null}
           </div>
         </div>
+        {d && (d.proposed.moves.length > 0 || d.proposed.sample) && d.status !== "withheld" && d.status !== "watch" ? <ProofLoop d={d} nextLab={clock(data.time.next_lab_min)} /> : null}
       </Step>
 
       {/* what this screen solves — below the figures, expandable (owner, 15:15) */}
