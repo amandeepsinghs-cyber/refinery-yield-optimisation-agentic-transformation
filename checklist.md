@@ -15,11 +15,11 @@ Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use c
 - [x] Opening page `/platform` built; `/` redirects there; nav "Overview" first. tsc, eslint, 82 front-end tests clean.
 - [x] D6 model text softened (claims catalyst-to-oil only).
 - [x] Lever gap fit behind a flag (usable moves per lever 0–2 → 22–30 train + 4–7 hold-out); 7 new tests.
-- [ ] Recipe check verdict: conversion / ROT at sim minute ~780 (~15:00 UTC), T98 at ~900–960 (~20:00 UTC).
-- [ ] **Owner decision:** D5 — re-express as the regenerator-temperature set-point lever (fit: cyclone dT −0.34 ± 0.07 °F per °F) or keep scripted (default: scripted).
-- [ ] **Owner decision:** D7 — the simulator gives cooling water no closed-loop basis (gain ≈ 0); keep scripted (labelled) or retarget to reflux / naphtha end point.
-- [ ] **Owner decision:** D6 could switch to real (fitted gain ≈ 1.0, matches the script) — only for the catalyst-to-oil claim.
-- [ ] Confirm "Overview" as the first screen of the demo.
+- [ ] Recipe check verdict: conversion / ROT ~12:30 UTC, T98 ~15:00–15:30 UTC (re-estimated 06:35).
+- [x] **Owner decision (3 Oct 07:33): keep scripted.** D5 — re-express as the regenerator-temperature set-point lever (fit: cyclone dT −0.34 ± 0.07 °F per °F) or keep scripted (default: scripted).
+- [x] **Owner decision (3 Oct 07:33): keep scripted.** D7 — the simulator gives cooling water no closed-loop basis (gain ≈ 0); keep scripted (labelled) or retarget to reflux / naphtha end point.
+- [ ] **Owner decision (3 Oct 07:33): decide after the new lever runs (~01:00 UTC 4 Oct).** D6 could switch to real (fitted gain ≈ 1.0, matches the script) — only for the catalyst-to-oil claim.
+- [x] "Overview" confirmed as the first screen of the demo (owner, 3 Oct 07:33).
 - [ ] Gaps to say out loud: batch loads (not streaming); one service; D3/D5–D7 scripted; MeitY gateway not built and demo lake in `us-central1`.
 
 ### 2026-10-03 05:00 — "How do we know?"
@@ -33,7 +33,7 @@ Owner, 04:24: *"no flow of how will we actually know if a particular parameter w
 - [ ] Recipe-check result into `RECIPE_CHECK` and Q&A A2 (~11:00 / ~13:00 UTC).
 - [x] `DEMO_SCRIPT.md` written (scenes 0, A–M + function checklist); tag v0.4; GCP verified; 36 new lever runs launched 05:15Z.
 - [x] Fix: s107 HN D1 consequence direction.
-- [ ] New lever runs finish (~1–1.5 days) → load, restage, refit, compare.
+- [ ] New lever runs finish (~01:00 UTC 4 Oct) → load, restage, refit, compare.
 - [ ] Rehearse the answers to A1, B1, B2 out loud (B2 only if pressed: 8 of 15).
 
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)

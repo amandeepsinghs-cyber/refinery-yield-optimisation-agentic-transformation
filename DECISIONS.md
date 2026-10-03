@@ -86,6 +86,7 @@ Owner's words recovered from the crashed session and confirmed by Voice Note 11;
 | P7 | **2026-10-03 — Honest claims.** Say "modular by design; deployed as one service for this demo"; "designed for MeitY", never "certified"; "simulated data only"; demo lake is in `us-central1`, production would be `asia-south1/2`; the edge gateway is a design. |
 | P8 | **2026-10-03 — Lever honesty.** D6 text claims catalyst-to-oil only. D7 has no simulator basis for its gain (cooling water is an open-loop input) and stays scripted and labelled pending the owner's call. D5 stays scripted unless the owner re-expresses it as the regenerator-temperature set point. |
 | P9 | **2026-10-03 — Prove, don't just predict.** Every advised move is shown going round predict → decide → measure → learn, each stage marked Built / Scripted / Shown / Pilot. Scripted parts stay (owner 04:24: the data has too few scenarios), always labelled. The answer to "will it maximise yield?" is a step-test pilot on IOCL's plant, not a claim. The crude name in the demo follows the lab assay (labelled); the live classifier (8 of 15 held-out switches) is not shown as the source. |
+| P10 | **2026-10-03 07:33 — Owner: "go ahead with your recommendation for now".** D5 and D7 stay scripted (labelled). D6 decided after the new lever runs. "Overview" (`/platform`) is the first demo screen. |
 
 ## 6. Ways of Working
 

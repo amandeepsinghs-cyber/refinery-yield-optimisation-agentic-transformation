@@ -454,3 +454,8 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
   - 11.8 one illustrative shift.
 - `PROBING_QUESTIONS.md` A6 (why not day one) and A7 (when do we benefit); `DEMO_SCRIPT.md` Scene M journey line; learning plan includes §11 and 2 more self-check questions.
 
+## 2026-10-03 07:33 — owner decisions
+
+- D5, D7: keep scripted (labelled). D6: decide after the new lever runs. Overview first screen: confirmed.
+- Data watch 07:30: 35 of 36 new lever runs OK, 1 started to break down (heal will stop it when stuck); 32,220 lever rows (28,599 valid). Recipe check re-estimated: conversion ~12:30 UTC, T98 ~15:00–15:30 UTC.
+
