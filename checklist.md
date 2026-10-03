@@ -477,4 +477,4 @@ Real-world lever check and data wrap-up (owner, 3 Oct 02:49)
 - ☑ D7 (gas plant): cooling-water flow is the fouling symptom and a limit, never a lever; lever = overhead temperature target; question "Move the overhead temperature target to keep the condenser inside its cooling duty?"; goal "condenser back inside its fixed cooling duty"
 - ☑ D6 (feed furnace): no longer circular; preheat is moved to set catalyst-to-oil and regenerator temperature for the crude, inside the feed-nozzle limit
 - ☑ Labels: "LCO / HN cut-point target (via draw)", "Regenerator air (excess O₂ / afterburn)", "Feed preheat", "Riser outlet temperature"; cooling water drawn as "fixed duty", not as a lever
-- ☑ All simulations stopped 02:49 (owner: stop and wrap up). Final lever data loaded to BigQuery and synced to GCS
+- ☑ All simulations stopped 02:49 (owner: stop and wrap up). Final lever data in BigQuery (52 runs, 26,580 rows = all local rows), GCS `_archive/lever_v1_live` synced, snapshot `sim_data_20261003_0256.tar.gz` local + GCS — `5e9e402`

@@ -395,3 +395,4 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
   - D6: no longer circular. Preheat is moved to set catalyst-to-oil and regenerator temperature for the crude, inside the feed-nozzle limit.
   - Labels: "LCO / HN cut-point target (via draw)", "Regenerator air (excess O₂ / afterburn)", "Feed preheat", "Riser outlet temperature".
 - Checks: 290 back-end pass (2 skipped), 82 front-end pass, tsc and eslint clean. Screenshot of the gas plant ③ checked.
+- 03:08 final lake load and GCS rsync done. `fcc_silver.run_registry`: `lever_v1` 52 runs / 26,580 rows (= every local row); `full_v1` 54 runs / 83,240 rows. Nothing is running any more except the API and the web server.
