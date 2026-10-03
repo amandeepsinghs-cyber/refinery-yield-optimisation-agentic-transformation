@@ -415,3 +415,11 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Recipe check (subagent, 04:35): both runs replay s144 exactly for the first 120 min; ~34 s per sim-minute; ROT / conversion answer ~10:30–11:30 UTC, T98 and end ~12:30–13:30 UTC.
 - Checks: tsc, eslint, front-end tests; screenshots `proof_furnace.png`, `crude_story.png`, `platform_proof.png`.
 
+## 2026-10-03 05:11–05:25 — v0.4, data in GCP, more lever data, demo script
+
+- **Tag `v0.4`** pushed (Overview page, proof loop, crude walkthrough, probing questions).
+- **GCP check:** BigQuery `fcc_silver.run_registry` = local exactly (full_v1 54 runs / 83,240 rows; lever_v1 52 runs / 26,580 rows). Uploaded to `gs://fcc-soft-sensor-sim-data`: `models/engines_live_20261003/`, `models/engines_v7_candidate_20261003/`, `_archive/audit_archive/`, `_archive/recipe_check_v1_live/`.
+- **More lever data:** the simulator cannot resume a run, and each seed is deterministic (re-running repeats the same first ~510 min and breaks at the same minute). So the remaining lever data comes from **36 new runs, seeds 252–287, 1,600 min, `nice 10`** into `sim_octave/data/lever_v1` (05:15Z). That is about 57,600 sim-minutes, the same as the shortfall of the 52 partial runs. Estimated 1–1.5 days. Watch every 30 min (`monitor_runs.py --heal`), GCS rsync every 1.5 h, lake load every 3 h. The 10 broken full_v1 runs aren't re-run (same seed = same breakdown); 44 complete runs remain.
+- **Fix:** the s107 heavy-naphtha D1 said "cut too light" while advising to lower the cut point (it borrowed the drift line for the opposite direction). It now reads "HN T98 could go over spec: the upper end of the estimate is above the limit". 297 tests pass.
+- **`DEMO_SCRIPT.md`:** scenes 0, A–M, each with problem / how solved / action / support / result / test / say; function test checklist; fallbacks; never say.
+

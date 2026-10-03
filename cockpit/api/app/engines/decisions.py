@@ -269,8 +269,9 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
                           "ripple": _ripple(run_id, t, unit_id, sp_tag, sp1, dl or 0.0)}
         horizon = att.get("horizon_min") if att else int(rec.get("valid_until_min", t + 30)) - t
         d["urgency"] = {"rank": None, "time_to_consequence_min": horizon,
-                        "consequence": ((att or {}).get("consequence") if rec["action"] == "LOWER" else None)
-                        or (f"{short} T98 q95 above spec: off-spec risk" if rec["action"] == "LOWER" else
+                        "consequence": ((att or {}).get("consequence") if rec["action"] == "LOWER"
+                                        and "too light" not in ((att or {}).get("consequence") or "") else None)
+                        or (f"{short} T98 could go over spec: the upper end of the estimate is above the limit" if rec["action"] == "LOWER" else
                             f"{short} cut lighter than it needs to be ({_f(rec.get('margin_before_F'), 1)} °F inside spec): "
                             f"product goes to the heavier stream every hour the cut point is not raised"),
                         "decide_by_label": clock(int(rec.get("valid_until_min", t + 30)))}

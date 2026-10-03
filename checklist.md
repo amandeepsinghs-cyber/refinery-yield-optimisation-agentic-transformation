@@ -31,6 +31,9 @@ Owner, 04:24: *"no flow of how will we actually know if a particular parameter w
 - [x] Overview band "How do we know a move works?" + pilot line.
 - [x] `PROBING_QUESTIONS.md` (sections A–E).
 - [ ] Recipe-check result into `RECIPE_CHECK` and Q&A A2 (~11:00 / ~13:00 UTC).
+- [x] `DEMO_SCRIPT.md` written (scenes 0, A–M + function checklist); tag v0.4; GCP verified; 36 new lever runs launched 05:15Z.
+- [x] Fix: s107 HN D1 consequence direction.
+- [ ] New lever runs finish (~1–1.5 days) → load, restage, refit, compare.
 - [ ] Rehearse the answers to A1, B1, B2 out loud (B2 only if pressed: 8 of 15).
 
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
