@@ -249,7 +249,7 @@ The **method is identical**; only the source changes. That's why we say *"shown 
 |---|---|---|
 | Soft-sensor method (4 models, spread, trust checks, "Not yet") | **Real** | Runs on every minute of every run |
 | Soft-sensor training labels | **Demo fallback** | Simulator truth, not lab samples (72 clean labs per product < 100 needed). On a plant: lab samples |
-| Soft-sensor accuracy on the 14 held-out runs | **Weak, so the trust checks matter** | Average miss: LCO **9.1 °F**, heavy naphtha **19.2 °F** (big misses in some periods). The 90 % band contains the truth only **62 %** (LCO) and **56 %** (heavy naphtha) of the time, so the bands are too narrow. The spread check and "Not yet" catch the worst periods. Real lab history and recalibration are the fix |
+| Soft-sensor accuracy on the 14 held-out runs | **Weak, so the trust checks matter** | Average miss: LCO **7.5 °F**, heavy naphtha **13.2 °F** (big misses in some periods; LCO RMSE 17.1 °F, heavy naphtha 24.5 °F). The 90 % band contains the truth **79 %** (LCO) and **59 %** (heavy naphtha) of the time, against a target of 85–95 %, so the bands are still too narrow. The spread check and "Not yet" catch the worst periods. Real lab history and recalibration are the fix. *Scored on minutes where the simulator's T98 is not stuck at its calculation ceiling (770.364 °F LCO, 644.767 °F heavy naphtha, about 22 % and 6 % of held-out minutes); the model never trained on those minutes. Scored on every minute: 9.1 / 19.2 °F and 62 / 56 %.* |
 | Cut-point gain (1 : 1) | **Physics assumption** | Not fitted; standard controller behaviour |
 | Response of product flows to cut-point moves | **Fitted** | From about 3,000 minutes around past set-point moves |
 | Feed-preheat gain (D6) | **Measured** (simulator step tests) | 52 moves on 80 lever runs: outlet 1.007 °F per °F, held-out R² 1.0; catalyst circulation −109 per °F, same direction every time; a fresh batch reproduces it. The chance band stays scripted |
@@ -261,7 +261,7 @@ The **method is identical**; only the source changes. That's why we say *"shown 
 | MeitY edge gateway | **Design** | Not built; demo lake in `us-central1` |
 
 > [!WARNING]
-> Don't quote the held-out accuracy figures in the room unless asked. If asked, say: *"On simulated data the average miss is about 9 °F on LCO, and our uncertainty bands are still too narrow. That's exactly why every estimate goes through trust checks and the cockpit says 'Not yet' when they fail. On your plant we train on your lab history and report accuracy per crude in the backtest, before any advice goes live."*
+> Don't quote the held-out accuracy figures in the room unless asked. If asked, say: *"On simulated data the average miss is about 7.5 °F on LCO and 13 °F on heavy naphtha, and our uncertainty bands are still too narrow. That's exactly why every estimate goes through trust checks and the cockpit says 'Not yet' when they fail. On your plant we train on your lab history and report accuracy per crude in the backtest, before any advice goes live."*
 
 ---
 

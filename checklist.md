@@ -22,7 +22,7 @@ Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use c
 - [x] **Owner decision (3 Oct 07:33): keep scripted.** D7 — the simulator gives cooling water no closed-loop basis (gain ≈ 0); keep scripted (labelled) or retarget to reflux / naphtha end point.
 - [x] **Owner decision (3 Oct 18:11): D6 gain measured, chance scripted** (DECISIONS P11). Refit on 80 lever runs: outlet 1.007 °F per °F (held-out R² 1.0), catalyst circulation −109 per °F every move; reproduced on seeds 252–287. `scripted.py` `gain_source`, Predict chip + lever tag, LEVER_FIT text, STORY §4/§7, PROBING A3, DEMO_SCRIPT Scene G. 309 back-end, 82 front-end tests.
 - [x] LCO / HN T98 ceiling candidate (Soft Sensor Candidate Engineer): training already excluded pinned values (label clip) → candidate identical to live; only the accuracy scoring changes. Flag `training.pinned_truth` added, default off; 11 tests.
-- [ ] Owner decision: quote held-out accuracy on unpinned truth (LCO MAE 7.5 °F / coverage 79 %; HN 13.2 °F / 59 %) instead of 9.1 / 62 % and 19.2 / 56 %?
+- [x] **Owner decision (3 Oct 18:16): quote held-out accuracy on unpinned truth** — LCO MAE 7.5 °F / RMSE 17.1 / coverage 79 %; HN 13.2 °F / 24.5 / 59 % (all-minute figures 9.1 / 62 % and 19.2 / 56 % kept as a footnote). `STORY.md` §7 updated; DECISIONS P12.
 - [x] "Overview" confirmed as the first screen of the demo (owner, 3 Oct 07:33).
 - [ ] Gaps to say out loud: batch loads (not streaming); one service; D3/D5–D7 scripted; MeitY gateway not built and demo lake in `us-central1`.
 

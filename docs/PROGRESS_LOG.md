@@ -511,3 +511,7 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - T98 ceiling (Soft Sensor Candidate Engineer): HN also pinned (644.767 °F, 3,943 rows). Trainer label clip (LCO 744–766, HN 520–542) already excluded both → candidate predictions identical to a flag-off retrain; demo moments unchanged. On unpinned truth the live model scores LCO MAE 7.51 / RMSE 17.05 / cov 78.7 %, HN 13.15 / 24.52 / 59.3 % (vs 9.10 / 16.64 / 61.9 % and 19.20 / 36.58 / 55.7 % on original truth). New `app/data/pinned.py`, `training.pinned_truth` (off), `scripts/compare_pinned_truth.py`, 11 tests. Artifacts `artifacts/softsensor_v8_lco_candidate/` (not committed).
 - Tests: 309 back-end pass, 82 front-end pass; tsc, eslint clean.
 
+## 2026-10-03 18:17 — accuracy quoted on unpinned truth (owner "yes" 18:16)
+
+- `STORY.md` §7 row and room line: LCO MAE 7.5 °F / RMSE 17.1 / coverage 79 %; HN 13.2 / 24.5 / 59 %, with footnote (ceiling minutes excluded; all-minute 9.1 / 19.2 °F, 62 / 56 %). DECISIONS P12; checklist ticked.
+
