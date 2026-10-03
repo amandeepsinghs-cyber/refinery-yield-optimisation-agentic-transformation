@@ -492,3 +492,8 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Overall: conversion inside; T98 in manual outside; T98 in auto inconclusive. `RECIPE_CHECK` stays "partly confirmed" with the final text; STORY §5, PROBING A2, DEMO_SCRIPT, checklist updated. D3 stays scripted.
 - Lever runs 15:30: 7 OK, 29 stopped; 45,540 rows (39,157 valid). Loads at 14:00 (OK, 1,349 s), API restarted 14:23, demo moments unchanged.
 
+## 2026-10-03 16:26 — recipe check addendum (runs complete at minute 1000)
+
+- Minutes 961–1000 (after the trim, manual again): conversion +0.113 % (sd 0.003) vs +0.42 % — bottom edge of band; LCO yield −32, slurry −18, LPG +152, LN −109; LCO T98 +4.9 °F, HN +3.1 °F (inside ±8 °F, inconclusive).
+- Reading: the ROT conversion gain holds only until the cut-point trim pulls the LCO cut back; then about a quarter. Screen/docs updated; D3 stays scripted. Lever Fit Engineer finished; no runs active from it.
+
