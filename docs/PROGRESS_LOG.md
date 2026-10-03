@@ -525,3 +525,5 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Build fixes: lock file pointed at internal Airlock npm mirror → rewritten to the public registry inside the image build only; npm 10.8 crash → npm 11.
 - IAM: SA `fcc-cockpit-run` (BigQuery dataViewer + jobUser, Vertex AI user, Storage objectViewer, logWriter, connectionUser on `fcc-lake`). APIs enabled: run, artifactregistry, cloudbuild, iap, cloudresourcemanager.
 - Open: `domain:google.com` IAP access rejected by org policy `iam.allowedPolicyMemberDomains` (owner decision). Decision record resets on each redeploy (starts from the published seed).
+
+- 19:37 fix: first visit got 502 — Cloud Run marked the instance ready when nginx started (~4 s), before web/API; CPU was then throttled and Next.js took ~3 min. `deploy/start.sh` now starts nginx only after API and web answer; service redeployed with `--no-cpu-throttling` (still scales to zero). Image `v0.51.1`.
