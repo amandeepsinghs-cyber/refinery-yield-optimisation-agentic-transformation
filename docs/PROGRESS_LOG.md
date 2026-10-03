@@ -485,3 +485,10 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - On screen: `RECIPE_CHECK` now "partly confirmed" with the observed line; `STORY.md` §5, `PROBING_QUESTIONS.md` A2, `DEMO_SCRIPT.md` scene evidence updated.
 - **Data issue:** LCO T98 pinned at exactly 770.364 °F in 11,867 of 59,420 valid full_v1 rows (20 %; 45 runs; 12 of 14 test runs; s144 has 190 pinned minutes, none at the demo moment 10:00). Validity cut misses it. Proposed: mask pinned values in the post-lever refit as a candidate; compare before switching.
 
+## 2026-10-03 15:40 — recipe check, cut-point verdict (task 5 closed)
+
+- Auto window, settled minutes 930–959 (recipe minus control): LCO T98 +0.06 °F (sd 1.7) vs −1.0; HN T98 +0.17 °F (sd 2.6) vs +1.0 → **inconclusive** (trim far smaller than the ±8 °F soft-sensor band; controllers not fully settled). The ROT-driven +19 / +48 °F offsets in manual collapse to ~0 in auto.
+- Conversion in auto: +0.10 % (sd 0.42) vs +0.42 % — LCO yield −41 as the trim pulls the LCO cut back (conversion counts LCO here). 30 noisy minutes: not a verdict.
+- Overall: conversion inside; T98 in manual outside; T98 in auto inconclusive. `RECIPE_CHECK` stays "partly confirmed" with the final text; STORY §5, PROBING A2, DEMO_SCRIPT, checklist updated. D3 stays scripted.
+- Lever runs 15:30: 7 OK, 29 stopped; 45,540 rows (39,157 valid). Loads at 14:00 (OK, 1,349 s), API restarted 14:23, demo moments unchanged.
+

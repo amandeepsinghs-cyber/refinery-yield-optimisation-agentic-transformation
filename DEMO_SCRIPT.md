@@ -151,7 +151,7 @@ Numbers were checked against the running API on **3 Oct 2026, 05:16 UTC**.
 - **Action:** select the D3 tab → note the **scripted outcome** tag → scroll to ④ → **"How do we know the move works?"**.
 - **How it is supported:**
   - Proof loop: **Predict** (scripted gain) → **Decide** (built) → **Measure** (shown, not run in the replay) → **Learn** (built for the soft sensor; lever models refit on site).
-  - **Evidence:** the recipe fed back through the simulator, the same run replayed with and without it. Status: **partly confirmed**. Conversion +0.44 % after 1 h vs +0.42 % predicted (inside band). With the controllers in manual the cut points rose instead of following the trims; the check with the controllers in auto is due ~16:00 UTC 3 Oct. **Say:** "The conversion prediction held. The test also caught a recipe assumption that would not hold, and that is the point of measuring."
+  - **Evidence:** the recipe fed back through the simulator, the same run replayed with and without it. Status: **partly confirmed**. Conversion +0.44 % after 1 h vs +0.42 % predicted (inside band). Cut points: rose with the controllers in manual; back to within 0.2 °F in auto; the ±1 °F trims are too small to judge against the ±8 °F spread. **Say:** "The conversion prediction held. The cut-point part we could not prove yet, so it stays labelled scripted — that is the point of measuring."
   - Lever test moves measured in the data.
   - The **pilot line**.
 - **Result:** a coordinated recipe with its knock-on effects, and an honest path to proving it.

@@ -26,9 +26,9 @@ export const RECIPE_CHECK: ProofCheck = {
   title: "Recipe fed back through the simulator",
   predicted: "Riser outlet temperature +3.5 °F with the LCO and heavy-naphtha cut points trimmed: conversion up about 0.4 % (0.12 % per °F)",
   observed:
-    "Conversion +0.44 % after 1 hour (+0.53 % on average over hours 1–3) against +0.42 % predicted — inside the band. Cut points: while their controllers were in manual, the riser move itself pushed both up (LCO about +19 °F, heavy naphtha +48 °F), so the trims were not yet acting; the check with the controllers back in auto is still running.",
+    "Conversion +0.44 % after 1 hour (+0.53 % on average over hours 1–3) against +0.42 % predicted — inside the band. Cut points: with their controllers in manual the riser move pushed both up (LCO at least +19 °F, heavy naphtha +48 °F); once the controllers went back to auto both returned to within 0.2 °F of the run without the recipe. The −1 / +1 °F trims are too small to see against the ±8 °F spread, and with the LCO cut held back part of the conversion gain went back to LCO — so this part is not yet proven.",
   status: "inconclusive",
-  how: "Same run (s144) replayed twice from 10:00 — once with the recipe, once without — so any difference is the recipe. Conversion checked 3 Oct 13:20 UTC; cut-point check due about 16:00 UTC.",
+  how: "Same run (s144) replayed twice from 10:00 — once with the recipe, once without — so any difference is the recipe. Checked 3 Oct 2026: conversion at 13:20 UTC, cut points at 15:40 UTC.",
 };
 
 /** Lever test moves measured in the simulator data (gap fit, 3 Oct). */
