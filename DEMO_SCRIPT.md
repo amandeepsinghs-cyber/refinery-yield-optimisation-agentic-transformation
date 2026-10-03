@@ -252,7 +252,8 @@ Numbers were checked against the running API on **3 Oct 2026, 05:16 UTC**.
   - Gemini (ADK).
 - **Scripted (labelled):** the crude name, D3 and D5–D7 outcome sizes.
 - **Not built:** the MeitY edge gateway; live streaming; one service per agent.
-- **Say:** *"The ask is a pilot on one FCC: read-only historian and lab data, plus a short step-test window inside your procedure. We prove each lever on your plant before any advice goes live. Nothing connects to your control system."*
+- **The journey** (`STORY.md` §11): learn from history (weeks 2–6) → shadow mode (6–10) → advise on proven levers, step-test the rest (10–16) → measure benefit and extend (months 4–6).
+- **Say:** *"We learn from your history before day one, prove in shadow mode, then advise on the levers your own data proves first. The ask is a pilot on one FCC: read-only historian and lab data, plus a short step-test window inside your procedure. We prove each lever on your plant before any advice goes live. Nothing connects to your control system."*
 
 ---
 

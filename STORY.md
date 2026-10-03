@@ -25,14 +25,15 @@ Written 3 Oct 2026 (owner, 05:38: *"How do we know that some parameters will max
    - product quality comes back from the lab only every 8 h, hours late;
    - the crude changes every day or two;
    - a move in one unit shows up hours later in another.
-2. **The philosophy.** *We don't claim to know the best setting on day one. We start from physics and the plant's own history, move in small safe steps, measure each step with the lab, and learn. When we're unsure, we say "Not yet".*
+2. **The philosophy.** *Learn from your history before day one. Prove before we advise. Keep learning after. Every move is small, measured by your lab, and inside your limits. When we're unsure, we say "Not yet".* The soft sensor and the best operating windows per crude come from your historical data, so they work from the first day of live use. History can't give clean cause and effect for every lever (the plant runs under control, and levers move rarely and together), so small step tests confirm those. See §11 for the real-plant journey.
 3. **The method: three questions, three kinds of model.**
    - **Q1: What is the quality now?** A soft sensor, trained on past lab results lined up with the process readings at the minute each sample was drawn.
    - **Q2: If I move a setting, what changes?** A response model, from physics, from moves operators already made, and from small planned step tests.
    - **Q3: Which move is best?** A search that uses Q1 and Q2 to pick the smallest move that improves yield, inside every limit.
 4. **New crude.** It starts from its nearest crude family, leans on physics, moves smaller (or says "Not yet"), and learns that crude within a few lab cycles.
 5. **Proof.** Every move goes round **predict, decide, measure, learn**. On IOCL's plant, a pilot proves each lever before its advice goes live.
-6. **Today's build.** The method is real and runs on simulated data. Some move sizes are scripted and labelled. A pilot on IOCL's plant replaces the simulator with their historian and lab data.
+6. **On IOCL's plant (§11).** Trained on their history before day one; shadow mode; advise on proven levers first; step tests for the rest; benefit measured in plant terms from about week 6.
+7. **Today's build.** The method is real and runs on simulated data. Some move sizes are scripted and labelled. A pilot on IOCL's plant replaces the simulator with their historian and lab data.
 
 ---
 
@@ -75,7 +76,7 @@ Example, run s144 at 10:00: the LCO cut is **6.7 °F inside spec**, lighter than
 
 ## 2. Our philosophy (five principles)
 
-1. **Walk to the optimum; don't claim it.** We never say "this is the best setting". We say "this small move improves the target, inside every limit, and here is how sure we are". Then we measure and take the next step. This is the old, trusted idea of *evolutionary operation*, made continuous and with the risk quantified.
+1. **Start from the best your plant has already done, then walk further.** Before day one, history shows the best operating windows per crude family (on spec with the least margin given away). Beyond those, we never claim "this is the best setting". We say "this small move improves the target, inside every limit, and here is how sure we are". Then we measure and take the next step. This is the old, trusted idea of *evolutionary operation*, made continuous and with the risk quantified.
 2. **Physics first, history second, experiments third.** Physics works on day one, even for a crude never seen. The plant's history (years of data) sharpens it. Small planned step tests settle what history can't.
 3. **Every number carries its uncertainty.** An estimate is "535.1 ± 3.8 °F", never just "535". Every move shows its chance of staying on spec.
 4. **Say "Not yet" rather than guess.** When the models disagree, or the data is outside what they learned, the cockpit holds back advice and asks for a lab sample.
@@ -213,7 +214,7 @@ It keeps the **smallest** move that reaches the goal. Small moves are safer, and
 
 Any difference is the recipe alone. The prediction is conversion **+0.4 %** (0.12 % per °F). The first 120 minutes of both runs match the original exactly, so the comparison is clean. Results are due 3 Oct, about 11:00 and 13:00 UTC.
 
-**On IOCL's plant, the pilot (scope to agree with IOCL):**
+**On IOCL's plant, the pilot (scope to agree with IOCL; the full step-by-step plan, live routine and benefit journey are in §11):**
 1. **Data:** read-only historian tags for the FCC, lab results, crude assays. Nothing from safety or control systems.
 2. **Backtest:** train on most of the history, test on months the models never saw, per crude family. Report accuracy honestly.
 3. **Shadow:** run live; nobody acts; compare every estimate to the next lab.
@@ -328,7 +329,7 @@ The **method is identical**; only the source changes. That's why we say *"shown 
 
 | Step | What to do | Time | You should be able to say afterwards |
 |:-:|---|---|---|
-| 1 | **Read this document, §0–§5** | 40 min | The problem, the philosophy, the three questions, new crude, proof |
+| 1 | **Read this document, §0–§5, then §11** (the real-plant journey) | 70 min | The problem, the philosophy, the three questions, new crude, proof, and how it runs and creates value on IOCL's plant |
 | 2 | **Open the app at `/platform` (Overview).** Read the six layers, the use-case cards, the person-in-the-loop, MeitY and "How do we know" bands. Match them to §8.1–8.2 | 15 min | Which use case is live, scripted, watch-only or not claimed, and why |
 | 3 | **Follow §8.3 in the app:** Scenario ▾ → `random_s107`, 10:00. Visit the Fractionator ①②③④, then Furnace, Regenerator, Gas plant, Riser | 40 min | For each decision: what was seen, what move, why that size, what it does downstream, how sure |
 | 4 | **Switch to `random_s144`** at 10:00 (take back margin; recipe; proof loop), then 12:00 ("Not yet") | 20 min | Why the cockpit sometimes advises and sometimes refuses |
@@ -343,3 +344,129 @@ The **method is identical**; only the source changes. That's why we say *"shown 
 3. What does "optimal" mean in our cockpit?
 4. What happens on a crude we've never seen?
 5. What exactly is real, scripted or design-only in this build, and what would the pilot prove?
+6. Why don't we need to wait to learn, when IOCL has historical data? And what can that history *not* tell us?
+7. When does IOCL start benefiting, and how is it measured without money figures?
+
+---
+
+## 11. How it runs in a real plant: from historical data to value
+
+> **Short answer to "why not learn on day one?"** It does. With IOCL's historical data, the models are trained, tested and calibrated **before** the first live day. What history cannot fully give is clean cause and effect for every lever. A few small step tests confirm those, and the cockpit only advises on a lever once its effect is proven.
+>
+> Durations below are indicative, to agree with IOCL. Value is shown as plant measures (°F of margin, off-spec hours, hours to settle after a crude switch); IOCL applies its own prices.
+
+### 11.1 What their historical data gives, and what it can't
+
+| From 2–3 years of history | What we get | Ready on day one? |
+|---|---|---|
+| Historian (1-minute tags) + every lab sample, lined up by draw time | **Soft sensor** for each product: thousands of examples per product (about 3 samples a day × 365 days × 2–3 years) | **Yes**, after the backtest (11.3, Phase 1) |
+| Crude assays + the unit's response in each crude period | **Crude families** and how each behaves; a classifier that confirms the assay | **Yes** for families seen in history |
+| The best periods in history, per crude family | **Best operating windows:** the settings at which product was on spec with the least margin given away. This is your exact idea: *"train on lab data and choose the values at which the product is optimal"* | **Yes**: the first, lowest-risk advice comes from here |
+| Past set-point and advanced-control target changes | **Lever effects** where moves were clean and steady | **Partly** |
+
+**Why history can't give every lever's effect (so the step tests are needed):**
+1. **The plant runs under control.** The advanced controller holds temperatures and qualities steady, so in the data a cause and its effect cancel out. You can't see "move X by 1 → Y changes by g" when the controller immediately moved Z to keep Y still.
+2. **Some levers are rarely moved, and only a little.** If the riser outlet temperature stayed within ±3 °F for two years, history can't say what +5 °F does.
+3. **Things change together.** When the crude changes, operators move several settings at once. History can't separate which move did what.
+4. **Data errors.** Wrong tags, lab timestamp errors (our s107 06:00 sample is one) and sensor drift. Cleaning finds most of these, not all.
+
+**Therefore:** history gives the soft sensor and the best windows fully, and the lever effects partly. **Step tests close the gap, one lever at a time.**
+
+### 11.2 The data path on site (read-only, MeitY-aligned)
+
+```mermaid
+flowchart LR
+    DCS["DCS / advanced control (Category A, stays on site)"] -->|read-only| HIS["Plant historian"]
+    LIMS["Lab system (LIMS)"] --> EDGE
+    HIS --> EDGE["Edge gateway on site: tags → tokens, names → crude families, 1-min roll-up, one-way only"]
+    ASSAY["Crude assays, shift logs, APC targets"] --> EDGE
+    EDGE -->|"Category B, outbound only"| LAKE["Lakehouse in an India region: bronze → silver → gold"]
+    LAKE --> ML["Training, backtest, model registry"]
+    ML --> COCKPIT["Decision cockpit in the control room"]
+    COCKPIT -->|"a person types the target by hand"| DCS
+```
+
+- Nothing writes back to the plant automatically. The only path back to the DCS is a person.
+- The cockpit reads about 300–500 FCC tags every minute, every lab result as it's reported, assays when a crude is scheduled, and the advanced controller's targets and limits.
+
+### 11.3 The execution plan, step by step
+
+| Phase | Weeks (indicative) | What we do | Who from IOCL | What IOCL gets (deliverable) | Gate to the next phase |
+|:-:|:-:|---|---|---|---|
+| **0 · Scope and access** | 0–2 | Choose one FCC. Agree the tag list, lab products, crude assays, shift logs and advanced-controller targets. Classify the data under MeitY (what stays Category A). Install the edge gateway, read-only | Process engineer, IT/OT security, data owner | Signed data scope; data flowing one way to the India-region lakehouse | Data arrives daily, complete and readable |
+| **1 · Learn from history** | 2–6 | Extract 2–3 years. Clean, line up labs by draw time, drop transients. Build crude families from assays. Train the 4-model soft sensor per product. Mine the **best operating windows** per crude family. Mine past moves for lever effects. Calibrate the physics models to this unit's design data. **Backtest** on months the models never saw | Process engineer (reviews), lab (sample history) | **(1) Accuracy report** per product and crude family (average miss, band coverage, "Not yet" rate). **(2) Margin report:** how far inside spec each product ran historically, per crude family. **(3) Best-window table** per crude family. **(4) Lever table:** green (effect clear from history), amber (needs step test), red (no data) | Accuracy meets the agreed target on held-out months; IOCL signs off |
+| **2 · Shadow mode** | 6–10 | Run live in the control room. **Nobody acts on it.** Every estimate is compared to each new lab result; every would-be advice is logged; operators review it weekly | Shift-in-charge, process engineer | Live quality every minute; a weekly "would we have been right?" review | Live estimates stay inside agreed accuracy for 4 weeks; operators agree the advice makes sense |
+| **3 · Advise, starting safe** | 10–16 | **(a)** Advise on **green** levers first: the cut points, inside the best windows from history. **(b)** For **amber** levers, run **small step tests** planned with the advanced-control engineer inside the operating procedure (e.g. riser outlet ±2 °F, one move, hold 2–4 h, measure at the lab), a few per crude family. **(c)** After each accepted move, measure at the next lab and refit | Board operators, shift-in-charge, advanced-control engineer | Moves advised and decided; each lever's effect becomes the plant's own measured number | Advised moves land inside their predicted band most of the time; no safety or quality incident |
+| **4 · Measure benefit, extend** | Months 4–6 | Compare against the Phase 1 baseline (11.6). Add the remaining levers as their step tests pass. Add multi-unit recipes for crude switches | Plant management, process engineering | **Benefit report** in plant measures; IOCL applies its own prices | IOCL decides to scale |
+| **5 · Keep learning; scale** | Ongoing | Weekly refit; retrain on triggers (11.5). Roll out to other FCC / RFCC units, then other use cases on the same lakehouse (each a new agent) | Central data / AI team | A refinery-wide platform; each new use case reuses the data and the pattern | — |
+
+### 11.4 How it works live, every day
+
+| How often | What happens automatically | What a person does |
+|---|---|---|
+| **Every minute** | Read tags → estimate each product's quality ± spread → trust checks → watch for drift → update cards | Glance at the cockpit; nothing to do if nothing has changed |
+| **When a decision appears** | Card shows: what we see, the move, why that size, chance on spec, knock-on effects, "if nothing is done" | **Board operator** reads it, accepts, holds or declines. If accepted, **types the new target into the DCS by hand** (or into the advanced controller's target). Recorded |
+| **Every lab result** (about 3 a day per product) | Suspect results screened out → soft sensor corrected → any accepted move checked: inside its predicted band = confirmed; outside = flagged for review | Lab works as today; nothing extra |
+| **Every crude switch** | Assay read → nearest crude family → models re-weighted → transition watched → recipe for the new crude when trust allows | Shift-in-charge approves a multi-setting recipe |
+| **Every week** | Refit with the week's new data. The candidate model is compared with the live one on the same weeks | **Process engineer** reviews and signs off before a new model goes live |
+| **Every month** | Benefit and accuracy report | Plant management review |
+
+**Who decides what (indicative approval levels):**
+
+| Move | Who approves |
+|---|---|
+| One setting, inside its normal window and procedure step (e.g. cut point ±2.5 °F) | Board operator |
+| Several settings together (a crude-switch recipe), or a move near a limit | Shift-in-charge |
+| A lever never advised before, a new crude family, or a new model version | Process engineer |
+| Moving from "advise" to "assist" (pre-filled targets) | Plant management, with a safety case. Not in this proposal |
+
+### 11.5 How the models keep learning safely (governance)
+
+1. **Model registry.** Every model has a version, its training data, its backtest scores and who signed it off.
+2. **Retrain triggers.** A model is retrained when any of these happens:
+   - the weekly refit is due;
+   - estimates drift from the lab beyond a set limit for several samples in a row;
+   - a new crude family appears;
+   - enough new lab samples or step tests have arrived (e.g. 50 per product);
+   - equipment changes (a turnaround, catalyst change-out or new instrument).
+3. **Champion and challenger.** The new model runs in shadow next to the live one. It replaces the live model only if it does better on the same weeks and the process engineer signs off.
+4. **Rollback.** One click back to the previous version.
+5. **Always on:** trust checks, "Not yet", screening of suspect lab results, the decision record.
+
+### 11.6 When and how IOCL starts benefiting
+
+| When | Benefit | How it is measured (plant terms) |
+|---|---|---|
+| **End of Phase 1 (about week 6)** | **Insight from their own history:** how much margin each product ran inside spec, per crude; the best operating windows; which levers matter | °F of margin given away, per product and crude family, historically |
+| **Phase 2 (weeks 6–10)** | **Quality visible every minute**, not every 8 h; better timing of lab samples | Average gap between estimate and lab; minutes of "blind" operation removed |
+| **Phase 3 (weeks 10–16)** | **First advised moves on the cut points:** less margin given away, still on spec. This is the lowest-risk, fastest benefit | °F of margin recovered; off-spec hours (must not rise); share of advised moves confirmed by the lab |
+| **Phase 4 (months 4–6)** | **Faster, steadier crude switches** with multi-setting recipes; knock-on problems caught earlier | Hours to settle after a crude switch; number of downstream upsets |
+| **Phase 5 (ongoing)** | The same platform takes the next use case with little new data work | Time to stand up the next agent |
+
+**Real example of the measure, from our build:** run s144 at 10:00, the LCO cut is **6.7 °F inside spec**. The cockpit advises raising it by **2.5 °F**, leaving **4.2 °F** of margin while the chance on spec stays at 98.5 %. On IOCL's plant, the monthly benefit report adds up exactly this kind of recovered margin, product by product, and IOCL prices it.
+
+### 11.7 What can go wrong, and what the system does
+
+| Failure | What the system does |
+|---|---|
+| A sensor fails or drifts | Valid-range check flags it; the models that depend on it lose weight; the spread widens; "Not yet" if needed |
+| A wrong lab result | Screened before it touches the model (e.g. timestamp error, out-of-pattern value); shown as "rejected" with the reason |
+| A crude never seen | Nearest family; physics weight up; smaller moves or "Not yet"; a lab sample requested; learns the crude within a few lab cycles |
+| A new model does worse | Stays challenger; never replaces the live model; rollback available |
+| Equipment change (turnaround, new catalyst) | Retrain trigger; back to shadow for that unit until accuracy is shown again |
+| An advised move doesn't land as predicted | Flagged at the next lab; that lever's effect is re-checked; its advice becomes more cautious until confirmed |
+| Operators disagree with the advice | They decline it, and the reason is recorded; declined advice is reviewed weekly, and it's a learning signal too |
+
+### 11.8 One real-plant shift, start to finish (illustrative)
+
+| Time | What happens | Who |
+|---|---|---|
+| 06:00 | Shift handover; the cockpit summary shows quality estimates for all products, all inside trust | Shift-in-charge |
+| 06:20 | Tank switch scheduled; the assay is read; the new crude maps to the "medium" family | Automatic |
+| 07:10 | The transition settles; the crude is confirmed by the unit's behaviour; models re-weight | Automatic |
+| 07:30 | Card: "Recipe for this crude: riser outlet +2 °F, LCO cut point −1 °F" (both levers proven in Phase 3) | Shift-in-charge approves; board operator types both targets into the advanced controller |
+| 08:00–11:00 | Estimates follow the move inside the predicted band | Automatic |
+| 11:30 | Card: "Not yet: heavy-naphtha estimate too uncertain; pull an extra sample" | Board operator requests the sample |
+| 13:05 | The extra sample confirms the estimate; the soft sensor is corrected; the cut-point advice returns | Lab, automatic |
+| 14:00 | Scheduled lab confirms the 07:30 recipe: inside the predicted band, logged as confirmed | Automatic |
+| Weekly | The confirmed moves join the next refit; the process engineer signs off the new model version | Process engineer |

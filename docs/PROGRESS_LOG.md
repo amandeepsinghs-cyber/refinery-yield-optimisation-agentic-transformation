@@ -440,3 +440,17 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Facts surfaced and recorded: demo soft sensor trained on simulator truth (72 clean labs per product < 100 minimum); held-out average miss LCO 9.1 °F / HN 19.2 °F with 90 % bands covering 62 % / 56 %; cut-point gain 1 : 1 is a physics assumption (no set-point-move windows); flow responses fitted from ~3,000 min around past moves.
 - Overview gains a "How it learns" band (three questions + new crude). `PROBING_QUESTIONS.md` and `DEMO_SCRIPT.md` point to `STORY.md`.
 
+## 2026-10-03 05:48–05:58 — STORY §11 "How it runs in a real plant" (owner: why not learn on day one?)
+
+- Philosophy reworded in §0 and §2: learn from history before day one; prove before advising; keep learning. The old "we don't claim to know the best setting on day one" wording implied it doesn't use history.
+- §11 added:
+  - 11.1 what history gives versus can't, and why;
+  - 11.2 the on-site data path (read-only, edge gateway, India region, a person types targets);
+  - 11.3 a six-phase execution plan with deliverables and gates;
+  - 11.4 the live routine and approval levels;
+  - 11.5 governance;
+  - 11.6 benefit by phase in plant terms;
+  - 11.7 failure modes;
+  - 11.8 one illustrative shift.
+- `PROBING_QUESTIONS.md` A6 (why not day one) and A7 (when do we benefit); `DEMO_SCRIPT.md` Scene M journey line; learning plan includes §11 and 2 more self-check questions.
+
