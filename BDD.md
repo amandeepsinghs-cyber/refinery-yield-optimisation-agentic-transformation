@@ -8,6 +8,32 @@
 
 ---
 
+## 2026-10-03 pitch spine (3 Oct)
+
+```gherkin
+Feature: The opening page ties the platform back to IOCL's use cases
+  Scenario: The first screen explains the platform before any unit is shown
+    Given the cockpit is opened at "/"
+    Then I am taken to "/platform" and the nav item "Overview" is active
+    And I see six layers: lakehouse, data processing, models, agents, decisions, optimised refinery
+    And I see one card per IOCL use case with its agent, its decision and a status chip
+    And a card reads "Not claimed" for coker, alkylation, gas turbines, flare and pipelines
+    And no card shows a money figure
+
+  Scenario: A use-case card opens its unit
+    When I click any use-case card
+    Then the unit page where its decision lives opens
+
+  Scenario: The person stays in the loop
+    Then a band says agents advise and a person accepts, holds or declines
+    And it says nothing is written to the control system
+    And "Act" is shown as not part of this pitch
+
+  Scenario: MeitY is stated honestly
+    Then a band shows Category A on site, an edge gateway, and Category B in India regions
+    And it says "designed for MeitY", not "certified"
+```
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > Owner 09:48–11:34 UTC 2 Oct and Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5). The acceptance tests for the agreed screens are **BDD-31 Home**, **BDD-32 Unit page four steps**, **BDD-33 Decision record and audit-only actions**, **BDD-34 "Not yet" behaviour** (§9). They override, where they conflict: BDD-16 (Decision dashboard layout), BDD-23 (unit workspaces), BDD-28 (L0 / L1 four zones) and BDD-29 (L0 question tree — in particular "the home contains no filled primary button": the agreed home **does** carry Accept / Hold on each decision). Safety (BDD-1), gate (BDD-15) and engine scenarios are unchanged.

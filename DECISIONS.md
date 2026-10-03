@@ -81,6 +81,10 @@ Owner's words recovered from the crashed session and confirmed by Voice Note 11;
 | P2 | **Model committee:** Bayesian ridge (reference) + GPR + Hybrid delta + PINN ensemble, with a Kalman bias update, mixture distribution, trust score (7 signals), spread gate and fallback. |
 | P3 | **Stack:** Next.js + TypeScript + Plotly (`cockpit/web`). FastAPI (`cockpit/api`), which also hosts the soft-sensor pipeline (`cockpit/api/app/`). Vertex AI in **us-central1**: `gemini-2.5-flash` (Copilot), `gemini-live-2.5-flash-native-audio` (voice), `gemini-embedding-001` with `text-embedding-005` fallback, and BM25 as a last resort. Cloud Run + IAP for deployment (Demo+). |
 | P4 | **Knowledge corpus:** 46 SIMULATED documents in `knowledge/corpus/`. Shift logs must be grounded in real `full_v1` rows (regenerated after the batch lands). |
+| P5 | **2026-10-03 — Opening page first.** `/platform` ("Overview") leads: six layers, one card per IOCL use case → agent → decision → status, person-in-the-loop band, MeitY band. `/` redirects there. |
+| P6 | **2026-10-03 — Person in the loop, three levels.** Advise (this build: accept / hold / decline, recorded only, nothing written to the DCS) → Assist (only if IOCL asks) → Act within an envelope (never in this pitch). |
+| P7 | **2026-10-03 — Honest claims.** Say "modular by design; deployed as one service for this demo"; "designed for MeitY", never "certified"; "simulated data only"; demo lake is in `us-central1`, production would be `asia-south1/2`; the edge gateway is a design. |
+| P8 | **2026-10-03 — Lever honesty.** D6 text claims catalyst-to-oil only. D7 has no simulator basis for its gain (cooling water is an open-loop input) and stays scripted and labelled pending the owner's call. D5 stays scripted unless the owner re-expresses it as the regenerator-temperature set point. |
 
 ## 6. Ways of Working
 

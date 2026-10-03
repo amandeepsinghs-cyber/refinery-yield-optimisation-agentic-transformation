@@ -26,9 +26,10 @@ SPEC = {
     "D6": dict(lever="SP_T_preheat_F", target="T2_preheat_F", gain=1.0, step=0.5, step_max=5.0, sigma_min=0.4,
                sop="SOP-FURN-002: preheat set point at most 5 °F per step, 20 min between steps; stay inside the "
                    "feed-nozzle (licensor) temperature limit.",
-               model="Feed-preheat response model for this crude: lower preheat means more catalyst circulation "
-                     "(higher catalyst-to-oil), more conversion and a cooler regenerator; higher preheat does the "
-                     "opposite. The furnace outlet reaches the new set point within 15 min",
+               model="Feed-preheat response model for this crude: lower preheat raises catalyst circulation (higher "
+                     "catalyst-to-oil); the furnace outlet reaches the new set point within 15 min. In a real unit "
+                     "this also lifts conversion and cools the regenerator — the simulator's regenerator controller "
+                     "holds its temperature, so that part is plant practice, not a model result",
                goal="Chance the preheat sits at this crude's target (catalyst-to-oil and regenerator temperature)"),
     "D5": dict(lever="Fair", target="dT_cyc_reg_F", gain=40.0, step=0.01, step_max=0.08, sigma_min=0.3,
                sop="SOP-REG-004: air rate at most 3 % per step, 15 min between steps; flue-gas O₂ stays in its window.",

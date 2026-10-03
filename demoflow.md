@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-10-03 pitch spine — new Scene 0 "Overview" (3 Oct)
+
+Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
+
+**Scene 0 — Overview (`/platform`, ~60 s).** `/` now redirects here.
+1. Point left to right along the six layers. **Line for the room:** *"What you see is one screen. Behind it are separate agents, one per use case, sharing one source of truth. They advise; your operators decide."*
+2. Run a finger down the use-case cards: "Each of the use cases you gave us has an owner agent and a decision on screen. Green is live on real models; amber is a scripted outcome on real inputs; the grey card is what we have not claimed."
+3. Person-in-the-loop band: "Today it only advises. Nothing is written to your control system."
+4. MeitY band: "Category A stays in the refinery; an edge gateway de-identifies; only Category B leaves, to India regions. Designed for MeitY — this demo uses simulated data only."
+5. Click **Open the refinery** → Scene A (refinery top view).
+
+Never say: "agents act", "MeitY-certified", "real IOCL data", "modular services in production" (say *"modular by design; deployed as one service for this demo"*).
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > **Source:** owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5). This walk-through **replaces §1 "Screens", §2 Cast and §4 Scenes 0–7 where they conflict** (L0 Refinery Twin / L1 Unit Workbench / Audit log → Home / Unit page / Decision record). §3 data requirements, §6 fallbacks, §7 things we never say and §8 checklist still apply.

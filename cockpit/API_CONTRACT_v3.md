@@ -262,3 +262,9 @@ IOCL use-case lens for the home band.
   {"platform_id":null,"iocl_row":"—","iocl_title":"Coker, alkylation, gas turbines, flare, pipelines","decisions":[],"state":"not claimed"}]}
 ```
 `state`: `active` (a decision open / held / accepted) · `watching` (only withheld / watch) · `quiet` (none) · `not claimed`.
+
+### 9.6 Real-world lever fields (2026-10-03, commit `5e9e402`)
+
+- Each item in `levers[]` carries `role`: a plain sentence saying this is one of the main settings operators adjust on that unit, and why (from `LEVER_ROLE` in `app/engines/decisions.py`).
+- `GET /api/decisions` returns top-level `never_recommended`: a list of `{setting, why}` for settings the cockpit never proposes — condenser cooling-water flow (fixed duty; a fouling symptom and a limit), feed rate (planning decision), catalyst addition (not in the simulator).
+

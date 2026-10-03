@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-10-03 pitch spine (3 Oct)
+
+Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
+
+**F-OV Opening page (`/platform`, nav "Overview").** First screen. Shows (1) the six layers left to right with what each is in this build; (2) one card per IOCL use case (rows #1–#11 + feedstock evaluation) with its agent, its decision and a status chip — Live / Scripted / Partly / Watch — plus a "Not claimed" card (coker, alkylation, gas turbines, flare, pipelines); each card opens its unit page; (3) a person-in-the-loop band: Advise (this build) → Assist (only if IOCL asks) → Act within an envelope (never in this pitch); (4) a MeitY band: Category A stays on site, the edge gateway de-identifies, Category B in India cloud regions — marked "designed for", not certified; (5) "Open the refinery". No value figures.
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > **Source:** owner 09:48–11:34 UTC 2 Oct (crashed session, recovered) and Voice Note 11 — see [verbatim.md](verbatim.md) Part 9.5 for the lever table checked against the code. Features for this agreement are catalogued as **Epic K** (§10). Where Epic F (Decision / Technical / Modelling dashboards), Epic I (I13 workspaces) or Epic J (J6 L0, J7 L1 four zones) describe a different screen layout, **Epic K wins**; their engines and APIs remain.

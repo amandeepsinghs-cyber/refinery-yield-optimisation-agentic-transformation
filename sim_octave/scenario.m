@@ -61,6 +61,20 @@ switch name
     s.crude_id = p.crude_id(m); s.event = p.event(m);
     s.lab = p.lab(m); s.cut_auto = p.cut_auto(m);
 
+  % ---------------- recipe check (recipe_check_v1) ----------------
+  % Replays 'random' exactly (same seed -> same profile; no extra rand() calls) and superimposes the recipe moves
+  % given in the global FCC_RECIPE (fields t0, ramp_rot, ramp_sp, d_rot, d_lco, d_hn) from minute t0 on.
+  % Empty / absent FCC_RECIPE = identical to 'random' (control twin). Set by run_recipe_check.m.
+  case 'random_recipe'
+    [ufcc, dist, SP, MV, s] = scenario('random', minute, base, ufcc, dist, SP, MV, s);
+    global FCC_RECIPE
+    r = FCC_RECIPE;
+    if ~isempty(r)
+      ufcc(15) = ufcc(15) + ramp(minute, r.t0, r.ramp_rot, 0, r.d_rot);
+      SP(4) = SP(4) + ramp(minute, r.t0, r.ramp_sp, 0, r.d_lco);
+      SP(3) = SP(3) + ramp(minute, r.t0, r.ramp_sp, 0, r.d_hn);
+    end
+
   % ---------------- lever-coverage batch (lever_v1) ----------------
   % Same crude walk / labs / cut-point schedule as 'random', plus designed ramped moves of the levers the
   % full_v1 batch never moves, so the regime surrogates (E2) and the recipe (E4) learn their effect:

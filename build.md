@@ -8,6 +8,20 @@
 
 ---
 
+## 2026-10-03 pitch spine / opening page (adds to the 2 Oct agreement)
+
+Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
+
+| Item | Where | Status |
+|---|---|---|
+| v0.3 tag (real-world levers, decision-record reset script, rehearsal fixes) | `4234128`, tag `v0.3` | Done |
+| **Opening page `/platform` ("Overview")**: six layers; one card per IOCL use case (agent → decision → status chip) + "not claimed" card; person-in-the-loop band (Advise today / Assist later / Act never in this pitch); MeitY band (Cat A on site → edge gateway → Cat B in India regions); "Open the refinery" button | `components/how/PlatformOverview.tsx`, `app/platform/page.tsx`, `pf-*` in `globals.css`, nav `Overview` first, `/` redirects to `/platform` | Done (3 Oct) |
+| D6 model text softened: the model backs catalyst-to-oil only; more conversion and a cooler regenerator are plant practice, not a model result | `engines/scripted.py` | Done (3 Oct) |
+| Lever gap fit (measure each lever move inside the gap actually available) behind flag `FCC_SURROGATE_GAP_FIT=1` / `training.surrogate_gap_fit`; default unchanged; candidate artifacts only | `engines/surrogates.py`, `tests/test_surrogate_gap_fit.py`, `scripts/surrogate_gap_report.py`, `api/artifacts/engines_v7_candidate/` | Done, not wired into decisions |
+| Recipe check: D3 recipe fed back through the simulator (recipe + same-seed control, s144) | `sim_octave/run_recipe_check.m`, `scenario.m` case `random_recipe`, output `sim_octave/data/recipe_check_v1/` | Running (results ~15:00 and ~20:00 UTC 3 Oct) |
+| Edge gateway / de-identification (MeitY) | — | Design only, not built |
+| Each agent as its own service (ADK on Agent Engine / Cloud Run) | — | Path only; demo runs as one service |
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > **Source:** owner's words 09:48–11:34 UTC on 2 Oct (recovered from the crashed session) and Voice Note 11 (12:02), recorded in [verbatim.md](verbatim.md) Part 9.5. Code at `2fc6402` (pushed to `origin/main` 2 Oct 12:59; production build passes). Where any older section of this guide (Steps 5, 13, 18, the 30 Sep status box) describes a different screen layout, **this section wins**.

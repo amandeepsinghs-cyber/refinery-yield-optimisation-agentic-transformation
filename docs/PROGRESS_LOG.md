@@ -396,3 +396,14 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
   - Labels: "LCO / HN cut-point target (via draw)", "Regenerator air (excess O₂ / afterburn)", "Feed preheat", "Riser outlet temperature".
 - Checks: 290 back-end pass (2 skipped), 82 front-end pass, tsc and eslint clean. Screenshot of the gas plant ③ checked.
 - 03:08 final lake load and GCS rsync done. `fcc_silver.run_registry`: `lever_v1` 52 runs / 26,580 rows (= every local row); `full_v1` 54 runs / 83,240 rows. Nothing is running any more except the API and the web server.
+
+## 2026-10-03 03:20–03:45 — v0.3, rehearsal, pitch spine and opening page (Voice Note 12)
+
+- **v0.3 tagged and pushed** (`4234128`): `scripts/reset_decision_record.py` (archives `audit.db`, removes human clicks, keeps `system:*` rows; run 03:26, 1 test click removed, 139 "withheld by checks" kept); D1 wording when a move takes back margin; lever header uses the lever-row label; rehearsal checklist.
+- Rehearsal click-through scenes A–J: demo moments unchanged (s144 10:00, s144 12:00, s107 10:00).
+- **Voice Note 12:** use-case tie-back is the most critical task. Analysis written as verbatim Part 10 (six layers; honest monolith answer — modular code, one service; use case → agent → decision → status; HITL Advise / Assist / Act; MeitY Cat A → B with honest status; recommend an opening page; four gaps).
+- **Opening page `/platform`** built and made the first screen (`/` redirects; nav "Overview").
+- D6 model text softened to what the fit supports (catalyst-to-oil only). API restarted 03:37.
+- **Background (Lever Fit Engineer):** gap fit behind `FCC_SURROGATE_GAP_FIT=1`; usable moves per lever 0–2 → 22–30 (+4–7 hold-out). D6 gain ≈ 1.0 (matches script; conversion barely moves and the regenerator temperature is held by its controller). D5's designed move ramps the regenerator-temperature set point, not air (fit: cyclone dT −0.34 ± 0.07 °F/°F). D7: cooling water is an open-loop input in the simulator; no basis for the scripted gain. Candidate artifacts in `api/artifacts/engines_v7_candidate/`; decisions unchanged.
+- Recipe check launched 03:27 (recipe + same-seed control, s144, ~50–70 s per sim-minute): ROT / conversion verdict ~15:00 UTC, T98 ~20:00 UTC.
+

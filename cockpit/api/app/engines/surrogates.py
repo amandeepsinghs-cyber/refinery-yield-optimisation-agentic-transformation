@@ -80,6 +80,207 @@ MIN_STEP = {"SP_T_riser_ROT_F": 0.5, "SP_LCO_T98": 0.5, "SP_HN_T98": 0.5, "feed_
             "dist_T_feed_in_F": 1.0}
 AUTO_MIN_LEN, AUTO_MIN_SD, AUTO_MIN_WINDOWS, AUTO_MIN_R2 = 60, 1.0, 3, 0.3
 
+# ---- gap-window lever fit (opt-in: env FCC_SURROGATE_GAP_FIT=1 or config training.surrogate_gap_fit: true) ----
+# scenario.m 'lever' spaces consecutive moves only ramp + 30 min apart, so the strict 15 / 30-60 min windows above reject
+# almost every lever move. The gap fit measures each lever move inside the gap it actually has: a 10-15 min pre
+# window that starts >= GAP_PRE_SETTLE min after the previous move / auto trim, a post window that runs to the next
+# move (or auto trim / regime change / end of valid data) minus GAP_MARGIN_MIN (>= GAP_POST_MIN min after the ramp), and a
+# first-order step-response fit (unit ramp through a first-order lag, tau from a grid) whose gain is the steady-state
+# gain. When the fitted tau is longer than the post window the extrapolation is not trusted and the late-window delta
+# (a lower bound on |gain|) is used instead. Artifacts go to <artifacts>/engines_v7_candidate, never to engines/.
+GAP_EVENT_CODES = (7, 8, 9, 10, 11, 12)
+GAP_PRE_MIN, GAP_PRE_MAX, GAP_PRE_SETTLE = 10, 15, 10
+GAP_MARGIN_MIN, GAP_POST_MIN, GAP_POST_MAX = 3, 20, 120
+GAP_LATE_MIN = 10
+GAP_COVERAGE = 0.8
+GAP_TAU_GRID = (1.0, 2.0, 3.0, 5.0, 8.0, 12.0, 18.0, 25.0, 35.0, 50.0, 75.0, 110.0)
+GAP_MIN_STEP = {"SP_T_preheat_F": 1.0, "Fair": 0.003, "MV_PA2": 2.0, "MV_reflux_ratio": 0.01, "MV_cw_flow": 3.0,
+                "SP_T_overhead": 0.5}
+GAP_ARTIFACT_DIR = "engines_v7_candidate"
+
+
+def gap_fit_enabled(st=None) -> bool:
+    import os
+    env = os.environ.get("FCC_SURROGATE_GAP_FIT")
+    if env is not None:
+        return env not in ("", "0", "false", "no")
+    try:
+        st = st or get_state()
+        return bool(st.s["training"].get("surrogate_gap_fit", False))
+    except Exception:  # noqa: BLE001 — no settings available -> default (off)
+        return False
+
+
+def _out_dir(st):
+    return st.s.artifacts / (GAP_ARTIFACT_DIR if gap_fit_enabled(st) else "engines")
+
+
+def gap_step_response(t: np.ndarray, x: np.ndarray, Y: np.ndarray, ramp_start: float, ramp_end: float,
+                      pre_start: float, post_end: float) -> dict | None:
+    """First-order step-response estimate of one ramped lever move inside an arbitrary gap.
+
+    t (n,) minutes, x (n,) lever, Y (n, k) outputs; the window is [pre_start, post_end] with the ramp in
+    [ramp_start, ramp_end]. Non-finite cells are treated as missing. Returns None when the windows are too short or too
+    sparse. Otherwise per output: `sens` (steady-state gain per lever unit; first-order fit when settled, else the
+    late-window delta), `sens_fo`, `sens_late`, `tau` (min), `settled` (tau <= post window), plus `dx`, `post_len`.
+    """
+    t = np.asarray(t, float)
+    x = np.asarray(x, float)
+    Y = np.asarray(Y, float)
+    if Y.ndim == 1:
+        Y = Y[:, None]
+    pre = (t >= pre_start) & (t < ramp_start)
+    post = (t > ramp_end) & (t <= post_end)
+    pre_len, post_len = ramp_start - pre_start, post_end - ramp_end
+    if pre_len < GAP_PRE_MIN or post_len < GAP_POST_MIN:
+        return None
+    if np.isfinite(x[pre]).sum() < GAP_COVERAGE * pre_len or np.isfinite(x[post]).sum() < GAP_COVERAGE * post_len:
+        return None
+    late_len = max(GAP_LATE_MIN, post_len / 2)
+    late = post & (t > post_end - late_len)
+    dx = float(np.nanmean(x[late]) - np.nanmean(x[pre]))
+    if not np.isfinite(dx) or dx == 0:
+        return None
+    win = (t >= pre_start) & (t <= post_end)
+    tw = t[win]
+    u = np.clip((tw - ramp_start) / max(ramp_end - ramp_start, 1.0), 0.0, 1.0)   # commanded unit ramp
+    k = Y.shape[1]
+    y0 = np.nanmean(Y[pre], axis=0)
+    dY = Y[win] - y0
+    sens_fo, sens_late, tau_best = np.full(k, np.nan), np.full(k, np.nan), np.full(k, np.nan)
+    sse_best = np.full(k, np.inf)
+    dt = np.r_[1.0, np.diff(tw)]
+    for tau in GAP_TAU_GRID:
+        a = 1.0 - np.exp(-dt / tau)
+        uf = np.zeros_like(u)
+        for i in range(1, len(u)):
+            uf[i] = uf[i - 1] + a[i] * (u[i] - uf[i - 1])
+        for j in range(k):
+            m = np.isfinite(dY[:, j])
+            den = float((uf[m] ** 2).sum())
+            if m.sum() < GAP_COVERAGE * (pre_len + post_len) or den <= 0:
+                continue
+            g = float((uf[m] * dY[m, j]).sum() / den)
+            sse = float(((dY[m, j] - g * uf[m]) ** 2).sum())
+            if sse < sse_best[j]:
+                sse_best[j], sens_fo[j], tau_best[j] = sse, g / dx, tau
+    for j in range(k):
+        yl = Y[late, j]
+        if np.isfinite(yl).sum() >= GAP_COVERAGE * min(late_len, post_len) * 0.5:
+            sens_late[j] = (np.nanmean(yl) - y0[j]) / dx
+    settled = np.isfinite(tau_best) & (tau_best <= post_len + (ramp_end - ramp_start))
+    sens = np.where(settled, sens_fo, sens_late)
+    return {"dx": dx, "sens": sens, "sens_fo": sens_fo, "sens_late": sens_late, "tau": tau_best, "settled": settled,
+            "post_len": float(post_len), "pre_len": float(pre_len)}
+
+
+def _blocks(mask: np.ndarray, t: np.ndarray, codes: np.ndarray | None = None) -> list[tuple[int, float, float]]:
+    """(code, t_start, t_end) of contiguous non-zero blocks (code -1 when `codes` is None)."""
+    out = []
+    vals = codes if codes is not None else mask.astype(int)
+    i, n = 0, len(t)
+    while i < n:
+        if mask[i]:
+            j = i
+            while j + 1 < n and mask[j + 1] and vals[j + 1] == vals[i]:
+                j += 1
+            out.append((int(codes[i]) if codes is not None else -1, float(t[i]), float(t[j])))
+            i = j + 1
+        else:
+            i += 1
+    return out
+
+
+def gap_windows(t: np.ndarray, codes: np.ndarray, auto: np.ndarray, regime: np.ndarray,
+                code_set=GAP_EVENT_CODES) -> list[dict]:
+    """Windows for every designed lever move: pre / post bounded by the neighbouring moves, auto trims and regime
+    changes. Each item: code, ramp_start, ramp_end, pre_start, post_end, regime, ok, reason."""
+    t = np.asarray(t, float)
+    codes = np.asarray(codes, int)
+    auto = np.asarray(auto, int)
+    regime = np.asarray(regime, dtype=object)
+    events = _blocks(codes != 0, t, codes)
+    autos = _blocks(auto != 0, t)
+    blockers = sorted([(a, b) for _, a, b in events] + [(a, b) for _, a, b in autos])
+    t_last = float(t[-1]) if len(t) else 0.0
+    out = []
+    for code, rs, re_ in events:
+        if code not in code_set:
+            continue
+        i0 = int(np.searchsorted(t, rs))
+        reg = str(regime[i0]) if i0 < len(regime) else ""
+        prev_end = max([b for a, b in blockers if b < rs], default=-np.inf)
+        next_start = min([a for a, b in blockers if a > re_], default=t_last + 1 + GAP_MARGIN_MIN)
+        # regime run around the move (labelled, constant)
+        same = regime == reg
+        lo = i0
+        while lo > 0 and same[lo - 1]:
+            lo -= 1
+        hi = i0
+        while hi + 1 < len(t) and same[hi + 1]:
+            hi += 1
+        pre_start = max(rs - GAP_PRE_MAX, prev_end + GAP_PRE_SETTLE, float(t[lo]))
+        post_end = min(next_start - GAP_MARGIN_MIN, re_ + GAP_POST_MAX, float(t[hi]), t_last)
+        reason = None
+        if reg == "":
+            reason = "regime transition"
+        elif (auto[(t >= pre_start) & (t <= post_end)] != 0).any():
+            reason = "auto trim"
+        elif rs - pre_start < GAP_PRE_MIN:
+            reason = "pre window short"
+        elif post_end - re_ < GAP_POST_MIN:
+            reason = "post window short"
+        out.append({"code": code, "ramp_start": rs, "ramp_end": re_, "pre_start": float(pre_start),
+                    "post_end": float(post_end), "regime": reg, "ok": reason is None, "reason": reason})
+    return out
+
+
+def _gap_samples(st, seg_df: pd.DataFrame, *, holdout: bool, outputs: list[str] | None = None,
+                 holdout_seeds: set[int] | None = None, with_rejects: bool = False) -> list[dict]:
+    """One gap-window sample per lever move of the lever batches (same sample keys as `_step_samples`, plus the
+    first-order fit details). Hold-out = config lever_test_seed_min..max unless `holdout_seeds` is given."""
+    outputs = outputs or OUTPUTS
+    lo = int(st.s["training"].get("lever_test_seed_min", 210))
+    hi = int(st.s["training"].get("lever_test_seed_max", 10 ** 9))
+    staged = set(seg_df["run_id"])
+    out = []
+    for run_id in _lever_runs(st):
+        if run_id not in staged:
+            continue
+        seed = _seed_of(run_id)
+        if seed is None:
+            continue
+        is_ho = (seed in holdout_seeds) if holdout_seeds is not None else (lo <= seed <= hi)
+        if is_ho != holdout:
+            continue
+        df = st.catalog.load_valid(run_id)
+        tags = sorted({EVENT_INPUT[c] for c in GAP_EVENT_CODES})
+        if df.empty or any(c not in df.columns for c in tags + outputs + ["event_code", "time_min"]):
+            continue
+        t = pd.to_numeric(df["time_min"], errors="coerce").to_numpy(float)
+        codes = pd.to_numeric(df["event_code"], errors="coerce").fillna(0).to_numpy(int)
+        auto = pd.to_numeric(df["cutpoint_auto"], errors="coerce").fillna(0).to_numpy(int) \
+            if "cutpoint_auto" in df.columns else np.zeros(len(df), int)
+        regime = _regime_at_minutes(seg_df, run_id, t)
+        Y = df[outputs].apply(pd.to_numeric, errors="coerce").to_numpy(float)
+        for w in gap_windows(t, codes, auto, regime):
+            tag = EVENT_INPUT[w["code"]]
+            base = {"run_id": run_id, "input": tag, "regime": w["regime"], "t_min": int(w["ramp_start"]),
+                    "post_len": w["post_end"] - w["ramp_end"], "method": "gap"}
+            if not w["ok"]:
+                if with_rejects:
+                    out.append({**base, "rejected": w["reason"]})
+                continue
+            x = pd.to_numeric(df[tag], errors="coerce").to_numpy(float)
+            r = gap_step_response(t, x, Y, w["ramp_start"], w["ramp_end"], w["pre_start"], w["post_end"])
+            if r is None or abs(r["dx"]) < GAP_MIN_STEP.get(tag, 0.5):
+                if with_rejects:
+                    out.append({**base, "rejected": "fit failed" if r is None else "step too small"})
+                continue
+            out.append({**base, "dx": r["dx"], "sens": r["sens"], "dy": r["sens"] * r["dx"], "sens_fo": r["sens_fo"],
+                        "sens_late": r["sens_late"], "tau": r["tau"], "settled": r["settled"]})
+    return out
+
 
 def _seed_of(run_id: str) -> int | None:
     for stem in ("random_s", "lever_s"):
@@ -265,7 +466,8 @@ def _envelope(A: np.ndarray, names: list[str]) -> dict:
 
 def _fit_surrogates() -> None:
     st = get_state()
-    out_dir = st.s.artifacts / "engines"
+    gap = gap_fit_enabled(st)
+    out_dir = _out_dir(st)
     pkl_path, card_path = out_dir / "surrogates.pkl", out_dir / "surrogate_card.json"
     seg_df = _regime_table(st)
     if seg_df is None:
@@ -276,7 +478,8 @@ def _fit_surrogates() -> None:
     if pkl_path.exists() and card_path.exists():
         try:
             meta = json.loads(card_path.read_text()).get("_meta", {})
-            if meta.get("version") == SURROGATE_VERSION and meta.get("lever_runs", []) == lever_used:
+            if meta.get("version") == SURROGATE_VERSION and meta.get("lever_runs", []) == lever_used \
+                    and bool((meta.get("gap_fit") or {}).get("enabled", False)) == gap:
                 return
         except json.JSONDecodeError:
             pass
@@ -286,6 +489,22 @@ def _fit_surrogates() -> None:
         return
     hold, autos_ho, _, _ = _step_samples(st, seg_df, holdout=True)
     cut = _fit_cutpoint(autos, autos_ho)
+    gap_meta = None
+    if gap:
+        # lever moves: replace the strict-window samples by the gap-window samples (a superset of usable moves)
+        lever_tags = {EVENT_INPUT[c] for c in GAP_EVENT_CODES}
+        g_train, g_hold = _gap_samples(st, seg_df, holdout=False), _gap_samples(st, seg_df, holdout=True)
+        strict = {tag: sum(1 for s in train if s["input"] == tag) for tag in sorted(lever_tags)}
+        train = [s for s in train if s["input"] not in lever_tags] + g_train
+        hold = [s for s in hold if s["input"] not in lever_tags] + g_hold
+        gap_meta = {"enabled": True, "pre_min": [GAP_PRE_MIN, GAP_PRE_MAX], "pre_settle_min": GAP_PRE_SETTLE,
+                    "post_min": [GAP_POST_MIN, GAP_POST_MAX], "margin_min": GAP_MARGIN_MIN,
+                    "tau_grid_min": list(GAP_TAU_GRID), "strict_moves_train": strict,
+                    "gap_moves_train": {tag: sum(1 for s in g_train if s["input"] == tag) for tag in sorted(lever_tags)},
+                    "gap_moves_holdout": {tag: sum(1 for s in g_hold if s["input"] == tag) for tag in sorted(lever_tags)},
+                    "settled_frac": {tag: round(float(np.nanmean([np.mean(s["settled"]) for s in g_train
+                                                                  if s["input"] == tag] or [np.nan])), 3)
+                                     for tag in sorted(lever_tags)}}
 
     moved = sorted({s["input"] for s in train})
     counts = {tag: sum(1 for s in train if s["input"] == tag) for tag in moved}
@@ -332,7 +551,7 @@ def _fit_surrogates() -> None:
                                   "inputs": supported, "unsupported_inputs": unsupported, "outputs": OUTPUTS,
                                   "n_events_train": len(train), "n_events_holdout": len(hold),
                                   "events_per_input": counts, "window_min": [BEFORE_MIN, SETTLE_MIN, AFTER_MIN],
-                                  "cutpoint_fit": cut_meta}}
+                                  "cutpoint_fit": cut_meta, "gap_fit": gap_meta}}
     for r in REGIME_IDS:
         own = [s for s in train if s["regime"] == r]
         B_r, MAD_r, n_r = table(own)
@@ -383,7 +602,7 @@ def _fit_surrogates() -> None:
 def _load_surrogates():
     _fit_surrogates()
     st = get_state()
-    out_dir = st.s.artifacts / "engines"
+    out_dir = _out_dir(st)
     pkl_path, card_path = out_dir / "surrogates.pkl", out_dir / "surrogate_card.json"
     if not pkl_path.exists() or not card_path.exists():
         return None, {}

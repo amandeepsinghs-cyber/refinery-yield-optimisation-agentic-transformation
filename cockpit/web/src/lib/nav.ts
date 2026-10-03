@@ -47,6 +47,7 @@ export const TWIN_DASHBOARD: Dashboard = {
   label: "Refinery Twin",
   href: "/twin",
   pages: [
+    { href: "/platform", label: "Overview", Icon: IconBook },
     { href: "/twin", label: "Refinery", Icon: IconGauge },
     ...TWIN_UNITS.map((u) => ({ href: `/twin/unit/${u.unit_id}`, label: `${u.short} · ${u.label}`, Icon: IconLines })),
   ],

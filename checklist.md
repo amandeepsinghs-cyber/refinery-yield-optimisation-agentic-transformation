@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-10-03 pitch spine (3 Oct)
+
+Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
+
+- [x] v0.3 tagged and pushed (`4234128`); decision record cleared of test clicks (`scripts/reset_decision_record.py`, archive in `api/artifacts/audit_archive/`); rehearsal scenes A–J click-through, demo moments unchanged.
+- [x] verbatim Part 10 "The Pitch Spine" (six layers, monolith honesty, use case → agent → decision → status, HITL levels, MeitY Cat A → B, opening page, four gaps). Owner file, not committed.
+- [x] Opening page `/platform` built; `/` redirects there; nav "Overview" first. tsc, eslint, 82 front-end tests clean.
+- [x] D6 model text softened (claims catalyst-to-oil only).
+- [x] Lever gap fit behind a flag (usable moves per lever 0–2 → 22–30 train + 4–7 hold-out); 7 new tests.
+- [ ] Recipe check verdict: conversion / ROT at sim minute ~780 (~15:00 UTC), T98 at ~900–960 (~20:00 UTC).
+- [ ] **Owner decision:** D5 — re-express as the regenerator-temperature set-point lever (fit: cyclone dT −0.34 ± 0.07 °F per °F) or keep scripted (default: scripted).
+- [ ] **Owner decision:** D7 — the simulator gives cooling water no closed-loop basis (gain ≈ 0); keep scripted (labelled) or retarget to reflux / naphtha end point.
+- [ ] **Owner decision:** D6 could switch to real (fitted gain ≈ 1.0, matches the script) — only for the catalyst-to-oil claim.
+- [ ] Confirm "Overview" as the first screen of the demo.
+- [ ] Gaps to say out loud: batch loads (not streaming); one service; D3/D5–D7 scripted; MeitY gateway not built and demo lake in `us-central1`.
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > Owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5; [build.md](build.md) top section). Home = top view of the refinery → what went wrong → decisions on units → flow ①–④ → IOCL use-case band. Unit page = ① Data in / out · ② What we observe · ③ Decision and lever · ④ How the move is found · footer. `/audit` = Decision record. Decisions D1, D2, D4, D8, D9 **Live**; D3, D5, D6, D7 **Not yet** (until `lever_v1` + refit). Tick list: **Phase 22** at the end of this file. Phases 18, 20, 21 screen layouts are superseded by Phase 22 (their engines stay).
