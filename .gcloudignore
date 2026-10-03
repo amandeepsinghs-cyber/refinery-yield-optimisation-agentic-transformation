@@ -11,11 +11,11 @@
 **/__pycache__/
 **/.pytest_cache/
 *.md
-docs/
-meity_compliance/
-knowledge/
-sim_octave/
-scripts/
+/docs/
+/meity_compliance/
+/knowledge/
+/sim_octave/
+/scripts/
 cockpit/api/artifacts/
 cockpit/api/tests/
 cockpit/web/tests/

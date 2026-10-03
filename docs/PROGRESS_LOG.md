@@ -527,3 +527,4 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Open: `domain:google.com` IAP access rejected by org policy `iam.allowedPolicyMemberDomains` (owner decision). Decision record resets on each redeploy (starts from the published seed).
 
 - 19:37 fix: first visit got 502 — Cloud Run marked the instance ready when nginx started (~4 s), before web/API; CPU was then throttled and Next.js took ~3 min. `deploy/start.sh` now starts nginx only after API and web answer; service redeployed with `--no-cpu-throttling` (still scales to zero). Image `v0.51.1`.
+- 19:58 fix 2: `.gcloudignore` rule `knowledge/` also excluded the API package `cockpit/api/app/knowledge/` (API crashed on import → all /api calls 502). Rules now anchored to the repo root. Revision fcc-cockpit-00003 (`v0.51.2`): hydrate 2 s, web 4 s, API 45 s, then nginx; first /api/health 200 from the owner browser 19:58:36.
