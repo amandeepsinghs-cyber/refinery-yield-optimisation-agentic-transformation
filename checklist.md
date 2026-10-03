@@ -15,7 +15,9 @@ Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use c
 - [x] Opening page `/platform` built; `/` redirects there; nav "Overview" first. tsc, eslint, 82 front-end tests clean.
 - [x] D6 model text softened (claims catalyst-to-oil only).
 - [x] Lever gap fit behind a flag (usable moves per lever 0–2 → 22–30 train + 4–7 hold-out); 7 new tests.
-- [ ] Recipe check verdict: conversion / ROT ~12:30 UTC, T98 ~15:00–15:30 UTC (re-estimated 06:35).
+- [x] Recipe check, conversion (13:20 UTC): +0.44 % after 1 h (+0.53 % hours 1–3) vs +0.42 % predicted, inside band. On screen (`proofEvidence.ts`, status "partly confirmed"), `STORY.md` §5, `PROBING_QUESTIONS.md` A2.
+- [ ] Recipe check, cut points (auto-trim window, minutes 900–960): due ~16:00 UTC. Interim: with controllers in manual the ROT move pushed LCO T98 ≥ +19 °F and HN T98 +48 °F; trims not acting yet.
+- [ ] Data issue found 13:20: simulator LCO T98 pins at exactly 770.364 °F (a ceiling of its T98 calculation) in 11,867 of 59,420 valid full_v1 rows (20 %, 45 runs, 12 of 14 test runs). The validity cut (650–820 °F) does not catch it. Fix proposed for the post-lever refit: treat pinned values as missing, retrain as a candidate, compare accuracy and demo moments before switching.
 - [x] **Owner decision (3 Oct 07:33): keep scripted.** D5 — re-express as the regenerator-temperature set-point lever (fit: cyclone dT −0.34 ± 0.07 °F per °F) or keep scripted (default: scripted).
 - [x] **Owner decision (3 Oct 07:33): keep scripted.** D7 — the simulator gives cooling water no closed-loop basis (gain ≈ 0); keep scripted (labelled) or retarget to reflux / naphtha end point.
 - [ ] **Owner decision (3 Oct 07:33): decide after the new lever runs (~01:00 UTC 4 Oct).** D6 could switch to real (fitted gain ≈ 1.0, matches the script) — only for the catalyst-to-oil claim.

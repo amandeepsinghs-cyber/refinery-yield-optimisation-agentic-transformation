@@ -459,3 +459,29 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - D5, D7: keep scripted (labelled). D6: decide after the new lever runs. Overview first screen: confirmed.
 - Data watch 07:30: 35 of 36 new lever runs OK, 1 started to break down (heal will stop it when stuck); 32,220 lever rows (28,599 valid). Recipe check re-estimated: conversion ~12:30 UTC, T98 ~15:00–15:30 UTC.
 
+## 2026-10-03 08:33 — data watch checks 6–7
+
+- Heal stopped s268 (stuck from minute 175) and s260 (stuck from minute 182); good rows kept. At 08:30: 34 OK, 1 stuck; 34,500 lever rows (30,761 valid).
+- Lake load (lever_v1, 88 runs, partial) finished OK in 1,833 s. API restarted 08:32 after the load: health ok, source BigQuery, 54 runs. Demo moments (s107 10:00, s144 10:00 and 12:00) unchanged.
+
+## 2026-10-03 11:32 — data watch checks 8–13
+
+- Runs of the new lever batch now break down at about minute 250–380, like the first lever batch. Heal stopped s281 (stuck at minute 253) and s284 (stuck at minute 331); good rows kept. At 11:30: 20 OK, 12 breaking down but still running, 4 stopped; 40,560 lever rows (35,845 valid).
+- GCS rsync done at 09:30 and 11:00. Lake load (lever_v1, 88 runs) OK in 1,823 s. API restarted 11:31: health ok, source BigQuery; demo moments unchanged.
+- Recipe check slower (~54 s per sim-minute): conversion verdict now ~14:00 UTC, T98 verdict ~16:30–17:00 UTC.
+
+## 2026-10-03 13:18 — broken-down lever runs stopped (owner approved 13:18)
+
+- Owner: "yes you can stop the broken down runs". Stopped 16 runs past their valid data (SIGTERM; all rows kept on disk and in GCS): s253 (valid to min 383), s254 (280), s256 (492), s257 (479), s258 (298), s263 (396), s264 (267), s265 (256), s273 (485), s274 (390), s278 (386), s279 (378), s280 (328), s283 (253), s285 (506), s286 (386).
+- Earlier heal stops: s259, s260, s268, s272, s275, s281, s284. Lever rows 43,860 (37,602 valid). Reason: free CPU for the recipe check; broken runs were adding no usable rows.
+
+- Same minute, heal also stopped s270 (stuck at 481) and s287 (stuck at 444). Now 11 clean runs remain; 25 of 36 stopped.
+
+## 2026-10-03 13:20 — recipe check, conversion verdict; LCO T98 ceiling found
+
+- Recipe run minus same-seed control (s144, recipe at minute 600, no solver breakdown): conversion +0.36 % at 640, +0.44 % at 660, +0.60 % at 780; mean +0.53 % over 660–780, vs +0.42 % predicted (band ±0.32 %) → **inside**. Slow component still adds ~+0.02 % per 10 min.
+- T98 with cut-point controllers in manual (660–780): LCO ≥ +18.8 °F, HN +48 °F vs −1 / +1 °F predicted → outside. The ROT move pushes both T98s up; set-point trims act only after auto trim (900–960). Verdict for that window ~15:30–16:00 UTC.
+- Yields (mean 660–780 vs live R2 surrogate): LPG +156 vs +135 ± 14; LN −115 vs −98 ± 17; LCO +7.6 vs +10.8 ± 3.3; HN +4.7 vs −2.9 ± 4.6.
+- On screen: `RECIPE_CHECK` now "partly confirmed" with the observed line; `STORY.md` §5, `PROBING_QUESTIONS.md` A2, `DEMO_SCRIPT.md` scene evidence updated.
+- **Data issue:** LCO T98 pinned at exactly 770.364 °F in 11,867 of 59,420 valid full_v1 rows (20 %; 45 runs; 12 of 14 test runs; s144 has 190 pinned minutes, none at the demo moment 10:00). Validity cut misses it. Proposed: mask pinned values in the post-lever refit as a candidate; compare before switching.
+

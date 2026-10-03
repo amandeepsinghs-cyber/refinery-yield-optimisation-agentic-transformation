@@ -207,12 +207,17 @@ It keeps the **smallest** move that reaches the goal. Small moves are safer, and
 | **Measure** | Next lab sample, or the unit's instruments within 30–60 min, show what happened. Inside the predicted band = confirmed; outside = flagged | Shown; the demo replay does not apply moves to the simulator |
 | **Learn** | Each lab result corrects the soft sensor; accepted moves and their results refit the response model | Soft-sensor correction built; response refit is pilot work |
 
-**Proof in the simulator (running now):** we take the recipe the cockpit proposed for run s144 at 10:00 and replay the same run twice from the same starting point, once with the recipe and once without:
+**Proof in the simulator (conversion confirmed 3 Oct 13:20 UTC; cut-point part still running):** we take the recipe the cockpit proposed for run s144 at 10:00 and replay the same run twice from the same starting point, once with the recipe and once without:
 - riser outlet temperature +3.5 °F;
 - LCO cut point −1.0 °F;
 - heavy-naphtha cut point +1.0 °F.
 
-Any difference is the recipe alone. The prediction is conversion **+0.4 %** (0.12 % per °F). The first 120 minutes of both runs match the original exactly, so the comparison is clean. Results are due 3 Oct, about 11:00 and 13:00 UTC.
+Any difference is the recipe alone. The prediction is conversion **+0.4 %** (0.12 % per °F). The first 120 minutes of both runs match the original exactly, so the comparison is clean.
+
+**Result so far:**
+- **Conversion: confirmed.** +0.44 % after 1 hour and +0.53 % on average over hours 1–3, against +0.42 % predicted. That is inside the band (±0.32 %). It is still creeping up slowly, so the 1-hour number is the fair comparison.
+- **Cut points: not what the recipe assumed.** While the cut-point controllers were in manual, the riser move itself pushed both T98s up (LCO at least +19 °F, heavy naphtha +48 °F) and the −1 / +1 °F trims did nothing yet. The recipe assumes the trims act straight away. The check with the controllers back in auto (simulator minutes 900–960) is due about 16:00 UTC.
+- **What it teaches:** the response model for conversion holds; a coordinated recipe must also hold the cut points with their controllers in auto, or it pays for conversion with off-spec product. This is exactly why the plant pilot measures each lever before its advice goes live.
 
 **On IOCL's plant, the pilot (scope to agree with IOCL; the full step-by-step plan, live routine and benefit journey are in §11):**
 1. **Data:** read-only historian tags for the FCC, lab results, crude assays. Nothing from safety or control systems.
