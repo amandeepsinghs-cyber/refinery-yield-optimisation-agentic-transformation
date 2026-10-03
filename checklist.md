@@ -478,3 +478,10 @@ Real-world lever check and data wrap-up (owner, 3 Oct 02:49)
 - ☑ D6 (feed furnace): no longer circular; preheat is moved to set catalyst-to-oil and regenerator temperature for the crude, inside the feed-nozzle limit
 - ☑ Labels: "LCO / HN cut-point target (via draw)", "Regenerator air (excess O₂ / afterburn)", "Feed preheat", "Riser outlet temperature"; cooling water drawn as "fixed duty", not as a lever
 - ☑ All simulations stopped 02:49 (owner: stop and wrap up). Final lever data in BigQuery (52 runs, 26,580 rows = all local rows), GCS `_archive/lever_v1_live` synced, snapshot `sim_data_20261003_0256.tar.gz` local + GCS — `5e9e402`
+
+Rehearsal and v0.3 (owner, 3 Oct 03:24: "do 1 and 2 now, then push it to git as v0.3")
+- ☑ Decision record cleaned of test clicks with the new re-runnable `cockpit/api/scripts/reset_decision_record.py` (archives `artifacts/audit.db` to `artifacts/audit_archive/` first; keeps the 139 system "withheld by checks" entries). Added to `demoflow.md` §8
+- ☑ Rehearsal click-through of scenes A–J on the final build (screenshots in the session's `rehearsal/` folder): A–C home s107 10:00 · D–G fractionator s144 10:00 · H "Not yet" s144 12:00 · I furnace / regenerator / gas plant s107 10:00 · J empty decision record
+- ☑ Fixed during rehearsal: (1) home showed "Local copy (BigQuery unreachable)" because the API restarted while the final lake load rewrote files — restart cleared it; §8 now says to check the source line reads BigQuery; (2) D1 set-point search step read "lifts 99 % to 98 %" — now "takes back margin while P(on-spec) stays at 98 % (≥ 95 %)"; (3) lever header now uses the same real-practice lever name as the lever row
+- ☑ Checks: 290 back-end pass (2 skipped), 82 front-end pass, tsc and eslint clean
+- ☑ Tagged `v0.3`

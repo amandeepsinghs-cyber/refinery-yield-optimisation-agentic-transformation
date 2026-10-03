@@ -37,7 +37,7 @@
 **Scripted outcomes (owner decision, 2 Oct 13:56):** 1.5 months of simulated data cannot honestly train the crude classifier and per-unit response models, so the classifier (93 %, detected 12 min after the switch ends) and the D3 / D5–D7 moves are scripted to show what the verbatim expects. Inputs are the real simulator data. The top-bar pill reads *scripted outcomes* and each scripted move carries a tag. Stay before **12:20** on the Scenario control (simulator LCO data is corrupt after that in s107).
 
 > [!WARNING]
-> Never say on stage: dollar or rupee figures; "reformer", "LPG splitter", "CDU" (not in this build); cat-to-oil or excess-O₂ set points (not levers in the simulator); ROT targets above 985 °F (outside the allowed range).
+> Never say on stage: dollar or rupee figures; "reformer", "LPG splitter", "CDU" (not in this build); cat-to-oil or excess-O₂ *as set points* (they are effects of preheat and regenerator air, not levers in the simulator); cooling-water flow, feed rate or catalyst addition as recommendations; ROT targets above 985 °F (outside the allowed range).
 
 ---
 
@@ -177,6 +177,8 @@ flowchart LR
 - [ ] Both Copilot scripted questions return cited answers; voice probe passes
 - [ ] Theme set (dark for the room, light for projectors if needed)
 - [ ] Provenance chip visible in every screenshot
+- [ ] Decision record cleaned of test clicks: from `cockpit/api` run `.venv/bin/python scripts/reset_decision_record.py` (archives `artifacts/audit.db` to `artifacts/audit_archive/` first; keeps the system's trust-check entries). Last run 3 Oct 03:26 — 0 human clicks, 139 "withheld by checks"
+- [ ] Home page source line reads **BigQuery** (not "Local copy"); if a lake load ran while the API started, restart the API once
 
 
 ---

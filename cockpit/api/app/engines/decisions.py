@@ -543,9 +543,11 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
         steps.append(_step("check", "Trust checks", f"{g_pass} of {len(d['gates'])} pass (models agree, inputs in range, "
                                                     "physics gap, spread)"))
     if t == "D1":
-        steps.append(_step("optimiser", "Set-point search", f"Smallest move that lifts P(on-spec) from "
-                                                            f"{(p.get('p_on_spec_before') or 0) * 100:.0f} % to "
-                                                            f"{(p.get('p_on_spec_after') or 0) * 100:.0f} %, inside SOP step limits"))
+        pb_, pa_ = (p.get("p_on_spec_before") or 0) * 100, (p.get("p_on_spec_after") or 0) * 100
+        steps.append(_step("optimiser", "Set-point search",
+                           f"Smallest move that lifts P(on-spec) from {pb_:.0f} % to {pa_:.0f} %, inside SOP step limits"
+                           if pa_ > pb_ + 0.5 else
+                           f"Takes back margin while P(on-spec) stays at {pa_:.0f} % (≥ 95 %), inside SOP step limits"))
     if t == "D2":
         steps.append(_step("check", "Spread gate", f"Withholds advice: {d.get('withheld_text')}"))
     if t == "D9":
