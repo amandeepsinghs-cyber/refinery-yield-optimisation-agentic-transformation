@@ -59,6 +59,11 @@ training:
   lever_min_rows: 360              # lever runs are used while still running once they have >= 6 h of data (each
                                    # lever's first designed move lands in hours 1-6); the fit is redone on restart as they grow
   group_kfold: 4                   # grouped K-fold by run on the train runs (admission + committee MSE)
+  pinned_truth:                    # app/data/pinned.py: simulator T98 calc saturates (LCO 770.364 °F in 20 % of full_v1
+    enabled: false                 # valid rows, HN 644.767 °F in 7 %). On = those minutes are missing labels + missing
+    targets: [LCO_T98_F]           # eval truth for `targets`. Env FCC_MASK_PINNED_TRUTH=0|1|LCO_T98_F,HN_T98_F overrides
+    ceilings: {LCO_T98_F: 770.364, HN_T98_F: 644.767}
+    tol: 0.001
 hybrid:
   draw_tray: {LCO_T98_F: T_tray13_F, HN_T98_F: T_tray06_F}
   p_ref_psia: 24.9

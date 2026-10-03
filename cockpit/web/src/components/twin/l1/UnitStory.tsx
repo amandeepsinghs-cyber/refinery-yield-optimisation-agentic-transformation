@@ -483,7 +483,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             <div className="us-lever-panel">
               {move && wi ? (
                 <>
-                  <div className="us-lever-h"><span>Lever</span><b>{d.levers?.find((l) => l.tag === move.tag)?.label ?? move.label}</b>{d.scripted ? <em className="us-scripted">scripted outcome</em> : null}</div>
+                  <div className="us-lever-h"><span>Lever</span><b>{d.levers?.find((l) => l.tag === move.tag)?.label ?? move.label}</b>{d.scripted ? <em className="us-scripted">{d.gain_source === "measured" ? "gain measured · chance scripted" : "scripted outcome"}</em> : null}</div>
                   <div className="us-lever-big num">{fx(move.from, nd)} <i>→</i> <b>{fx(wi.s, nd)}</b> <small>{move.unit}</small><span className="us-lever-d">{wi.d >= 0 ? "+" : "−"}{Math.abs(wi.d).toFixed(nd)}</span></div>
                   <label className="us-slider">
                     <span>Try another move</span>

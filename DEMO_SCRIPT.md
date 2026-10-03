@@ -179,20 +179,21 @@ Numbers were checked against the running API on **3 Oct 2026, 05:16 UTC**.
   - ☐ Gemini doesn't invent a set point.
 - **Say:** *"When the models disagree, it says 'Not yet' and asks for a sample. That refusal is what makes it safe in front of an operator."*
 
-### Scene G — Feed furnace: preheat for the crude (P2 + P3 · D6, scripted) · Furnace · `random_s107` · 10:00
+### Scene G — Feed furnace: preheat for the crude (P2 + P3 · D6, gain measured) · Furnace · `random_s107` · 10:00
 - **Problem:** after a crude switch, feed preheat sets catalyst-to-oil and regenerator temperature. If it stays put, the riser and regenerator compensate hours later.
 - **How the tech solves it:** **Raise feed preheat set point +1.5 °F (616.0 → 617.5)**, inside the feed-nozzle limit.
 - **Action:** Scenario ▾ → `random_s107`, 10:00 → Furnace. Read ③, then ④ including the proof loop.
 - **How it is supported:**
   - Chance at this crude's target **31 % → 96 %**; 4 of 4 checks pass.
+  - **The gain is measured:** 52 simulator step tests show the outlet follows the set point 1 : 1 and lower preheat raises catalyst circulation every time. The chance band is still scripted.
   - "If nothing is done": riser inlet enthalpy falls; catalyst circulation rises in about 170 min; afterburn margin narrows.
   - The model text claims catalyst-to-oil only. Conversion and a cooler regenerator are stated as plant practice.
 - **Result:** the furnace move is advised before the riser and regenerator have to compensate.
 - **Test:**
-  - ☐ The **scripted outcome** tag.
-  - ☐ Predict chip reads **Scripted gain**.
+  - ☐ The lever tag reads **gain measured · chance scripted**.
+  - ☐ Predict chip reads **Measured gain · chance scripted**.
   - ☐ Lever role line and never-recommends line present.
-- **Say:** *"Same pattern on every unit: what we saw, the move, why that size, and what it does downstream."*
+- **Say:** *"This one's gain we measured in 52 step tests on the simulator. On your plant, the pilot does the same with your data."*
 
 ### Scene H — Regenerator: air versus afterburn (P3 · D5, scripted) · Regenerator · `random_s107` · 10:00
 - **Problem:** afterburn erodes cyclone metal-temperature margin. Left alone, it breaches the operating window in about 180 min.

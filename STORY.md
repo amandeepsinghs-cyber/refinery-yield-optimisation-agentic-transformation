@@ -149,7 +149,7 @@ flowchart LR
 - **Regenerator:** the test moves actually changed the regenerator *temperature target*, not the air. The measured effect is cyclone ΔT **−0.34 ± 0.07 °F per °F**.
 - **Condenser:** in the simulator, cooling water isn't tied into the overhead loop, so there's no basis for that move yet.
 
-**What's honest in our build:** the riser-temperature, preheat, regenerator and condenser move sizes on screen are **scripted** (labelled), because the step-test data is still thin. 36 more runs are being simulated now.
+**What's honest in our build (3 Oct 2026, after 80 lever runs):** the **feed-preheat gain is measured** in 52 simulator step tests (outlet 1 : 1, held-out R² 1.0; lower preheat raised catalyst circulation in every test), so D6 shows "gain measured · chance scripted". The riser-temperature, regenerator and condenser move sizes stay **scripted** (labelled): the regenerator response rarely settles and the condenser has no basis in the simulator. The chance-in-band numbers on D3, D5, D6 and D7 come from a fixed rule, so they stay labelled scripted.
 
 ### Q3 — "Which move is best?" (the set-point search)
 
@@ -252,7 +252,8 @@ The **method is identical**; only the source changes. That's why we say *"shown 
 | Soft-sensor accuracy on the 14 held-out runs | **Weak, so the trust checks matter** | Average miss: LCO **9.1 °F**, heavy naphtha **19.2 °F** (big misses in some periods). The 90 % band contains the truth only **62 %** (LCO) and **56 %** (heavy naphtha) of the time, so the bands are too narrow. The spread check and "Not yet" catch the worst periods. Real lab history and recalibration are the fix |
 | Cut-point gain (1 : 1) | **Physics assumption** | Not fitted; standard controller behaviour |
 | Response of product flows to cut-point moves | **Fitted** | From about 3,000 minutes around past set-point moves |
-| Lever gains (preheat, regenerator, condenser, riser) | **Scripted on screen** | Step-test data thin; preheat matches, regenerator re-expressed, condenser has no basis; 36 more runs running |
+| Feed-preheat gain (D6) | **Measured** (simulator step tests) | 52 moves on 80 lever runs: outlet 1.007 °F per °F, held-out R² 1.0; catalyst circulation −109 per °F, same direction every time; a fresh batch reproduces it. The chance band stays scripted |
+| Lever gains (regenerator, condenser, riser) | **Scripted on screen** | Regenerator response rarely settles; condenser has no basis; riser recipe: conversion confirmed, cut-point part not proven (§5) |
 | Crude name | **Scripted** (follows the assay) | Classifier 8 of 15 held-out switches |
 | Set-point search | **Real** | Smallest safe move; limits shown |
 | Systems knock-on rules (19) | **Real** | Rule-based, over the catalyst, heat and hydrocarbon loops |

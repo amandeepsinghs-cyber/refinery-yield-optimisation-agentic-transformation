@@ -35,6 +35,7 @@ from .data.catalog import Catalog, regime_of
 from .data.features import transient_mask
 from .data.lags import apply_lags, identify_lags, lags_path, save_lags
 from .data.lags import summary as lag_summary
+from .data.pinned import active_targets, mask_truth, pinned_config, target_pinned
 from .pipeline import FoldBundle, assemble_run, prepare
 from .recommend import estimate_gain_and_yield
 from .store import audit_db, save_run
@@ -51,18 +52,35 @@ def group_of(info) -> str:
 
 
 def build_labels(frames: dict, raw_labs: dict, runs: list[str], s, source: str,
-                 transient: dict | None = None, stats: dict | None = None) -> dict:
+                 transient: dict | None = None, stats: dict | None = None, pin_cfg: dict | None = None) -> dict:
     """prop -> labelled rows. Lab mode: clean labs only (injected_error == none), and labs drawn in a transient minute
-    (transient[run] bool mask) are excluded; counts go to `stats` (prop -> {clean, transient_excluded, used})."""
+    (transient[run] bool mask) are excluded; counts go to `stats` (prop -> {clean, transient_excluded, used}).
+    pin_cfg (app.data.pinned, training.pinned_truth): when enabled, minutes whose simulator truth is pinned at the T98
+    calculation ceiling are treated as missing labels (truth mode: rows dropped; lab mode: labs drawn there dropped);
+    counted in stats[prop]["pinned_excluded"]. Default None/disabled = unchanged behaviour."""
     out = {}
     for prop in s.targets:
         parts = []
         st = {"clean": 0, "transient_excluded": 0, "used": 0}
+        pin_on = prop in active_targets(pin_cfg or {})
+        if pin_on:
+            st["pinned_excluded"] = 0
         for r in runs:
             df = frames[r]
+            tmask = transient[r] if (transient is not None and r in transient) else None
+            pinned_t: set = set()
+            if pin_on:
+                pm = target_pinned(df, prop, pin_cfg)
+                if pm.any():
+                    if source == "truth":
+                        st["pinned_excluded"] += int(pm.sum())
+                        df = df[~pm]
+                        tmask = tmask[~pm] if tmask is not None else None
+                    else:
+                        pinned_t = set(df["time_min"].to_numpy()[pm].tolist())
             if source == "truth":
                 stride = int(s["training"]["truth_stride_min"])
-                base_df = df[~transient[r]] if (transient is not None and r in transient and (~transient[r]).sum() >= 30) else df
+                base_df = df[~tmask] if (tmask is not None and (~tmask).sum() >= 30) else df
                 if prop == "LCO_T98_F":
                     c_mask = (base_df[prop] >= 744.0) & (base_df[prop] <= 766.0)
                 else:
@@ -74,8 +92,12 @@ def build_labels(frames: dict, raw_labs: dict, runs: list[str], s, source: str,
             else:
                 labs = [l for l in raw_labs[r] if l["property"] == prop and l["injected_error"] == "none"]
                 st["clean"] += len(labs)
-                if transient is not None and r in transient:
-                    tt = set(df["time_min"].to_numpy()[transient[r]].tolist())
+                if pin_on and pinned_t:
+                    keep = [l for l in labs if l["time_min"] not in pinned_t]
+                    st["pinned_excluded"] += len(labs) - len(keep)
+                    labs = keep
+                if tmask is not None:
+                    tt = set(df["time_min"].to_numpy()[tmask].tolist())
                     keep = [l for l in labs if l["time_min"] not in tt]
                     st["transient_excluded"] += len(labs) - len(keep)
                     labs = keep
@@ -173,6 +195,14 @@ def main(argv=None):
     transient = {r: transient_mask(frames[r], cat.event_code_series(r)[:len(frames[r])], s) for r in run_ids}
     log("transient minutes (A5):", {r: int(m.sum()) for r, m in list(transient.items())[:6]},
         "..." if len(transient) > 6 else "")
+    pin_cfg = pinned_config(s)
+    pin_targets = active_targets(pin_cfg)
+    pin_counts = {p: {"train": int(sum(target_pinned(frames[r], p, pin_cfg).sum() for r in train_runs)),
+                      "test": int(sum(target_pinned(frames[r], p, pin_cfg).sum() for r in test_runs if r not in train_runs))}
+                  for p in pin_targets}
+    log("pinned truth (training.pinned_truth):", "off" if not pin_targets else
+        f"on for {pin_targets} (ceilings {[pin_cfg['ceilings'][p] for p in pin_targets]} ± {pin_cfg['tol']}): "
+        f"minutes treated as missing labels / truth {pin_counts}")
 
     # ---------------- A6 lags: identified on the training runs of each fit only (never on held-out runs)
     def fit_lags(fit_runs):
@@ -188,7 +218,7 @@ def main(argv=None):
             continue
         log(f"fold {k + 1}/{len(folds)}: train {len(tr)} runs, hold out {held}")
         fold_lags, ff = fit_lags(tr)
-        labels = build_labels(ff, raw_labs, tr, s, source, transient)
+        labels = build_labels(ff, raw_labs, tr, s, source, transient, pin_cfg=pin_cfg)
         if any(len(v) < 5 for v in labels.values()):
             log("  too few labels, skipping fold")
             continue
@@ -203,9 +233,9 @@ def main(argv=None):
     lag_table["duration_s"] = round(time.time() - t_lag, 2)
     log("lags (A6, top |ccf| per target):", lag_summary(lag_table) if lag_table.get("enabled") else "disabled")
     label_stats: dict = {}
-    labels = build_labels(ff, raw_labs, train_runs, s, source, transient, label_stats)
-    if source == "lab":
-        log("lab labels (final fit):", label_stats)
+    labels = build_labels(ff, raw_labs, train_runs, s, source, transient, label_stats, pin_cfg=pin_cfg)
+    if source == "lab" or pin_targets:
+        log("labels (final fit):", label_stats)
     final = FoldBundle(s, cv=False, seed=99, lags=lag_table).fit(ff, labels, log=log)
     del ff
     n_labels = {p: int(len(v)) for p, v in labels.items()}
@@ -219,7 +249,7 @@ def main(argv=None):
     meta, member_eval = {}, {}
     A = s["admission"]
     for prop in s.targets:
-        y = np.concatenate([frames[r][prop].to_numpy(dtype=float) for r in adm_runs])
+        y = mask_truth(np.concatenate([frames[r][prop].to_numpy(dtype=float) for r in adm_runs]), prop, pin_cfg)
         reg = np.concatenate([regime_of(frames[r]["dist_feed_API"].to_numpy(dtype=float), s) for r in adm_runs])
         env_mask = ((y >= 742.0) & (y <= 768.0)) if prop == "LCO_T98_F" else ((y >= 518.0) & (y <= 544.0))
         if env_mask.sum() < 50:
@@ -269,11 +299,14 @@ def main(argv=None):
         eval_runs = run_ids
     evaluation = {}
     for prop in s.targets:
-        y = np.concatenate([frames[r][prop].to_numpy(dtype=float) for r in eval_runs])
+        y_raw = np.concatenate([frames[r][prop].to_numpy(dtype=float) for r in eval_runs])
+        y = mask_truth(y_raw, prop, pin_cfg)
         reg = np.concatenate([regime_of(frames[r]["dist_feed_API"].to_numpy(dtype=float), s) for r in eval_runs])
         arrs = {"truth": y, "regime": reg.astype(str),
                 "run_id": np.concatenate([[r] * len(frames[r]) for r in eval_runs]).astype(str),
                 "time_min": np.concatenate([frames[r]["time_min"].to_numpy() for r in eval_runs])}
+        if prop in pin_targets:
+            arrs["truth_unmasked"] = y_raw          # original simulator truth incl. pinned minutes (flag on only)
         mets = {}
         for j, mid in enumerate(MODEL_IDS):
             mu = np.concatenate([assembled[r]["props"][prop]["mu"][:, j] for r in eval_runs])
@@ -286,15 +319,19 @@ def main(argv=None):
         arrs["gate"] = np.concatenate([assembled[r]["props"][prop]["gate"] for r in eval_runs]).astype(str)
         arrs["trust"] = np.concatenate([assembled[r]["props"][prop]["trust"] for r in eval_runs]).astype(str)
         e = arrs["mean"] - y
+        fin = np.isfinite(y)
         R = s.R
         mix = {"rmse": float(np.sqrt(np.nanmean(e ** 2))), "mae": float(np.nanmean(np.abs(e))), "bias": float(np.nanmean(e)),
-               "coverage90": float(np.nanmean((y >= arrs["q05"]) & (y <= arrs["q95"]))), "crps": float(np.nanmean(arrs["crps"])),
+               "coverage90": float(np.mean(((y >= arrs["q05"]) & (y <= arrs["q95"]))[fin])),
+               "crps": float(np.nanmean(arrs["crps"][fin])),
                "mean_w90": float(np.nanmean(arrs["w90"])),
                "withheld_frac": float(np.mean(arrs["gate"] == "WITHHELD"))}
+        if prop in pin_targets:
+            mix["pinned_minutes_excluded"] = int((~fin & np.isfinite(y_raw)).sum())
         # SDD-CAL-02 calibrated W90 limit (informational; the gate uses gate.w90_max_F)
         cal = None
         for thr in np.sort(np.unique(np.round(arrs["w90"], 1))):
-            sel = arrs["w90"] <= thr
+            sel = (arrs["w90"] <= thr) & fin
             if sel.sum() >= 10 and np.mean(np.abs(e[sel]) <= R) >= 0.9:
                 cal = float(thr)
         mix["w90_max_calibrated"] = None if cal is None else min(cal, 2 * R)
@@ -342,6 +379,10 @@ def main(argv=None):
             + (". Inputs: measured (process-measurement noise on, DECISIONS L6)" if noise_on else ". Inputs: noise-free simulator values")
             + ". Metrics vs simulator truth on every held-out minute." + lag_note
             + (f" In-sample runs (no out-of-fold estimate): {in_sample}." if in_sample else ""))
+    if pin_targets:
+        note += (f" Pinned truth (training.pinned_truth): minutes where {pin_targets} sit exactly at the simulator T98 "
+                 f"ceiling ({[pin_cfg['ceilings'][p] for p in pin_targets]} °F ± {pin_cfg['tol']}) are treated as missing "
+                 f"labels and missing evaluation truth; counts {pin_counts}.")
     save_lags(lag_table, lags_path(s))      # scoring (prepare / FoldBundle.predict_run) reuses this table
     bundle = {"trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "mode": mode, "loro": loro,
               "label_source": source, "train_runs": train_runs, "test_runs": test_runs, "eval_runs": eval_runs,
@@ -350,6 +391,9 @@ def main(argv=None):
               "n_clean_train_labs": n_clean_labs, "lags": lag_table,
               "run_fingerprints": {r: [cat.get(r).mtime, cat.get(r).size] for r in run_ids},
               "duration_s": round(time.time() - t0, 1)}
+    if pin_targets:
+        bundle["pinned_truth"] = {"targets": pin_targets, "ceilings": {p: pin_cfg["ceilings"][p] for p in pin_targets},
+                                  "tol": pin_cfg["tol"], "minutes": pin_counts}
     (art / "bundle.json").write_text(json.dumps(bundle, indent=1, default=_json_default))
     db = audit_db(art)
     db.execute("DELETE FROM audit WHERE actor = 'system:gate'")

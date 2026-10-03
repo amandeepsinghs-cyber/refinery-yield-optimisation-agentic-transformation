@@ -15,8 +15,8 @@ import type { TwinRegime } from "@/lib/twinTypes";
 import { clock } from "@/lib/format";
 import { LEVER_FIT, PILOT_LINE, PROOF_STATUS_LABEL, RECIPE_CHECK, type ProofCheck } from "@/lib/proofEvidence";
 
-type Stage = { k: string; title: string; text: string; state: "built" | "shown" | "pilot" | "scripted" };
-const STATE_LABEL: Record<Stage["state"], string> = { built: "Built", shown: "Shown, not run in the replay", pilot: "Pilot on site", scripted: "Scripted gain" };
+type Stage = { k: string; title: string; text: string; state: "built" | "shown" | "pilot" | "scripted" | "measured" };
+const STATE_LABEL: Record<Stage["state"], string> = { built: "Built", shown: "Shown, not run in the replay", pilot: "Pilot on site", scripted: "Scripted gain", measured: "Measured gain · chance scripted" };
 
 /** What each decision type is measured by after the move (plain words). */
 const MEASURED_BY: Record<string, string> = {
@@ -46,13 +46,15 @@ export function ProofLoop({ d, nextLab }: { d: Decision; nextLab?: string | null
   const p = d.predicted;
   const pct = (x?: number | null) => (x == null ? "—" : `${Math.round(x * 100)} %`);
   const lab = LAB_BASED.has(d.type);
+  const measured = d.gain_source === "measured";
+  const gainNote = !d.scripted ? "" : measured ? ` The gain is measured: ${p?.gain_evidence ?? "simulator step tests"}. The chance band is scripted.` : " The size of this gain is scripted.";
   const predict = d.proposed.sample
     ? "An earlier lab sample cuts the estimate's spread back under the limit."
     : move
-      ? `${move.label} ${move.from.toFixed(1)} → ${move.to.toFixed(1)} ${move.unit}: ${(p?.goal_label ?? "chance on spec").toLowerCase()} ${pct(p?.p_on_spec_before)} → ${pct(p?.p_on_spec_after)}.${d.scripted ? " The size of this gain is scripted." : ""}`
+      ? `${move.label} ${move.from.toFixed(1)} → ${move.to.toFixed(1)} ${move.unit}: ${(p?.goal_label ?? "chance on spec").toLowerCase()} ${pct(p?.p_on_spec_before)} → ${pct(p?.p_on_spec_after)}.${gainNote}`
       : "No move proposed.";
   const stages: Stage[] = [
-    { k: "1", title: "Predict", text: predict, state: d.scripted ? "scripted" : "built" },
+    { k: "1", title: "Predict", text: predict, state: d.scripted ? (measured ? "measured" : "scripted") : "built" },
     { k: "2", title: "Decide", text: d.action ? `${d.action.action} at ${d.action.time_label}, recorded; nothing sent to the plant.` : "The operator accepts, holds or declines. Every action is recorded; nothing is sent to the plant.", state: "built" },
     { k: "3", title: "Measure", text: `Checked by ${MEASURED_BY[d.type] ?? "the unit's own instruments"}${lab && nextLab ? ` (next due ${nextLab})` : ""}. Inside the predicted band = confirmed; outside = flagged.`, state: "shown" },
     { k: "4", title: "Learn", text: lab ? "Each lab result re-anchors the soft sensor (rate-limited bias update, built). Accepted moves and their results refit the lever models (on site)." : "Accepted moves and their measured results refit this lever's model for each crude.", state: lab ? "built" : "pilot" },

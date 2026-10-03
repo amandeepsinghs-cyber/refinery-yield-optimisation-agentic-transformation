@@ -25,3 +25,15 @@ def test_scripted_off_keeps_real_engine(monkeypatch):
     monkeypatch.setenv("FCC_SCRIPTED", "0")
     b = decisions.build("random_s107", 600)
     assert not any(d.get("scripted") for d in b["decisions"])
+
+
+def test_d6_gain_measured_chance_scripted(monkeypatch):
+    """Owner, 3 Oct 18:11: D6 shows its gain as measured (simulator step tests); the chance band stays scripted."""
+    monkeypatch.setenv("FCC_SCRIPTED", "1")
+    b = decisions.build("random_s107", 600)
+    d6 = next(d for d in b["decisions"] if d["type"] == "D6")
+    assert d6["scripted"] and d6["gain_source"] == "measured"
+    assert d6["predicted"]["gain_source"] == "measured" and "step tests" in d6["predicted"]["gain_evidence"]
+    for d in b["decisions"]:
+        if d.get("scripted") and d["type"] in ("D3", "D5", "D7"):
+            assert d["gain_source"] == "scripted"

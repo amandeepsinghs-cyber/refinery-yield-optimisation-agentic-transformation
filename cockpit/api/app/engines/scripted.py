@@ -21,15 +21,20 @@ from app.state import get_state
 
 # lever, target, gain (target units per lever unit), lever step, SOP max step, SOP text, model text
 SPEC = {
-    # Real-world check (3 Oct, owner): only recommend settings operators actually move day to day. Feed preheat is
-    # moved to set catalyst-to-oil and regenerator temperature for the crude — not to chase its own outlet reading.
+    # Owner, 3 Oct 18:11 ("yes"): the D6 gain is shown as measured — 52 simulator step tests on 80 lever runs
+    # (scripts/surrogate_gap_report.py, gap fit): outlet 1.007 °F per °F (held-out R² 1.0); catalyst circulation
+    # −109 per °F, same direction in every move (held-out R² 0.95). The chance band (σ rule below) stays scripted.
     "D6": dict(lever="SP_T_preheat_F", target="T2_preheat_F", gain=1.0, step=0.5, step_max=5.0, sigma_min=0.4,
+               gain_source="measured",
+               gain_evidence="52 simulator step tests (45 train, 7 held out): furnace outlet 1.007 °F per °F of set "
+                             "point; lower preheat raised catalyst circulation in every test",
                sop="SOP-FURN-002: preheat set point at most 5 °F per step, 20 min between steps; stay inside the "
                    "feed-nozzle (licensor) temperature limit.",
-               model="Feed-preheat response model for this crude: lower preheat raises catalyst circulation (higher "
-                     "catalyst-to-oil); the furnace outlet reaches the new set point within 15 min. In a real unit "
-                     "this also lifts conversion and cools the regenerator — the simulator's regenerator controller "
-                     "holds its temperature, so that part is plant practice, not a model result",
+               model="Feed-preheat response model, measured in 52 simulator step tests: the furnace outlet follows "
+                     "the set point 1 : 1 within 15 min, and lower preheat raises catalyst circulation (higher "
+                     "catalyst-to-oil) in every test. In a real unit this also lifts conversion and cools the "
+                     "regenerator — the simulator's regenerator controller holds its temperature, so that part is "
+                     "plant practice, not a model result",
                goal="Chance the preheat sits at this crude's target (catalyst-to-oil and regenerator temperature)"),
     "D5": dict(lever="Fair", target="dT_cyc_reg_F", gain=40.0, step=0.01, step_max=0.08, sigma_min=0.3,
                sop="SOP-REG-004: air rate at most 3 % per step, 15 min between steps; flue-gas O₂ stays in its window.",
@@ -152,8 +157,10 @@ def _script(d: dict, row: dict) -> dict:
                       "p_on_spec_before": round(pb, 3), "p_on_spec_after": round(pa, 3), "w90": round(w90, 2),
                       "spec_max": round(lim, 3) if hi_side else None, "spec_min": None if hi_side else round(lim, 3),
                       "margin_after": round(abs(lim - mu_after), 3), "ripple": [], "gain": g, "unit": t_unit,
-                      "step": step, "step_max": smax, "goal_label": goal, "model": spec["model"]},
+                      "step": step, "step_max": smax, "goal_label": goal, "model": spec["model"],
+                      "gain_source": spec.get("gain_source", "scripted"), "gain_evidence": spec.get("gain_evidence")},
         "gates": gates,
+        "gain_source": spec.get("gain_source", "scripted"),
     })
     since = (d.get("observed") or {}).get("since_label")
     steps = [{"kind": "agent", "name": "Drift-watch agent", "did": f"Flagged {t_label} moving away from expected at {since}"}] if since else []

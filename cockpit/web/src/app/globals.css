@@ -3724,3 +3724,4 @@ a.pf-uc:hover { border-color: var(--accent); background: var(--hover); }
 .pf-proof { margin-top: 14px; }
 @media (max-width: 1100px) { .pl-stages { grid-template-columns: repeat(2, 1fr); } .pl-crude-steps { grid-template-columns: 1fr; } }
 .pl-stage.st-scripted .pl-chip { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 50%, transparent); }
+.pl-stage.st-measured .pl-chip { color: var(--green); border-color: color-mix(in srgb, var(--amber) 60%, transparent); }

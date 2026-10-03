@@ -36,9 +36,9 @@ export const LEVER_FIT: ProofCheck = {
   id: "lever_gap_fit",
   title: "Lever test moves measured in the data",
   predicted: "Each lever moves its target in the direction plant practice expects",
-  observed: "Feed preheat: response matches the model. Regenerator: the test moves changed its temperature target, not the air. Condenser: no basis in the simulator yet.",
+  observed: "Feed preheat: measured — the outlet follows the set point 1 : 1 (held-out R² 1.0) and lower preheat raised catalyst circulation in every test; a fresh batch of runs gives the same answer. Regenerator air: the response rarely settles and the test moves also changed its temperature target, so it stays scripted. Condenser: no basis in the simulator, so it stays scripted.",
   status: "inconclusive",
-  how: "About 285 designed lever moves across 52 simulated runs, 22–30 usable per lever, checked on held-out runs.",
+  how: "About 436 designed lever moves across 80 simulated runs (3 Oct 2026); 37–56 usable per lever, checked on held-out runs.",
 };
 
 export const PROOF_STATUS_LABEL: Record<ProofStatus, string> = {

@@ -497,3 +497,17 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - Minutes 961–1000 (after the trim, manual again): conversion +0.113 % (sd 0.003) vs +0.42 % — bottom edge of band; LCO yield −32, slurry −18, LPG +152, LN −109; LCO T98 +4.9 °F, HN +3.1 °F (inside ±8 °F, inconclusive).
 - Reading: the ROT conversion gain holds only until the cut-point trim pulls the LCO cut back; then about a quarter. Screen/docs updated; D3 stays scripted. Lever Fit Engineer finished; no runs active from it.
 
+## 2026-10-03 17:58 — lever refit on the larger data (owner: "yes", 17:56)
+
+- Backup: `cockpit/api/artifacts/model_backup_20261003_1757/` (engines, models, engines_v7_candidate, bundle.json, lever_v1 `_staged`). Restaged lever_v1 regimes. Gap report rerun (`scripts/surrogate_gap_report.py`, flag on): 80 lever runs; usable moves per lever roughly doubled (preheat 22 → 45 train + 7 hold-out; air 29 → 56; overhead → 54).
+- **D6 feed preheat:** outlet gain 1.007 (spread 0.037; hold-out R² 1.0) = scripted 1.0. Catalyst circulation −109 per °F (sign agree 100 %, hold-out R² 0.95); cyclone ΔT −0.36 per °F. New seeds 252–287 alone reproduce it (23 moves: 1.009; −112; −0.33). Conversion and regenerator temperature: no reliable effect in the simulator (controller holds Treg). → Gain and catalyst-to-oil claim can be shown as measured; the chance band and trust-check values in `scripted.py` are still fixed constants.
+- **D5 air:** cyclone ΔT 75 per lb/s vs scripted 40, but settles in only 4 % of moves (τ ≈ 110 min) and air moves come with regenerator set-point changes → stays scripted (owner decision stands).
+- **D7 overhead:** cooling-water gain 0.04 vs scripted −2.6 → no basis; stays scripted (owner decision stands).
+- LCO T98 ceiling candidate delegated (Soft Sensor Candidate Engineer, `57352ed3`), output to `artifacts/softsensor_v8_lco_candidate/`.
+
+## 2026-10-03 18:16 — D6 gain measured (owner "yes" 18:11); T98 ceiling candidate
+
+- D6: `scripted.py` `gain_source: "measured"` + `gain_evidence`; Predict chip "Measured gain · chance scripted"; lever tag "gain measured · chance scripted"; LEVER_FIT text (436 moves, 80 runs). Decision numbers unchanged (s107 10:00: +1.5 °F, 31 % → 96 %). API restarted 18:14; screenshot `d6_measured.png`.
+- T98 ceiling (Soft Sensor Candidate Engineer): HN also pinned (644.767 °F, 3,943 rows). Trainer label clip (LCO 744–766, HN 520–542) already excluded both → candidate predictions identical to a flag-off retrain; demo moments unchanged. On unpinned truth the live model scores LCO MAE 7.51 / RMSE 17.05 / cov 78.7 %, HN 13.15 / 24.52 / 59.3 % (vs 9.10 / 16.64 / 61.9 % and 19.20 / 36.58 / 55.7 % on original truth). New `app/data/pinned.py`, `training.pinned_truth` (off), `scripts/compare_pinned_truth.py`, 11 tests. Artifacts `artifacts/softsensor_v8_lco_candidate/` (not committed).
+- Tests: 309 back-end pass, 82 front-end pass; tsc, eslint clean.
+

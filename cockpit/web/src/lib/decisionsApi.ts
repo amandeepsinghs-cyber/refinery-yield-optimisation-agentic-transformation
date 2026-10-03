@@ -42,8 +42,11 @@ export interface Decision {
     mu_before?: number | null; mu_after?: number | null; sigma?: number | null; p_on_spec_before?: number | null;
     p_on_spec_after?: number | null; w90?: number | null; spec_max?: number | null; margin_after?: number | null; ripple?: RippleItem[];
     spec_min?: number | null; gain?: number; unit?: string; step?: number; step_max?: number; goal_label?: string; model?: string;
+    gain_source?: "measured" | "scripted"; gain_evidence?: string | null;
   };
   scripted?: boolean;
+  /** "measured": the lever gain comes from simulator step tests; the chance band is still scripted (D6, 3 Oct). */
+  gain_source?: "measured" | "scripted";
   gates: DecisionGate[];
   evidence: { tags: string[]; labs: string[]; docs: string[]; lakehouse: string | null; event_id?: string };
   withheld_reason: string | null;
