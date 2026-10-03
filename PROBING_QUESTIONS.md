@@ -9,6 +9,9 @@
 
 No value figures. No claim about IOCL's plant.
 
+
+**Read first:** `STORY.md` (the story and philosophy these answers come from).
+
 ---
 
 ## A. "Will this setting actually maximise the yield?" (the big one)

@@ -18,6 +18,9 @@ Numbers were checked against the running API on **3 Oct 2026, 05:16 UTC**.
 - No rupee or dollar figures.
 - Never recommend cooling-water flow, feed rate or catalyst addition.
 
+
+**Read first:** `STORY.md` (problem, philosophy, how each model is trained, honest numbers).
+
 ---
 
 ## Part 1 — The story on one page

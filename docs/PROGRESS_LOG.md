@@ -423,3 +423,20 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 - **Fix:** the s107 heavy-naphtha D1 said "cut too light" while advising to lower the cut point (it borrowed the drift line for the opposite direction). It now reads "HN T98 could go over spec: the upper end of the estimate is above the limit". 297 tests pass.
 - **`DEMO_SCRIPT.md`:** scenes 0, A–M, each with problem / how solved / action / support / result / test / say; function test checklist; fallbacks; never say.
 
+## 2026-10-03 05:38–05:50 — STORY.md (owner: "I do not know our story and philosophy")
+
+- New `STORY.md`. It covers:
+  - the 60-second story;
+  - the problem (FCC, levers, P1–P4 with real moments);
+  - five principles;
+  - the three questions (soft sensor / response model / search), each with how it's trained and real examples;
+  - the never-seen crude;
+  - predict-decide-measure-learn and the pilot;
+  - where the demo data came from;
+  - honest numbers;
+  - the tie-back (layers, use case → problem → question → agent → decision, the s107 morning end to end);
+  - a glossary;
+  - a 3-hour step-by-step learning plan with 5 self-check questions.
+- Facts surfaced and recorded: demo soft sensor trained on simulator truth (72 clean labs per product < 100 minimum); held-out average miss LCO 9.1 °F / HN 19.2 °F with 90 % bands covering 62 % / 56 %; cut-point gain 1 : 1 is a physics assumption (no set-point-move windows); flow responses fitted from ~3,000 min around past moves.
+- Overview gains a "How it learns" band (three questions + new crude). `PROBING_QUESTIONS.md` and `DEMO_SCRIPT.md` point to `STORY.md`.
+

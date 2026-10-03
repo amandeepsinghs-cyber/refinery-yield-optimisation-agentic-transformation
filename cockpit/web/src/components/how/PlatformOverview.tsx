@@ -123,6 +123,16 @@ export default function PlatformOverview() {
         </section>
       </div>
 
+      <section className="pf-band pf-proof" aria-labelledby="pf-learn-h">
+        <h2 id="pf-learn-h" className="pf-h2">How it learns — three questions, three kinds of model</h2>
+        <ol className="pf-steps" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+          <li className="on"><b>1 · What is the quality now?</b><span>Soft sensor. Trained on past lab results, each lined up with the process readings at the minute the sample was drawn, so the lab&apos;s delay does not matter for training.</span></li>
+          <li className="on"><b>2 · If I move a setting, what changes?</b><span>Response model. From physics first, then moves operators already made, then small planned step tests.</span></li>
+          <li className="on"><b>3 · Which move is best?</b><span>Search. The smallest move that improves yield inside spec, equipment and procedure limits. Best inside safe limits, right now, not a leap.</span></li>
+          <li className="on"><b>A crude never seen?</b><span>Starts from its nearest crude family, leans on physics, moves smaller or says “Not yet”, and learns that crude within a few lab cycles.</span></li>
+        </ol>
+      </section>
+
       <section className="pf-band pf-proof" aria-labelledby="pf-proof-h">
         <h2 id="pf-proof-h" className="pf-h2">How do we know a move works? — predict, decide, measure, learn</h2>
         <ol className="pf-steps" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
