@@ -528,3 +528,10 @@ kill all 49 Octave runs with no checkpoint/resume. Sequence agreed:
 
 - 19:37 fix: first visit got 502 — Cloud Run marked the instance ready when nginx started (~4 s), before web/API; CPU was then throttled and Next.js took ~3 min. `deploy/start.sh` now starts nginx only after API and web answer; service redeployed with `--no-cpu-throttling` (still scales to zero). Image `v0.51.1`.
 - 19:58 fix 2: `.gcloudignore` rule `knowledge/` also excluded the API package `cockpit/api/app/knowledge/` (API crashed on import → all /api calls 502). Rules now anchored to the repo root. Revision fcc-cockpit-00003 (`v0.51.2`): hydrate 2 s, web 4 s, API 45 s, then nginx; first /api/health 200 from the owner browser 19:58:36.
+
+## 2026-10-04 04:55 — overnight wrap-up after the Cloudtop restart (owner updated the Cloudtop ~20:05)
+
+- Lever batch closed: 88 runs, all stopped (the last 3 ended with the restart). 47,160 rows, 40,722 valid. Final lake load done (`load_lakehouse.py --batch lever_v1`, 88 runs, 20 min); GCS copy `_archive/lever_v1_live`; snapshot `sim_octave/data/_snapshots/lever_v1_final_20261004_0454.tar.gz` + `gs://…/_archive/lever_v1_final_20261004_0454/`.
+- D6 confirmed on the final data (`scripts/surrogate_gap_report.py`): preheat outlet 1.007 °F per °F (hold-out R² 1.0), catalyst circulation −108.6 per °F (hold-out R² 0.95), 52 usable of 70 preheat moves. Unchanged from P11. Previous candidate archived as `artifacts/engines_v7_candidate_backup_*`.
+- Fix: a snapshot left as a plain folder under `sim_octave/data/_snapshots/` was scanned by the catalog as 88 duplicate runs and renamed the real lever runs (`lever_v1__…`), so the first rerun found no moves. Snapshot converted to a tarball (like the earlier ones) and `config.yaml data.skip_dirs` now also skips `_snapshots` and `_monitor`.
+- Local services restarted outside the sandbox (after the restart the sandbox gives each command its own network, so servers started inside it can't be reached): API :8010 (BigQuery, 54 runs), web :3001. Demo fingerprint unchanged (293ce76a…). Cloud Run unaffected.

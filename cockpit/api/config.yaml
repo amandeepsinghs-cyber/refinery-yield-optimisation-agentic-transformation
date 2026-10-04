@@ -16,7 +16,7 @@ data:
     hn_range: [450, 680]           # HN T98 likewise
   min_complete_train_runs: 4       # primary becomes active only once this many complete train runs (seed < test_seed_min)
   min_complete_test_runs: 1        # ... and this many complete held-out runs exist; partial runs are never used
-  skip_dirs: [_staged, logs]
+  skip_dirs: [_staged, logs, _snapshots, _monitor]
   ts_base: "2026-09-01T00:00:00Z"   # synthetic wall-clock origin: ts = ts_base + time_min minutes
 artifacts_dir: cockpit/api/artifacts
 knowledge_dir: knowledge/corpus
