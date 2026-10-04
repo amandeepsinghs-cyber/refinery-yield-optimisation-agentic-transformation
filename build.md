@@ -206,7 +206,7 @@ cockpit/api/app/
 
 ```bash
 # Folder variable (quote it every time; the path has spaces and '&')
-export FCC_HOME="$HOME/o&g agentic transformation/Oil & Gas Agent Portfolio/agent_ideas/FCC_RCC_Optimisation"
+export FCC_HOME="$HOME/o&g agentic transformation/Oil & Gas Agent Portfolio/agent_ideas/Refinery Agentic Optimisation"
 cd "$FCC_HOME"
 octave --version | head -1; python3 --version; node --version; gcloud --version | head -1
 

@@ -28,8 +28,7 @@ import time
 import numpy as np
 import pandas as pd
 
-ROOT = pathlib.Path("/usr/local/google/home/amandeepsinghs/o&g agentic transformation/Oil & Gas Agent Portfolio/"
-                    "agent_ideas/FCC_RCC_Optimisation")
+ROOT = pathlib.Path(__file__).resolve().parents[1]  # repo root (Refinery Agentic Optimisation)
 sys.path.insert(0, str(ROOT / "cockpit" / "api"))
 from app.data.validity import STATE_TAGS, valid_until  # noqa: E402
 

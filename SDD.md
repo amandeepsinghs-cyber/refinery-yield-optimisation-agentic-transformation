@@ -117,7 +117,7 @@ flowchart LR
 ## 3. Repository Layout (Target)
 
 ```
-FCC_RCC_Optimisation/
+Refinery Agentic Optimisation/
 ├── sim_octave/                  # existing: simulator, scenarios, BQ loader, data/<batch>/
 ├── docs/ui/                     # cockpit mockups (layout reference)
 ├── soft_sensor/                 # Python package (models + logic)

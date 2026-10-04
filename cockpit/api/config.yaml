@@ -1,4 +1,4 @@
-# Cockpit API configuration (SDD §9 subset). Paths are relative to the FCC_RCC_Optimisation repo root.
+# Cockpit API configuration (SDD §9 subset). Paths are relative to the Refinery Agentic Optimisation repo root.
 # Environment overrides: FCC_GCP_PROJECT, FCC_GCP_LOCATION, FCC_TEXT_MODEL, FCC_LIVE_MODEL, FCC_EMBED_MODEL.
 data:
   root: sim_octave/data            # <batch>/*.csv below this folder are scanned
