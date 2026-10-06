@@ -172,6 +172,54 @@ def _labs(meta: dict, prop: str, t: int) -> tuple[dict | None, list[str]]:
              "status_reason": last.get("status_reason")}, [last["sample_id"]])
 
 
+MEMBER_INFO = {   # MODEL_IDS order (app/config.py); wording checked against app/models/*.py
+    "bayes_ridge_v1": ("Linear model (Bayesian ridge)", "Straight-line fit on the selected inputs; kept as a baseline"),
+    "gpr_v1": ("Gaussian process", "Smooth non-linear fit; its band widens when the inputs move away from the "
+                                   "training data"),
+    "hybrid_delta_v1": ("Physics + correction (hybrid)", "Physics line from the draw-tray temperature corrected for column "
+                                                       "pressure, plus a Gaussian-process correction"),
+    "pinn_ens_v1": ("Physics-informed neural nets (5)", "Five small neural nets trained to stay close to the physics line "
+                                                         "and to rise with draw-tray temperature; their disagreement "
+                                                         "widens the band"),
+}
+INPUT_LABEL = {"T_tray06_F": "Tray 6 temperature", "T_tray13_F": "Tray 13 temperature",
+               "P5_frac_psia": "Fractionator pressure", "Tr_riser_F": "Riser outlet temperature",
+               "feed_flow_lb_s": "Feed flow", "MV_PA2": "Pump-around 2 controller output",
+               "MV_PA3": "Pump-around 3 controller output"}
+
+
+def _explain_models(arrs: dict, prop: str, j: int) -> dict:
+    """Committee members at minute j (estimate, 90 % band half-width, weight, role) plus the soft sensor's main inputs."""
+    from app.config import MODEL_IDS
+    st = get_state()
+    P = lambda k: arrs.get(f"{prop}|{k}")  # noqa: E731
+    mu, sg, w, adm = P("mu"), P("sigma"), P("weight"), P("admitted")
+    members = []
+    if mu is not None and j < len(mu):
+        for i, mid in enumerate(MODEL_IDS[: mu.shape[1]]):
+            name, how = MEMBER_INFO.get(mid, (mid, ""))
+            in_mix = bool(adm[i]) if adm is not None and i < len(adm) else True
+            wi = float(w[j][i]) if w is not None else 0.0
+            members.append({"id": mid, "name": name, "how": how, "estimate": _f(mu[j][i], 1),
+                            "band90": _f(1.645 * sg[j][i], 1), "weight": _f(wi, 3),
+                            "role": "blended" if in_mix and wi > 0 else "reference"})
+    bias, wsrc = P("bias"), P("weight_source")
+    src = str(wsrc[j]) if wsrc is not None and j < len(wsrc) else None
+    b = st.bundle or {}
+    lags = ((b.get("lags") or {}).get("targets") or {}).get(prop) or {}
+    inputs = [{"tag": k, "label": INPUT_LABEL.get(k) or TAG_LABEL.get(k, k), "lag_min": int(v.get("lag_min") or 0) if v.get("significant") else 0}
+              for k, v in lags.items()]
+    meta = (b.get("meta") or {}).get(prop) or {}
+    ls = (b.get("label_stats") or {}).get(prop) or {}
+    return {"members": members,
+            "bias": _f(bias[j], 2) if bias is not None and j < len(bias) else None,
+            "weight_source": {"out_of_fold": "accuracy on training runs held out from each fit (too few lab results in "
+                                             "this run yet to re-weight)",
+                              "recent_labs": "accuracy against the most recent accepted lab results"}.get(src, src),
+            "sigma_scale": _f(meta.get("sigma_scale"), 2),
+            "inputs": inputs, "n_train_labels": ls.get("used"), "n_pinned_excluded": ls.get("pinned_excluded")}
+
+
 def _streak_start(recs: list[dict], t: int, pred) -> int:
     """First time of the unbroken run of recommendations satisfying `pred`, ending at the latest one ≤ t."""
     rs = [r for r in recs if int(r["time_min"]) <= t]
@@ -241,6 +289,7 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
                 "plan": _f(rec.get("sp_before")), "delta_vs_plan": _f((e["mu"] or 0) - (rec.get("sp_before") or 0)),
                 "q95": e["q95"], "spec_max": _f((e["q95"] or 0) + (rec.get("margin_before_F") or 0)), "unit": "°F",
                 "since_label": att.get("time_label") if att else None, "line": att.get("line") if att else None,
+                "since_min": att.get("time_min") if att else None,
                 "last_lab": lab, "next_lab_label": clock(nl) if nl is not None else None,
                 "next_lab_in_min": (nl - t) if nl is not None else None}
     evidence = {"tags": [prop, sp_tag], "labs": lab_ids, "docs": _cites(rec),
@@ -255,7 +304,7 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
         verb = "Lower" if rec["action"] == "LOWER" else "Raise"
         sp0, sp1, dl = _f(rec["sp_before"]), _f(rec["sp_after"]), _f(rec["delta_F"])
         d["question"] = f"{verb} the {lbl} now, or wait for the lab?"
-        d["headline"] = f"{verb} {lbl} {dl:+.1f} °F ({sp0:.1f} → {sp1:.1f})"
+        d["headline"] = f"{verb} {lbl} {dl:+.1f} °F ({sp0 + 1e-9:.1f} → {sp1 + 1e-9:.1f})"   # half-up, as the screen
         mu_after = _f((e["mu"] or 0) + _gain(rec) * (dl or 0))
         d["observed"], d["evidence"], d["gates"] = observed, evidence, gates
         d["diagnosed"] = {"text": rec.get("rationale"), "trust": rec.get("trust"), "conservative": rec.get("conservative")}
@@ -266,14 +315,18 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
         d["predicted"] = {"mu_before": e["mu"], "mu_after": mu_after, "sigma": e["sigma"],
                           "p_on_spec_before": e["p_on_spec"], "p_on_spec_after": _f(rec.get("p_on_spec_after"), 3),
                           "w90": e["w90"], "spec_max": observed["spec_max"], "margin_after": _f(rec.get("margin_after_F")),
+                          "target": _f(rec.get("target_F")),
                           "ripple": _ripple(run_id, t, unit_id, sp_tag, sp1, dl or 0.0)}
         horizon = att.get("horizon_min") if att else int(rec.get("valid_until_min", t + 30)) - t
         d["urgency"] = {"rank": None, "time_to_consequence_min": horizon,
                         "consequence": ((att or {}).get("consequence") if rec["action"] == "LOWER"
                                         and "too light" not in ((att or {}).get("consequence") or "") else None)
                         or (f"{short} T98 could go over spec: the upper end of the estimate is above the limit" if rec["action"] == "LOWER" else
-                            f"{short} cut lighter than it needs to be ({_f(rec.get('margin_before_F'), 1)} °F inside spec): "
-                            f"product goes to the heavier stream every hour the cut point is not raised"),
+                            (f"{short} T98 is running {abs((rec.get('target_F') or 0) - (e['mu'] or 0)):.1f} °F below its "
+                             f"{rec.get('target_F'):.1f} °F target: the cut stays lighter than planned until it is raised"
+                             if rec.get("target_F") is not None else
+                             f"{short} cut lighter than it needs to be ({_f(rec.get('margin_before_F'), 1)} °F inside spec): "
+                             f"product goes to the heavier stream every hour the cut point is not raised")),
                         "decide_by_label": clock(int(rec.get("valid_until_min", t + 30)))}
         out.append(d)
     elif status == "WITHHELD" or e["trust"] == "RED":
@@ -310,6 +363,10 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
         d["urgency"] = {"rank": None, "time_to_consequence_min": nl - t,
                         "consequence": f"Unit runs {nl - t} min on an uncertain {short} estimate", "decide_by_label": None}
         out.append(d)
+    if out:
+        ex = _explain_models(arrs, prop, j)
+        for d in out:
+            d["models"] = ex
     return out
 
 
@@ -524,6 +581,12 @@ def _step(kind: str, name: str, did: str) -> dict:
     return {"kind": kind, "name": name, "did": did}
 
 
+def _pp(x) -> str:
+    """Probability as the screen shows it: never 0 % or 100 % (a Gaussian has no certainty)."""
+    v = (x or 0) * 100
+    return "> 99 %" if v >= 99.5 else "< 1 %" if v < 0.5 else f"{v:.0f} %"
+
+
 def _enabled_by(d: dict, reg: dict) -> list[dict]:
     """The chain of agents, models and checks that made this decision possible — in plain words, with numbers."""
     o, p, t = d.get("observed") or {}, d.get("predicted") or {}, d["type"]
@@ -532,23 +595,43 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
               f"{max((reg.get('p_regime') or {'_': 0}).values()) * 100:.0f} %").strip() if reg else "unknown"
     steps: list[dict] = []
     if o.get("since_label") and t not in ("D4",):
-        lab = " — hours before the next lab" if o.get("tag") in PROPS else ""
+        lab = ""
+        if o.get("tag") in PROPS and o.get("since_min") is not None:
+            nl = next_lab_min(d["run_id"], int(o["since_min"]))
+            if nl is not None:
+                h = (nl - int(o["since_min"])) / 60
+                lab = f" — {h:.1f} h before the next lab ({clock(nl)})"
         steps.append(_step("agent", "Anomaly detection", f"Flagged {o.get('label') or o.get('tag')} moving away from "
                                                          f"expected at {o['since_label']}{lab}"))
     if t in ("D1", "D2", "D9"):
-        steps.append(_step("ml", "Soft-sensor committee (4 models)",
+        mem = (d.get("models") or {}).get("members") or []
+        n_mix = sum(1 for m in mem if m.get("role") == "blended")
+        name = (f"Soft-sensor committee ({len(mem)} models, {n_mix} blended)" if mem and n_mix < len(mem)
+                else f"Soft-sensor committee ({len(mem) or 4} models)")
+        steps.append(_step("ml", name,
                            f"Estimates the lab value every minute: {o['estimate']:.1f} ± {(o.get('sigma') or 0):.1f} °F"
+                           + ("; the linear model is shown for reference only" if mem and n_mix < len(mem) else "")
                            if o.get("estimate") is not None else f"Estimates LCO and HN every minute: {o.get('line')}"))
-        steps.append(_step("ml", "Crude-regime model", f"Recognises the crude from unit behaviour: {regime}; picks the "
-                                                       "matching model weights"))
-        steps.append(_step("check", "Trust checks", f"{g_pass} of {len(d['gates'])} pass (models agree, inputs in range, "
-                                                    "physics gap, spread)"))
+        steps.append(_step("ml", "Crude-regime model", f"Recognises the crude from unit behaviour: {regime}; feeds the "
+                                                       "'labels for this crude' check"))
+        names = ", ".join(g.get("name") or g.get("id") for g in d["gates"])
+        steps.append(_step("check", "Trust checks", f"{g_pass} of {len(d['gates'])} pass ({names})"))
     if t == "D1":
-        pb_, pa_ = (p.get("p_on_spec_before") or 0) * 100, (p.get("p_on_spec_after") or 0) * 100
-        steps.append(_step("optimiser", "Set-point search",
-                           f"Smallest move that lifts P(on-spec) from {pb_:.0f} % to {pa_:.0f} %, inside SOP step limits"
-                           if pa_ > pb_ + 0.5 else
-                           f"Takes back margin while P(on-spec) stays at {pa_:.0f} % (≥ 95 %), inside SOP step limits"))
+        mv = ((d.get("proposed") or {}).get("moves") or [{}])[0]
+        tgt, mu0, mu1 = p.get("target"), p.get("mu_before"), p.get("mu_after")
+        dl = mv.get("delta") or 0.0
+        cap = float((get_state().s["recommend"] or {}).get("max_move_F", 5.0))
+        chance = f"chance on spec {_pp(p.get('p_on_spec_before'))} → {_pp(p.get('p_on_spec_after'))}"
+        if tgt is not None and mu0 is not None and mu1 is not None:
+            short_of = abs(mu1 - tgt) > float((get_state().s["recommend"] or {}).get("target_deadband_F", 1.0))
+            capped = abs(abs(dl) - cap) < 1e-6
+            tail = (f"; the {cap:.0f} °F SOP step stops it short, so a second step follows" if short_of and capped
+                    else " — on target" if not short_of else "")
+            txt = (f"Aims at the {tgt:.1f} °F target, never below 95 % chance on spec: {mu0:.1f} → {mu1:.1f} °F{tail}. "
+                   f"{chance[0].upper() + chance[1:]}")
+        else:
+            txt = f"Smallest move inside the {cap:.0f} °F SOP step that keeps at least 95 % chance on spec: {chance}"
+        steps.append(_step("optimiser", "Set-point search", txt))
     if t == "D2":
         steps.append(_step("check", "Spread gate", f"Withholds advice: {d.get('withheld_text')}"))
     if t == "D9":

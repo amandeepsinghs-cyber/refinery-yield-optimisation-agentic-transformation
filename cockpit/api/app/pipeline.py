@@ -166,9 +166,12 @@ def assemble_run(run_id: str, df: pd.DataFrame, preds: dict, raw_labs: list[dict
     tr = s["trust"]
 
     for prop, P_ in preds["props"].items():
-        mu, sg = P_["mu"], P_["sigma"]
+        mu = P_["mu"]
+        # SDD-CAL (6 Oct): member sigmas scaled by the out-of-fold calibration factor so the 90 % band covers ~90 %
+        sg = P_["sigma"] * float(meta[prop].get("sigma_scale", 1.0))
         J = mu.shape[1]
-        adm = np.asarray(meta[prop]["admitted"], bool)
+        # members in the mixture: admitted, minus any kept only as a reference (meta "mix_admitted")
+        adm = np.asarray(meta[prop].get("mix_admitted", meta[prop]["admitted"]), bool)
         val_mse = np.asarray(meta[prop]["val_mse"], float)
         w_val = _weights_from_mse(val_mse, adm, floor)
         W = np.zeros((n, J))

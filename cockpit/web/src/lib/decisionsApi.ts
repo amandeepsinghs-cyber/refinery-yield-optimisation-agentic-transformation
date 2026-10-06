@@ -30,7 +30,7 @@ export interface Decision {
   observed: null | {
     tag?: string; label?: string; estimate?: number | null; sigma?: number | null; plan?: number | null; delta_vs_plan?: number | null;
     q95?: number | null; spec_max?: number | null; unit?: string; since_label?: string | null; line?: string | null;
-    next_lab_label?: string | null; next_lab_in_min?: number | null;
+    next_lab_label?: string | null; next_lab_in_min?: number | null; since_min?: number | null;
     last_lab?: { sample_id: string; value: number | null; status: string; drawn_label: string; reported_label: string; status_reason?: string } | null;
     regime_id?: string; regime_label?: string; p_regime?: Record<string, number>; declared_regime_id?: string; transition_pct?: number; novelty?: number;
     severity?: string;
@@ -40,7 +40,7 @@ export interface Decision {
   proposed: { moves: DecisionMove[]; alternative: string | null; sample?: { properties?: string[]; property?: string; when: string }; sop?: string };
   predicted: null | {
     mu_before?: number | null; mu_after?: number | null; sigma?: number | null; p_on_spec_before?: number | null;
-    p_on_spec_after?: number | null; w90?: number | null; spec_max?: number | null; margin_after?: number | null; ripple?: RippleItem[];
+    p_on_spec_after?: number | null; w90?: number | null; spec_max?: number | null; margin_after?: number | null; target?: number | null; ripple?: RippleItem[];
     spec_min?: number | null; gain?: number; unit?: string; step?: number; step_max?: number; goal_label?: string; model?: string;
     gain_source?: "measured" | "scripted"; gain_evidence?: string | null;
   };
@@ -48,6 +48,12 @@ export interface Decision {
   /** "measured": the lever gain comes from simulator step tests; the chance band is still scripted (D6, 3 Oct). */
   gain_source?: "measured" | "scripted";
   gates: DecisionGate[];
+  /** Fractionator decisions: the soft-sensor committee at this minute (for the Full explanation panel). */
+  models?: {
+    members: { id: string; name: string; how: string; estimate: number | null; band90: number | null; weight: number | null; role: "blended" | "reference" }[];
+    bias: number | null; weight_source: string | null; sigma_scale: number | null;
+    inputs: { tag: string; label: string; lag_min: number }[]; n_train_labels?: number | null; n_pinned_excluded?: number | null;
+  };
   evidence: { tags: string[]; labs: string[]; docs: string[]; lakehouse: string | null; event_id?: string };
   withheld_reason: string | null;
   withheld_text: string | null;

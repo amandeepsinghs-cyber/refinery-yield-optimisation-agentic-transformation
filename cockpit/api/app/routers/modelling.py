@@ -158,8 +158,8 @@ def calibration(property: str | None = None):
         from scipy.stats import norm
         rel[mid] = [round(float(np.mean(zabs <= norm.ppf(0.5 + c / 2))), 4) for c in NOMINAL]
     # mixture reliability for the central intervals available (50% from q25/q75, 90% from q05/q95)
-    rel["mixture"] = {"0.5": round(float(np.mean((y >= z["q25"]) & (y <= z["q75"]))), 4),
-                      "0.9": round(float(np.mean((y >= z["q05"]) & (y <= z["q95"]))), 4)}
+    rel["mixture"] = {"0.5": round(float(np.mean(((y >= z["q25"]) & (y <= z["q75"]))[ok])), 4),
+                      "0.9": round(float(np.mean(((y >= z["q05"]) & (y <= z["q95"]))[ok])), 4)}
     cov = ((y >= z["q05"]) & (y <= z["q95"])).astype(float)
     win = min(60, max(1, n // 10))
     roll = np.convolve(cov, np.ones(win) / win, mode="same")
@@ -178,7 +178,7 @@ def calibration(property: str | None = None):
     # We pass e (mixture residual) as residuals. lab_residuals is empty for now (since calibration is on test minutes)
     drift_sentinel = evaluate_drift_sentinel(e, np.array([]), R=st.s.R)
     
-    return {"parity": parity, "residuals": resid, "pit": pit, "reliability": rel,
+    return _finite({"parity": parity, "residuals": resid, "pit": pit, "reliability": rel,
             "coverage_over_time": {"time_idx": idx.tolist(), "mixture": [round(float(v), 4) for v in roll[idx]], "window": win},
             "gpr_relevance": st.bundle["cards"][prop].get("gpr_relevance", [])[:15],
             "hybrid_decomposition": {"time_idx": idx.tolist(), "physics": [round(float(v), 3) for v in z["phys"][idx]],
@@ -190,4 +190,15 @@ def calibration(property: str | None = None):
             "index": {"run_id": z["run_id"][idx].tolist(), "time_min": z["time_min"][idx].tolist()},
             "crps": {mid: st.bundle["evaluation"][prop]["members"][mid]["crps"] for mid in MODEL_IDS} |
                     {"mixture": st.bundle["evaluation"][prop]["mixture"]["crps"]},
-            "note": "Held-out minutes vs simulator truth. " + st.bundle["note"]}
+            "note": "Held-out minutes vs simulator truth. " + st.bundle["note"]})
+
+
+def _finite(o):
+    """NaN / inf -> None (JSON-safe). Truth is NaN at minutes pinned at the simulator's T98 ceiling (pinned_truth on)."""
+    if isinstance(o, dict):
+        return {k: _finite(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_finite(v) for v in o]
+    if isinstance(o, float) and not np.isfinite(o):
+        return None
+    return o

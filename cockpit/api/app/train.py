@@ -51,6 +51,44 @@ def group_of(info) -> str:
     return info.scenario if info.scenario not in ("random", "random_test") else info.run_id
 
 
+_DEFAULT_LABEL_WINDOW = {"LCO_T98_F": (744.0, 766.0), "HN_T98_F": (520.0, 542.0)}
+
+
+def label_window(s, prop: str):
+    """Training-label window per property (since v0.1: labels outside it are dropped). `training.label_window`:
+    absent = the v0.1 windows above; `off` / false = keep every label (models learn the excursions too)."""
+    cfg = s["training"].get("label_window", "default")
+    if cfg in ("off", False, None):
+        return None
+    if isinstance(cfg, dict) and prop in cfg:
+        return tuple(cfg[prop])
+    return _DEFAULT_LABEL_WINDOW.get(prop, (-np.inf, np.inf))
+
+
+def calibrate_sigma_scale(y, mu, sd, m: dict, s, target: float = 0.90) -> float:
+    """Out-of-fold calibration (6 Oct): the factor k on member sigmas that makes the mixture's 5-95 % band cover
+    `target` of out-of-fold minutes. Lab-bias variance (sigma_lab^2) is included as in assemble_run. Grid 0.3..1.5."""
+    from .dist import mix_quantiles
+    from .pipeline import _weights_from_mse
+    adm = np.asarray(m.get("mix_admitted", m["admitted"]), bool)
+    sig_lab = s.sigma_lab
+    w = _weights_from_mse(np.asarray(m["val_mse"], float), adm, (0.25 * sig_lab) ** 2)
+    ok = np.isfinite(y) & np.isfinite(mu).all(1) & np.isfinite(sd).all(1)
+    y, mu, sd = y[ok], mu[ok], sd[ok]
+    if len(y) > 6000:
+        idx = np.random.default_rng(0).choice(len(y), 6000, replace=False)
+        y, mu, sd = y[idx], mu[idx], sd[idx]
+    W = np.tile(w, (len(y), 1))
+    best, best_gap = 1.0, 9.0
+    for k in np.round(np.arange(0.3, 1.51, 0.05), 2):
+        sc = np.sqrt((sd * k) ** 2 + sig_lab ** 2)
+        q = mix_quantiles([0.05, 0.95], mu, sc, W, tol=0.05)
+        cov = float(np.mean((y >= q[0.05]) & (y <= q[0.95])))
+        if abs(cov - target) < best_gap:
+            best, best_gap = float(k), abs(cov - target)
+    return best
+
+
 def build_labels(frames: dict, raw_labs: dict, runs: list[str], s, source: str,
                  transient: dict | None = None, stats: dict | None = None, pin_cfg: dict | None = None) -> dict:
     """prop -> labelled rows. Lab mode: clean labs only (injected_error == none), and labs drawn in a transient minute
@@ -81,11 +119,9 @@ def build_labels(frames: dict, raw_labs: dict, runs: list[str], s, source: str,
             if source == "truth":
                 stride = int(s["training"]["truth_stride_min"])
                 base_df = df[~tmask] if (tmask is not None and (~tmask).sum() >= 30) else df
-                if prop == "LCO_T98_F":
-                    c_mask = (base_df[prop] >= 744.0) & (base_df[prop] <= 766.0)
-                else:
-                    c_mask = (base_df[prop] >= 520.0) & (base_df[prop] <= 542.0)
-                if c_mask.sum() >= 10:
+                win = label_window(s, prop)
+                c_mask = (base_df[prop] >= win[0]) & (base_df[prop] <= win[1]) if win else None
+                if c_mask is not None and c_mask.sum() >= 10:
                     base_df = base_df[c_mask]
                 d = base_df.iloc[::stride].copy()
                 d["y"] = d[prop]
@@ -106,11 +142,9 @@ def build_labels(frames: dict, raw_labs: dict, runs: list[str], s, source: str,
                 tm = {l["time_min"]: l["value"] for l in labs}
                 d = df[df["time_min"].isin(tm.keys())].copy()
                 d["y"] = d["time_min"].map(tm)
-                if prop == "LCO_T98_F":
-                    c_mask = (d[prop] >= 744.0) & (d[prop] <= 766.0)
-                else:
-                    c_mask = (d[prop] >= 520.0) & (d[prop] <= 542.0)
-                if c_mask.sum() >= 1:
+                win = label_window(s, prop)
+                c_mask = (d[prop] >= win[0]) & (d[prop] <= win[1]) if win else None
+                if c_mask is not None and c_mask.sum() >= 1:
                     d = d[c_mask]
             d = d[np.isfinite(d["y"].to_numpy(dtype=float))]
             st["used"] += len(d)
@@ -251,7 +285,9 @@ def main(argv=None):
     for prop in s.targets:
         y = mask_truth(np.concatenate([frames[r][prop].to_numpy(dtype=float) for r in adm_runs]), prop, pin_cfg)
         reg = np.concatenate([regime_of(frames[r]["dist_feed_API"].to_numpy(dtype=float), s) for r in adm_runs])
-        env_mask = ((y >= 742.0) & (y <= 768.0)) if prop == "LCO_T98_F" else ((y >= 518.0) & (y <= 544.0))
+        win = label_window(s, prop)
+        env_mask = np.isfinite(y) if win is None else (
+            ((y >= 742.0) & (y <= 768.0)) if prop == "LCO_T98_F" else ((y >= 518.0) & (y <= 544.0)))
         if env_mask.sum() < 50:
             env_mask = np.ones_like(y, dtype=bool)
         mets = {}
@@ -272,6 +308,19 @@ def main(argv=None):
                     (f"RMSE {m['rmse']:.2f} > {A['rmse_ratio_max']}×ridge {br:.2f}", not ok_rmse),
                     (f"90% coverage {m['coverage90']:.2f} outside {A['coverage90']}", not ok_cov)] if bad))
         meta[prop] = {"admitted": admitted, "val_mse": [mets[m]["rmse"] ** 2 for m in MODEL_IDS], "reasons": reasons}
+        excl = set(A.get("mixture_exclude") or [])
+        if excl:
+            mix_adm = [a and mid not in excl for a, mid in zip(admitted, MODEL_IDS)]
+            if sum(mix_adm) >= 2:
+                meta[prop]["mix_admitted"] = mix_adm
+                for mid in excl:
+                    if mid in reasons:
+                        reasons[mid] += "; reference only, weight 0 in the estimate"
+        if T.get("calibrate_sigma"):
+            mu_o = np.stack([np.concatenate([preds[r]["props"][prop]["mu"][:, j] for r in adm_runs]) for j in range(len(MODEL_IDS))], 1)
+            sd_o = np.stack([np.concatenate([preds[r]["props"][prop]["sigma"][:, j] for r in adm_runs]) for j in range(len(MODEL_IDS))], 1)
+            meta[prop]["sigma_scale"] = calibrate_sigma_scale(y, mu_o, sd_o, meta[prop], s)
+            log(f"[{prop}] sigma scale (out-of-fold 90 % coverage):", meta[prop]["sigma_scale"])
         member_eval[prop] = mets
         log(f"[{prop}] admission:", dict(zip(MODEL_IDS, admitted)))
 

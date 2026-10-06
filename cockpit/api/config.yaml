@@ -51,7 +51,10 @@ lags:                              # A6 / SDD-LAG: per (target, key tag) delay, 
 training:
   label_source: auto               # auto | lab | truth. auto = lab if >= min_labs clean labs else truth
   min_labs: 100                    # DECISIONS L5: full_v1 has ~110 clean train labs per property -> trains on labs
-  truth_stride_min: 30             # when training on simulator truth (<100 labs during preview): use every 30th steady-state minute
+  truth_stride_min: 5              # when training on simulator truth: every 5th minute (6 Oct: was 30)
+  label_window: "off"              # 6 Oct: keep every label. The v0.1 window (LCO 744-766, HN 520-542 °F) hid the
+                                   # excursions, so the models predicted ~755 °F whatever happened
+  calibrate_sigma: true            # 6 Oct: scale member sigmas so the out-of-fold 90 % band covers 90 %
   loro_max_runs: 8                 # fallback data (few short runs): leave-one-run-out
   test_seed_min: 140               # full_v1: random_s140..s153 held out (test); s100..s139 train
   lever_batches: [lever_v1]        # designed lever moves (scenario 'lever'); used only by the set-point surrogates
@@ -61,7 +64,7 @@ training:
                                    # lever's first designed move lands in hours 1-6); the fit is redone on restart as they grow
   group_kfold: 4                   # grouped K-fold by run on the train runs (admission + committee MSE)
   pinned_truth:                    # app/data/pinned.py: simulator T98 calc saturates (LCO 770.364 °F in 20 % of full_v1
-    enabled: false                 # valid rows, HN 644.767 °F in 7 %). On = those minutes are missing labels + missing
+    enabled: true                  # valid rows, HN 644.767 °F in 7 %). On = those minutes are missing labels + missing
     targets: [LCO_T98_F]           # eval truth for `targets`. Env FCC_MASK_PINNED_TRUTH=0|1|LCO_T98_F,HN_T98_F overrides
     ceilings: {LCO_T98_F: 770.364, HN_T98_F: 644.767}
     tol: 0.001
@@ -71,7 +74,7 @@ hybrid:
 gpr: {max_train: 450, max_train_cv: 350, restarts: 1}
 pinn: {members: 5, hidden: [32, 32], epochs: 250, lr: 0.01, lambda_phys: 0.1, lambda_mono: 1.0, threads: 1,
        max_unlabelled: 1000, max_labelled: 3000}
-admission: {rmse_ratio_max: 1.40, coverage90: [0.65, 0.99]}
+admission: {rmse_ratio_max: 1.40, coverage90: [0.65, 0.99], mixture_exclude: [bayes_ridge_v1]}   # ridge: reference only (linear misfit sigma ~10 °F)
 committee: {recent_n: 3}           # weights = 1/MSE over the last recent_n accepted labs (pooled over the run's scored
                                    # history so far, plus optional prior history); fewer -> out-of-fold (training) weights
 steady_state:                      # A5 / SDD-MOD-06: transient minutes are excluded as lab training labels
@@ -94,7 +97,9 @@ trust: {s1_spread_R: 0.5, s1_severe_R: 1.0, s4_rmse_R: 1.5, s4_severe_R: 3.0, s6
 dq: {frozen_enabled: false, frozen_min: 30, spike_mad_k: 5.0, range_pad: 0.10}
 fallback: {hold_max_min: 60}       # C4 chain: consensus -> best single admitted model -> hold last good (<= 60 min) -> BAD
 recommend: {every_min: 5, max_move_F: 5.0, step_F: 0.5, p_on_spec_min: 0.95, valid_min: 30,
-            gain_default: 1.0, yield_sens_default: 0.0}
+            gain_default: 1.0, yield_sens_default: 0.0,
+            target_F: {LCO_T98_F: 755.3, HN_T98_F: 530.3},   # 6 Oct: the planned operating point (shift-start set points);
+            target_deadband_F: 1.0}                          # the agent aims here, never below 95 % on spec
 gemini:
   project: fcc-soft-sensor
   location: us-central1

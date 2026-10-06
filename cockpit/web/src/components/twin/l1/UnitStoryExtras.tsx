@@ -18,6 +18,7 @@ import type { AuditRow } from "@/lib/types";
 import type { TwinWorkbench } from "@/lib/twinTypes";
 import type { Decision } from "@/lib/decisionsApi";
 import { clock } from "@/lib/format";
+import { probPct } from "@/lib/prob";
 
 const fx = (v: number | null | undefined, d = 1) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d));
 
@@ -187,13 +188,13 @@ export function WhatSetsTheMove({ d, stepLimit = 5 }: { d: Decision; stepLimit?:
         <li className="bind">
           <span>Sets the move</span>
           <b>Take back margin while the chance on spec stays at 95 % or more</b>
-          <em>Already {Math.round((p.p_on_spec_before ?? 0) * 100)} % on spec, so the move runs the cut closer to spec and keeps more product in the right stream: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} keeps {Math.round((p.p_on_spec_after ?? 0) * 100)} %{d.diagnosed?.conservative ? "; half size because one check is amber" : ""}.</em>
+          <em>Already {probPct(p.p_on_spec_before)} on spec, so the move runs the cut closer to spec and keeps more product in the right stream: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} keeps {probPct(p.p_on_spec_after)}{d.diagnosed?.conservative ? "; half size because one check is amber" : ""}.</em>
         </li>
       ) : (
         <li className="bind">
           <span>Sets the move</span>
           <b>{p.goal_label ?? "Chance on spec"} must reach 95 %</b>
-          <em>The search stops at the smallest move that gets there: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} gives {Math.round((p.p_on_spec_after ?? 0) * 100)} %.</em>
+          <em>The search stops at the smallest move that gets there: {mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} gives {probPct(p.p_on_spec_after)}.</em>
         </li>
       )}
       <li>

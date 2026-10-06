@@ -65,6 +65,29 @@ def search_move(m, s_, w, spec_max, margin, gain, max_move, step, p_min):
     return float(deltas[0]), float(p[0]), False
 
 
+def search_move_target(m, s_, w, spec_max, margin, gain, max_move, step, p_min, target, deadband):
+    """6 Oct: aim for the target T98 (the planned operating point), never below p_min chance on spec. Among feasible
+    deltas on the step grid, the one whose mean after the move is closest to the target (smaller move on ties).
+    Within `deadband` of the target and already feasible: no move. Returns (delta, p_after, feasible)."""
+    deltas = np.round(np.arange(-max_move, max_move + 1e-9, step), 3)
+    thr = spec_max - margin
+    x = thr - gain * deltas
+    M = np.repeat(m[None, :], len(deltas), 0)
+    S = np.repeat(s_[None, :], len(deltas), 0)
+    W = np.repeat(w[None, :], len(deltas), 0)
+    p = mix_cdf(x, M, S, W)
+    mean_now = float(np.sum(w * m) / max(np.sum(w), 1e-12))
+    i0 = int(np.argmin(np.abs(deltas)))
+    if abs(mean_now - target) <= deadband and p[i0] >= p_min:
+        return 0.0, float(p[i0]), True
+    feas = np.where(p >= p_min)[0]
+    if not len(feas):
+        return float(deltas[0]), float(p[0]), False
+    dist = np.abs(mean_now + gain * deltas[feas] - target) + 1e-6 * np.abs(deltas[feas])
+    k = feas[int(np.argmin(dist))]
+    return float(deltas[k]), float(p[k]), True
+
+
 def build_recommendation(run_id, t, prop, est, sp_before, feed_lb_min, gainfo, s, citations) -> dict | None:
     """est: dict with m,s,w (J,), q95, w90, gate (status, reason, message), trust level. Returns card or None."""
     rc = s["recommend"]
@@ -90,7 +113,13 @@ def build_recommendation(run_id, t, prop, est, sp_before, feed_lb_min, gainfo, s
     g = gainfo["gain"]
     short = PROP_SHORT[prop]
     # GREEN full move: the largest feasible delta within ±max_move_F on the step_F grid
-    delta_full, p_full, feasible = search_move(est["m"], est["s"], est["w"], spec, margin, g, max_move, step, p_min)
+    target = (rc.get("target_F") or {}).get(prop)
+    if target is not None:
+        delta_full, p_full, feasible = search_move_target(est["m"], est["s"], est["w"], spec, margin, g, max_move, step,
+                                                          p_min, float(target), float(rc.get("target_deadband_F", 1.0)))
+    else:
+        delta_full, p_full, feasible = search_move(est["m"], est["s"], est["w"], spec, margin, g, max_move, step, p_min)
+    base["target_F"] = None if target is None else float(target)
     parts = [f"Mixture q95 {est['q95']:.1f} °F vs {short} T98 spec {spec:.0f} °F (margin {base['margin_before_F']:.1f} °F).",
              f"W90 {est['w90']:.1f} °F within the {s.w90_max:.1f} °F limit; trust {est['trust']}."]
     if not feasible:
@@ -117,8 +146,11 @@ def build_recommendation(run_id, t, prop, est, sp_before, feed_lb_min, gainfo, s
     yield_pct = 100.0 * delta * g * ys / feed_lb_min if feed_lb_min else 0.0
     sp_after = None if sp_before is None else round(float(sp_before) + delta, 2)
     if action == "HOLD":
-        parts.append(f"No set-point move improves the margin while keeping P(on-spec) ≥ {p_min:.2f}; hold.")
+        parts.append(f"On target ({target:.1f} °F) and P(on-spec) ≥ {p_min:.2f}; hold." if target is not None else
+                     f"No set-point move improves the margin while keeping P(on-spec) ≥ {p_min:.2f}; hold.")
     else:
+        if target is not None:
+            parts.append(f"Aim: {short} T98 back to its {target:.1f} °F target, never below {p_min:.0%} chance on spec.")
         parts.append(f"{action.title()} the {short} T98 set point by {abs(delta):.1f} °F (gain {g:.2f} °F/°F): "
                      f"P(on-spec) after {p_after:.3f}, margin after {margin_after:.1f} °F.")
     if conservative:

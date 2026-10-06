@@ -143,7 +143,7 @@ def adaptation_at(run_id: str, time_min: int, prop: str) -> dict:
         weights_list.append({
             "member": m,
             "label": lbl,
-            "weight": round(live_w[m], 2),
+            "weight": round(live_w[m], 4),
             "by_regime": by_r
         })
         

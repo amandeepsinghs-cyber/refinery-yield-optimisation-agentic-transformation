@@ -442,8 +442,8 @@ export const UC_DETAIL: Record<string, UseCaseDetail> = {
   "UC-01": {
     inputs: ["Tray temperatures and LCO / HN draw temperatures, every minute", "Pumparound duties (PA1–PA4) and feed rate", "The crude now running (part 2)", "The lab LCO T98, every 8 h"],
     outputs: ["LCO T98 now ± its spread, and the chance it is on spec", "The cut-point move (LCO T98 set point, from → to), or “wait for the lab”, or “pull an extra sample”"],
-    decides: "The optimiser finds the smallest cut-point move that lifts the chance of being on spec to 95 % or more, inside the 5 °F SOP step. It is shown only if all trust checks pass; otherwise the cockpit says wait, or asks for a sample.",
-    value: "Run the cut point close to its spec instead of with a safety margin: more product kept in the right stream, fewer off-spec hours after a crude change, fewer re-runs.",
+    decides: "The optimiser finds the cut-point move that brings the estimate closest to its target T98 while keeping at least 95 % chance on spec, inside the 5 °F SOP step. It is shown only if all trust checks pass; otherwise the cockpit says wait, or asks for a sample.",
+    value: "Hold the cut point at its target between lab results instead of finding a drift 8 h later: fewer off-spec hours after a crude change, fewer re-runs.",
     valueArea: "Yield & quality",
   },
   "UC-11": {
@@ -568,7 +568,7 @@ export const STEP_HOW: Record<StepKey, StepHow> = {
     q: "What should be moved, and by how much?",
     by: "", parts: ["response", "optimiser"],
     io: ["The estimate from step ② and the lever’s limits", "The move (from → to) and the chance on spec before → after. Accept / Hold / Decline goes to the decision record only."],
-    read: "The slider tries another move and shows what it would do. Solid bell = now; dashed bell = after the move. The bar under “Levers” shows where the lever sits in its allowed range.",
+    read: "The slider tries another move and shows what it would do. On the cut points, slide the solid bell onto the dotted target bell; a green tick shows when they match. On other levers: solid bell = now, dashed bell = after the move. The bar under “Levers” shows where the lever sits in its allowed range.",
   },
   optimise: {
     q: "Why this move, and is it safe to advise?",

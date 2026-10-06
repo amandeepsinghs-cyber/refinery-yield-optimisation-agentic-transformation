@@ -55,10 +55,11 @@ def test_config_from_settings_and_unknown_target_ignored():
     assert active_targets(c) == ["LCO_T98_F"]                          # no ceiling known for XYZ
 
 
-def test_live_config_yaml_keeps_flag_off(monkeypatch):
+def test_live_config_yaml_masks_lco_only(monkeypatch):
+    # 6 Oct 2026 retrain: pinned LCO minutes (simulator T98 ceiling) are missing labels / truth in the live config
     monkeypatch.delenv("FCC_MASK_PINNED_TRUTH", raising=False)
     from app.config import get_settings
-    assert active_targets(pinned_config(get_settings())) == []
+    assert active_targets(pinned_config(get_settings())) == ["LCO_T98_F"]
 
 
 def test_target_pinned_on_frame():

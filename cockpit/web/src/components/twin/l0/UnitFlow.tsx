@@ -18,6 +18,7 @@ import { actOnDecision, type Decision } from "@/lib/decisionsApi";
 import type { TwinAttention, TwinUnit } from "@/lib/twinTypes";
 import GaussianPdf from "@/components/twin/shared/GaussianPdf";
 import { UNIT_INFO } from "@/lib/units";
+import { probPct } from "@/lib/prob";
 
 interface Io { in: string[]; out: string[]; measured: [string, string, string][]; levers: [string, string, string][] }
 // Process I/O per unit (simulator flowsheet, sim_octave). measured / levers: [tag, plain name, unit].
@@ -44,7 +45,7 @@ export const FLOW: Record<string, Io> = {
     levers: [["SP_T_overhead", "Overhead temperature target", "°F"]] },
 };
 export const NAME: Record<string, string> = Object.fromEntries(Object.entries(UNIT_INFO).map(([id, u]) => [id, u.name]));
-const pct = (p?: number | null) => (p == null ? "—" : `${Math.round(p * 100)}%`);
+const pct = (p?: number | null) => probPct(p, "");
 const n = (v?: number | null, d?: number) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d ?? (Math.abs(v) >= 100 ? 1 : 2)));
 
 function Who({ k, children }: { k: "agent" | "ml" | "optimiser" | "check" | "data"; children: React.ReactNode }) {
@@ -176,7 +177,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
               <ul className="uf-opt">
                 <li><span>Goal</span>keep the product on spec (≥ 95 %) with the smallest move</li>
                 <li><span>Limits</span>SOP step ≤ 5 °F, 30 min between moves, set-point range</li>
-                <li><span>Model</span>{d.predicted?.model ?? `4-model soft-sensor committee, weights for crude ${d.enabled_by?.find((s) => s.name.startsWith("Crude"))?.did.match(/R\d[^;]*/)?.[0] ?? "in unit"}`}</li>
+                <li><span>Model</span>{d.predicted?.model ?? `Soft-sensor committee: 4 models, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended`}</li>
                 <li><span>Checks</span>{d.gates.filter((g) => g.pass).length} of {d.gates.length} pass before advising</li>
               </ul>
               <GaussianPdf members={members} spec={spec != null ? { hi: spec, label: "spec" } : null} unit="°F" height={84} compact showMixture={false} showP={false} ariaLabel="before and after" />

@@ -53,10 +53,27 @@ def _est(mu, sd=2.0, trust="GREEN", gate="PASS"):
             "gate_message": None if gate == "PASS" else "Distribution spread too wide — test.", "trust": trust}
 
 
-def _rec(est):
+def _legacy_settings():
+    """The pre-6-Oct objective (largest move that keeps P(on-spec) >= 0.95), i.e. no recommend.target_F."""
+    raw = copy.deepcopy(get_settings().raw)
+    raw["recommend"].pop("target_F", None)
+    return Settings(raw)
+
+
+def _rec(est, s=None):
     from app.recommend import build_recommendation
     return build_recommendation("random_s140", 100, "LCO_T98_F", est, 755.0, 1000.0,
-                                {"gain": 1.0, "yield_sens": 0.0}, get_settings(), [])
+                                {"gain": 1.0, "yield_sens": 0.0}, s or _legacy_settings(), [])
+
+
+def test_target_aim_lands_on_target_and_holds_there():
+    s = get_settings()
+    tgt = s["recommend"]["target_F"]["LCO_T98_F"]
+    r = _rec(_est(tgt - 2.5), s)                       # 2.5 °F below target -> raise 2.5, mean after on target
+    assert r["action"] == "RAISE" and r["delta_F"] == 2.5 and r["target_F"] == tgt
+    assert _rec(_est(tgt + 0.5), s)["action"] == "HOLD"   # inside the 1 °F deadband -> no move
+    r = _rec(_est(tgt + 3.0), s)
+    assert r["action"] == "LOWER" and r["delta_F"] == -3.0 and r["p_on_spec_after"] >= 0.95
 
 
 def test_green_full_move_capped():

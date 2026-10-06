@@ -14,6 +14,7 @@ import type { Decision } from "@/lib/decisionsApi";
 import type { TwinRegime } from "@/lib/twinTypes";
 import { clock } from "@/lib/format";
 import { LEVER_FIT, PILOT_LINE, PROOF_STATUS_LABEL, RECIPE_CHECK, type ProofCheck } from "@/lib/proofEvidence";
+import { probPct } from "@/lib/prob";
 
 type Stage = { k: string; title: string; text: string; state: "built" | "shown" | "pilot" | "scripted" | "measured" };
 const STATE_LABEL: Record<Stage["state"], string> = { built: "Built", shown: "Shown, not run in the replay", pilot: "Pilot on site", scripted: "Scripted gain", measured: "Measured gain · chance scripted" };
@@ -44,7 +45,7 @@ function Check({ c }: { c: ProofCheck }) {
 export function ProofLoop({ d, nextLab }: { d: Decision; nextLab?: string | null }) {
   const move = d.proposed.moves[0];
   const p = d.predicted;
-  const pct = (x?: number | null) => (x == null ? "—" : `${Math.round(x * 100)} %`);
+  const pct = (x?: number | null) => probPct(x);
   const lab = LAB_BASED.has(d.type);
   const measured = d.gain_source === "measured";
   const gainNote = !d.scripted ? "" : measured ? ` The gain is measured: ${p?.gain_evidence ?? "simulator step tests"}. The chance band is scripted.` : " The size of this gain is scripted.";

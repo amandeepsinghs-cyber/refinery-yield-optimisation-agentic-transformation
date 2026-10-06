@@ -29,11 +29,15 @@ export interface GaussianPdfProps {
   /** In-chart P(on-spec) label (default true). Turn off when the surrounding card already prints it. */
   showP?: boolean;
   ariaLabel?: string;
+  /** Where we want the product: a filled green bell at the target (same spread as the estimate). */
+  targetCurve?: { mu: number; sigma: number; label?: string } | null;
+  /** Curve lined up with the target: a small green tick pops above the target. */
+  matched?: boolean;
 }
 
 const fmt = (v: number, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : "—");
 
-export default function GaussianPdf({ members, target, spec, measured, unit = "", height = 120, compact = false, showMixture, showP = true, ariaLabel }: GaussianPdfProps) {
+export default function GaussianPdf({ members, target, spec, measured, unit = "", height = 120, compact = false, showMixture, showP = true, ariaLabel, targetCurve, matched = false }: GaussianPdfProps) {
   const theme = useCockpit((s) => s.theme);
   const P = paletteFor(theme);
   const uid = useId().replace(/:/g, "");
@@ -41,11 +45,14 @@ export default function GaussianPdf({ members, target, spec, measured, unit = ""
   const mix = mixtureMoments(act);
   const curves = [...act];
   const withMix = (showMixture ?? act.length > 1) && mix;
-  const grid = gaussGrid(withMix ? [...act, mix] : act, [target?.value, spec?.lo, spec?.hi, measured]);
+  const tc = targetCurve && Number.isFinite(targetCurve.mu) && targetCurve.sigma > 0 ? { id: "target", label: targetCurve.label ?? "target", mu: targetCurve.mu, sigma: targetCurve.sigma, weight: 1, color: "var(--green)" } : null;
+  const span = [...(withMix ? [...act, mix] : act), ...(tc ? [tc] : [])];
+  const grid = gaussGrid(span, [target?.value, spec?.lo, spec?.hi, measured]);
   const W = 320, H = height;
-  const L = compact ? 4 : 8, R = compact ? 4 : 8, T = compact ? 6 : 16, B = compact ? 4 : 18;
+  // extra headroom when a target is drawn, so the "on target" tick sits ~half a centimetre above the curve
+  const L = compact ? 4 : 8, R = compact ? 4 : 8, T = targetCurve ? 32 : compact ? 6 : 16, B = compact ? 4 : 18;
   const box = { x0: L, x1: W - R, yBase: H - B, yTop: T };
-  const peak = sharedPeak(withMix ? [...act, mix] : act);
+  const peak = sharedPeak(span);
   if (!grid.length || !(peak > 0)) {
     return <div className="gauss-empty muted" aria-label={ariaLabel}>No distribution at this minute</div>;
   }
@@ -68,6 +75,18 @@ export default function GaussianPdf({ members, target, spec, measured, unit = ""
       {/* spec band shading (outside spec = rose wash) */}
       {spec?.hi != null && inLimits(spec.hi) ? <rect x={sx(spec.hi)} y={T} width={Math.max(0, box.x1 - sx(spec.hi))} height={box.yBase - T} fill={hexA(P.spec, 0.08)} /> : null}
       {spec?.lo != null && inLimits(spec.lo) ? <rect x={box.x0} y={T} width={Math.max(0, sx(spec.lo) - box.x0)} height={box.yBase - T} fill={hexA(P.spec, 0.08)} /> : null}
+      {/* target bell: where we want the product (drawn first, behind the estimate) */}
+      {tc ? (
+        <g>
+          <path d={gaussPath(grid, tc.mu, tc.sigma, peak, box)} fill="none" stroke="var(--green)" strokeWidth={1.8} strokeDasharray="2 4" strokeLinecap="round" />
+          {matched ? (
+            <g className="gauss-tick-ok" transform={`translate(${sx(tc.mu)}, ${T - 19})`}>
+              <circle r={8} fill="var(--green)" />
+              <path d="M-3.6 0.2 L-1 2.8 L3.8 -2.4" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </g>
+          ) : !compact ? <text x={sx(tc.mu)} y={T - 4} textAnchor="middle" className="gauss-lbl" fill="var(--green)">{tc.label} {fmt(tc.mu)}</text> : null}
+        </g>
+      ) : null}
       {/* baseline */}
       <line x1={box.x0} x2={box.x1} y1={box.yBase} y2={box.yBase} className="gauss-axis" />
       {/* member curves */}

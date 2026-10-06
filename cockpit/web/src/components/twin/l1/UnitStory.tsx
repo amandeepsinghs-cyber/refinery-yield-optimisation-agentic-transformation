@@ -29,6 +29,7 @@ import { clock } from "@/lib/format";
 import { useScreenPart } from "@/lib/screenPart";
 import LangToggle from "@/components/twin/LangToggle";
 import GaussianPdf from "@/components/twin/shared/GaussianPdf";
+import FullExplanation from "./FullExplanation";
 import ChartStack from "@/components/twin/l1/ChartStack";
 import { FLOW, NAME } from "@/components/twin/l0/UnitFlow";
 import { UNIT_INFO } from "@/lib/units";
@@ -38,10 +39,11 @@ import { StepHowStrip, UnitUseCases } from "@/components/how/UseCaseExplainer";
 import type { StepKey } from "@/lib/howItWorks";
 import { EarlierDecisions, EstimateTrack, MissingData, TagList, UnitActions, WhatSetsTheMove, isGiveBack, useUnitActions } from "./UnitStoryExtras";
 import { CrudeSwitchStory, ProofLoop } from "./ProofLoop";
+import { probPct } from "@/lib/prob";
 
 const RANK: Record<string, number> = { open: 0, held: 1, watch: 2, withheld: 3, accepted: 4, declined: 5 };
 const fx = (v: number | null | undefined, d?: number) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d ?? (Math.abs(v) >= 100 ? 1 : 2)));
-const pct = (p?: number | null) => (p == null ? "—" : `${Math.round(p * 100)} %`);
+const pct = (p?: number | null) => probPct(p);
 const STATUS: Record<string, string> = { open: "Decide", watch: "Watch", withheld: "Not yet", held: "Held", accepted: "Accepted", declined: "Declined", expired: "Expired" };
 const TAGN: Record<string, string> = { LCO_T98_F: "LCO T98", HN_T98_F: "HN T98" };
 const EVK: Record<string, string> = { cusum: "drifting (sustained)", breach: "outside its normal band", change_point: "step change", recipe_ready: "move ready", regime_change: "crude switch", sigma3: "outside ±3σ", combustion: "combustion pattern", flooding_pattern: "flooding pattern", drift: "drifting" };
@@ -68,7 +70,7 @@ const FP: [string, string, string, number][] = [
   ["riser_dT_F", "Riser ΔT", "°F", 0], ["conversion_pct", "Conversion", "%", 1], ["coke_per_feed", "Coke / feed", "", 2],
   ["Treg_F", "Regenerator T", "°F", 0], ["tray_dT_F", "Column ΔT", "°F", 0],
 ];
-function CrudeBlock({ r, physicsPct }: { r: import("@/lib/twinTypes").TwinRegime; physicsPct: string | null }) {
+function CrudeBlock({ r }: { r: import("@/lib/twinTypes").TwinRegime; physicsPct?: string | null }) {
   const now = CRUDES.find((c) => c[0] === r.regime_id);
   const match = r.declared_vs_detected === "match";
   return (
@@ -106,7 +108,7 @@ function CrudeBlock({ r, physicsPct }: { r: import("@/lib/twinTypes").TwinRegime
         ) : null}
         <h3>What changes for {now ? `${now[1].toLowerCase()} crude` : "this crude"}</h3>
         <p className="us-note">
-          The soft sensor re-weights its models for {r.regime_id}{physicsPct ? ` (physics-based models ${physicsPct} %)` : ""}, and the set-point search in step ③ looks for the right settings for this crude.
+          The trust checks confirm the soft sensor has lab labels for {r.regime_id} before it advises, and the set-point search in step ③ looks for the right settings for this crude.
         </p>
       </div>
     </div>
@@ -346,13 +348,19 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
     }
     return pOnSpec((p?.mu_before ?? 0) + gain * delta, p?.sigma ?? 1, p?.spec_min ?? null, hi);
   };
+  // With a target (6 Oct): the slider starts at "no move" and the engineer slides the curve onto the green target.
+  const hasTarget = p?.target != null && p?.mu_before != null;
   const wi = move && p?.mu_before != null && p.sigma ? (() => {
-    const s = sp ?? move.to;
+    const s = sp ?? (hasTarget ? move.from : move.to);
     const dl = s - move.from;
     return { s, mu: p.mu_before! + gain * dl, p: Math.abs(s - move.to) < 1e-6 && p.p_on_spec_after != null ? p.p_on_spec_after : pAt(dl), d: dl };
   })() : null;
   const stepMax = p?.step_max ?? 5;
   const stepSize = p?.step ?? 0.5;
+  // set point that would put the estimate on the target; the slider reaches it even beyond one SOP step
+  const spTarget = move && hasTarget ? move.from + (p!.target! - p!.mu_before!) / (gain || 1) : null;
+  const rLo = move ? Math.floor(Math.min(move.from - stepMax, spTarget != null ? spTarget - 1 : Infinity) / stepSize) * stepSize : 0;
+  const rHi = move ? Math.ceil(Math.max(move.from + stepMax, spTarget != null ? spTarget + 1 : -Infinity) / stepSize) * stepSize : 0;
   const nd = stepSize < 0.1 ? 2 : 1;
   const goal = p?.goal_label ?? "Chance on spec";
   const canAct = d?.status === "open" && (d.proposed.moves.length > 0 || !!d.proposed.sample);
@@ -440,10 +448,15 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           <div className="us-side">
             <h3>{isU4 ? "What the 4 models believe now" : "What the crude model expects now"}</h3>
             {members.length ? <GaussianPdf members={members} spec={spec} target={k ? { value: k.plan, label: "plan" } : null} measured={null} unit={k?.unit ?? ""} height={150} compact showP={false} ariaLabel="soft-sensor bell curves" /> : <p className="subtle">No estimate for this unit.</p>}
-            {committee && isU4 ? (
+            {isU4 && d?.models?.members?.length ? (
+              <>
+                <ul className="us-weights">{d.models.members.map((w) => <li key={w.id}><span>{w.name}</span><i style={{ width: `${Math.round((w.weight ?? 0) * 100)}%` }} /><b className="num">{w.role === "reference" ? "ref." : `${Math.round((w.weight ?? 0) * 100)} %`}</b></li>)}</ul>
+                <p className="us-note">Weights in the estimate now{d.models.weight_source ? `, from ${d.models.weight_source}` : ""}.</p>
+              </>
+            ) : committee && isU4 ? (
               <ul className="us-weights">{(committee.weights ?? []).map((w) => <li key={w.member}><span>{w.label}</span><i style={{ width: `${Math.round(w.weight * 100)}%` }} /><b className="num">{Math.round(w.weight * 100)} %</b></li>)}</ul>
             ) : null}
-            {committee?.reason ? <p className="us-note">{plainRegime(committee.reason)}</p> : null}
+            {committee?.reason && !(isU4 && d?.models) ? <p className="us-note">{plainRegime(committee.reason)}</p> : null}
           </div>
         </div>
         {isU4 ? <EstimateTrack runId={data.run_id ?? runId} prop={prop} t={t} label={TAGN[prop] ?? prop} /> : null}
@@ -495,17 +508,26 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                   <div className="us-lever-big num">{fx(move.from, nd)} <i>→</i> <b>{fx(wi.s, nd)}</b> <small>{move.unit}</small><span className="us-lever-d">{wi.d >= 0 ? "+" : "−"}{Math.abs(wi.d).toFixed(nd)}</span></div>
                   <label className="us-slider">
                     <span>Try another move</span>
-                    <input type="range" min={move.from - stepMax} max={move.from + stepMax} step={stepSize} value={wi.s} onChange={(e) => setSp(Number(e.target.value))} aria-label="what-if set point" />
-                    <span className="us-range num"><em>{fx(move.from - stepMax, nd)}</em><em>now {fx(move.from, nd)}</em><em>{fx(move.from + stepMax, nd)}</em></span>
+                    <input type="range" min={rLo} max={rHi} step={stepSize} value={wi.s} onChange={(e) => setSp(Number(e.target.value))} aria-label="what-if set point" />
+                    <span className="us-range num"><em>{fx(rLo, nd)}</em><em>now {fx(move.from, nd)}{hasTarget ? <> · advised {fx(move.to, nd)}</> : null}</em><em>{fx(rHi, nd)}</em></span>
                   </label>
-                  <GaussianPdf members={[
+                  <GaussianPdf members={hasTarget ? [
+                    { id: "move", label: Math.abs(wi.d) < 1e-6 ? "now" : "after your move", mu: wi.mu, sigma: p!.sigma!, weight: 1, color: modelColor("hybrid_delta_v1", theme) },
+                  ] : [
                     { id: "now", label: "now", mu: p!.mu_before!, sigma: p!.sigma!, weight: 1, color: modelColor("hybrid_delta_v1", theme) },
                     { id: "after", label: "after", mu: wi.mu, sigma: p!.sigma!, weight: 1, color: modelColor("pinn_ens_v1", theme), dashed: true },
-                  ]} spec={p?.spec_max != null || p?.spec_min != null ? { hi: p?.spec_max ?? null, lo: p?.spec_min ?? null, label: p?.goal_label ? "band" : "spec" } : null} unit={p?.unit ?? move.unit} height={120} compact showMixture={false} showP={false} ariaLabel="before and after the move" />
+                  ]} targetCurve={p?.target != null ? { mu: p.target, sigma: p.sigma!, label: "target" } : null} matched={p?.target != null && Math.abs(wi.mu - p.target) <= 1.0}
+                    spec={p?.spec_max != null || p?.spec_min != null ? { hi: p?.spec_max ?? null, lo: p?.spec_min ?? null, label: p?.goal_label ? "band" : "spec" } : null} unit={p?.unit ?? move.unit} height={150} showMixture={false} showP={false} ariaLabel="now, after the move, and the target" />
+                  {p?.target != null ? (
+                    <p className="us-target-legend">
+                      <span><i className="lg now" />{Math.abs(wi.d) < 1e-6 ? "product now" : "product after your move"}</span><span><i className="lg tgt" />target {fx(p.target, 1)} °F</span>
+                      {Math.abs(wi.mu - p.target) <= 1.0 ? <b className="good">On target</b> : <em>{fx(Math.abs(wi.mu - p.target), 1)} °F {wi.mu > p.target ? "above" : "below"} target — slide to line the curves up</em>}
+                      {Math.abs(wi.d) > stepMax + 1e-6 ? <em className="us-two-step">More than one SOP step ({stepMax} °F): make it in two moves, 30 min apart. The advised first move is {fx(move.to, nd)}.</em> : null}
+                    </p>
+                  ) : null}
                   <p className="us-result">{goal} <span className="num">{pct(p?.p_on_spec_before)}</span> → <b className={`num ${wi.p >= 0.95 ? "good" : wi.p < (p?.p_on_spec_before ?? 0) ? "bad" : ""}`}>{pct(wi.p)}</b>
                     {Math.abs(wi.s - move.to) > 1e-6 ? <span className="subtle"> · advised {fx(move.to, nd)} gives {pct(p?.p_on_spec_after)}</span> : <span className="subtle"> · the advised move</span>}</p>
                   <p className="us-note subtle">{d.proposed.sop ?? "SOP: one step at most 5 °F, 30 min between moves. The cut-point controller follows its set point 1 : 1."}</p>
-                  {p?.ripple?.some((r) => r.delta != null) ? <p className="us-note subtle">Next units: {p.ripple.filter((r) => r.delta != null).map((r) => `${r.what} ${r.delta} ${r.unit}`).join("; ")}</p> : null}
                   <LeverRanges levers={d.levers} />
                 </>
               ) : d.proposed.sample ? (
@@ -536,6 +558,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             <li key={i} className={`k-${s.kind}`}><span className="hs-kind">{KIND[s.kind] ?? s.kind}</span><b>{s.name}</b><span>{s.did}</span></li>
           ))}</ol>
         ) : null}
+        {d && (d.models || d.gates?.length) ? <FullExplanation d={d} regime={data.regime} /> : null}
         <div className="us-grid optimise">
           <div>
             <h3>{d?.gates.length ? `Checks before advising — ${nPass} of ${d.gates.length} pass` : "Checks before advising"}</h3>
@@ -570,7 +593,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 <ul className="uf-opt">
                   <li><span>Goal</span>{d && isGiveBack(d) ? `take back margin with ${move.label.charAt(0).toLowerCase() + move.label.slice(1)} while ${goal.charAt(0).toLowerCase() + goal.slice(1)} stays ≥ 95 %` : `${goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of ${move.label.charAt(0).toLowerCase() + move.label.slice(1)}`}</li>
                   <li><span>Limits</span>SOP step ≤ {fx(stepMax, nd)} {move.unit} · time between moves · lever window</li>
-                  <li><span>Model</span>{p.model ?? `4-model soft sensor, weighted for the crude now (${data.regime?.regime_id ?? "—"})`}</li>
+                  <li><span>Model</span>{p.model ?? `Soft-sensor committee: 4 models, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended`}</li>
                   <TrainedOn />
                   <li><span>Result</span>{fx(move.from, nd)} → {fx(move.to, nd)} {move.unit}: {pct(p.p_on_spec_before)} → {pct(p.p_on_spec_after)}, margin {fx(p.margin_after, 1)} {p.unit ?? move.unit}</li>
                 </ul>
