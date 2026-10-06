@@ -1,7 +1,7 @@
 # Verbatim Voice Notes & Complete Engineering Analysis: Refinery Crude-Adaptive Multi-Parameter Optimization
 
 > **Date:** 2026-10-01 (Updated 2026-10-02 12:05 UTC)  
-> **Directory:** `agent_ideas/Refinery Agentic Optimisation/`  
+> **Directory:** `agent_ideas/FCC Agentic Optimisation/`  
 > **Companion Documents:** [`refinery_optimisation_use_cases.md`](refinery_optimisation_use_cases.md) · [`meity_compliance/meity_compliance_strategy.md`](meity_compliance/meity_compliance_strategy.md) · [`data_and_analytics_flow.md`](data_and_analytics_flow.md) · [`build.md`](build.md) · [`features.md`](features.md) · [`BDD.md`](BDD.md) · [`SDD.md`](SDD.md) · [`checklist.md`](checklist.md)
 
 ---

@@ -1,5 +1,5 @@
 // @ts-nocheck — @playwright/test is not a project dependency yet (types unavailable to tsc); install with `npx playwright install` before `make web-e2e`.
-// BDD-28 / BDD-29 — L0 Refinery home (UI v2 progressive disclosure) & L1 Unit Workbench screens.
+// BDD-28 / BDD-29 — L0 FCC complex home (UI v2 progressive disclosure) & L1 Unit Workbench screens.
 // Run with the API on :8010 and the dev server on :3001 (`make api-run`, `make web-dev`, then `make web-e2e`).
 // Use `localhost`, not 127.0.0.1 — Next's dev server blocks cross-origin dev resources from other hosts.
 import { test, expect, type Page } from "@playwright/test";
@@ -28,7 +28,7 @@ async function openTwin(page: Page) {
   await expect(page.locator(".l0-loading")).toHaveCount(0, { timeout: 30_000 });
 }
 
-test.describe("Level 0 — Refinery home (UI v2, BDD-29 progressive disclosure)", () => {
+test.describe("Level 0 — FCC complex home (UI v2, BDD-29 progressive disclosure)", () => {
   test("root redirects to /twin; the home is the Pyramid: headline → crude line → unit train + pane → footer; no Plotly; vertical scroll only", async ({ page }) => {
     await page.goto(`${BASE}/`);
     await expect(page).toHaveURL(/\/twin$/);
@@ -123,7 +123,7 @@ test.describe("Level 0 — Refinery home (UI v2, BDD-29 progressive disclosure)"
 
   test("header shows shift · clock, language switch and Gemini Live; demo controls live in the Scenario tray", async ({ page }) => {
     await openTwin(page);
-    await expect(page.locator(".l0-title")).toHaveText(/Refinery · Shift [ABC] · \d{2}:\d{2}/);
+    await expect(page.locator(".l0-title")).toHaveText(/FCC complex · Shift [ABC] · \d{2}:\d{2}/);
     const seg = page.getByTestId("lang-toggle");
     await expect(seg.getByRole("button", { pressed: true })).toHaveText("EN");
     await seg.getByRole("button", { name: "हिंदी" }).click();
@@ -277,10 +277,10 @@ test.describe("Level 1 — Unit workbench (SDD-L1-01..07)", () => {
 });
 
 test.describe("Navigation and deep links after L1 (SDD-L1-05, D3)", () => {
-  test("nav shows the Refinery Twin only; brand returns home; the six units sit in the rail", async ({ page }) => {
+  test("nav shows the FCC Complex Twin only; brand returns home; the six units sit in the rail", async ({ page }) => {
     await page.goto(`${BASE}/twin`);
     await expect(page.locator("nav.tabs .tab")).toHaveCount(1);
-    await expect(page.locator("nav.tabs .tab")).toHaveText(/Refinery Twin/);
+    await expect(page.locator("nav.tabs .tab")).toHaveText(/FCC Complex Twin/);
     await expect(page.locator("a.brand")).toHaveAttribute("href", "/twin");
     const rail = page.locator("nav.rail .rail-link");
     await expect(rail.filter({ hasText: "U4 · Fractionator" })).toBeVisible();

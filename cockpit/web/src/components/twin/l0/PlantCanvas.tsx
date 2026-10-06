@@ -10,15 +10,13 @@
 import type { Decision } from "@/lib/decisionsApi";
 import type { TwinUnit } from "@/lib/twinTypes";
 import { SUSPECT } from "@/lib/suspect";
+import { UNIT_INFO } from "@/lib/units";
 
 const VB_W = 1400, VB_H = 330, BASE = 250;
 export const UNIT_X: Record<string, number> = {
   unit_1_furnace: 120, unit_2_riser: 340, unit_3_regenerator: 545, unit_4_fractionator: 800, unit_5_condenser: 1040, unit_6_stabiliser: 1270,
 };
-const NAME: Record<string, string> = {
-  unit_1_furnace: "Feed furnace", unit_2_riser: "Riser reactor", unit_3_regenerator: "Regenerator",
-  unit_4_fractionator: "Main fractionator", unit_5_condenser: "Gas plant", unit_6_stabiliser: "Stabiliser",
-};
+const NAME: Record<string, string> = Object.fromEntries(Object.entries(UNIT_INFO).map(([id, u]) => [id, u.name]));
 const KPI: Record<string, string> = {
   T2_preheat_F: "preheat", conversion_pct: "conversion", dT_cyc_reg_F: "afterburn ΔT", Treg_F: "bed T",
   LCO_T98_F: "LCO T98", HN_T98_F: "HN T98", MV_cw_flow: "CW flow", eff_C5: "C5 recovery",
@@ -75,7 +73,7 @@ export default function PlantCanvas({ units, decisions, selectedId, onSelect, se
 
   return (
     <div className="pc" data-testid="plant-canvas">
-      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="pc-svg" role="img" aria-label="Top view of the FCC refinery train">
+      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="pc-svg" role="img" aria-label="Top view of the FCC complex: six simulated sections">
         <defs>
           <filter id="pc-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
           <marker id="pc-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" className="pc-arrowhead" /></marker>
@@ -112,6 +110,7 @@ export default function PlantCanvas({ units, decisions, selectedId, onSelect, se
             <g key={id} transform={`translate(${x[id]} ${BASE})`} className={`pc-unit s-${s} ${hasDecision ? "has-dec" : ""} ${isSel ? "sel" : ""}`}
               onClick={() => onSelectUnit(id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelectUnit(id); }} role="button" tabIndex={0}
               aria-label={`${NAME[id]}: ${s === "OK" ? "in envelope" : s === "WATCH" ? "drifting" : "act now"}`} data-unit={id}>
+              <title>{`${NAME[id]}: ${UNIT_INFO[id]?.role ?? ""}`}</title>
               {s !== "OK" || hasDecision ? <g className="pc-halo" filter="url(#pc-glow)"><Glyph id={id} /></g> : null}
               <g className="pc-body"><Glyph id={id} /></g>
               <text y={34} className="pc-name" textAnchor="middle">{NAME[id]}</text>
@@ -137,6 +136,12 @@ export default function PlantCanvas({ units, decisions, selectedId, onSelect, se
           ))}
         </div>
       ))}
+      {/* what each section does — six equal columns line up under the six units on the canvas */}
+      <ol className="pc-guide" aria-label="What each FCC section does" data-testid="unit-guide">
+        {Object.keys(x).map((id) => (
+          <li key={id} data-unit={id}><span className="pc-guide-name">{NAME[id]}</span>{UNIT_INFO[id]?.role}</li>
+        ))}
+      </ol>
     </div>
   );
 }

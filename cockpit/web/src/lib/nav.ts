@@ -44,17 +44,17 @@ export const TWIN_UNITS: { unit_id: string; short: string; label: string }[] = [
 
 export const TWIN_DASHBOARD: Dashboard = {
   id: "twin",
-  label: "Refinery Twin",
+  label: "FCC Complex Twin",
   href: "/twin",
   pages: [
     { href: "/platform", label: "Overview", Icon: IconBook },
-    { href: "/twin", label: "Refinery", Icon: IconGauge },
+    { href: "/twin", label: "FCC Complex", Icon: IconGauge },
     ...TWIN_UNITS.map((u) => ({ href: `/twin/unit/${u.unit_id}`, label: `${u.short} · ${u.label}`, Icon: IconLines })),
   ],
 };
 
 /**
- * Navigation shows the Refinery Twin only (SDD-L1-05, D3: Phase-13 catalogue and the Decision / Technical /
+ * Navigation shows the FCC Complex Twin only (SDD-L1-05, D3: Phase-13 catalogue and the Decision / Technical /
  * Modelling / Knowledge dashboards are retired from nav once L0/L1 ship). Their routes still resolve — see
  * LEGACY_DASHBOARDS — so deep links from Gemini citations and the audit log keep working.
  */

@@ -8,6 +8,12 @@
 
 ---
 
+## 2026-10-06 story-first pitch (6 Oct)
+
+Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, so we can keep them, otherwise they may feel we are not listening or we are not focussing on the high value use cases"*; 05:52 *"going use case by use case is not the most optimal … I am still missing … the story of a refinery … should I not read the story of the refinery first and then go? then … how we are helping in taking those decisions … the first decision is what should be the temp of furnace, which first and foremost is decided based on the input crude"*; 05:55 "sure" (restructure); 06:03 "update the relevant files that define the build". Context: [use_cases/important_context.ipynb](use_cases/important_context.ipynb). New acceptance: **BDD-35** (story of a refinery band, L1) and **BDD-36** (follow the oil, L2) in §10 — both proposed, not yet built. Specs §14.6D of [SDD.md](SDD.md).
+
+---
+
 ## 2026-10-03 pitch spine (3 Oct)
 
 ```gherkin
@@ -1594,3 +1600,162 @@ Feature: A decision the models cannot support is shown, with the reason, and no 
 | BDD-32 | K3, K6–K10 | `components/twin/l1/UnitStory.tsx`, `UnitDrawings.tsx` |
 | BDD-33 | K1, K4 | `api/app/engines/decisions.py` (`act`), `api/app/routers/decisions.py`, `components/record/DecisionRecord.tsx`, `api/tests/test_decisions.py` |
 | BDD-34 | K5, K9, K11 | `decisions.py` (`GATE_TEXT`, `PLAUSIBLE`, `_ripple`) |
+
+---
+
+## 10. v6 Features: Story-First Pitch & Follow the Oil (`BDD-35` to `BDD-36`, Epic L, 2026-10-06)
+
+### BDD-35: "The story of a refinery" opens the Overview `@ui @story` (NEW)
+
+```gherkin
+Feature: The Overview page tells the story of a refinery before the platform
+  Background:
+    Given the cockpit is open on "/platform"
+
+  Scenario: The refinery story comes first
+    Then the first section is titled "The story of a refinery"
+    And it sits above "Six layers, each with one job"
+
+  Scenario: The flow is right about the FCC feed
+    Then the flow reads Crude -> Crude unit (CDU / VDU) -> Heavy gas oil (VGO) -> FCC -> Petrol, diesel (LCO), LPG -> Treating & blending
+    And the text says the FCC is fed heavy gas oil, not crude
+    And clicking the FCC box opens "/twin"
+
+  Scenario: Six units and three gaps
+    Then the six FCC units are listed in flow order: Feed furnace, Riser reactor, Regenerator, Main fractionator, Gas plant, Stabiliser
+    And three gaps are named: quality, crude, time lag
+
+  Scenario: No value figures
+    Then the section contains no currency symbol and no NPV, ROI or savings figure
+```
+
+### BDD-36: "Follow the oil" walks the decisions in the order the oil meets them `@ui @tour` (NEW)
+
+```gherkin
+Feature: Guided stops follow the oil through the FCC
+  Background:
+    Given the cockpit is open on "/platform"
+
+  Scenario: Start the tour
+    When I click "Follow the oil ->"
+    Then I land on "/twin" with run "random_s107" at minute 600
+    And a strip reads "Stop 0 of 7" with "Next stop ->"
+
+  Scenario Outline: Each stop opens the right unit, step and decision
+    When I go to stop <n>
+    Then the page is <href> at step <step>
+    And the strip shows decision <decision>, IOCL rows <ucs> and status <status>
+    Examples:
+      | n | href                            | step | decision | ucs          | status           |
+      | 1 | /twin/unit/unit_4_fractionator  | 2    | D4       | Feed         | Scripted outcome |
+      | 2 | /twin/unit/unit_1_furnace       | 3    | D6       | #5, #10      | Scripted outcome |
+      | 3 | /twin/unit/unit_2_riser         | 3    | D8       | #8, #9       | Watch only       |
+      | 4 | /twin/unit/unit_3_regenerator   | 3    | D5       | #4           | Scripted outcome |
+      | 5 | /twin/unit/unit_4_fractionator  | 3    | D1       | #1, #11      | Live             |
+      | 6 | /twin/unit/unit_5_condenser     | 3    | D7       | #2, #3, #7   | Scripted outcome |
+      | 7 | /twin                           | -    | D3       | #6           | Partly           |
+
+  Scenario: Stress test on a held-out run
+    When I go past stop 7
+    Then the run is "random_s144" at minute 600 on the fractionator
+    When I go to the next stop
+    Then the minute is 720 and D2 reads "Not yet" with no Accept button
+    When I go to the next stop
+    Then I am on "/audit"
+
+  Scenario: The tour never writes and never breaks the data
+    When I walk every stop
+    Then no write endpoint is called
+    And no stop on "random_s107" sets a minute above 740
+
+  Scenario: Leave the tour
+    When I click the strip's close button
+    Then the strip disappears and the page stays where it is
+```
+
+| BDD | Feature | Code |
+|---|---|---|
+| BDD-35 | L1 | `components/how/PlatformOverview.tsx`, `lib/howItWorks.ts` (`REFINERY_STORY`, `GAPS`) |
+| BDD-36 | L2 | `lib/journey.ts`, `components/how/PlatformOverview.tsx`, `components/shell/DemoGuideModal.tsx`, tour strip component, `e2e/twin.spec.ts` |
+
+### BDD-37: The front page shows the refinery, where IOCL's use cases fit, and what we built `@ui @overview` (NEW, proposed)
+
+```gherkin
+Feature: Refinery overview with use cases and build status
+  Background:
+    Given the cockpit is open on "/platform"
+
+  Scenario: The refinery comes first
+    Then the first section is titled "The refinery — and where your use cases fit"
+    And it shows, left to right: Crude & tankage, Crude unit (CDU / VDU), Reformer, Hydrotreaters, FCC, Coker, LPG & alkylation, Utilities & flare, Blending & dispatch
+    And each step has one line on what happens there
+    And the text says the FCC is fed heavy gas oil, not crude
+
+  Scenario: IOCL use cases are pinned where they fit
+    Then every IOCL use case (#1 to #11 and Feedstock evaluation) appears once as a pin on its step
+    And #1 and #11 sit on the FCC with a green dot "Live"
+    And #2 sits on the Reformer with an amber dot "Scripted outcome", tagged "FCC equivalent", and "shown on FCC · U6"
+    And the coker, alkylation, utilities & flare and pipelines carry "Not claimed"
+
+  Scenario: Open a pin
+    When I click the pin "#1"
+    Then a card shows the IOCL wording, what we built, the status, and "Open U4"
+
+  Scenario: The FCC narrows down
+    Then the FCC is highlighted "Where we built"
+    When I click the FCC
+    Then I am on "/twin"
+
+  Scenario: Legend and summary
+    Then a legend explains every status dot
+    And a line reads "2 live · 5 scripted outcome · 3 partly · 2 watch only · rest not claimed"
+
+  Scenario: No value figures
+    Then the section contains no currency symbol and no NPV, ROI or savings figure
+```
+
+### BDD-38: The decisions the platform enables open from an expandable section — no black box `@ui @overview` (NEW, proposed)
+
+```gherkin
+Feature: Decisions the platform enables
+  Background:
+    Given the cockpit is open on "/platform"
+
+  Scenario: Collapsed below the refinery
+    Then a section "Decisions the platform enables (9)" sits directly below the refinery section, collapsed
+
+  Scenario: Nine rows in the order the oil meets them
+    When I open the section
+    Then I see D4, D6, D8, D5, D1, D2, D9, D3, D7, each with its question, unit and status dot
+
+  Scenario Outline: Each card explains the decision
+    When I open the row for <decision>
+    Then I see "Pain point", "How we solve it", "Data in", "Algorithms, in order", "Checks before advising", "What the operator gets", "On your plant", "What we need from you" and its IOCL use cases
+    And a link "See it running on <unit>" opens <href>
+    Examples:
+      | decision | unit              | href                            |
+      | D4       | Main fractionator | /twin/unit/unit_4_fractionator  |
+      | D6       | Feed furnace      | /twin/unit/unit_1_furnace       |
+      | D8       | Riser reactor     | /twin/unit/unit_2_riser         |
+      | D5       | Regenerator       | /twin/unit/unit_3_regenerator   |
+      | D1       | Main fractionator | /twin/unit/unit_4_fractionator  |
+      | D2       | Main fractionator | /twin/unit/unit_4_fractionator  |
+      | D9       | Main fractionator | /twin/unit/unit_4_fractionator  |
+      | D3       | Main fractionator | /twin/unit/unit_4_fractionator  |
+      | D7       | Gas plant         | /twin/unit/unit_5_condenser     |
+
+  Scenario: Scripted and watch-only cards say so
+    When I open the row for D5
+    Then the card says the size of the move is scripted in this demo and comes from the models on the plant
+    When I open the row for D8
+    Then the card says "Watch only — no move is proposed"
+
+  Scenario: The rest of the page is unchanged
+    Then below the decisions section the existing sections still appear: six layers, use-case cards, person decides, MeitY, how it learns, proof loop
+    And the tabs FCC Complex, U1 to U6 and Decision record work as before
+```
+
+| BDD | Feature | Code |
+|---|---|---|
+| BDD-37 | FP-1 | `components/how/PlatformOverview.tsx`, status-dot component, `lib/howItWorks.ts` (`REFINERY_STEPS`, `UC_PINS`, `USE_CASES`) |
+| BDD-38 | FP-2 | `components/how/PlatformOverview.tsx`, `lib/howItWorks.ts` (`DECISION_ORDER`, `DECISION_CARD`), `tests/` vitest, `e2e/twin.spec.ts` |

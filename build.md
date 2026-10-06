@@ -8,6 +8,23 @@
 
 ---
 
+## 2026-10-06 story-first pitch / Epic L (6 Oct; adds to the 3 Oct pitch spine)
+
+Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, so we can keep them, otherwise they may feel we are not listening or we are not focussing on the high value use cases"*; 05:52 *"going use case by use case is not the most optimal … I am still missing … the story of a refinery … should I not read the story of the refinery first and then go? then … how we are helping in taking those decisions … the first decision is what should be the temp of furnace, which first and foremost is decided based on the input crude"*; 05:55 "sure" (restructure); 06:03 "update the relevant files that define the build". Context: [use_cases/important_context.ipynb](use_cases/important_context.ipynb).
+
+| Item | Where | Status |
+|---|---|---|
+| Pitch restructured: refinery story → IOCL's list (their figures, attributed) → one data foundation (`/platform`) → **follow the oil** (stop 1 feed D4 → 2 furnace D6 → 3 riser D8 → 4 regenerator D5 → 5 fractionator D1/D2/D9 → 6 gas plant & stabiliser D7 → 7 whole FCC, D3/#6) on `random_s107` 10:00 → **stress test** on held-out `random_s144` (10:00 D1, 12:00 "Not yet") → decision record → back to IOCL's list and the pilot ask | [use_cases/PRESENTER_PACK.md](use_cases/PRESENTER_PACK.md), [demoflow.md](demoflow.md) top section | Done (docs) |
+| Use-case docs: IOCL list with IOCL's figures attributed and corrected statuses; index; one `UC-*.md` per row (built · remaining · how it solves the row · demo steps · pilot) | `use_cases/` | Done (docs) |
+| Facts: feed is heavy gas oil; IOCL figures kept but not on screens; one status vocabulary; L5 training-label correction | [DECISIONS.md](DECISIONS.md) §0A S-1..S-6 | Done |
+| **FP-1** The refinery — use cases pinned, what we built (status dots) | Step 21 · SDD-FP-01..05 · BDD-37 | Proposed — docs agreed 6 Oct |
+| **FP-2** Decisions the platform enables (expandable cards) | Step 21 · SDD-FP-06..08 · BDD-38 | Proposed — docs agreed 6 Oct |
+| **L1** "The story of a refinery" band on `/platform` | Step 21 · SDD-STORY-01..04 · BDD-35 | Proposed — owner go-ahead |
+| **L2** "Follow the oil" guided stops | Step 21 · SDD-TOUR-01..06 · BDD-36 | Proposed — owner go-ahead |
+| Redeploy to Cloud Run after L1/L2 | `deploy/` (resets the decision record) | Only on owner go-ahead |
+
+---
+
 ## 2026-10-03 pitch spine / opening page (adds to the 2 Oct agreement)
 
 Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
@@ -206,7 +223,7 @@ cockpit/api/app/
 
 ```bash
 # Folder variable (quote it every time; the path has spaces and '&')
-export FCC_HOME="$HOME/o&g agentic transformation/Oil & Gas Agent Portfolio/agent_ideas/Refinery Agentic Optimisation"
+export FCC_HOME="$HOME/o&g agentic transformation/Oil & Gas Agent Portfolio/agent_ideas/FCC Agentic Optimisation"
 cd "$FCC_HOME"
 octave --version | head -1; python3 --version; node --version; gcloud --version | head -1
 
@@ -724,3 +741,19 @@ cd "$FCC_HOME/cockpit/web" && npx tsc --noEmit && npx vitest run
    > **Code gap found 2 Oct (fixed in `af43f5c`: `surrogates.py` reads `lever_sNNN`, train s200–s209 / hold-out s210–s211, merges `lever_v1/_staged/regimes.csv`, version 6, auto-refit when lever runs change; `catalog.get` falls back to all runs):** the surrogate fit (`app/engines/surrogates.py`, `_fit_surrogates` / `_step_samples`) reads only runs of `data.primary_batch` (`full_v1`) and takes the seed from `random_sNNN` names, so `lever_sNNN` runs are skipped today; seeds ≥ `test_seed_min` (140) would also all be treated as hold-out, and the crude segments come from `full_v1/_staged/regimes.csv` only. The refit therefore needs a small back-end change (include `lever_v1`, give it a train / hold-out split, stage its regimes) plus a `SURROGATE_VERSION` bump. There is no `app/train_surrogates.py`; the fit runs lazily and is cached in `artifacts/engines/surrogates.pkl`.
 6. ☑ Front-end items: ② estimate over time with lab points · ③ earlier decisions · ④ binding limits and, for "Not yet", the exact missing data · ① full tag list · footer action history · crude classifier (`c694166`). Home page at 1366 px fixed. Hindi / Hinglish checked (12:46): Gemini answers in all three; the D3 plausibility check now lives in the recipe engine (`engines/recipe.py` `plausibility_issue`, gate_reason `implausible`), so the decision list, the unit page, the older views and Gemini all report the recipe as withheld. Test runs used to write "Held by Operator" / "Accepted by Ravi" rows into the live decision record that the demo shows; tests now use a throw-away audit file (`FCC_AUDIT_DB`, `tests/conftest.py`). Back-end tests: 281 pass; 9 of the 10 old failures fixed (NaN in `adapt.py` weights; tests updated to 1,600-min runs and to the honest zero LCO-yield response). Open: crude classifier held-out switch accuracy 57 % (test wants 80 %), R2 Urals-type confused; revisit with the lever runs' extra crude switches. Lever runs now enter the surrogate fit while still running once they hold ≥ 6 h (`training.lever_min_rows: 360`); the fit is redone on each API restart as they grow.
 7. ☑ Polish (16:35 2 Oct): plain names in the unit footer event list (API `tag_label`), chart corner labels in IOCL numbering, Gemini grounded on the decision cards (`copilot/chat.py` `decisions_block`) — checked in English, Hinglish and Hindi; voice probe OK.
+
+---
+
+## Step 21 (2026-10-06): Story-first Overview and "Follow the oil" — Epic L
+
+> Spec: SDD §14.6D (`SDD-STORY-01..04`, `SDD-TOUR-01..06`). Acceptance: BDD-35, BDD-36. Facts: DECISIONS §0A. No engine, decision, gate or audit change. **Do not redeploy without the owner's go-ahead** (redeploy resets the decision record).
+
+1. ☑ Docs: `use_cases/PRESENTER_PACK.md` (story → follow the oil → stress test → close), `use_cases/INDEX.md`, `use_cases/refinery_optimisation_use_cases.md` (IOCL figures attributed, statuses corrected), all `UC-*.md`; DECISIONS §0A; top sections in demoflow / features / SDD / BDD / checklist.
+2. ☐ **L1** `lib/howItWorks.ts`: add `REFINERY_STORY` and `GAPS`; `components/how/PlatformOverview.tsx`: new first section "The story of a refinery" (flow, six units, three gaps), `pf-story-*` styles in `globals.css`. ✅ done-check: BDD-35 passes; `make web-typecheck web-test`.
+3. ☐ **L2** `lib/journey.ts` (`JOURNEY`, stops map + 1–7 + T1–T3); tour strip component under the page header (`?tour=<n>`, sets scenario via the shared store, scrolls to the step); "Follow the oil →" on `/platform`; list in `components/shell/DemoGuideModal.tsx`. ✅ done-check: vitest for `JOURNEY` vs `DECISIONS`, no `random_s107` minute > 740; Playwright walk of stops 1–7 and T1–T2 in `e2e/twin.spec.ts`.
+2a. ☐ **Restore the local app first.** Owner decides on the uncommitted 4 Oct edits under `cockpit/` (shelve with `git stash push -u -- cockpit/`, or keep); stop the frozen dev server and restart cleanly (`make web-dev`); `gcloud auth application-default login`; confirm `/platform`, `/twin`, one unit page and `/audit` load.
+2b. ☐ **FP-1** status-dot component; `REFINERY_STEPS`, `UC_PINS` in `lib/howItWorks.ts`; refinery section at the top of `/platform` with pins, pin cards, FCC → `/twin`, legend, computed summary. Existing sections untouched. ✅ done-check: BDD-37; `make web-test`; owner reviews the page. (Replaces task 2 / L1.)
+2c. ☐ **FP-2** `DECISION_ORDER`, `DECISION_CARD` (SDD §14.6E tables, verbatim); expandable section under FP-1 with nine rows and cards; footer. ✅ done-check: BDD-38; vitest; owner review.
+2d. ☐ Rule for every step: never edit under a long-running dev server — stop it, change, restart, test.
+4. ☐ Local rehearsal: walk PRESENTER_PACK §3–§4 on the local build with BigQuery reachable (`gcloud auth application-default login`; data pill reads BigQuery); record any card numbers that differ from the pack.
+5. ☐ `make check` green (API tests, web type-check, web tests), then **owner go-ahead** → `gcloud builds submit --config deploy/cloudbuild.yaml .` with a new `_TAG`, matching `FCC_RELEASE`, and Cloud Run deploy.

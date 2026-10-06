@@ -63,3 +63,15 @@ No value figures. No claim about IOCL's plant.
 ---
 
 **Where these answers live on screen:** Overview `/platform` (layers, use cases, person in the loop, MeitY, predict-decide-measure-learn, pilot line); each unit page step ② (crude walkthrough) and step ④ ("How do we know the move works?").
+
+---
+
+## F. The refinery story (2026-10-06 story-first, 6 Oct)
+
+| # | Question | Say this | Status |
+|:-:|---|---|---|
+| F1 | Our operators aren't blind — they see the feed entering the column and adjust. Why systemic? | "They see temperatures, and your DCS handles the seconds very well. Two gaps remain: quality, which the lab gives every eight hours, and the consequence of one console's move on another, two to three hours later. We fill those two gaps; we don't replace local control." | Honest |
+| F2 | Does the FCC run on crude? | "No — on heavy gas oil from the crude unit. When the crude slate changes, the FCC feed changes, and the settings have to follow, starting with the feed preheat." | Fact |
+| F3 | Why start at the furnace? | "Because the oil does. The preheat sets catalyst circulation, which reaches the regenerator and then the fractionator and gas plant hours later. Follow the oil and you see the whole chain." | Shown |
+| F4 | Are those dollar figures your promise? | "No — they're your figures from your list. We measure benefit in plant terms on the pilot; you apply your prices." | Honest |
+| F5 | Why is the live one the smallest-value row? | "It's where the whole loop — estimate, trust, decide, measure — can be proven end to end. Every higher-value row reuses that loop; the pilot turns them green." | Honest |

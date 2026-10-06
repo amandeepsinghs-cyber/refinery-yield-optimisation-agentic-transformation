@@ -17,6 +17,7 @@ import { modelColor } from "@/lib/theme";
 import { actOnDecision, type Decision } from "@/lib/decisionsApi";
 import type { TwinAttention, TwinUnit } from "@/lib/twinTypes";
 import GaussianPdf from "@/components/twin/shared/GaussianPdf";
+import { UNIT_INFO } from "@/lib/units";
 
 interface Io { in: string[]; out: string[]; measured: [string, string, string][]; levers: [string, string, string][] }
 // Process I/O per unit (simulator flowsheet, sim_octave). measured / levers: [tag, plain name, unit].
@@ -42,10 +43,7 @@ export const FLOW: Record<string, Io> = {
     measured: [["eff_C5", "C5 recovery", "mol"], ["prod_LPG", "LPG make", "lb/min"], ["prod_LN", "Light naphtha", "lb/min"]],
     levers: [["SP_T_overhead", "Overhead temperature target", "°F"]] },
 };
-export const NAME: Record<string, string> = {
-  unit_1_furnace: "Feed furnace", unit_2_riser: "Riser reactor", unit_3_regenerator: "Regenerator",
-  unit_4_fractionator: "Main fractionator", unit_5_condenser: "Gas plant", unit_6_stabiliser: "Stabiliser",
-};
+export const NAME: Record<string, string> = Object.fromEntries(Object.entries(UNIT_INFO).map(([id, u]) => [id, u.name]));
 const pct = (p?: number | null) => (p == null ? "—" : `${Math.round(p * 100)}%`);
 const n = (v?: number | null, d?: number) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d ?? (Math.abs(v) >= 100 ? 1 : 2)));
 

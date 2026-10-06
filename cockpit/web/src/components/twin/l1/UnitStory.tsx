@@ -30,6 +30,7 @@ import LangToggle from "@/components/twin/LangToggle";
 import GaussianPdf from "@/components/twin/shared/GaussianPdf";
 import ChartStack from "@/components/twin/l1/ChartStack";
 import { FLOW, NAME } from "@/components/twin/l0/UnitFlow";
+import { UNIT_INFO } from "@/lib/units";
 import UnitDrawing, { HAS_DRAWING } from "./UnitDrawings";
 import { SUSPECT, isSuspect } from "@/lib/suspect";
 import { StepHowStrip, UnitUseCases } from "@/components/how/UseCaseExplainer";
@@ -367,7 +368,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
     <div className="us" data-testid="l1-root" data-unit={unitId}>
       {/* header */}
       <header className="us-head">
-        <div className="us-crumb"><Link href="/twin">Refinery</Link><span>›</span><span>{NAME[unitId] ?? u.short_name}</span></div>
+        <div className="us-crumb"><Link href="/twin">FCC complex</Link><span>›</span><span>{NAME[unitId] ?? u.short_name}</span></div>
         <div className="us-title">
           <h1>{NAME[unitId] ?? u.short_name}</h1>
           {k ? (
@@ -378,6 +379,11 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           <span className="us-clock num">{clock(t)} · next lab {clock(data.time.next_lab_min)}</span>
           <LangToggle />
         </div>
+        {UNIT_INFO[unitId] ? (
+          <p className="us-role" data-testid="unit-role">{UNIT_INFO[unitId].role}
+            {UNIT_INFO[unitId].levers ? <> <span className="subtle">·</span> <b>Operators move:</b> {UNIT_INFO[unitId].levers}</> : <> <span className="subtle">·</span> Watched only; no move advised in this build.</>}
+          </p>
+        ) : null}
         <nav className="us-steps" aria-label="Steps">
           <a href="#s-data"><i>1</i>Data</a><a href="#s-observe"><i>2</i>Observe</a>
           <a href="#s-decide" className={d?.status === "open" ? "hot" : ""}><i>3</i>Decide{ds.filter((x) => x.status === "open").length ? <b className="num">{ds.filter((x) => x.status === "open").length}</b> : null}</a>

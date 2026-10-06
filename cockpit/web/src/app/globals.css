@@ -2952,6 +2952,18 @@ input[type=range]::-webkit-slider-runnable-track {
 /* plant canvas */
 .pc { position: relative; width: 100%; padding-top: 34px; }
 .pc-svg { width: 100%; height: auto; max-height: 27vh; display: block; overflow: visible; }
+/* unit guide: 6 equal columns, same width as the drawn SVG (VB 1400×330 capped at 27vh) so each line sits under its unit */
+.pc-guide { list-style: none; margin: 8px auto 0; padding: 0; max-width: calc(27vh * 1400 / 330); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+.pc-guide li { font-size: 12px; line-height: 1.4; color: var(--muted); text-align: center; text-wrap: balance; }
+.pc-guide-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 900px) {
+  .pc-guide { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
+  .pc-guide li { text-align: left; }
+  .pc-guide-name { position: static; width: auto; height: auto; clip: auto; display: block; font-weight: 600; color: var(--ink); }
+}
+.home-scope { margin: -6px 0 0; font-size: 12px; color: var(--subtle); }
+.us-role { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.us-role b { color: var(--ink); font-weight: 600; }
 .pc-pipes path { fill: none; stroke: var(--dim); stroke-width: 1.4; }
 .pc-pipes.pc-cat path { stroke-dasharray: 2 5; stroke: color-mix(in srgb, var(--amber) 45%, transparent); }
 .pc-arrowhead { fill: var(--dim); }

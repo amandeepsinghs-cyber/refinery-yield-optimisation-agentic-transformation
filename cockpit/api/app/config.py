@@ -1,4 +1,4 @@
-"""Configuration loader. All paths resolve relative to the Refinery Agentic Optimisation repo root."""
+"""Configuration loader. All paths resolve relative to the FCC Agentic Optimisation repo root."""
 from __future__ import annotations
 
 import os
@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 API_DIR = Path(__file__).resolve().parents[1]          # cockpit/api
-REPO_ROOT = API_DIR.parents[1]                          # Refinery Agentic Optimisation
+REPO_ROOT = API_DIR.parents[1]                          # FCC Agentic Optimisation
 
 
 class Settings:

@@ -35,11 +35,11 @@ const SCENES: SceneItem[] = [
     title: "Hook & Honesty",
     duration: "1 min",
     route: "/twin",
-    routeLabel: "Refinery Twin",
+    routeLabel: "FCC Complex Twin",
     run: DEMO_RUN,
     timeMin: 600,
     onScreen:
-      "Refinery Twin home at 10:00: six live units on the flow sheet, crude-slate banner, plant strip, 'Needs attention' rail and the 12-hour shift timeline. Provenance chip in the top bar: 'Simulated data · full_v1 · random_s107 · t 600 min'.",
+      "FCC Complex Twin home at 10:00: six live units on the flow sheet, crude-slate banner, plant strip, 'Needs attention' rail and the 12-hour shift timeline. Provenance chip in the top bar: 'Simulated data · full_v1 · random_s107 · t 600 min'.",
     action: "Point at the provenance chip. Nothing on these screens is from a real refinery; every curve is simulator truth or a model of it.",
     talkTrack:
       "A refinery changes crude every day or two. Every model and every operator setting lags that change by hours. This cockpit watches all six FCC units at once, detects the new crude from the plant's own response, re-weights its models and tells each unit what to move — and when not to. Data: a peer-reviewed physics simulator, 54 runs, 50 labelled crude switches.",
@@ -50,7 +50,7 @@ const SCENES: SceneItem[] = [
     title: "The crude switch arrives — L0, 'Where will it hit first?'",
     duration: "2 min",
     route: "/twin",
-    routeLabel: "Refinery Twin · 07:25",
+    routeLabel: "FCC Complex Twin · 07:25",
     run: DEMO_RUN,
     timeMin: 445,
     moment: "crude switch R3 → R4",
@@ -233,13 +233,13 @@ const CURVE_LEGEND = [
 
 const PAGE_DIRECTORY = [
   {
-    dashboard: "Refinery Twin",
+    dashboard: "FCC Complex Twin",
     route: "/twin",
-    name: "L0 · Refinery home (SDD-L0-01..05)",
+    name: "L0 · FCC complex home (SDD-L0-01..05)",
     summary: "Six live units on the flow sheet with KPI vs plan, crude-slate banner (declared vs detected regime), plant strip, 'Needs attention' lines with consequences, and the 12-hour shift timeline. No charts by design.",
   },
   {
-    dashboard: "Refinery Twin",
+    dashboard: "FCC Complex Twin",
     route: "/twin/unit/unit_4_fractionator",
     name: "L1 · Unit workbench (SDD-L1-01..07)",
     summary: "One screen per unit: header + I/O strip, five panels on one cursor (measured vs expected, residual ±3σ/CUSUM, MVs, disturbances, yields), event ribbon, trilingual analysis strip, and the rail — regime & adaptation, model evidence + spread gate, optimisation what-if, decision (Accept/Decline), Ask Gemini. Open 'More panels ▾' for the tray profile / combustion panels.",
@@ -415,7 +415,7 @@ export default function DemoGuideModal() {
                   </h2>
                 </div>
                 <p className="subtle" style={{ margin: "4px 0 0 0", fontSize: 12.5 }}>
-                  Step-by-step 12-minute crude-switch script on the Refinery Twin (L0 → L1), chart/curve legend, and screen directory. You can also ask{" "}
+                  Step-by-step 12-minute crude-switch script on the FCC Complex Twin (L0 → L1), chart/curve legend, and screen directory. You can also ask{" "}
                   <strong>Ask Gemini (⌘K)</strong> on any screen: <em>&ldquo;Explain the graphs, curves &amp; buttons on this page&rdquo;</em>.
                 </p>
               </div>

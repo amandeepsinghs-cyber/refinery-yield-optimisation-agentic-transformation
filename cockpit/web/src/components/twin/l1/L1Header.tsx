@@ -16,7 +16,7 @@ export default function L1Header({ data }: { data: TwinWorkbench }) {
   return (
     <header className="l1-header" data-testid="l1-header">
       <div className="l1-crumbs">
-        <Link href="/twin" className="l1-crumb">Refinery Twin</Link>
+        <Link href="/twin" className="l1-crumb">FCC Complex Twin</Link>
         <span className="l1-crumb-sep">›</span>
         <span className="l1-crumb current">{unit.short_name}</span>
       </div>

@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-10-06 story-first pitch — the story of a refinery, then follow the oil (6 Oct; supersedes the scene order below)
+
+Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, so we can keep them, otherwise they may feel we are not listening or we are not focussing on the high value use cases"*; 05:52 *"going use case by use case is not the most optimal … I am still missing … the story of a refinery … should I not read the story of the refinery first and then go? then … how we are helping in taking those decisions … the first decision is what should be the temp of furnace, which first and foremost is decided based on the input crude"*; 05:55 "sure" (restructure); 06:03 "update the relevant files that define the build". Context: [use_cases/important_context.ipynb](use_cases/important_context.ipynb).
+
+**Full click-by-click script, lines to say, close, Q&A and pre-flight: [use_cases/PRESENTER_PACK.md](use_cases/PRESENTER_PACK.md).** Facts: [DECISIONS.md](DECISIONS.md) §0A.
+
+> **Front Overview page (proposed, 6 Oct 06:53 — SDD §14.6E):** once built, `/platform` opens on **the refinery** (what happens, crude in → products out), with IOCL's use cases pinned where they fit and what we built shown as status dots; the FCC is highlighted and opens `/twin`. Below it, an expandable **Decisions the platform enables** section answers "how does it actually work?" for each of the nine decisions. Until it is deployed, use the slide / `use_cases/INDEX.md`.
+
+| Act | Screen | Run · minute | What happens | IOCL rows |
+|---|---|---|---|---|
+| 1 Story of a refinery (90 s) | none / one picture | — | Crude → CDU/VDU → heavy gas oil → **FCC** → petrol, diesel, LPG → treating & blending. Six FCC units in one breath. Three gaps: quality (lab every 8 h), crude (changes every 12–48 h), time lag (2–3 h across consoles) | — |
+| 2 What you asked (60 s) | slide / `use_cases/refinery_optimisation_use_cases.md` | — | IOCL's list **with IOCL's figures, attributed**, laid out along the oil's path, our status per row | all |
+| 3 One data foundation (90 s) | **Overview** `/platform` | — | Six layers; "your DCS handles the seconds, nobody has the hours"; person in the loop; MeitY | — |
+| Map | **FCC Complex** `/twin` | `random_s107` 10:00 | What went wrong; pins Decide ×4, Watch ×1 | #6 |
+| Stop 1 Feed arrives | U4 step ② (crude block) | s107 10:00 | D4 which feed, is the switch done (scripted) | Feed |
+| Stop 2 Furnace | U1 | s107 10:00 | D6 preheat +1.5 °F (gain measured, chance scripted) | #5, #10 |
+| Stop 3 Riser | U2 | s107 10:00 | D8 watch: conversion +0.5 % | #8, #9 |
+| Stop 4 Regenerator | U3 | s107 10:00 | D5 air −0.03 lb/s (scripted) | #4 |
+| Stop 5 Fractionator | U4 step ③ | s107 10:00 | **D1 live**: HN −1.0 °F, 91 → 95 %, Accept | **#1, #11** |
+| Stop 6 Gas plant & stabiliser | U5 (+ U6) | s107 10:00 | D7 overhead +1.5 °F (scripted); fouling signal | #2, #3, #7 |
+| Stop 7 Whole FCC | FCC Complex | s107 10:00 | One crude switch, six units, consequences in the next unit | #6 |
+| Stress test 1 | U4 | `random_s144` 10:00 | Held-out run: LCO +2.5 °F | #1 |
+| Stress test 2 | U4 | s144 **12:00** | **"Not yet"** (spread 17.3 > 14 °F), Pull sample, Ask Gemini | #11 |
+| Stress test 3 | **Decision record** `/audit` | — | Accepts + withheld rows | all |
+| Close | slide / `/platform` | — | Back to IOCL's list: real · scripted · not built; pilot ask | all |
+
+Why: the room (and our own team) needs the refinery before the FCC and the FCC before a decision card; following the oil shows the systems effect (the furnace move at stop 2 lands at stops 4 and 6) instead of arguing it; the live proof (fractionator, then "Not yet") becomes the climax. Never go past 12:20 on `random_s107`.
+
+---
+
 ## 2026-10-03 pitch spine — new Scene 0 "Overview" (3 Oct)
 
 Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.

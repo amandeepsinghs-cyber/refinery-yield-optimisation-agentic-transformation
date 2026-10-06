@@ -23,6 +23,14 @@ Numbers were checked against the running API on **3 Oct 2026, 05:16 UTC**.
 
 ---
 
+## 2026-10-06 story-first order (6 Oct) — read this first
+
+The scenes below are unchanged and still the source of each card's numbers and tests, but **the pitch now runs in a different order**: refinery story → IOCL's list (their figures, attributed) → one data foundation (`/platform`) → **follow the oil** (stop 1 feed D4 → 2 furnace D6 → 3 riser D8 → 4 regenerator D5 → 5 fractionator D1/D2/D9 → 6 gas plant & stabiliser D7 → 7 whole FCC, D3/#6) on `random_s107` 10:00 → **stress test** on held-out `random_s144` (10:00 D1, 12:00 "Not yet") → decision record → back to IOCL's list and the pilot ask. Mapping to the scenes below: Overview = Scene 0 · map = Scene A · stop 1 = Scene B · stop 2 = Scene G · stop 3 = Scene J · stop 4 = Scene H · stop 5 = Scene C · stop 6 = Scene I · stop 7 = Scene A again · stress test 1 = Scene D · stress test 2 = Scene F · optional D3 = Scene E · Gemini = Scene K · record = Scene L · close = Scene M. Full script: [use_cases/PRESENTER_PACK.md](use_cases/PRESENTER_PACK.md).
+
+IOCL's own value figures may now be quoted **as IOCL's** in the opening and closing table (DECISIONS §0A S-3) — still never as ours and never on cockpit screens.
+
+---
+
 ## Part 1 — The story on one page
 
 **Line for the room:** *"What you see is one screen. Behind it are separate agents, one per use case, sharing one source of truth. They advise; your operators decide."*

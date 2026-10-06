@@ -10,6 +10,16 @@
 
 ---
 
+## 2026-10-06 story-first pitch (6 Oct; adds to the 2026-10-02 agreement)
+
+> Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, so we can keep them, otherwise they may feel we are not listening or we are not focussing on the high value use cases"*; 05:52 *"going use case by use case is not the most optimal … I am still missing … the story of a refinery … should I not read the story of the refinery first and then go? then … how we are helping in taking those decisions … the first decision is what should be the temp of furnace, which first and foremost is decided based on the input crude"*; 05:55 "sure" (restructure); 06:03 "update the relevant files that define the build". Context: [use_cases/important_context.ipynb](use_cases/important_context.ipynb).
+>
+> **Specs: §14.6D `SDD-STORY-01..04` (L1) and `SDD-TOUR-01..06` (L2)**, both proposed. They add to `/platform` and the unit pages and change no engine, decision, gate or audit behaviour. Facts: [DECISIONS.md](DECISIONS.md) §0A (feed is heavy gas oil, IOCL figures not on screens, one status vocabulary).
+>
+> **Front Overview page (6 Oct 06:53): §14.6E `SDD-FP-01..10`** — FP-1 the refinery (what happens; IOCL use cases pinned where they fit; what we built as status dots; FCC → `/twin`); FP-2 decisions, expandable (pain point · how we solve it · how it works). Existing Overview sections kept below; unit tabs unchanged. Supersedes L1. Docs agreed; not built.
+
+---
+
 ## 2026-10-02 agreement (supersedes earlier UI sections where they conflict)
 
 > Owner 09:48–11:34 UTC 2 Oct + Voice Note 11 ([verbatim.md](verbatim.md) Part 9.5). The cockpit is **decision-first**: home = top view of the refinery (the FCC's six units) → what went wrong → decisions pinned to units → flow ①–④ (how AI / ML / agents enable them) → IOCL use-case band; unit page = ① Data in / out · ② What we observe · ③ Decision and lever · ④ How the move is found · footer; `/audit` = Decision record. No role views, no value figures, no left bar; actions are audit-only.
@@ -117,7 +127,7 @@ flowchart LR
 ## 3. Repository Layout (Target)
 
 ```
-Refinery Agentic Optimisation/
+FCC Agentic Optimisation/
 ├── sim_octave/                  # existing: simulator, scenarios, BQ loader, data/<batch>/
 ├── docs/ui/                     # cockpit mockups (layout reference)
 ├── soft_sensor/                 # Python package (models + logic)
@@ -998,6 +1008,109 @@ cockpit: {sse_window_points: 720, default_speed: 10, ts_max_points: 2000, defaul
 | K4 Decision record | SDD-DEC-08 | BDD-33 | ✅ `112aa48` |
 | K5 / K9 "Not yet" | SDD-DEC-03, DEC-07 | BDD-34 | ✅ reason · ☐ exact missing data |
 | K11 Lever batch + refit | SDD-DEC-10, SDD-RCP-06 | BDD-27, BDD-34 | ◐ batch running |
+
+### 14.6D Story-first pitch and Follow the oil (`SDD-STORY-01..04`, `SDD-TOUR-01..06`, 2026-10-06, Epic L, BDD-35..36)
+
+- **SDD-STORY-01 Placement.** `/platform` (`components/how/PlatformOverview.tsx`) SHALL open with a section "The story of a refinery" above "Six layers, each with one job"; the existing sections keep their order.
+- **SDD-STORY-02 Refinery flow.** A static left-to-right flow: *Crude (changes every 1–2 days)* → *Crude unit (CDU / VDU)* → *Heavy gas oil (VGO)* → **FCC** (highlighted, links to `/twin`) → *Petrol · diesel (LCO) · LPG* → *Treating & blending*. Side branch from the crude unit: *gas · naphtha · kerosene · diesel*. The text SHALL say the FCC is fed heavy gas oil, not crude.
+- **SDD-STORY-03 Six units and three gaps.** The six FCC units in flow order with one-line roles (reuse `STAGES` in `lib/howItWorks.ts`); the three gaps as one line each: quality (lab every 8 h, ~1 h late), crude (changes every 12–48 h), time lag (a move reaches the next console 2–3 h later). Content lives in `lib/howItWorks.ts` (`REFINERY_STORY`, `GAPS`).
+- **SDD-STORY-04 Honesty.** No value figures (U3). Simulated-data note as on the rest of the page.
+- **SDD-TOUR-01 Journey data.** `lib/journey.ts` SHALL export `JOURNEY: Stop[]`, ordered: map (`/twin`) → 1 feed (`unit_4_fractionator`, step ②, D4) → 2 furnace (`unit_1_furnace`, D6) → 3 riser (`unit_2_riser`, D8) → 4 regenerator (`unit_3_regenerator`, D5) → 5 fractionator (`unit_4_fractionator`, step ③, D1/D2/D9) → 6 gas plant (`unit_5_condenser`, D7; stabiliser `unit_6_stabiliser` as a side link) → 7 whole FCC (`/twin`) → T1 `random_s144`·600 U4 → T2 `random_s144`·720 U4 → T3 `/audit`. Stops 1–7 use `random_s107`·600. Each `Stop` has `n, title, question, decisions, ucs, href, step, run, t`.
+- **SDD-TOUR-02 Entry points.** A secondary button "Follow the oil →" next to "Open the refinery →" on `/platform`, and a "Follow the oil" list in the Demo & UI Guide (`components/shell/DemoGuideModal.tsx`).
+- **SDD-TOUR-03 Navigation.** Opening a stop SHALL set the scenario (run, minute) through the shared store, route to `href`, and scroll to `step`. While a tour is active (`?tour=<n>`), a compact strip "Stop n of 7 · ← Previous · Next stop →" with an ✕ to leave SHALL appear under the page header.
+- **SDD-TOUR-04 Strip content.** The strip shows the stop's question, its IOCL rows (ids from `USE_CASES`), and the status chip from `STATUS_LABEL`. Presenter lines ("Say") appear only in the Demo & UI Guide, never on the strip.
+- **SDD-TOUR-05 Read-only and safe.** The tour SHALL NOT call any write endpoint, change decisions, gates or engines, or set `t > 740` on `random_s107` (data breaks after 12:20).
+- **SDD-TOUR-06 Tests.** Vitest: `JOURNEY` order and each stop's decisions / statuses agree with `DECISIONS` in `lib/howItWorks.ts`; no stop on `random_s107` beyond 740. Playwright (`e2e/twin.spec.ts`): walk stops 1–7 and T1–T2; each page loads, the strip shows the right stop, T2 shows "Not yet" with no Accept on D2.
+
+| Feature | SDD | BDD | Status |
+|---|---|---|---|
+| L1 Refinery story band | SDD-STORY-01..04 | BDD-35 | ↪ superseded by FP-1 (§14.6E) |
+| L2 Follow the oil | SDD-TOUR-01..06 | BDD-36 | ⚪ proposed |
+| L3 Presenter pack / use-case docs | — | — | ✅ docs |
+| L4 IOCL figures attributed | DECISIONS S-3 | — | ✅ docs only |
+
+### 14.6E Front Overview page (`SDD-FP-01..10`, 2026-10-06, Epic L, BDD-37..38)
+
+Owner, 6 Oct 2026: 06:47 *"there should be an overview of refinery … the refinery view is critical, and then we go to FCC"*; 06:51 *"make a front overview page. That will have details about the refinery, what happens on the top level with sufficient details, and then mention where their use cases fit and then, on that, which we have built. Then subsequently in the bottom part as an expandable screen the decisions being made. Then the individual sections as they are today on tabs will remain"*; 06:53 *"let's keep them for now"* (existing Overview sections); 06:39 *"I want to see the coloured dots"*; 06:43 *"they don't want to have a black box"*.
+
+Docs only until the owner approves each build step. Changes `components/how/PlatformOverview.tsx`, `lib/howItWorks.ts` and `app/globals.css` only. **No change** to the unit tabs (FCC Complex `/twin`, U1–U6 `/twin/unit/*`, Decision record `/audit`), engines, decisions, gates, API or audit.
+
+**Layout of `/platform`, top to bottom:** header → **FP-1 The refinery** → **FP-2 Decisions the platform enables (expandable)** → existing sections, unchanged and in their current order (six layers · use-case cards · person decides · MeitY · how it learns · proof loop; owner reviews later whether they stay) → "Open the refinery →".
+
+- **SDD-FP-01 Status dots.** One component: coloured dot + word — 🟢 Live (`real`) · 🟠 Scripted outcome (`scripted`) · 🟡 Partly (`partly`) · 👁 Watch only (`watch`) · ⚪ Not claimed (`absent`). CSS from theme tokens (not emoji), always with the word (projector, print, colour-blind). Tag *FCC equivalent* where IOCL named a unit we do not have. Same words as `use_cases/INDEX.md`.
+- **SDD-FP-02 FP-1 title and intro.** "The refinery — and where your use cases fit". One sentence: crude changes every 1–2 days, so every unit downstream has to keep adjusting.
+- **SDD-FP-03 FP-1 refinery picture (top level, enough detail).** A left-to-right flow; each step has its name and one line on what happens:
+
+  | Step | What happens (one line on screen) |
+  |---|---|
+  | Crude & tankage | Crude arrives by ship or pipeline and is blended; the crude slate changes every 1–2 days |
+  | Crude unit (CDU / VDU) | Preheat train and furnace heat the crude; the column splits it by boiling range into gas, naphtha, kerosene, diesel; the vacuum unit gives heavy gas oil and residue |
+  | Reformer | Upgrades naphtha to high-octane petrol; its stabiliser recovers C5 from the LPG; CCR regenerates the catalyst |
+  | Hydrotreaters | Remove sulphur from kerosene, diesel and FCC feed |
+  | **FCC** (highlighted) | Cracks heavy gas oil on hot catalyst into petrol, diesel (LCO) and LPG — six units: furnace, riser, regenerator, fractionator, gas plant, stabiliser. **Where we built.** Click → `/twin` |
+  | Coker | Turns the heaviest residue into lighter products and coke |
+  | LPG & alkylation | Splits LPG and light naphtha (C4 / C5); alkylation makes high-octane blendstock |
+  | Utilities & flare | Steam, power, cooling water, fuel gas and the flare, shared by every unit |
+  | Blending & dispatch | Streams are blended to spec and sent out as petrol, diesel and LPG by pipeline, rail and road |
+
+  Streams on the arrows: naphtha → reformer; kerosene / diesel → hydrotreaters; heavy gas oil → FCC; residue → coker; LPG / light naphtha → LPG & alkylation; all products → blending. The text SHALL say the FCC is fed heavy gas oil, not crude (S-2).
+- **SDD-FP-04 FP-1 use-case pins.** Each IOCL use case is a pin on the step where IOCL named it, showing its IOCL # and status dot; pins for an *FCC equivalent* also show "shown on FCC · U#". Hover / focus / click a pin → a small card: IOCL wording · what we built (`USE_CASES[].here`) · status · "Open U# →". Mapping (from `use_cases/INDEX.md` §1):
+
+  | Pin | Placed on | Status | Shown on |
+  |---|---|---|---|
+  | #1 Product-quality inferential | FCC | 🟢 Live | U4 Fractionator |
+  | #11 Product soft sensors | FCC | 🟢 Live | U4 Fractionator |
+  | #2 Stabiliser overhead, C5 recovery | Reformer | 🟠 Scripted outcome · FCC equivalent | U6 Stabiliser / U5 |
+  | #3 LPG / LSR naphtha C4/C5 split | LPG & alkylation | 🟠 Scripted outcome · FCC equivalent | U6 / U5 |
+  | #4 Regeneration-cycle tracking | Reformer (CCR) / hydrotreaters | 🟠 Scripted outcome · FCC equivalent | U3 Regenerator |
+  | #5 Fired-heater combustion | Furnaces (crude unit and FCC) | 🟠 Scripted outcome | U1 Furnace |
+  | Feedstock evaluation | Crude & tankage | 🟠 Scripted outcome | all FCC units (D4) |
+  | #6 Multi-unit energy | Utilities & flare | 🟡 Partly | FCC Complex · U4 |
+  | #7 Exchanger fouling | Crude unit preheat train | 🟡 Partly · FCC equivalent | U5 Gas plant |
+  | #10 Crude-furnace coke & hydraulics | Crude unit furnace | 🟡 Partly · FCC equivalent | U1 Furnace |
+  | #8 Filter / coalescer breakthrough | Hydrotreaters / utilities | 👁 Watch only · FCC equivalent | U2 Riser |
+  | #9 Rotating equipment | Utilities (site-wide machines) | 👁 Watch only | U2 Riser (consequence) |
+  | Coker, CDU/VDU, alkylation, utilities & flare, pipelines (rest of list) | Those steps | ⚪ Not claimed — "same pattern, next agent" | — |
+
+- **SDD-FP-05 FP-1 legend and summary.** Under the picture: the status legend (SDD-FP-01) and a computed line "2 live · 5 scripted outcome · 3 partly · 2 watch only · rest not claimed" (from `USE_CASES`, not typed). No value figures (U3).
+- **SDD-FP-06 FP-2 expandable decisions.** A collapsed section "Decisions the platform enables (9)" directly below FP-1. Open → rows in `DECISION_ORDER` = D4, D6, D8, D5, D1, D2, D9, D3, D7: step n · D-id · question · unit · status dot (from `DECISIONS[].status`). Open a row → its card (keyboard-accessible `<details>`).
+- **SDD-FP-07 FP-2 card content.** In this order: **Pain point** · **How we solve it** · **How it works** — 1 Data in · 2 Algorithms, in order · 3 Checks before advising · 4 What the operator gets · 5 On your plant · 6 What we need from you · **IOCL use cases** (dots) · "See it running on <unit> →" (`unitHref`; D4 → U4 step ②). For 🟠 rows add: "In this demo the size of the move is scripted on real simulator inputs; on your plant it comes from the models in 2, refitted as in 5." For 👁 D8: "Watch only — no move is proposed." Footer of FP-2: "What we need from your plant: 1-minute historian tags · LIMS lab results · crude assays and schedule · SOP limits for each lever · the decision log. Nothing is written to the control system."
+- **SDD-FP-08 Content source.** Add to `lib/howItWorks.ts`: `REFINERY_STEPS` (SDD-FP-03), `UC_PINS` (SDD-FP-04), `DECISION_ORDER`, `DECISION_CARD` (the two tables below, verbatim). Reuse `USE_CASES`, `DECISIONS`, `STATUS_LABEL`.
+- **SDD-FP-09 Tests.** Vitest: every `USE_CASES` id has exactly one pin and the pin's status equals `USE_CASES[].status`; summary counts match; `DECISION_ORDER` covers all nine `DECISIONS` once; every `DECISION_CARD` field non-empty; no currency / NPV / ROI / savings text. Playwright: `/platform` shows FP-1 then FP-2 then the existing sections; FCC opens `/twin`; FP-2 expands; the D1 card links to `/twin/unit/unit_4_fractionator`; the unit tabs still load.
+- **SDD-FP-10 Build discipline.** FP-1 first, then FP-2, each followed by `make web-test`, a clean dev-server restart (never edit under a long-running server) and owner review of the page. Deploy only after both and an end-to-end demo run, on the owner's go-ahead (redeploy resets the decision record — P13).
+
+**FP-2 card content — pain point and how we solve it.** Status in brackets.
+
+| Step | Decision | Pain point | How we solve it |
+|:-:|---|---|---|
+| 1 | **D4** Which crude is in the unit, and has the switch finished? (🟠) | The crude slate changes every 12–48 h; models tuned on yesterday's feed go wrong, and the real arrival is not when the schedule says | Names the crude from the unit's own behaviour, confirms when the switch is done, and re-weights every model for it |
+| 2 | **D6** What preheat for this feed? (🟠 gain measured) | A heavier feed shifts catalyst-to-oil and regenerator temperature; preheat is set by habit and corrected after the riser reacts | A sized preheat move for this crude, with its effect on riser and regenerator shown before anyone acts |
+| 3 | **D8** Act on the riser now, before it reaches the regenerator? (👁) | A riser drift shows up hours later in the regenerator, compressor and air blower; each console sees only its own unit | Flags the drift with its downstream consequence and when it will land; no move proposed |
+| 4 | **D5** Rebalance regenerator air against afterburn? (🟠) | Afterburn is found when the cyclone temperatures alarm; the cause is worked out after the event | Tracks cyclone ΔT against expected for this feed and proposes the air move before the limit, with the likely cause |
+| 5 | **D1** Move the LCO cut point now, or wait for the lab? (🟢) | Quality is known only from the lab every 8 h; the column runs blind after a crude change, so product is given away or goes off spec | A cut-point estimate every minute with the chance of being on spec, and the move now — or "wait for the lab" |
+| 6 | **D2** Can the estimate be trusted right now? (🟢) | A single soft sensor always gives a number, even when it should not be trusted | Four different estimators; when they disagree the cockpit says "Not yet" and holds every move |
+| 7 | **D9** Pull an extra lab sample now? (🟢) | Lab samples follow a fixed round, not the moments of most doubt | Asks for an extra sample exactly when the estimate is least certain |
+| 8 | **D3** Which set points, together, for the new crude? (🟠) | A new feed needs several set points moved together; consoles move one at a time, by trial | A recipe of several set points checked against limits — held back while D2 says the estimate is too uncertain |
+| 9 | **D7** Move the overhead temperature target? (🟠) | Condenser fouling and C5 lost to LPG are found late, after the limit is hit or the next lab | Flags cooling-water demand above expected for the load and proposes the overhead move; cooling water stays at fixed duty |
+
+**FP-2 card content — how it works.**
+
+| Step | Decision | 1 Data in | 2 Algorithms, in order | 3 Checks before advising | 4 What the operator gets | 5 On your plant | 6 What we need from you |
+|:-:|---|---|---|---|---|---|---|
+| 1 | **D4** | Coke per feed, riser ΔT, fuel per feed, regenerator temperature, conversion, tray ΔT — every minute; the crude the schedule declares | Crude classifier: probability for each crude family (R1–R4) from the unit's behaviour → switch declared after a 15-min dwell → novelty score for a crude unlike any trained | Novelty ≥ 0.5 → recipes held, crude assay requested; detected ≠ declared → operator asked to confirm | The crude with a % confidence and the switch time; Confirm / keep declared; every model re-weights for it | Trained on your crude history and assay library; a new crude starts from its nearest family | Historian tags above, crude schedule, assay library |
+| 2 | **D6** | Preheat set point and outlet, fired duty, flue-gas CO/O₂, feed rate, riser outlet and regenerator temperatures; the crude (D4) | Drift watch (expected value for this crude, ±3σ, CUSUM) → response model (preheat gain; 1.007 °F/°F from 52 simulator step tests) → optimiser: smallest move to this crude's target with ≥ 95 % chance → systems check of the effect on riser and regenerator | ≤ 5 °F per step, ≥ 20 min between steps, feed-nozzle limit, inputs inside the training range | Preheat from → to, with its effect on riser and regenerator; Accept / Hold / Decline | Gain refitted from your past preheat moves and a few planned step tests | Furnace and riser tags, SOP step limits, log of past moves |
+| 3 | **D8** | Riser outlet temperature, conversion, hydraulic signals, catalyst loading; wet-gas compressor and air-blower load | Drift watch → cross-unit consequence trace (systems agent, with the time lag to each unit) | Flagged only on a ±3σ breach or a CUSUM that keeps building | A watch item: what is drifting, what it will do downstream, and roughly when. No move | Time lags learned from your historian | Riser and downstream machine tags |
+| 4 | **D5** | Cyclone ΔT, regenerator bed temperature, air flow, flue-gas O₂/CO, riser severity; the crude (D4) | Drift watch on cyclone ΔT → event log with the likely cause (air or riser severity) → response model (≈ 0.4 °F ΔT per 0.01 lb/s air) → optimiser: smallest air move back into band with ≥ 95 % chance | ≤ 3 % air per step, ≥ 15 min between steps | Air from → to before the alarm limit; the cause on record | Gain fitted from your air moves and afterburn history | Regenerator tags, afterburn alarm history, air SOP |
+| 5 | **D1** | Tray and draw temperatures, pumparound duties, feed rate — every minute; lab LCO T98 every 8 h, matched to the minute it was drawn; the crude (D4) | Four quality estimators (Bayesian ridge · hybrid physics + data · physics-informed neural nets · Gaussian process) → combined estimate ± spread and chance on spec → response model (cut point moves 1 : 1 with its set point) → optimiser: smallest move to ≥ 95 % chance on spec | Spread ≤ 14 °F, estimators agree, inputs inside the training range, move ≤ 5 °F SOP step; else "Not yet" or "pull a sample" (D2, D9) | Move from → to, chance on spec before → after; Accept / Hold / Decline to the decision record; nothing written to the control system | Models retrain on your historian and LIMS history; each new lab re-anchors the estimate | Column tags (1-min), LIMS T98 history, crude schedule, cut-point SOP limits |
+| 6 | **D2** | The four estimators' outputs and their training ranges | Trust checks — fixed rules, not a model | Spread (W90) ≤ 14 °F, no split between estimators, inputs inside the training range | Pass → advice shown; fail → "Not yet" with the reason, and every move on that product is held | Limits set with your process engineers | Agreed spec limits and acceptable spread |
+| 7 | **D9** | Spread, trust state, time to the next scheduled lab | Uncertainty trigger | Raised when the spread is ≥ 90 % of its 14 °F limit (or trust is amber/red, or advice is held) **and** the next lab is ≥ 2 h away | "Pull a T98 sample now", with the reason; the result re-anchors the estimate | Wired to your LIMS sample request | LIMS schedule and sampling procedure |
+| 8 | **D3** | Everything D1 uses, riser outlet temperature, the per-crude response models; asked only within 12 h of a confirmed switch | Multi-lever recipe search (riser outlet temperature, LCO and HN T98 set points) → plausibility check of the predicted effects → yield ripple | Released only if D2 passes and the predicted effects are physically plausible; otherwise held with the reason | A recipe of moves to make together, with the yield effect | Per-crude response models refitted from your data and step tests | Per-crude operating history, SOP limits for each lever |
+| 9 | **D7** | Overhead temperature, condenser cooling-water flow against load, condenser duty; stabiliser C5 recovery and LPG / naphtha split (lab) | Drift watch (cooling water above expected for the load = fouling signal) → response model → optimiser: smallest overhead move that stays inside the fixed cooling duty and the C5 band with ≥ 95 % chance | ≤ 3 °F per step; cooling water is never adjusted | Overhead target from → to, with its effect on C5 recovery and the split | Fitted to your condenser and stabiliser history | Gas-plant and stabiliser tags, LPG / C5 lab results |
+
+| Feature | SDD | BDD | Status |
+|---|---|---|---|
+| FP-1 The refinery — use cases and what we built | SDD-FP-01..05 | BDD-37 | ⚪ proposed — docs agreed |
+| FP-2 Decisions the platform enables (expandable) | SDD-FP-06..08 | BDD-38 | ⚪ proposed — docs agreed |
 
 ### 14.7 Traceability (Epic J)
 

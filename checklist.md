@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-10-06 story-first pitch (6 Oct)
+
+Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, so we can keep them, otherwise they may feel we are not listening or we are not focussing on the high value use cases"*; 05:52 *"going use case by use case is not the most optimal … I am still missing … the story of a refinery … should I not read the story of the refinery first and then go? then … how we are helping in taking those decisions … the first decision is what should be the temp of furnace, which first and foremost is decided based on the input crude"*; 05:55 "sure" (restructure); 06:03 "update the relevant files that define the build". Context: [use_cases/important_context.ipynb](use_cases/important_context.ipynb).
+
+- [x] Pitch restructured to the story of a refinery → follow the oil → stress test → close ([use_cases/PRESENTER_PACK.md](use_cases/PRESENTER_PACK.md)).
+- [x] `use_cases/` filled: IOCL list with IOCL's figures attributed; statuses corrected (UC-11 model list, 95 % wording, RON, blend giveaway, "uncaptured margin"); broken UC-FEED link and misaligned row fixed; `INDEX.md`; every `UC-*.md` written.
+- [x] DECISIONS §0A S-1..S-6 (story first; feed is heavy gas oil; IOCL figures attributed, not on screens; status vocabulary; Epic L proposed; L5 training-label correction).
+- [ ] Owner to confirm the three *(check)* figures are IOCL's (£4.3M gas-turbine filter, $8.7M flare NPV, missing coker-outage value).
+- [x] Front Overview page agreed (docs): FP-1 the refinery with IOCL use cases pinned and what we built as status dots; FP-2 decisions, expandable (pain point · how we solve it · how it works). Existing Overview sections kept below; unit tabs unchanged (SDD §14.6E, BDD-37..38). L1 superseded by FP-1.
+- [ ] Restore the local app (owner decision on the 4 Oct uncommitted `cockpit/` edits; clean dev-server restart; re-auth) — Phase 23.
+- [ ] Owner go-ahead for **L1** (refinery story band) and **L2** (follow the oil) — Phase 23.
+- [ ] Re-authenticate BigQuery (`gcloud auth application-default login`); the local API was serving "Local copy (BigQuery unreachable)" on 6 Oct.
+- [ ] On the live service, verify: stops 1–7 cards at `random_s107` 10:00; whether the crude block shows in U1 step ②; whether a D7 card is live on U6; D3 at `random_s144` (stale local API showed an un-scripted "LCO −7.8 °F / HN −7.2 °F", open at 12:00 — skip the optional D3 scene if seen live).
+- [ ] `use_cases/important_context.ipynb`: cells 1 and 2 are duplicates; stray "Viewed STORY_v2.md:18-53" line.
+
+---
+
 ## 2026-10-03 pitch spine (3 Oct)
 
 Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
@@ -519,3 +536,23 @@ Rehearsal and v0.3 (owner, 3 Oct 03:24: "do 1 and 2 now, then push it to git as 
 - ☑ Fixed during rehearsal: (1) home showed "Local copy (BigQuery unreachable)" because the API restarted while the final lake load rewrote files — restart cleared it; §8 now says to check the source line reads BigQuery; (2) D1 set-point search step read "lifts 99 % to 98 %" — now "takes back margin while P(on-spec) stays at 98 % (≥ 95 %)"; (3) lever header now uses the same real-practice lever name as the lever row
 - ☑ Checks: 290 back-end pass (2 skipped), 82 front-end pass, tsc and eslint clean
 - ☑ Tagged `v0.3`
+
+---
+
+### Phase 23: Story-first Overview and "Follow the oil" (build.md Step 21 · Epic L · BDD-35..36)
+
+- [x] L3 presenter pack and use-case docs (`use_cases/`)
+- [x] L4 IOCL figures attributed (docs only; not on screens)
+- [ ] Restore local app: 4 Oct edits shelved or kept (owner decision); clean `make web-dev`; all pages load
+- [ ] FP-1 refinery section + pins + status dots + legend + summary (BDD-37) — owner review
+- [ ] FP-2 expandable decisions + cards + footer (BDD-38) — owner review
+- [ ] Vitest: one pin per use case, statuses match `USE_CASES` / `DECISIONS`, summary counts, nine decisions once, no value figures
+- [ ] Existing Overview sections reviewed with owner after the pitch: keep or remove
+- [ ] Owner go-ahead for L1 / L2
+- [ ] L1 `REFINERY_STORY` + `GAPS` in `lib/howItWorks.ts`; first section on `/platform` (BDD-35)
+- [ ] L2 `lib/journey.ts`; tour strip; "Follow the oil →" on `/platform`; Demo & UI Guide list (BDD-36)
+- [ ] Vitest: journey order and statuses vs `DECISIONS`; no `random_s107` minute > 740
+- [ ] Playwright: stops 1–7, T1 (s144 10:00), T2 (s144 12:00 "Not yet", no Accept on D2)
+- [ ] Data check: every stop's card read on the local build with the data pill on **BigQuery**; differences noted in `use_cases/PRESENTER_PACK.md` §6
+- [ ] `make check` green
+- [ ] Owner go-ahead → Cloud Run redeploy (new `_TAG` = `FCC_RELEASE`); decision record reset afterwards is expected

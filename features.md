@@ -10,6 +10,18 @@
 
 ---
 
+## 2026-10-06 story-first pitch (6 Oct) — Epic L
+
+Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, so we can keep them, otherwise they may feel we are not listening or we are not focussing on the high value use cases"*; 05:52 *"going use case by use case is not the most optimal … I am still missing … the story of a refinery … should I not read the story of the refinery first and then go? then … how we are helping in taking those decisions … the first decision is what should be the temp of furnace, which first and foremost is decided based on the input crude"*; 05:55 "sure" (restructure); 06:03 "update the relevant files that define the build". Context: [use_cases/important_context.ipynb](use_cases/important_context.ipynb). Facts: [DECISIONS.md](DECISIONS.md) §0A. Script: [use_cases/PRESENTER_PACK.md](use_cases/PRESENTER_PACK.md).
+
+**F-STORY "The story of a refinery" (L1, proposed).** First band on `/platform`: crude → crude unit → heavy gas oil → FCC → products → treating & blending; the six FCC units in flow order with one-line roles; the three gaps (quality, crude, time lag). No value figures. Spec SDD-STORY-01..04 · BDD-35.
+**F-TOUR "Follow the oil" (L2, proposed).** Guided stops 1–7 (D4 → D6 → D8 → D5 → D1/D2/D9 → D7 → whole FCC) on `random_s107` 10:00, then the stress test on `random_s144` (10:00, 12:00) and the decision record; each stop opens its unit at the right step with the scenario set, and shows the question, IOCL rows and status chip. Read-only. Spec SDD-TOUR-01..06 · BDD-36.
+**F-FRONT Front Overview page (FP-1, FP-2; proposed — docs agreed 6 Oct 06:53, not built).** Owner, 6 Oct 2026: 06:47 *"there should be an overview of refinery … the refinery view is critical, and then we go to FCC"*; 06:51 *"make a front overview page. That will have details about the refinery, what happens on the top level with sufficient details, and then mention where their use cases fit and then, on that, which we have built. Then subsequently in the bottom part as an expandable screen the decisions being made. Then the individual sections as they are today on tabs will remain"*; 06:53 *"let's keep them for now"* (existing Overview sections); 06:39 *"I want to see the coloured dots"*; 06:43 *"they don't want to have a black box"*. `/platform` opens with **FP-1 the refinery** (what happens, crude in → products out; IOCL use cases pinned where they fit; what we built as status dots; FCC highlighted, opens `/twin`), then **FP-2 decisions** (expandable; nine decisions, each card: pain point · how we solve it · how it works). Existing Overview sections stay below; unit tabs unchanged. Spec SDD-FP-01..10 · BDD-37..38.
+**F-UCMAP Use-case map and presenter pack (L3, done).** `use_cases/`: [PRESENTER_PACK.md](use_cases/PRESENTER_PACK.md), [INDEX.md](use_cases/INDEX.md), one `UC-*.md` per IOCL row (built · remaining · how it solves the row · demo steps · pilot).
+**F-IOCLFIG IOCL figures, attributed (L4, done — docs only).** IOCL's benefit figures kept in `use_cases/refinery_optimisation_use_cases.md` and the pitch table, labelled as IOCL's; never on cockpit screens (U3).
+
+---
+
 ## 2026-10-03 pitch spine (3 Oct)
 
 Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
@@ -433,3 +445,16 @@ flowchart TD
 | **K9** | **④ "Not yet": exact missing data** | Names the lever(s) without designed moves and what would make the decision Live | Must | v4 | D3, D5–D7 | ⚪ being built | BDD-34 |
 | **K10** | **① Full tag list + footer action history** | Collapsible tag list for the unit; actions taken on this unit in the footer | Should | v4 | — | ⚪ being built | BDD-32 |
 | **K11** | **Lever batch and refit** | `lever_v1` (12 runs, seeds 200–211) → surrogate refit → one recipe run back through the simulator to confirm the gain → D3, D5–D7 Live | Must | v4 | D3, D5–D7 | 🟡 code `1edeb3e`; batch running since 12:15 UTC 2 Oct; refit needs the fit to include `lever_v1` | BDD-27, BDD-34 |
+
+---
+
+## v6 Features: Story-First Pitch & Follow the Oil (Epic L, 2026-10-06)
+
+| ID | Feature | What it does | Priority | Phase | Decisions | Status | BDD |
+|---|---|---|---|---|---|---|---|
+| **L1** | **"The story of a refinery" band** (`/platform`, first section) | Crude → CDU/VDU → heavy gas oil → FCC → products → treating & blending; six FCC units with roles; three gaps. Links to `/twin`. No value figures | Must | v6 | D4, D6 | ↪ superseded by FP-1 (6 Oct) | BDD-35 |
+| **L2** | **"Follow the oil" guided stops** | `lib/journey.ts` stops 1–7 + stress tests T1–T3; "Follow the oil →" entry on `/platform` and in the Demo & UI Guide; stop strip "Stop n of 7 · ← · Next stop →" sets the scenario and scrolls to the step | Should | v6 | D1–D9 | ⚪ proposed — awaiting owner go-ahead | BDD-36 |
+| **FP-1** | **The refinery — what happens, where IOCL's use cases fit, what we built** (`/platform`, top) | Refinery flow with one line per step (crude & tankage, crude unit CDU/VDU, reformer, hydrotreaters, FCC, coker, LPG & alkylation, utilities & flare, blending & dispatch); IOCL use cases pinned where IOCL named them, each with a status dot and, for *FCC equivalent*, the FCC unit that shows it; FCC highlighted "where we built" → `/twin`; legend; summary "2 live · 5 scripted outcome · 3 partly · 2 watch only · rest not claimed". No value figures. Supersedes L1 | Must | v6 | all | ⚪ proposed — docs agreed | BDD-37 |
+| **FP-2** | **Decisions the platform enables** (expandable, below FP-1) | Collapsed header "Decisions the platform enables (9)"; open → rows D4 → D6 → D8 → D5 → D1 → D2 → D9 → D3 → D7 (question · unit · status dot); open a row → card: pain point · how we solve it · how it works (1 Data in · 2 Algorithms, in order · 3 Checks before advising · 4 What the operator gets · 5 On your plant · 6 What we need from you) · IOCL use cases · "See it running on U# →"; footer "what we need from your plant" | Must | v6 | D1–D9 | ⚪ proposed — docs agreed | BDD-38 |
+| **L3** | **Presenter pack + use-case docs** | `use_cases/PRESENTER_PACK.md`, `INDEX.md`, `UC-*.md` | Must | v6 | all | ✅ done (docs) | — |
+| **L4** | **IOCL figures attributed** | IOCL's figures in the use-case list and pitch table, separate column, "IOCL's figures, not ours" | Must | v6 | — | ✅ done (docs only; not on screens) | — |

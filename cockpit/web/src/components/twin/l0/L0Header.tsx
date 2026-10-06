@@ -13,7 +13,7 @@ export default function L0Header({ plant }: { plant: TwinPlantStrip }) {
   return (
     <div className="l0-header" data-testid="l0-header">
       <h1 className="l0-title">
-        Refinery <span className="l0-title-sep">·</span> {plant.shift_label} <span className="l0-title-sep">·</span>{" "}
+        FCC complex <span className="l0-title-sep">·</span> {plant.shift_label} <span className="l0-title-sep">·</span>{" "}
         <span className="num">{plant.clock}</span>
       </h1>
       <div className="l0-header-actions">

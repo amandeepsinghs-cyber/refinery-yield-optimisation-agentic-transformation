@@ -1,7 +1,7 @@
 import L1Workbench from "@/components/twin/l1/L1Workbench";
 import UnitStory from "@/components/twin/l1/UnitStory";
 
-export const metadata = { title: "Refinery Twin — Unit" };
+export const metadata = { title: "FCC Complex Twin — Unit" };
 
 /**
  * Next 16: `params` is a Promise — awaiting it is what fixes the `/api/unit/undefined/workbench` 422.

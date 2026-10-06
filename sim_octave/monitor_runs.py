@@ -28,7 +28,7 @@ import time
 import numpy as np
 import pandas as pd
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]  # repo root (Refinery Agentic Optimisation)
+ROOT = pathlib.Path(__file__).resolve().parents[1]  # repo root (FCC Agentic Optimisation)
 sys.path.insert(0, str(ROOT / "cockpit" / "api"))
 from app.data.validity import STATE_TAGS, valid_until  # noqa: E402
 

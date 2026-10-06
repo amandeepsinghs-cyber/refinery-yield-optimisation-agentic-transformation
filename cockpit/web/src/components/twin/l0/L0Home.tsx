@@ -17,6 +17,7 @@ import { getCoverage, getDecisions, type CoverageRow, type Decision, type Decisi
 import type { TwinOverview } from "@/lib/twinTypes";
 import { useScreenPart } from "@/lib/screenPart";
 import LangToggle from "@/components/twin/LangToggle";
+import { SCOPE_NOTE } from "@/lib/units";
 import PlantCanvas from "./PlantCanvas";
 import ShiftTimeline from "./ShiftTimeline";
 import UnitFlow from "./UnitFlow";
@@ -105,7 +106,7 @@ export default function L0Home() {
       iocl_use_case: dec.use_case.iocl_title, problem: dec.problem_text } : null } : null);
 
   if (!data) {
-    return <div className="home" data-testid="l0-root"><div className="home-loading">{error ? `Twin engine unavailable — ${error}` : "Loading the refinery…"}</div></div>;
+    return <div className="home" data-testid="l0-root"><div className="home-loading">{error ? `Twin engine unavailable — ${error}` : "Loading the FCC complex…"}</div></div>;
   }
   const t = data.plant?.time_min ?? timeMin ?? 0;
   const nOpen = queue?.counts.open ?? 0;
@@ -114,7 +115,7 @@ export default function L0Home() {
     <div className="home" data-testid="l0-root">
       <header className="home-head">
         <div className="home-title">
-          <span className="home-plant">FCC refinery</span>
+          <span className="home-plant">FCC complex</span>
           <span className="home-clock num">{data.plant.shift_label} · {data.plant.clock}</span>
         </div>
         <p className="home-sentence" data-testid="l0-headline">
@@ -124,6 +125,7 @@ export default function L0Home() {
         </p>
         <LangToggle />
       </header>
+      <p className="home-scope" data-testid="scope-note">{SCOPE_NOTE}</p>
 
       <WrongRibbon data={data} onUnit={pickUnit} />
 

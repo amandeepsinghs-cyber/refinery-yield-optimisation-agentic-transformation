@@ -19,6 +19,62 @@ Written 3 Oct 2026 (owner, 05:38: *"How do we know that some parameters will max
 
 ---
 
+## Executive Briefing & Leadership Pre-Read
+
+> [!IMPORTANT]
+> **BLUF:** The FCC Soft-Sensor Decision Cockpit is an advisory-only, multi-agent AI system that eliminates the 8-hour blind spot between lab samples by predicting distillation cut points every minute, recommending safe operator adjustments during crude switches, and explicitly refusing to advise when models disagree.
+
+### The "So What" for a Refinery Head
+
+Refinery executives care about **margin giveaway, off-spec product, crude switch transition lag, and plant safety**. 
+
+Today, FCC operators fly blind for 4–9 hours between lab assays (ASTM D86). When a crude slate shifts, units run on yesterday’s set points, leading to conservative cut points (giving away high-value heavy naphtha and LCO into lower-value streams) or off-spec violations. This system bridges this gap without risking unit stability: it provides **minute-by-minute virtual quality tracking, recommends the smallest possible moves that keep production on spec (>95% confidence), and acts purely in an advisory capacity with zero write-access to the DCS**.
+
+### Key Pillars: What Was Built & How It Works
+
+1. **Real-Time Soft-Sensor Quality Estimation (Process Physics + ML):**
+   * *Problem:* Heavy Naphtha (HN) and Light Cycle Oil (LCO) cut points ($T_{98}$) are measured by lab draws only every 8 hours, with a 1-hour analysis lag.
+   * *Solution:* A 4-model ensemble committee (physics-informed regressors + ML) estimating $T_{98}$ every 60 seconds from live tray temperatures, reflux, pressures, and feed properties.
+   * *Validation:* Built and verified against the peer-reviewed Santander et al. (2022) FCC-Fractionator simulator (54 runs, ~83,000 one-minute steps, tested against held-out runs).
+
+2. **Decision-First Operational Cockpit Across All 6 FCC Units:**
+   * *Design Philosophy:* *"Decision first; data underneath."* Screens lead with the operational decision (D1–D9), the responsible agent, and the recommended move.
+   * *Coordinated Visibility:* Feed Furnace $\to$ Riser Reactor $\to$ Regenerator $\to$ Main Fractionator $\to$ Gas Plant $\to$ Stabilizer.
+   * *Human-in-the-Loop:* Operators can Accept, Hold (30 min), or Decline. Every action is logged to an immutable decision record (`/audit`); **nothing touches plant controllers or the DCS**.
+
+3. **Safety-First "Refusal to Advise" ("Not Yet" Gate):**
+   * *The Core Differentiator:* An AI that guesses when it is uncertain is dangerous in a refinery.
+   * *The Safety Brake:* If the spread across the 4 estimation models exceeds **$14^\circ\text{F}$** ($W_{90}$ threshold), or if process conditions enter an unverified envelope, advice is withheld. It displays **"Not yet"** and prompts the operator to request an extra physical lab draw.
+
+4. **Multilingual Advisory Copilot & MeitY Compliance Architecture:**
+   * *Gemini Copilot:* Provides contextual rationale in English, Hindi, or Hinglish explaining why a move is recommended and the risk of holding.
+   * *Data Governance:* Category A data (safety, control, raw tag names, proprietary crude cargo names) remains strictly on-premises; an edge gateway de-identifies telemetry before Category B data egresses to India cloud regions.
+
+### How to Present It to the Refinery Head (10-Minute Walkthrough)
+
+| Phase | Screen / Route | What to Show | Executive Talk Track |
+|---|---|---|---|
+| **1. Overview (60 sec)** | `/platform` | Six-layer architecture and use-case alignment cards. | *"Behind this screen are modular agents for each plant use case sharing one source of truth. They advise; your operators decide. Zero control system actuation."* |
+| **2. Refinery Top View** | `/twin` (`random_s107`, $t=600$) | 6 units on the flowsheet; one glowing yellow with **"Decide"**; the riser on **"Watch"**. | *"A crude switch occurred at 07:25. The plant responded hours before the lab assay arrived. The fractionator is off plan, while the riser needs no intervention. Each unit sees only what matters to it."* |
+| **3. Unit Deep Dive** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=600$) | Live column drawing $\to$ Model ensemble bell curves $\to$ Decision D1 (*Raise LCO cut point $+2.5^\circ\text{F}$*). | *"Here is a run the model never saw. The 4 models agree within $14^\circ\text{F}$, giving $95\%$ probability on-spec. It advises the smallest SOP-compliant move to recover giveaway."* |
+| **4. The Honesty Moment** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=720$) | Decision status changes to **"Not yet"** with an amber alert. | *"Two hours later, process uncertainty widens. Rather than averaging 4 divergent guesses, the system withholds advice and prompts the board operator to request a physical lab draw."* |
+| **5. Audit & Governance** | `/audit` | Timestamped log of accepted moves and model withholdings. | *"Full accountability: every recommendation, operator override, and safety withhold is logged for engineering audit."* |
+
+### Anticipated Tough Questions & Exact Answers
+
+* **"Will this AI actually increase my liquid yield or mess up my plant?"**
+  > *"Every move follows a four-step loop: **Predict, Decide, Measure, Learn**. The system predicts the effect and confidence interval. Your board operator decides whether to act. Your lab sample or downstream sensors measure the actual physical response, which re-anchors the models. Furthermore, it only recommends levers operators already adjust, never safety-critical parameters like feed cuts or catalyst dump rates."*
+* **"Can we trust this on our specific crude slates?"**
+  > *"No AI should be trusted on day one without site proof. What we are demonstrating today is the framework and safety logic validated on a physics simulator. For your refinery, we run a zero-risk 6-week offline backtest using 2–3 years of your plant's historical PI/historian and LIMS data to calibrate the models against your exact crude slate."*
+* **"Does this put cloud software in control of our DCS?"**
+  > *"No. The architecture is strictly read-only and air-gapped from DCS actuation. Control system write access is permanently disabled. It operates purely as an operator advisor."*
+
+### The Recommended Next Step (The Ask)
+
+> *"We are not asking to connect to your plant or change how your operators run shifts today. We are asking for read-only access to 2–3 years of historical historian tags and LIMS logs for the FCC unit to run a **6-week offline validation backtest**. In week 6, we present a report showing exactly where cut-point giveaway occurred and prove the model's accuracy on your past crude switches before anything goes near a live control room."*
+
+---
+
 ## 0. The story in 60 seconds
 
 1. **The problem.** An FCC makes diesel (LCO), naphtha and LPG from heavy oil. Operators steer it with a handful of settings, but they work half-blind:
@@ -45,7 +101,19 @@ Heavy oil is heated in the **feed furnace** and meets hot catalyst in the **rise
 
 Six units in a chain: **Feed furnace → Riser reactor → Regenerator → Main fractionator → Gas plant → Stabiliser.**
 
-### 1.2 What operators actually adjust (the levers)
+### 1.2 Process Primer: Fractions (HN, LCO), Cut Points, T98, and DCS
+
+For anyone presenting to or discussing with plant engineers, here is what these key refinery terms mean:
+
+| Term | What it is in the refinery | Why it matters to plant economics & safety |
+|---|---|---|
+| **HN** *(Heavy Naphtha)* | Heavy gasoline fraction boiling roughly between $300^\circ\text{F} - 430^\circ\text{F}$. Sent to catalytic reforming or direct gasoline blending. | Maximizes high-octane gasoline yield. If cut too heavy, it poisons expensive reformer catalysts. |
+| **LCO** *(Light Cycle Oil)* | Distillate / light diesel cut boiling roughly between $430^\circ\text{F} - 650^\circ\text{F}$. Hydrotreated and blended into commercial diesel. | Maximizes diesel pool volume. If cut too heavy, it fails diesel flash, freeze, or cetane specs. |
+| **Cut Point** | The temperature boundary on the distillation column separating two adjacent product streams (e.g. where HN ends and LCO begins). | Moving a cut point by $1^\circ\text{F}$ shifts hundreds of barrels/day between products. Running conservative cut points "gives away" high-margin product into lower-value streams. |
+| **T98** | Laboratory distillation temperature at which **98% of the liquid has boiled off** (representing the heaviest molecules in that cut). | The heavy-end quality ceiling. If LCO T98 exceeds spec, diesel is contaminated with slurry. If HN T98 exceeds spec, naphtha contains heavy aromatics that coke the reformer. |
+| **DCS** *(Distributed Control System)* | The mission-critical industrial computer network (e.g. Honeywell Experion, Yokogawa CENTUM) that physically manipulates valves and pumps. | **"Zero write-access"** guarantees that the AI cannot actuate valves or alter set points on its own. It is strictly read-only advisory; only human operators can type numbers into the DCS. |
+
+### 1.3 What operators actually adjust (the levers)
 
 | Unit | Main settings operators move | What it changes |
 |---|---|---|
@@ -57,7 +125,7 @@ Six units in a chain: **Feed furnace → Riser reactor → Regenerator → Main 
 
 **Never recommended** (fixed in practice): condenser cooling-water flow (fixed duty), feed rate (set by planning), catalyst addition (not in the simulator).
 
-### 1.3 The four problems (P1–P4)
+### 1.4 The four problems (P1–P4)
 
 | # | Problem | A real moment from our build |
 |:-:|---|---|
@@ -66,7 +134,7 @@ Six units in a chain: **Feed furnace → Riser reactor → Regenerator → Main 
 | **P3** | **A move in one unit shows up hours later in another.** Optimising unit by unit misses it. | Run s107, 10:00: lower feed enthalpy → catalyst circulation rises in about 170 min → afterburn margin narrows in the regenerator. |
 | **P4** | **An AI that always answers is dangerous.** It must know when it doesn't know. | Run s144, 12:00: the four models disagree by **17.3 °F** (limit 14 °F). A system that always answers would still give a set point. |
 
-### 1.4 What this costs in plant terms (no money)
+### 1.5 What this costs in plant terms (no money)
 
 Without minute-by-minute quality, operators keep a **safety margin**: they cut lighter than needed so that, whatever the lab says later, the product is on spec. That margin is product sent to a lower-value stream every hour.
 
@@ -489,3 +557,34 @@ Why search in BigQuery and not inside the app: the documents are embedded once, 
 | 13:05 | The extra sample confirms the estimate; the soft sensor is corrected; the cut-point advice returns | Lab, automatic |
 | 14:00 | Scheduled lab confirms the 07:30 recipe: inside the predicted band, logged as confirmed | Automatic |
 | Weekly | The confirmed moves join the next refit; the process engineer signs off the new model version | Process engineer |
+
+---
+
+## 12. Refinery Optimisation Use-Case Coverage
+
+This build maps directly to the priority use cases in `refinery_optimisation_use_cases.md` ("High-value use cases by value area", rows 1–11, plus Feedstock Evaluation from the catalogue). Every use case carries an honest status:
+
+- **Real:** Full end-to-end ML pipeline with live models trained on simulated physics and validated on held-out runs.
+- **Scripted Outcome:** Real simulator inputs wired to scripted response gains to demonstrate multi-unit coordination until plant step-tests calibrate them.
+- **Partly Covered / Watch Only:** Anomaly or downstream consequence tracked; physical kinetics not yet modeled.
+- **Not in this build:** Off-FCC assets belonging to other refinery units (Coker, CDU, Alkylation, Flares).
+
+### 12.1 FCC Use-Case Mapping Table
+
+| Status | Use Case ID & Row | Refinery Priority Use Case | Decision & Lever | How it is Implemented in this Build |
+|---|---|---|---|---|
+| **Real** | **UC-01** (Row #1) | **FCC Product-Quality Inferential** (run closer to plan and avoid giveaway) | **D1, D2, D3, D9**<br>`SP_LCO_T98`<br>`SP_HN_T98` | **Full end-to-end ML pipeline.** Estimates LCO and Heavy Naphtha cut points every minute; recommends set-point trims to recover giveaway while staying $>95\%$ on-spec. *(T98 cut point stands in for sulfur as the simulator lacks sulfur).* |
+| **Real** | **UC-11** (Row #11) | **Product Soft Sensors** (online property prediction between lab samples) | **D1, D2, D9**<br>Model Spread Gate | **Full 4-model ensemble.** Evaluates Bayesian Ridge, Hybrid Delta, PINN, and GPR every 60s. Enforces the $14^\circ\text{F}$ spread check ($W_{90}$) and triggers extra lab requests (D9) when uncertain. |
+| **Scripted** | **UC-05** (Row #5) | **Fired heaters / furnaces** (CO/O₂ combustion modelling, poor-combustion flagging) | **D6**<br>`SP_T_preheat_F` | Flags CO drift in the flue gas automatically and calculates preheat adjustment for new crudes to balance catalyst-to-oil. |
+| **Scripted** | **UC-04** (Row #4) | **Reactor regeneration** (regeneration-cycle tracking & root-cause analysis) | **D5**<br>`Fair` (Air flow) | Detects cyclone afterburn $\Delta T$ drift; isolates air vs. riser severity causes; proposes air trim before high-temp alarms trip. |
+| **Scripted** | **UC-02** (Row #2) | **Catalytic reformer** (stabiliser-tower overhead to maximise C5 recovery) | **D7**<br>`SP_T_overhead` | Re-anchored to the FCC Gas Plant/Stabilizer: advises overhead temperature target against C5 loss to LPG. |
+| **Scripted** | **UC-03** (Row #3) | **LPG balance & distillation split** (C4/C5 split optimization) | **D7**<br>`SP_T_overhead` | Optimizes LPG vs. light naphtha recovery through the overhead target, showing predicted yield shifts before acting. |
+| **Scripted** | **FEED** (Catalogue) | **Feedstock evaluation** (crude slate transition tracking) | **D4**<br>Crude Classifier | Detects crude slate switch from plant thermal/yield response; confirms switch 12 min after completion and re-weights models. |
+| **Partly** | **UC-10** (Row #10) | **Crude-unit furnaces** (coke build-up & hydraulic constraint prediction) | **D6** | Watches furnace outlet temperature drift against fired duty baseline; flags anomalies. *(No physical coking growth kinetics model).* |
+| **Partly** | **UC-07** (Row #7) | **Heat exchangers / preheat trains** (UA-based fouling health signal) | **D7** | Flags abnormal cooling-water demand as a condenser fouling indicator. *(No automated cleaning schedule planner).* |
+| **Partly** | **UC-06** (Row #6) | **Multi-unit utilities** (energy management across units) | **D3, D8** | D3 coordinates multi-setpoint moves across furnace, riser, and column to minimize energy penalty. *(No standalone utility-plant dashboard).* |
+| **Watch** | **UC-08** (Row #8) | **Filtration systems** (breakthrough & fouling prediction) | **D8** | Monitors hydraulic pressure drops across the reactor train; alerts on downstream impact. *(No physical filter breakthrough model).* |
+| **Watch** | **UC-09** (Row #9) | **Rotating equipment** (asset-health monitoring & predictive maintenance) | **D8** | Wet-gas compressor and combustion air blower loads are monitored as downstream constraints when evaluating severity moves. |
+
+### 12.2 Out-of-Scope Refinery Assets
+The downstream catalogue includes assets outside the FCC battery limit (e.g., Delayed Coker outage prediction, CDU preheat train fouling, Alkylation coalescer prediction, and Flare emissions monitoring). These belong to other agent modules in the broader refinery transformation portfolio and are not included in this FCC unit cockpit.
