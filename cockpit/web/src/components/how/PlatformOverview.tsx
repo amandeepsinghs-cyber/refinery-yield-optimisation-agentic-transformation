@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { STAGES, USE_CASES, DECISIONS, type Status } from "@/lib/howItWorks";
 import { PILOT_LINE } from "@/lib/proofEvidence";
+import RefineryMap from "./RefineryMap";
 
 const LAYERS: { n: number; name: string; job: string; here: string }[] = [
   { n: 1, name: "Unified lakehouse", job: "One source of truth: every sensor, lab result, crude assay, event and decision, governed in one place.",
@@ -59,6 +60,8 @@ export default function PlatformOverview() {
           of it; each agent behind it is a separate module, working with the others on the whole FCC.
         </p>
       </header>
+
+      <RefineryMap />
 
       <section aria-labelledby="pf-layers-h">
         <h2 id="pf-layers-h" className="pf-h2">Six layers, each with one job</h2>

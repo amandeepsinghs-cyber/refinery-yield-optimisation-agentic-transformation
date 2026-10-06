@@ -243,6 +243,78 @@ export const GLOSSARY: [string, string][] = [
   ["Scripted outcome", "An output written to show what the finished tool does. The inputs are real simulator data."],
 ];
 
+/* ---------------------------------------------------------------- FP-1 front page: the refinery (SDD §14.6E)
+ * Owner, 6 Oct 2026 06:51: "a front overview page … details about the refinery, what happens on the top level with
+ * sufficient details, and then mention where their use cases fit and then, on that, which we have built."
+ * Pins sit where IOCL named the use case; statuses are read from USE_CASES, never copied. No value figures (U3). */
+
+export interface RefineryStep {
+  id: string;
+  name: string;
+  /** One line on screen: what happens at this step. */
+  what: string;
+  /** Stream arriving from the crude unit, shown on the arrow. */
+  stream?: string;
+  /** Parts of IOCL's list at this step that this build does not claim. */
+  notClaimed?: string;
+  fcc?: boolean;
+}
+
+export const REFINERY_STEPS: RefineryStep[] = [
+  { id: "crude", name: "Crude & tankage",
+    what: "Crude arrives by ship or pipeline and is blended; the crude slate changes every 1–2 days." },
+  { id: "cdu", name: "Crude unit (CDU / VDU)",
+    what: "Preheat train and furnace heat the crude; the column splits it by boiling range into gas, naphtha, kerosene, diesel; the vacuum unit gives heavy gas oil and residue.",
+    notClaimed: "CDU / VDU optimisation" },
+  { id: "reformer", name: "Reformer", stream: "naphtha",
+    what: "Upgrades naphtha to high-octane petrol; its stabiliser recovers C5 from the LPG; CCR regenerates the catalyst." },
+  { id: "hydrotreaters", name: "Hydrotreaters", stream: "kerosene · diesel",
+    what: "Remove sulphur from kerosene, diesel and FCC feed." },
+  { id: "fcc", name: "FCC", stream: "heavy gas oil", fcc: true,
+    what: "Cracks heavy gas oil on hot catalyst into petrol, diesel (LCO) and LPG — six units: furnace, riser, regenerator, fractionator, gas plant, stabiliser." },
+  { id: "coker", name: "Coker", stream: "residue",
+    what: "Turns the heaviest residue into lighter products and coke.", notClaimed: "Coker" },
+  { id: "lpg", name: "LPG & alkylation", stream: "LPG · light naphtha",
+    what: "Splits LPG and light naphtha (C4 / C5); alkylation makes high-octane blendstock.", notClaimed: "Alkylation" },
+  { id: "utilities", name: "Utilities & flare",
+    what: "Steam, power, cooling water, fuel gas and the flare, shared by every unit.", notClaimed: "Utilities & flare" },
+  { id: "blending", name: "Blending & dispatch",
+    what: "Streams are blended to spec and sent out as petrol, diesel and LPG by pipeline, rail and road.", notClaimed: "Pipelines" },
+];
+
+export interface UcPin {
+  uc: string;
+  step: string;
+  /** Where the work can be seen in the cockpit. */
+  shownOn: string;
+  href: string;
+  /** IOCL named a unit we do not have; the same problem is shown on the FCC. */
+  fccEquivalent: boolean;
+}
+
+const UNIT = (id: string) => `/twin/unit/${id}`;
+
+export const UC_PINS: UcPin[] = [
+  { uc: "FEED", step: "crude", shownOn: "every FCC unit (D4)", href: UNIT("unit_4_fractionator"), fccEquivalent: false },
+  { uc: "UC-07", step: "cdu", shownOn: "U5 Gas plant", href: UNIT("unit_5_condenser"), fccEquivalent: true },
+  { uc: "UC-10", step: "cdu", shownOn: "U1 Furnace", href: UNIT("unit_1_furnace"), fccEquivalent: true },
+  { uc: "UC-02", step: "reformer", shownOn: "U6 Stabiliser", href: UNIT("unit_6_stabiliser"), fccEquivalent: true },
+  { uc: "UC-04", step: "reformer", shownOn: "U3 Regenerator", href: UNIT("unit_3_regenerator"), fccEquivalent: true },
+  { uc: "UC-08", step: "hydrotreaters", shownOn: "U2 Riser", href: UNIT("unit_2_riser"), fccEquivalent: true },
+  { uc: "UC-01", step: "fcc", shownOn: "U4 Fractionator", href: UNIT("unit_4_fractionator"), fccEquivalent: false },
+  { uc: "UC-11", step: "fcc", shownOn: "U4 Fractionator", href: UNIT("unit_4_fractionator"), fccEquivalent: false },
+  { uc: "UC-05", step: "fcc", shownOn: "U1 Furnace", href: UNIT("unit_1_furnace"), fccEquivalent: false },
+  { uc: "UC-03", step: "lpg", shownOn: "U6 Stabiliser", href: UNIT("unit_6_stabiliser"), fccEquivalent: true },
+  { uc: "UC-06", step: "utilities", shownOn: "FCC Complex", href: "/twin", fccEquivalent: false },
+  { uc: "UC-09", step: "utilities", shownOn: "U2 Riser (consequence)", href: UNIT("unit_2_riser"), fccEquivalent: false },
+];
+
+/** "2 live · 5 scripted outcome · 3 partly · 2 watch only · rest not claimed", counted from USE_CASES. */
+export function statusSummary(ucs: UseCase[] = USE_CASES): string {
+  const n = (s: Status) => ucs.filter((u) => u.status === s).length;
+  return `${n("real")} live · ${n("scripted")} scripted outcome · ${n("partly")} partly · ${n("watch")} watch only · rest not claimed`;
+}
+
 export const UC_TITLE: Record<string, string> = Object.fromEntries(USE_CASES.map((u) => [u.id, u.iocl]));
 export const PART_NAME: Record<PartId, string> = Object.fromEntries(PARTS.map((p) => [p.id, p.name])) as Record<PartId, string>;
 

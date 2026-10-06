@@ -3706,6 +3706,55 @@ a.pf-uc:hover { border-color: var(--accent); background: var(--hover); }
 .pf-cta { margin: 0; }
 @media (max-width: 1100px) { .pf-layers { grid-template-columns: repeat(3, 1fr); } .pf-ucs { grid-template-columns: repeat(2, 1fr); } .pf-bands { grid-template-columns: 1fr; } }
 
+/* ---- FP-1 front page: status dots (SDD-FP-01) and the refinery map (SDD-FP-02..05) — 6 Oct ---- */
+.sd { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.sd-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; border: 1.5px solid transparent; }
+.sd-real .sd-dot { background: var(--green); }
+.sd-scripted .sd-dot { background: var(--amber); }
+.sd-partly .sd-dot { background: #eab308; }
+.sd-watch .sd-dot { background: transparent; border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--card), inset 0 0 0 5px var(--accent); }
+.sd-absent .sd-dot { background: transparent; border-color: var(--subtle); }
+.rf { display: flex; flex-direction: column; gap: 10px; }
+.rf .pf-sub { margin: -4px 0 4px; max-width: 980px; }
+.rf-flow { display: grid; grid-template-columns: 1fr 2fr 0.95fr; gap: 14px; align-items: start; }
+.rf-col { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.rf-mid { gap: 8px; }
+.rf-row { display: grid; grid-template-columns: 112px 1fr; align-items: center; gap: 8px; }
+.rf-out { justify-content: center; align-self: center; }
+.rf-stream { font-size: 11.5px; color: var(--subtle); text-align: right; font-style: italic; }
+.rf-out .rf-stream { text-align: left; }
+.rf-down { font-size: 11.5px; color: var(--subtle); font-style: italic; padding-left: 14px; }
+.rf-step { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
+.rf-fcc { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--card)); }
+.rf-step-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rf-name { font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; }
+a.rf-name { color: var(--accent); }
+a.rf-name:hover { text-decoration: underline; }
+.rf-built { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 8px; }
+.rf-what { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.rf-pins { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+.rf-pin { position: relative; }
+.rf-pin > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--elevated); font-size: 11.5px; color: var(--text); }
+.rf-pin > summary::-webkit-details-marker { display: none; }
+.rf-pin > summary:hover, .rf-pin > summary:focus-visible, .rf-pin[open] > summary { border-color: var(--accent); }
+.rf-pin > summary b { font-weight: 600; }
+.rf-pin > summary small { font-size: 10.5px; color: var(--subtle); }
+.rf-card { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: 340px; background: var(--card); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; box-shadow: 0 8px 24px rgba(0,0,0,.25); display: flex; flex-direction: column; gap: 7px; }
+.rf-card p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.rf-card em { display: block; font-style: normal; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--subtle); margin-bottom: 2px; }
+.rf-card-iocl { color: var(--text) !important; font-weight: 500; }
+.rf-card-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 6px; border-top: 1px dashed var(--border); }
+.rf-card-foot a { margin-left: auto; color: var(--accent); text-decoration: none; font-size: 12.5px; }
+.rf-card-foot a:hover { text-decoration: underline; }
+.rf-eq { font-size: 11px; color: var(--subtle); }
+.rf-nc { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px dashed var(--border-strong); border-radius: 999px; font-size: 11.5px; color: var(--subtle); }
+.rf-util .rf-step { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 14px; border-style: dashed; }
+.rf-util .rf-what { flex: 1 1 360px; }
+.rf-legend { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); }
+.rf-legend-dots { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.rf-summary { font-size: 13px; font-weight: 600; color: var(--text); }
+@media (max-width: 1100px) { .rf-flow { grid-template-columns: 1fr; } .rf-row { grid-template-columns: 90px 1fr; } .rf-card { width: min(340px, 80vw); } }
+
 /* ---- Proof loop ("How do we know the move works?") and crude-switch walkthrough — 3 Oct ---- */
 .pl { margin-top: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
 .pl h3 { margin: 0 0 10px; font-size: 15px; }
