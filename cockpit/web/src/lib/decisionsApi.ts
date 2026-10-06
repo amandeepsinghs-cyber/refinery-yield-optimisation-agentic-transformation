@@ -50,9 +50,11 @@ export interface Decision {
   gates: DecisionGate[];
   /** Fractionator decisions: the soft-sensor committee at this minute (for the Full explanation panel). */
   models?: {
-    members: { id: string; name: string; how: string; estimate: number | null; band90: number | null; weight: number | null; role: "blended" | "reference" }[];
+    members: { id: string; short: string; name: string; how: string; estimate: number | null; band90: number | null; weight: number | null;
+      role: "blended" | "reference"; n_inputs: number; formula: string; trained_on_runs: number }[];
     bias: number | null; weight_source: string | null; sigma_scale: number | null;
-    inputs: { tag: string; label: string; lag_min: number }[]; n_train_labels?: number | null; n_pinned_excluded?: number | null;
+    inputs: { tag: string; label: string; unit: string; value: number | null; used_by: string[] }[];
+    n_train_labels?: number | null; n_pinned_excluded?: number | null; n_train_runs?: number | null;
   };
   evidence: { tags: string[]; labs: string[]; docs: string[]; lakehouse: string | null; event_id?: string };
   withheld_reason: string | null;

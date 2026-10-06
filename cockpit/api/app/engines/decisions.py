@@ -185,30 +185,126 @@ MEMBER_INFO = {   # MODEL_IDS order (app/config.py); wording checked against app
 INPUT_LABEL = {"T_tray06_F": "Tray 6 temperature", "T_tray13_F": "Tray 13 temperature",
                "P5_frac_psia": "Fractionator pressure", "Tr_riser_F": "Riser outlet temperature",
                "feed_flow_lb_s": "Feed flow", "MV_PA2": "Pump-around 2 controller output",
-               "MV_PA3": "Pump-around 3 controller output"}
+                "MV_PA3": "Pump-around 3 controller output"}
+# Columns the models picked that have no label in the twin tag table. The two *_MB / mass_balance columns are simulator
+# diagnostics (mass-closure residuals), not plant instruments — flagged so nobody presents them as plant data.
+EXTRA_COL = {"T_tray02_F": ("Tray 2 temperature", "°F"), "T_tray03_F": ("Tray 3 temperature", "°F"),
+             "T_tray04_F": ("Tray 4 temperature", "°F"), "T_tray05_F": ("Tray 5 temperature", "°F"),
+             "T_tray08_F": ("Tray 8 temperature", "°F"), "T_tray09_F": ("Tray 9 temperature", "°F"),
+             "T_tray12_F": ("Tray 12 temperature", "°F"), "T_tray14_F": ("Tray 14 temperature", "°F"),
+             "T_tray19_F": ("Tray 19 temperature", "°F"),
+             "reactor_MB": ("Reactor mass-balance residual — simulator diagnostic, not a plant instrument", ""),
+             "mass_balance_err_pct": ("Plant-wide mass-closure residual — simulator diagnostic, not a plant instrument", "%")}
+SHORT_ID = {"bayes_ridge_v1": "L", "gpr_v1": "G", "hybrid_delta_v1": "H", "pinn_ens_v1": "N"}
 
 
-def _explain_models(arrs: dict, prop: str, j: int) -> dict:
-    """Committee members at minute j (estimate, 90 % band half-width, weight, role) plus the soft sensor's main inputs."""
+def _col_label(col: str) -> tuple[str, str]:
+    """(plain name, unit) for a model input column, incl. lag columns '<tag>__lag<L>' / '<tag>__lagmean<L>'."""
+    base, _, suf = col.partition("__")
+    name, unit = EXTRA_COL.get(base) or (None, None)
+    if name is None:
+        name, unit = _TWIN_LABELS().get(base, (INPUT_LABEL.get(base) or TAG_LABEL.get(base, base), ""))
+    if suf.startswith("lagmean"):
+        name = f"{name}, mean of the last {suf[7:]} min"
+    elif suf.startswith("lag"):
+        name = f"{name}, {suf[3:]} min ago"
+    return name, unit
+
+
+_TWIN_LABEL_CACHE: dict = {}
+
+
+def _TWIN_LABELS() -> dict:  # noqa: N802
+    """tag -> (label, unit) parsed once from the twin tag table (app/twin.py _build_tag_row / _valve_row calls)."""
+    if not _TWIN_LABEL_CACHE:
+        import inspect
+        import app.twin as tw
+        src = inspect.getsource(tw)
+        for m_ in re.finditer(r'_build_tag_row\(df_win, row, "([^"]+)", "([^"]+)", "[^"]+", "([^"]*)"', src):
+            _TWIN_LABEL_CACHE.setdefault(m_.group(1), (m_.group(2), m_.group(3)))
+        for m_ in re.finditer(r'_valve_row\("([^"]+)", "([^"]+)"', src):
+            _TWIN_LABEL_CACHE.setdefault(m_.group(1), (m_.group(2), "frac"))
+        _TWIN_LABEL_CACHE.setdefault("_", ("", ""))
+    return _TWIN_LABEL_CACHE
+
+
+def _formula(mid: str, card: dict, arrs: dict, prop: str, j: int) -> str:
+    """The fitted model in one line, with its real numbers (from the model card written at training)."""
+    pr = card.get("params") or {}
+    lab = lambda c: _col_label(c)[0]  # noqa: E731
+    if mid == "bayes_ridge_v1":
+        top = list((pr.get("top_coefficients") or {}).items())[:4]
+        return (f"T98 = {pr.get('intercept')} °F + Σ coefficient × input (inputs standardised). Largest coefficients: "
+                + "; ".join(f"{lab(k)} {v:+.1f} °F per standard deviation" for k, v in top))
+    if mid == "gpr_v1":
+        rel = card.get("_relevance") or []
+        lean = [f"{lab(r['feature'])} ({r['relevance']:.2f})" for r in rel[:3]]
+        ign = [lab(r["feature"]) for r in rel if r.get("lengthscale", 0) >= 99]
+        return ("Matérn 5/2 kernel over the inputs, trained on " + str(pr.get("n_train", "?")) + " points. Leans most on: "
+                + ", ".join(lean) + (f". Effectively ignores: {', '.join(ign)}" if ign else ""))
+    if mid == "hybrid_delta_v1":
+        ph, de = arrs.get(f"{prop}|phys"), arrs.get(f"{prop}|delta")
+        now = (f" Now: physics {float(ph[j]):.1f} °F + correction {float(de[j]):+.1f} °F."
+               if ph is not None and de is not None and j < len(ph) else "")
+        return (f"Physics part: T98 = {pr.get('a', 0):.1f} + ({pr.get('b', 0):.3f}) × T_corr, where T_corr = "
+                f"{pr.get('draw_tray')} + ({pr.get('c', 0):.1f}) × ln({pr.get('p_ref_psia')} / P5_frac_psia). The physics part "
+                f"explains {float(pr.get('physics_share_var') or 0) * 100:.0f} % of the variation in training; a Gaussian "
+                f"process fits the rest.{now}")
+    if mid == "pinn_ens_v1":
+        return (f"{pr.get('architecture')}. Loss = fit to labels + {pr.get('lambda_phys')} × distance from the physics "
+                f"line + {pr.get('lambda_mono')} × penalty when T98 falls as the draw-tray temperature rises. "
+                f"{pr.get('monotonicity_violations')} training minutes still break that rule.")
+    return ""
+
+
+def _explain_models(arrs: dict, prop: str, j: int, run_id: str | None = None, t: int | None = None) -> dict:
+    """Everything behind the estimate at minute j, concretely: each trained model, the exact columns it reads, their
+    values now, its fitted formula, its output and weight; plus training-data counts."""
     from app.config import MODEL_IDS
     st = get_state()
     P = lambda k: arrs.get(f"{prop}|{k}")  # noqa: E731
     mu, sg, w, adm = P("mu"), P("sigma"), P("weight"), P("admitted")
-    members = []
+    b = st.bundle or {}
+    cards = (b.get("cards") or {}).get(prop) or {}
+    rel = cards.get("gpr_relevance") or []
+    row: dict = {}
+    if run_id is not None and t is not None:
+        try:
+            from app.data.lags import apply_lags
+            df = st.catalog.load(run_id)
+            if not df.empty:
+                df = apply_lags(df, b.get("lags"))
+                row = _row_at(df, t)[0]
+        except Exception:  # noqa: BLE001 — explanation must never break the decision list
+            row = {}
+    members, used_by = [], {}
     if mu is not None and j < len(mu):
         for i, mid in enumerate(MODEL_IDS[: mu.shape[1]]):
             name, how = MEMBER_INFO.get(mid, (mid, ""))
+            card = dict(cards.get(mid) or {})
+            card["_relevance"] = rel
+            feats = list(card.get("features") or [])
+            for c in feats:
+                used_by.setdefault(c, []).append(SHORT_ID.get(mid, mid))
             in_mix = bool(adm[i]) if adm is not None and i < len(adm) else True
             wi = float(w[j][i]) if w is not None else 0.0
-            members.append({"id": mid, "name": name, "how": how, "estimate": _f(mu[j][i], 1),
-                            "band90": _f(1.645 * sg[j][i], 1), "weight": _f(wi, 3),
-                            "role": "blended" if in_mix and wi > 0 else "reference"})
+            members.append({"id": mid, "short": SHORT_ID.get(mid, mid), "name": name, "how": how,
+                            "estimate": _f(mu[j][i], 1), "band90": _f(1.645 * sg[j][i], 1), "weight": _f(wi, 3),
+                            "role": "blended" if in_mix and wi > 0 else "reference",
+                            "n_inputs": len(feats), "formula": _formula(mid, card, arrs, prop, j),
+                            "trained_on_runs": len(card.get("training_runs") or [])})
+    inputs = []
+    for c, who in used_by.items():
+        nm, un = _col_label(c)
+        v = row.get(c) if row else None
+        if c.split("__")[0] in ("V2", "V4", "V6") or (v is not None and un == "frac" and abs(float(v)) > 1.5):
+            un = "% open"
+        if c.split("__")[0] == "F5_fuel":
+            un = ""   # simulator scale; the twin's "lb/s" label does not match the magnitude
+        inputs.append({"tag": c, "label": nm, "unit": un, "value": _f(v, 3), "used_by": who})
+    inputs.sort(key=lambda x: (-len(x["used_by"]), x["tag"]))
     bias, wsrc = P("bias"), P("weight_source")
     src = str(wsrc[j]) if wsrc is not None and j < len(wsrc) else None
-    b = st.bundle or {}
-    lags = ((b.get("lags") or {}).get("targets") or {}).get(prop) or {}
-    inputs = [{"tag": k, "label": INPUT_LABEL.get(k) or TAG_LABEL.get(k, k), "lag_min": int(v.get("lag_min") or 0) if v.get("significant") else 0}
-              for k, v in lags.items()]
     meta = (b.get("meta") or {}).get(prop) or {}
     ls = (b.get("label_stats") or {}).get(prop) or {}
     return {"members": members,
@@ -217,7 +313,8 @@ def _explain_models(arrs: dict, prop: str, j: int) -> dict:
                                              "this run yet to re-weight)",
                               "recent_labs": "accuracy against the most recent accepted lab results"}.get(src, src),
             "sigma_scale": _f(meta.get("sigma_scale"), 2),
-            "inputs": inputs, "n_train_labels": ls.get("used"), "n_pinned_excluded": ls.get("pinned_excluded")}
+            "inputs": inputs, "n_train_labels": ls.get("used"), "n_pinned_excluded": ls.get("pinned_excluded"),
+            "n_train_runs": len(b.get("groups") or {}) or None}
 
 
 def _streak_start(recs: list[dict], t: int, pred) -> int:
@@ -364,7 +461,7 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
                         "consequence": f"Unit runs {nl - t} min on an uncertain {short} estimate", "decide_by_label": None}
         out.append(d)
     if out:
-        ex = _explain_models(arrs, prop, j)
+        ex = _explain_models(arrs, prop, j, run_id, t)
         for d in out:
             d["models"] = ex
     return out
