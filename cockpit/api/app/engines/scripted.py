@@ -6,7 +6,7 @@ data — D3 (recipe for the new crude), D5 (regenerator air), D6 (furnace prehea
 those live values with fixed, plant-plausible gains. Every scripted decision carries `scripted: True` and the screen
 says "scripted outcomes". D1 / D2 / D9 (cut point, trust, lab sample) stay on the real soft-sensor engine.
 
-Rule per decision: the drift-watch agent reports the target `dev` away from expected. Goal: target back within
+Rule per decision: the anomaly detection reports the target `dev` away from expected. Goal: target back within
 ±0.8·|dev| of expected, with a spread σ = 0.4·|dev|. Move = −dev / gain, rounded to the lever step, clipped to the SOP
 step and the lever's operating window. Chance before ≈ 31 %, after ≈ 98 % — consistent on every screen.
 """
@@ -163,7 +163,7 @@ def _script(d: dict, row: dict) -> dict:
         "gain_source": spec.get("gain_source", "scripted"),
     })
     since = (d.get("observed") or {}).get("since_label")
-    steps = [{"kind": "agent", "name": "Drift-watch agent", "did": f"Flagged {t_label} moving away from expected at {since}"}] if since else []
+    steps = [{"kind": "agent", "name": "Anomaly detection", "did": f"Flagged {t_label} moving away from expected at {since}"}] if since else []
     steps += [
         {"kind": "ml", "name": "Crude-regime model", "did": "Recognises the crude now running and picks its response model"},
         {"kind": "ml", "name": "Response model", "did": spec["model"]},

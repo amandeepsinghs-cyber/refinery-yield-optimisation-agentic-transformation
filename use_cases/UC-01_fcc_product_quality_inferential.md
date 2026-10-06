@@ -3,7 +3,7 @@
 > **Status:** 🟢 **Live — real models on simulated data**
 > - **IOCL row #1:** FCC / RFCC / INDMAX — *Product-quality inferential (e.g. HGO sulphur soft sensor) to run closer to plan and avoid over- and under-treating* · Yield & quality
 > - **IOCL-reported benefit:** ~$0.4–0.5M/yr per unit *(IOCL's figure, not ours)*
-> - **Cockpit:** **U4 · Fractionator** (`/twin/unit/unit_4_fractionator`) · agent: *Soft-sensor agent*
+> - **Cockpit:** **U4 · Fractionator** (`/twin/unit/unit_4_fractionator`) · answered by: *4-model soft sensor (incl. PINN) · trust checks*
 > - **Decisions:** **D1** move the cut point now or wait for the lab (also D2, D9; D3 uses it)
 > - **Levers:** `SP_LCO_T98` (LCO cut-point set point), `SP_HN_T98` (heavy-naphtha cut-point set point)
 > - **Problem it answers:** P1 — quality known only every 8 h

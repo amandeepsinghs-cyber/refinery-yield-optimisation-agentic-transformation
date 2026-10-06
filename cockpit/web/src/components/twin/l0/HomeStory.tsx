@@ -19,7 +19,7 @@ import GaussianPdf from "@/components/twin/shared/GaussianPdf";
 
 const pct = (p?: number | null) => (p == null ? "—" : `${Math.round(p * 100)}%`);
 const f1 = (v?: number | null) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(1));
-const KIND: Record<string, string> = { agent: "Agent", ml: "ML model", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
+const KIND: Record<string, string> = { agent: "Rule-based", ml: "ML model", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
 const UNIT: Record<string, string> = {
   unit_1_furnace: "Feed furnace", unit_2_riser: "Riser", unit_3_regenerator: "Regenerator", unit_4_fractionator: "Fractionator",
   unit_5_condenser: "Gas plant", unit_6_stabiliser: "Stabiliser",

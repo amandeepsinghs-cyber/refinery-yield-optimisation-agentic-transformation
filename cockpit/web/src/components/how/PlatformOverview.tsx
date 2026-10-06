@@ -2,7 +2,8 @@
 
 /**
  * Opening page — "How it works" (owner Voice Note 12, 3 Oct 2026 03:24; verbatim.md Part 10).
- * Leads the pitch with: IOCL's use cases → one specialist agent each → the decision a person takes, on six layers
+ * Leads the pitch with: IOCL's use cases → the AI that answers each → the decision a person takes, on six layers
+ * (6 Oct: "one specialist agent per use case" removed — the build shares its models and checks across use cases)
  * (lakehouse → processing → models → agents → decisions → whole-refinery outcome), with the person-in-the-loop and
  * MeitY data-boundary bands. The cockpit is a façade; the agents behind it are separate modules.
  * Honesty: every use case carries its build status; nothing here claims more than the unit pages show. No value figures.
@@ -20,18 +21,21 @@ const LAYERS: { n: number; name: string; job: string; here: string }[] = [
     here: "Valid-range cut, lab alignment, tag registry. Plant-edge de-identification is designed (MeitY band below)." },
   { n: 3, name: "Models", job: "Turn data into numbers people can trust, with a spread on every estimate.",
     here: "Crude classifier · four-model soft sensor incl. physics-informed (PINN) · response models · trust checks." },
-  { n: 4, name: "Agents, one per use case", job: "Watch, diagnose and propose. Each agent owns a use case; they share the lakehouse event log.",
-    here: "Separate modules today, run as one service for the demo; each can be deployed as its own agent." },
+  { n: 4, name: "Detect, check and propose — shared across use cases", job: "Find what is off, check what it does downstream, and propose the smallest safe move.",
+    here: "Anomaly detection on every unit · downstream consequence check · constrained optimiser · Gemini explains. Separate modules today, run as one service; each can run as its own agent." },
   { n: 5, name: "Decisions, person in the loop", job: "One advisory card per decision, with its evidence. A person accepts, holds or declines.",
     here: "Nine decision types. “Not yet” when the models cannot back a move. Nothing written to the control system." },
   { n: 6, name: "Whole refinery optimised", job: "Each move is checked for its effect on the next units before it is advised.",
-    here: "Systems agent across the catalyst, heat and hydrocarbon loops; multi-set-point recipe." },
+    here: "Consequence check across the catalyst, heat and hydrocarbon loops; multi-set-point recipe." },
 ];
 
+// What really answers each use case in this build (6 Oct: replaces per-use-case "agent" names, which overclaimed).
+const SENSOR = "4-model soft sensor (incl. PINN) · trust checks";
+const MOVE = "Anomaly detection · response model · optimiser";
+const WATCH = "Anomaly detection · consequence check";
 const AGENT: Record<string, string> = {
-  "UC-01": "Soft-sensor agent", "UC-11": "Soft-sensor agent", "UC-02": "Light-ends agent", "UC-03": "Light-ends agent",
-  "UC-04": "Regenerator agent", "UC-05": "Furnace agent", "UC-10": "Furnace agent", "UC-07": "Condenser agent",
-  "UC-06": "Systems agent", "UC-08": "Systems agent", "UC-09": "Systems agent", FEED: "Crude-switch agent",
+  "UC-01": SENSOR, "UC-11": SENSOR, "UC-02": MOVE, "UC-03": MOVE, "UC-04": MOVE, "UC-05": MOVE, "UC-10": MOVE,
+  "UC-07": MOVE, "UC-06": WATCH, "UC-08": WATCH, "UC-09": WATCH, FEED: "Crude classifier",
 };
 
 const STATUS: Record<Status, [string, string]> = {
@@ -57,8 +61,10 @@ export default function PlatformOverview() {
         <p className="pf-kicker">How it works</p>
         <h1>One platform for IOCL&apos;s refinery use cases</h1>
         <p className="pf-lede">
-          One source of truth · one specialist agent per use case · people decide. The cockpit you will see is the front
-          of it; each agent behind it is a separate module, working with the others on the whole FCC.
+          One source of truth · AI and physics on every use case · people decide. Behind the cockpit: a crude classifier, a
+          four-model soft sensor including a physics-informed neural network (PINN), anomaly detection on every unit, response
+          models and a constrained optimiser, with Gemini to explain. Each is its own module, shared across your use cases,
+          and can run as a separate agent on your plant.
         </p>
       </header>
 
@@ -81,7 +87,7 @@ export default function PlatformOverview() {
       </section>
 
       <section aria-labelledby="pf-uc-h">
-        <h2 id="pf-uc-h" className="pf-h2">Your use cases → the agent that owns it → the decision on screen</h2>
+        <h2 id="pf-uc-h" className="pf-h2">Your use cases → the AI that answers it → the decision on screen</h2>
         <p className="pf-sub">IOCL list: “High-value use cases by value area”, rows #1–#11, plus feedstock evaluation. Click a card to open its unit.</p>
         <div className="pf-ucs">
           {ucs.map((u) => {
@@ -91,7 +97,7 @@ export default function PlatformOverview() {
               <Link key={u.id} href={to} className="pf-uc">
                 <span className="pf-uc-top"><em>{u.row === "Catalogue" ? "Catalogue" : `IOCL ${u.row}`}</em><i className={`pf-st ${cls}`}>{label}</i></span>
                 <b>{u.iocl}</b>
-                <span className="pf-agent">{AGENT[u.id] ?? "Agent"}</span>
+                <span className="pf-agent">{AGENT[u.id] ?? ""}</span>
                 <span className="pf-dec">{DEC_LINE[u.id] ?? u.decisions.map((d) => `${d} · ${q[d] ?? ""}`)[0]}</span>
               </Link>
             );
@@ -100,7 +106,7 @@ export default function PlatformOverview() {
             <span className="pf-uc-top"><em>Rest of the list</em><i className="pf-st ab">Not claimed</i></span>
             <b>Coker, alkylation, gas turbines, flare, pipelines</b>
             <span className="pf-agent">Same pattern</span>
-            <span className="pf-dec">A new agent on the same lakehouse, same decision desk.</span>
+            <span className="pf-dec">The same models and checks, trained on that unit&apos;s data; same lakehouse, same decision desk.</span>
           </div>
         </div>
       </section>

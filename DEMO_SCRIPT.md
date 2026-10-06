@@ -33,20 +33,20 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
 
 ## Part 1 — The story on one page
 
-**Line for the room:** *"What you see is one screen. Behind it are separate agents, one per use case, sharing one source of truth. They advise; your operators decide."*
+**Line for the room:** *"What you see is one screen. Behind it: AI and physics — a crude classifier, a four-model soft sensor including a physics-informed neural network, anomaly detection on every unit and an optimiser — sharing one source of truth across your use cases. They advise; your operators decide."*
 
 | # | Existing problem (today) | How the tech solves it | Action in the cockpit | How it is supported | Result |
 |:-:|---|---|---|---|---|
 | **P1** | Product quality is known only every 8 h from the lab, so the unit runs blind in between | A soft sensor, a committee of 4 models (Bayesian ridge, Gaussian process, hybrid physics, PINN), estimates LCO and heavy-naphtha T98 every minute, with a spread | **D1** move the cut point now or wait for the lab; **D9** pull an extra sample | Estimate ± spread, chance on spec, 7–8 trust checks, held-out runs, lab points on the chart | Quality is known every minute, not every 8 h; the cut point moves before the lab result |
-| **P2** | Crude changes every 12–48 h; yesterday's models drift and the right set points for the new crude are unknown | Crude-switch agent names the crude (lab assay + the unit's behaviour); models re-weight for that crude; set-point search uses that crude's response models | **D4** which crude, is the switch done; **D3** recipe for the new crude; **D6** feed preheat for the crude | Crude bars, "how it knows", switch walkthrough, physics weight | Settings follow the crude, not yesterday's crude *(crude name and D3/D6 outcomes scripted, labelled)* |
-| **P3** | A move in one unit shows up hours later in another; unit-by-unit optimisation misses it | Systems agent: 19 rules over the catalyst, heat and hydrocarbon loops; every move shows what it does to the next units | **D5** regenerator air, **D7** overhead temperature target, **D8** what first / what breaks downstream | "If nothing is done" line with time to consequence; "Next units" line under each move | The knock-on effect is on the card before the move is made |
+| **P2** | Crude changes every 12–48 h; yesterday's models drift and the right set points for the new crude are unknown | Crude classifier names the crude (lab assay + the unit's behaviour); models re-weight for that crude; set-point search uses that crude's response models | **D4** which crude, is the switch done; **D3** recipe for the new crude; **D6** feed preheat for the crude | Crude bars, "how it knows", switch walkthrough, physics weight | Settings follow the crude, not yesterday's crude *(crude name and D3/D6 outcomes scripted, labelled)* |
+| **P3** | A move in one unit shows up hours later in another; unit-by-unit optimisation misses it | Consequence check: 19 rules over the catalyst, heat and hydrocarbon loops; every move shows what it does to the next units | **D5** regenerator air, **D7** overhead temperature target, **D8** what first / what breaks downstream | "If nothing is done" line with time to consequence; "Next units" line under each move | The knock-on effect is on the card before the move is made |
 | **P4** | An AI that always answers is dangerous | Trust checks before any advice; when the models disagree beyond 14 °F the cockpit says **"Not yet"** and asks for a lab sample | **D2** can the estimate be trusted now | Each check with value, limit, pass / fail; the decision record keeps every time advice was held back | It refuses rather than guesses; operators see why |
 
 **Six layers** (the Overview page shows them):
 1. Unified lakehouse (BigQuery bronze → silver → gold).
 2. Data processing (valid-range cut, lab alignment).
 3. Models (ML / PINN).
-4. Agents, one per use case.
+4. Detect, check and propose — shared across use cases (anomaly detection, consequence check, optimiser, Gemini).
 5. Decisions with a person in the loop.
 6. Whole refinery optimised.
 
@@ -74,13 +74,13 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
 - **Problem:** IOCL gave a list of use cases. They need to see, in 30 seconds, that the answer covers them and isn't a black box.
 - **How the tech solves it:** one page, laid out as:
   - six layers, left to right;
-  - one card per IOCL use case, showing its agent, its decision and a status chip;
+  - one card per IOCL use case, showing the AI that answers it, its decision and a status chip;
   - a person-in-the-loop band;
   - a MeitY band;
   - a "How do we know a move works?" band, with the pilot line.
 - **Action:** read the layers left to right. Run a finger down the cards. Click **IOCL #1** → its unit page opens. Come back. Click **Open the refinery →**.
 - **How it is supported:** status chips are honest: **Live** (#1, #11), **Scripted outcome**, **Partly**, **Watch only**, **Not claimed** (coker, alkylation, gas turbines, flare, pipelines).
-- **Result:** the room sees use case → agent → decision before any plant screen.
+- **Result:** the room sees use case → the AI that answers it → decision before any plant screen.
 - **Test:**
   - ☐ `/` lands here and "Overview" is highlighted.
   - ☐ 12 use-case cards plus "Not claimed".

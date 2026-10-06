@@ -37,7 +37,7 @@ Value figures are **IOCL's own** (from their list) and are shown so the audience
 | 🟡 **Partly** | Part of the use case is shown (e.g. a drift flag); the rest (e.g. a coke model, a cleaning planner) is not built. | "Partly — here's the part." |
 | 👁 **Watch only** | The signal is flagged with its downstream consequence; no move is advised. | "We flag it; we don't advise." |
 | *FCC equivalent* | IOCL named a unit we don't have; we show the same engineering problem on the matching FCC unit. | "Same problem, on the FCC." |
-| ⚪ **Not claimed** | Outside the FCC battery limits. | "Same pattern, new agent, not built." |
+| ⚪ **Not claimed** | Outside the FCC battery limits. | "Same pattern: the same models, trained on that unit's data. Not built." |
 
 ---
 

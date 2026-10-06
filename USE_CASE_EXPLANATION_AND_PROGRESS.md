@@ -18,7 +18,7 @@ Instead, we chose the **FCC (Fluid Catalytic Cracking) complex** as the hero dem
 3. **It allowed us to prove all 11 analytics patterns in one real physics simulation:** Rather than fake data, all 11 patterns are demonstrated live inside one continuous battery limit on real simulated telemetry ([Santander et al. 2022](sim_octave/)).
 
 ### The Pitch Positioning
-> *"You gave us 11 high-value refinery use cases. Rather than showing you disconnected toy slides across 10 units, we proved all 11 problem patterns working together inside your most critical and dynamic asset: the **FCC complex**. Because our platform is modular—one lakehouse with specialist agents—the exact same pattern scales out to your Crude Distillation Units, Reformers, and Alkylation plants."*
+> *"You gave us 11 high-value refinery use cases. Rather than showing you disconnected toy slides across 10 units, we proved all 11 problem patterns working together inside your most critical and dynamic asset: the **FCC complex**. Because our platform is modular—one lakehouse with shared AI and physics models—the exact same pattern scales out to your Crude Distillation Units, Reformers, and Alkylation plants."*
 
 ---
 
@@ -117,7 +117,7 @@ Instead, we chose the **FCC (Fluid Catalytic Cracking) complex** as the hero dem
 * **What IOCL Wrote:** *"Filtration systems (alkylation, amine, hydroprocessing): Filter/coalescer breakthrough prediction to avoid fouling and unplanned changeouts. Value: Avoided changeouts and outages (~$2M/yr+)."*
 * **Which Part of Plant:** **Alkylation, Amine treating, or Hydroprocessing filters**.
 * **What We Built in the Cockpit (Status: 👁️ Watch Only):**
-  * Built into the **Refinery (L0) Systems Agent** ([`/twin`](https://fcc-cockpit-1099437687941.us-central1.run.app/twin)).
+  * Built into the **Refinery (L0) consequence check** ([`/twin`](https://fcc-cockpit-1099437687941.us-central1.run.app/twin)).
   * In the FCC, vapor-liquid hydraulic breakthrough occurs across the main fractionator slurry and wash trays.
   * Driven by **Decision D8**: Evaluates differential pressure ($\Delta P$) normalized by vapor flow ($F^2$) and raises early warning sentinels before tray flooding occurs.
 
@@ -127,7 +127,7 @@ Instead, we chose the **FCC (Fluid Catalytic Cracking) complex** as the hero dem
 * **What IOCL Wrote:** *"Rotating equipment across sites (compressors, pumps): Asset-health monitoring and predictive maintenance scaled across refineries. Value: Avoided downtime + planning gains ($1–9M)."*
 * **Which Part of Plant:** **Refinery-wide pumps, compressors, and blowers**.
 * **What We Built in the Cockpit (Status: 👁️ Watch Only):**
-  * Built into the **Refinery (L0) Systems Agent** ([`/twin`](https://fcc-cockpit-1099437687941.us-central1.run.app/twin)).
+  * Built into the **Refinery (L0) consequence check** ([`/twin`](https://fcc-cockpit-1099437687941.us-central1.run.app/twin)).
   * Directly monitors the two most expensive rotating assets in the FCC:
     1. **Combustion Air Blower (CAB):** Flags motor load and capacity limits in Decision D5.
     2. **Wet Gas Compressor (WGC):** Flags hydraulic suction limits and power constraints in Decision D3.

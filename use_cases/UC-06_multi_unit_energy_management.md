@@ -3,7 +3,7 @@
 > **Status:** 🟡 **Partly** — whole-FCC systems view and coordinated recipe; no utilities / energy dashboard
 > - **IOCL row #6:** Multi-unit / multi-refinery utilities — *Energy-management dashboards (boilers, furnaces, steam balance, O₂ control)* · Energy
 > - **IOCL-reported benefit:** >$10M/yr at multi-refinery scale *(IOCL's figure, not ours — the largest on the list)*
-> - **Cockpit:** **FCC Complex** (`/twin`) and **U4 · Fractionator** (D3) · agent: *Systems agent*
+> - **Cockpit:** **FCC Complex** (`/twin`) and **U4 · Fractionator** (D3) · answered by: *Consequence check*
 > - **Decisions:** **D3** which set points, together, for the new crude? · **D8** what one unit's drift does downstream
 > - **Levers (D3):** `SP_T_riser_ROT_F` (riser outlet temperature), `SP_LCO_T98`, `SP_HN_T98` (+ `SP_T_preheat_F`, `MV_PA1..4` in the search space)
 > - **Problem it answers:** **P3** — a move in one unit shows up hours later in another
@@ -15,7 +15,7 @@ Each console optimises its own unit. A move in one shows up hours later in anoth
 | Piece | What it does |
 |---|---|
 | Digital twin of the FCC complex | Six connected units on one screen (Feed furnace → Riser → Regenerator → Fractionator → Gas plant → Stabiliser), with "What went wrong" and decision pins per unit |
-| Systems agent | **19 rules** over the catalyst, heat and hydrocarbon loops; every card carries "If nothing is done" (consequence + time) and the effect on the next units |
+| Consequence check | **19 rules** over the catalyst, heat and hydrocarbon loops; every card carries "If nothing is done" (consequence + time) and the effect on the next units |
 | Recipe search (D3) | Multi-set-point search scoring yield (LCO 1.0, HN 0.8, LPG 0.4) **minus** penalties for furnace fuel, compressor power and coke, inside step limits and integrity operating windows |
 | Plausibility gate | Recipe withheld if the predicted effect exceeds ±3 MW compressor power, ±50 lb/s furnace fuel or ±1.5 % of feed on any yield; withheld whenever D2 says the soft sensor isn't trusted |
 | Recipe proof | Recipe replayed through the simulator with and without: conversion **+0.44 %** vs **+0.42 %** predicted (inside band); cut-point part not proven → stays **scripted** |

@@ -27,7 +27,7 @@ Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, s
 
 ## 2026-10-03 pitch spine / opening page (adds to the 2 Oct agreement)
 
-Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → agents, one per use case → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
+Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → detection, checks and optimiser shared across use cases (6 Oct: not one agent per use case) → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
 
 | Item | Where | Status |
 |---|---|---|

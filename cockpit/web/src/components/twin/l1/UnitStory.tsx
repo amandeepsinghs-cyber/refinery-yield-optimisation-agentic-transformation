@@ -44,7 +44,7 @@ const pct = (p?: number | null) => (p == null ? "—" : `${Math.round(p * 100)} 
 const STATUS: Record<string, string> = { open: "Decide", watch: "Watch", withheld: "Not yet", held: "Held", accepted: "Accepted", declined: "Declined", expired: "Expired" };
 const TAGN: Record<string, string> = { LCO_T98_F: "LCO T98", HN_T98_F: "HN T98" };
 const EVK: Record<string, string> = { cusum: "drifting (sustained)", breach: "outside its normal band", change_point: "step change", recipe_ready: "move ready", regime_change: "crude switch", sigma3: "outside ±3σ", combustion: "combustion pattern", flooding_pattern: "flooding pattern", drift: "drifting" };
-const KIND: Record<string, string> = { agent: "Agent", ml: "ML", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
+const KIND: Record<string, string> = { agent: "Rule-based", ml: "ML", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
 
 
 /** "Regime R4 (Light (Bonny-Light-type)) detected with novelty 0.15: physics-anchored members carry 66 % …" → plain words. */
@@ -417,7 +417,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
       </Step>
 
       {/* ② OBSERVE */}
-      <Step n={2} k="observe" id="s-observe" title="What we observe" who={<><Who k="agent">drift-watch agent</Who><Who k="ml">soft sensor</Who><Who k="ml">crude-regime model</Who></>}>
+      <Step n={2} k="observe" id="s-observe" title="What we observe" who={<><Who k="agent">anomaly detection</Who><Who k="ml">soft sensor</Who><Who k="ml">crude-regime model</Who></>}>
         <div className="us-facts">
           {d?.observed?.estimate != null ? (
             <div className="us-fact big"><span>Estimate now</span><b className="num">{fx(d.observed.estimate, 1)} <small>± {fx(d.observed.sigma, 1)} {d.observed.unit}</small></b><em>chance on spec {pct(p?.p_on_spec_before)}</em></div>

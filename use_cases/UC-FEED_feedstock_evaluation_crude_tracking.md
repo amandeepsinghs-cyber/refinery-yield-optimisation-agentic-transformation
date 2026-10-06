@@ -2,7 +2,7 @@
 
 > **Status:** 🟠 **Scripted outcome** — the crude name follows the lab assay (labelled); the unit's behaviour confirms it
 > - **IOCL catalogue:** Scheduling & planning — *Feedstock evaluation* (also supports "Coker recycle → FCC yield optimisation", ~$12M/yr in IOCL's case examples, FCC side only)
-> - **Cockpit:** step ② of every unit page, best shown on **U4 · Fractionator** · agent: *Crude-switch agent*
+> - **Cockpit:** step ② of every unit page, best shown on **U4 · Fractionator** · answered by: *Crude classifier*
 > - **Decision:** **D4** which crude is running, and has the switch finished?
 > - **Lever:** none — every other model uses the answer to pick its weights
 > - **Problem it answers:** **P2** — crude changes every 12–48 h

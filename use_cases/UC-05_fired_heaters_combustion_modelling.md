@@ -3,7 +3,7 @@
 > **Status:** 🟠 **Scripted outcome on real inputs — preheat gain measured, chance band scripted**
 > - **IOCL row #5:** Fired heaters / furnaces — *CO and O₂ combustion modelling; automatic flagging of poor-combustion episodes* · Energy
 > - **IOCL-reported benefit:** Fuel savings + CO₂/SOₓ/NOₓ reduction; ~$0.4–1M/yr per site *(IOCL's figure, not ours)*
-> - **Cockpit:** **U1 · Furnace** (`/twin/unit/unit_1_furnace`) · agent: *Furnace agent*
+> - **Cockpit:** **U1 · Furnace** (`/twin/unit/unit_1_furnace`) · answered by: *Anomaly detection · response model · optimiser*
 > - **Decision:** **D6** trim the feed preheat for the new crude?
 > - **Lever:** `SP_T_preheat_F` (feed preheat set point) — sets catalyst-to-oil and regenerator temperature
 > - **Problems it answers:** P2 (crude changes), P3 (knock-on to riser and regenerator)
@@ -15,7 +15,7 @@ Combustion is judged by eye on the board. A poor-combustion episode (CO rising w
 | Piece | What it does |
 |---|---|
 | Inputs | Flue-gas CO and O₂, fired duty, preheat outlet temperature, feed rate, the crude now running |
-| Drift-watch agent | Flags a flue-gas CO pattern and furnace drifts against the value expected for this crude (±3σ or CUSUM) |
+| Anomaly detection | Flags a flue-gas CO pattern and furnace drifts against the value expected for this crude (±3σ or CUSUM) |
 | Response model | Preheat outlet follows its set point **1.007 °F per °F**; catalyst circulation falls ~109 units per °F — **measured** on 52 simulator step tests (held-out R² 1.0 / 0.95) |
 | Optimiser | Smallest preheat move that puts preheat at this crude's target (≥ 95 % chance), ≤ 5 °F per step, 20 min between steps, inside the feed-nozzle limit |
 | Card | Move from → to, chance before → after, "If nothing is done" with time to consequence, proof loop (Predict · Decide · Measure · Learn) |

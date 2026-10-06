@@ -37,8 +37,8 @@ export interface Part {
 
 export const PARTS: Part[] = [
   {
-    id: "watch", n: 1, name: "Drift-watch agent", question: "Is something off, and since when?",
-    kind: "A monitoring agent. For every sensor it keeps the value expected for this crude and flags a gap that is large (outside ±3σ) or that keeps building (CUSUM).",
+    id: "watch", n: 1, name: "Anomaly detection", question: "Is something off, and since when?",
+    kind: "Statistical monitoring, not AI. For every sensor it keeps the value expected for this crude and flags a gap that is large (outside ±3σ) or that keeps building (CUSUM).",
     input: "Every sensor tag, each minute, and the expected value for the crude now running.",
     output: "A drift event: which tag, since when, how big, and the likely driver.",
     where: "Unit page step ② · the “What went wrong” line on the home page · “This shift on the unit”.",
@@ -358,7 +358,7 @@ export const DECISION_CARD: Record<DecisionId, DecisionCard> = {
     pain: "A riser drift shows up hours later in the regenerator, compressor and air blower; each console sees only its own unit",
     solve: "Flags the drift with its downstream consequence and when it will land; no move proposed",
     dataIn: "Riser outlet temperature, conversion, hydraulic signals, catalyst loading; wet-gas compressor and air-blower load",
-    algorithms: "Drift watch → cross-unit consequence trace (systems agent, with the time lag to each unit)",
+    algorithms: "Drift watch → cross-unit consequence trace (consequence check, with the time lag to each unit)",
     checks: "Flagged only on a ±3σ breach or a CUSUM that keeps building",
     operatorGets: "A watch item: what is drifting, what it will do downstream, and roughly when. No move",
     onYourPlant: "Time lags learned from your historian",

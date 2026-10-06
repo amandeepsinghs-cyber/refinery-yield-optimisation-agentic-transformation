@@ -3,7 +3,7 @@
 > **Status:** 🟠 **Scripted outcome on real inputs · FCC equivalent** — afterburn event real, air-move size scripted
 > - **IOCL row #4:** Reactor regeneration (CCR / hydroprocessing) — *Regeneration-cycle tracking, optimisation and event-based root-cause analysis* · Yield & quality
 > - **IOCL-reported benefit:** ~1% reduction in cycle-time/yield losses (~$0.7M/yr+) *(IOCL's figure, not ours)*
-> - **Cockpit:** **U3 · Regenerator** (`/twin/unit/unit_3_regenerator`) · agent: *Regenerator agent*
+> - **Cockpit:** **U3 · Regenerator** (`/twin/unit/unit_3_regenerator`) · answered by: *Anomaly detection · response model · optimiser*
 > - **Decision:** **D5** rebalance regenerator air against riser severity?
 > - **Lever:** `Fair` (regenerator air — excess O₂ / afterburn)
 > - **Note on scope:** IOCL named **CCR / hydroprocessing** regeneration. We show the same pattern on the **FCC regenerator**, which burns coke off the catalyst continuously.
@@ -15,7 +15,7 @@ Afterburn (CO burning in the cyclones) erodes cyclone metal-temperature margin. 
 | Piece | What it does |
 |---|---|
 | Inputs | Cyclone ΔT (`dT_cyc_reg_F`, afterburn), regenerator temperature, regenerator air, flue-gas O₂, riser severity, the crude |
-| Drift-watch agent | Tracks cyclone ΔT against expected; logs each drift event with its likely cause (event-based RCA) |
+| Anomaly detection | Tracks cyclone ΔT against expected; logs each drift event with its likely cause (event-based RCA) |
 | Response model | Cyclone ΔT ≈ 0.4 °F per 0.01 lb/s air — **scripted** |
 | Optimiser | Smallest air move that brings cyclone ΔT back into band (≥ 95 % chance), ≤ 3 % per step, 15 min between steps |
 | Card | Move, chance before → after, **time to breach**, scripted tag, proof loop |

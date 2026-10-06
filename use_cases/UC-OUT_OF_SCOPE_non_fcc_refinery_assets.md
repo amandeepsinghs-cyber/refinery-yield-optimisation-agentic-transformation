@@ -2,7 +2,7 @@
 
 > **Status:** ⚪ **Not claimed** — outside the FCC battery limits; not simulated in this build
 > - **Units:** delayed coker, crude / vacuum distillation (CDU/VDU), alkylation, utilities & flare, pipelines & offsites
-> - **What we say:** *"Same pattern, new agent, on the same lakehouse and the same decision desk. Not built."*
+> - **What we say:** *"Same pattern: the same models, trained on that unit's data, on the same lakehouse and the same decision desk. Not built."*
 > - On screen: the grey **"Rest of the list · Not claimed"** card on **Overview** (`/platform`).
 
 ## 1. IOCL use cases outside the FCC build
@@ -23,10 +23,10 @@ Figures are **IOCL's** (from their list), not ours.
 1. **One lakehouse** (BigQuery bronze → silver → gold): new unit = new tags in the same tables.
 2. **Same data processing**: valid-range cuts, lab alignment, suspect-lab screening.
 3. **Same model pattern**: physics + ML estimates with a spread; response models from history then step tests.
-4. **One agent per use case**, publishing drift events and decisions to the shared event log; the systems agent sees cross-unit consequences.
+4. **The same models and checks for each new use case** (anomaly detection, response model, optimiser), retrained on that unit's data and publishing events and decisions to the shared event log; the consequence check sees cross-unit effects. Each can later run as its own agent.
 5. **Same decision desk**: advisory card, trust checks, "Not yet", Accept / Hold / Decline, decision record, no DCS write path.
 
 ## 3. What to say if asked
-> *"We haven't built these and we won't pretend to. They're the same pattern on different units: a new agent on the same lakehouse, the same decision desk, the same person in the loop. The FCC pilot proves the pattern; these are the next agents."*
+> *"We haven't built these and we won't pretend to. They're the same pattern on different units: the same models, trained on that unit's data, on the same lakehouse, the same decision desk, the same person in the loop. The FCC pilot proves the pattern; these are the next agents."*
 
 **Never say** "reformer", "LPG splitter" or "CDU" as something we built.

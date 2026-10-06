@@ -1,4 +1,4 @@
-"""Refinery Systems Agent + Level-0 assembly (BUILD_PLAN_v3 §3 agents, API_CONTRACT_v3 §6, SDD-L0-01).
+"""Refinery consequence check + Level-0 assembly (BUILD_PLAN_v3 §3 agents, API_CONTRACT_v3 §6, SDD-L0-01).
 
 Two responsibilities, both advisory and in engineering units only (SDD-NFR-11):
 

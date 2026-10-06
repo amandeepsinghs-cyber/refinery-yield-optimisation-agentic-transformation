@@ -3,7 +3,7 @@
 > **Status:** 🟢 **Live — real models on simulated data**
 > - **IOCL row #11:** Product soft sensors — *Online property prediction between lab samples (e.g. ATF freezing point, bitumen viscosity, VR penetration)* · Yield & quality
 > - **IOCL-reported benefit:** Earlier off-spec detection; reduced reprocessing *(IOCL's wording)*
-> - **Cockpit:** **U4 · Fractionator** · agent: *Soft-sensor agent*
+> - **Cockpit:** **U4 · Fractionator** · answered by: *4-model soft sensor (incl. PINN) · trust checks*
 > - **Decisions:** **D2** can the estimate be trusted right now? · **D9** pull an extra lab sample now? (feeds D1)
 > - **Lever:** none for D2 (it decides whether advice is shown at all); lab sampling for D9
 > - **Problems it answers:** P1 (quality every 8 h) and **P4 (an AI that always answers is dangerous)**

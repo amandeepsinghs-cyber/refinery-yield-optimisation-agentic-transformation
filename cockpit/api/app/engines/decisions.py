@@ -520,7 +520,7 @@ def act(decision_id: str, action: str, run_id: str, time_min: int, user: str = "
 
 # ------------------------------------------------------------------------------------------------ how AI enables it
 def _step(kind: str, name: str, did: str) -> dict:
-    """kind: agent (autonomous watcher) | ml (learned model) | check (gate) | optimiser (search) | genai (Gemini)."""
+    """kind: agent (rule-based detection or trigger; shown as "Rule-based") | ml (learned model) | check (gate) | optimiser (search) | genai (Gemini)."""
     return {"kind": kind, "name": name, "did": did}
 
 
@@ -533,7 +533,7 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
     steps: list[dict] = []
     if o.get("since_label") and t not in ("D4",):
         lab = " — hours before the next lab" if o.get("tag") in PROPS else ""
-        steps.append(_step("agent", "Drift-watch agent", f"Flagged {o.get('label') or o.get('tag')} moving away from "
+        steps.append(_step("agent", "Anomaly detection", f"Flagged {o.get('label') or o.get('tag')} moving away from "
                                                          f"expected at {o['since_label']}{lab}"))
     if t in ("D1", "D2", "D9"):
         steps.append(_step("ml", "Soft-sensor committee (4 models)",
@@ -552,19 +552,19 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
     if t == "D2":
         steps.append(_step("check", "Spread gate", f"Withholds advice: {d.get('withheld_text')}"))
     if t == "D9":
-        steps.append(_step("agent", "Lab-scheduling agent", f"Next lab {o.get('next_lab_label')}; a sample now re-anchors the "
+        steps.append(_step("agent", "Sample trigger", f"Next lab {o.get('next_lab_label')}; a sample now re-anchors the "
                                                             f"estimate {o.get('next_lab_in_min')} min earlier"))
     if t == "D4":
         steps.append(_step("ml", "Crude-regime model", f"Posterior over four crude families: {regime}; novelty "
                                                        f"{(o.get('novelty') or 0):.2f}"))
-        steps.append(_step("agent", "Crude-switch agent", "Compares detected with the declared schedule; 15-min dwell "
+        steps.append(_step("agent", "Crude-switch check", "Compares detected with the declared schedule; 15-min dwell "
                                                           "before declaring a switch"))
     if t == "D3":
         steps.append(_step("ml", "Crude-specific response models", f"Fitted per crude regime ({regime})"))
         steps.append(_step("optimiser", "Multi-set-point search", "Searches several set points together inside IOW, "
                                                                   "step and training limits"))
     if t in ("D5", "D6", "D7", "D8"):
-        steps.append(_step("agent", "Systems agent", f"Traces the consequence downstream: {d['urgency'].get('consequence')}"))
+        steps.append(_step("agent", "Consequence check", f"Traces the consequence downstream: {d['urgency'].get('consequence')}"))
         if t != "D8":
             steps.append(_step("optimiser", "Set-point search", "Not run — " + (d.get("withheld_text") or "no move data")))
     if d["status"] == "withheld" and t in ("D3", "D4"):

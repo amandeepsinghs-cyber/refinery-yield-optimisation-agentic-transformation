@@ -3,7 +3,7 @@
 > **Status:** 🟡 **Partly · FCC equivalent** — drift watch and hydraulic limit; no coke model
 > - **IOCL row #10:** Crude-unit furnaces — *Coke-buildup and hydraulic-constraint prediction; anomaly detection; turnaround vs mid-run planning* · Reliability
 > - **IOCL-reported benefit:** ~1% margin / ~3% production uplift + lower maintenance *(IOCL's figure, not ours)*
-> - **Cockpit:** **U1 · Furnace** · agent: *Furnace agent*
+> - **Cockpit:** **U1 · Furnace** · answered by: *Anomaly detection · response model · optimiser*
 > - **Decision:** none of its own — a drift flag in step ②; the feed-nozzle limit binds **D6**
 > - **Note on scope:** IOCL named **crude-unit (CDU/VDU) furnaces**. We show the same pattern on the **FCC feed furnace**.
 
@@ -14,7 +14,7 @@ Coke builds up slowly inside furnace tubes. It shows as outlet temperature drift
 | Piece | What it does |
 |---|---|
 | Inputs | Preheat outlet temperature against fired duty; the value expected for this crude |
-| Drift-watch agent | Flags only when the gap is beyond ±3σ or keeps building (CUSUM) |
+| Anomaly detection | Flags only when the gap is beyond ±3σ or keeps building (CUSUM) |
 | Hydraulic constraint | Feed-nozzle velocity / coil limits actively bound the D6 preheat recommendation |
 | Output | A lasting-drift flag on the furnace; no move proposed from this alone |
 

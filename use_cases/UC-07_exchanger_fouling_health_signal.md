@@ -3,7 +3,7 @@
 > **Status:** 🟡 **Partly · FCC equivalent** — fouling signal real, overhead move scripted, no cleaning planner
 > - **IOCL row #7:** Crude preheat trains / heat exchangers — *UA-based fouling health signal with degradation tracking and cleaning/shutdown optimisation* · Energy & reliability
 > - **IOCL-reported benefit:** Sustained heat recovery; condition-based cleaning *(IOCL's wording)*
-> - **Cockpit:** **U5 · Gas plant** (`/twin/unit/unit_5_condenser`) · agent: *Condenser agent*
+> - **Cockpit:** **U5 · Gas plant** (`/twin/unit/unit_5_condenser`) · answered by: *Anomaly detection · response model · optimiser*
 > - **Decision:** **D7** move the overhead temperature target to keep the condenser inside its cooling duty?
 > - **Lever:** `SP_T_overhead` — **cooling water stays at fixed duty and is never recommended**
 > - **Note on scope:** IOCL named **crude preheat trains**. We show the same fouling-health pattern on the **FCC overhead condenser**.
@@ -15,7 +15,7 @@ Condenser fouling shows as more cooling water needed for the same load. It is sp
 | Piece | What it does |
 |---|---|
 | Inputs | Condenser cooling-water flow, overhead temperature, the load on the condenser |
-| Fouling signal | Cooling-water demand **above expected for this load** (a UA-degradation proxy) flagged by the drift-watch agent |
+| Fouling signal | Cooling-water demand **above expected for this load** (a UA-degradation proxy) flagged by the anomaly detection |
 | Optimiser | Smallest overhead-temperature move that brings the condenser back inside its **fixed** cooling duty (≥ 95 % chance), ≤ 3 °F per step |
 | Card | Move, chance before → after, time to limit (~180 min), never-recommends line, **scripted** tag |
 

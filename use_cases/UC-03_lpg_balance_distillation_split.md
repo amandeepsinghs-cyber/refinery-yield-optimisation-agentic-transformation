@@ -3,7 +3,7 @@
 > **Status:** 🟠 **Scripted outcome on real inputs · FCC equivalent**
 > - **IOCL row #3:** LPG / LSR naphtha system — *LPG balance and distillation-split optimisation (C4/C5 split); improved forecasting* · Yield & quality
 > - **IOCL-reported benefit:** ~$2–2.5M/yr *(IOCL's figure, not ours)*
-> - **Cockpit:** **U6 · Stabiliser** and **U5 · Gas plant** · agent: *Light-ends agent*
+> - **Cockpit:** **U6 · Stabiliser** and **U5 · Gas plant** · answered by: *Anomaly detection · response model · optimiser*
 > - **Decision:** **D7** adjust the stabiliser overhead temperature for the LPG / naphtha split?
 > - **Levers:** `SP_T_overhead`, `MV_reflux_ratio`
 > - **Note on scope:** IOCL named the **LPG / LSR naphtha system**. We show the C4/C5 split on the **FCC stabiliser**; no refinery LPG header.

@@ -3,7 +3,7 @@
 > **Status:** 👁 **Watch only · FCC equivalent** — hydraulic drift flagged with consequence; no breakthrough model
 > - **IOCL row #8:** Filtration systems (alkylation, amine, hydroprocessing) — *Filter/coalescer breakthrough prediction to avoid fouling and unplanned changeouts* · Reliability
 > - **IOCL-reported benefit:** Avoided changeouts and outages (~$2M/yr+) *(IOCL's figure, not ours)*
-> - **Cockpit:** **U2 · Riser** (`/twin/unit/unit_2_riser`) and FCC Complex · agent: *Systems agent*
+> - **Cockpit:** **U2 · Riser** (`/twin/unit/unit_2_riser`) and FCC Complex · answered by: *Consequence check*
 > - **Decision:** **D8** act on the riser now, before it reaches the regenerator? — **watch, no move**
 > - **Note on scope:** IOCL named **alkylation, amine and hydroprocessing filters**. None are in the FCC simulator. We show the same "slow hydraulic drift → limit" pattern on FCC hydraulics (reactor–fractionator ΔP).
 
@@ -14,7 +14,7 @@ Hydraulic and filter problems build slowly (rising ΔP) and are noticed only whe
 | Piece | What it does |
 |---|---|
 | Inputs | Riser conversion and hydraulic signals (e.g. reactor–fractionator ΔP) against expected for this crude |
-| Drift-watch agent | Flags a lasting drift (±3σ or CUSUM) |
+| Anomaly detection | Flags a lasting drift (±3σ or CUSUM) |
 | Output | A **watch item**: what will happen downstream, and roughly when. No move proposed |
 
 ## 3. What remains
@@ -31,7 +31,7 @@ Only the early-warning half: a slow hydraulic drift is flagged before a limit fo
 | 2 | Step ② | Drift chart and CUSUM | "We catch the slow build before the limit." |
 
 ## 6. If asked
-- *"Do you predict filter breakthrough?"* — "No. We show early warning on FCC hydraulics. Breakthrough on your alkylation and amine filters is a new agent with their ΔP data."
+- *"Do you predict filter breakthrough?"* — "No. We show early warning on FCC hydraulics. Breakthrough on your alkylation and amine filters is a new model trained on their ΔP data."
 
 ## 7. Pilot on IOCL's plant
 Filter / coalescer ΔP, flow and change-out history on the named units; ΔP-vs-throughput model; projected limit date.

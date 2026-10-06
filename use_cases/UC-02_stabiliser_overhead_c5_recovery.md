@@ -3,7 +3,7 @@
 > **Status:** 🟠 **Scripted outcome on real inputs · FCC equivalent**
 > - **IOCL row #2:** Catalytic reformer — *Stabiliser-tower overhead optimisation to maximise C5 recovery* · Yield & quality
 > - **IOCL-reported benefit:** ~$2–3M/yr gross-margin uplift *(IOCL's figure, not ours)*
-> - **Cockpit:** **U6 · Stabiliser** (`/twin/unit/unit_6_stabiliser`) and **U5 · Gas plant** · agent: *Light-ends agent*
+> - **Cockpit:** **U6 · Stabiliser** (`/twin/unit/unit_6_stabiliser`) and **U5 · Gas plant** · answered by: *Anomaly detection · response model · optimiser*
 > - **Decision:** **D7** adjust the stabiliser overhead temperature for C5 recovery?
 > - **Levers:** `SP_T_overhead` (overhead temperature target), `MV_reflux_ratio` (stabiliser reflux)
 > - **Note on scope:** IOCL named the **catalytic reformer** stabiliser. **The reformer is not in this build**; we show the same overhead-vs-C5 problem on the **FCC gas plant and stabiliser**.
@@ -15,7 +15,7 @@ C5 (pentane) belongs in gasoline. If the stabiliser overhead runs too hot, C5 sl
 | Piece | What it does |
 |---|---|
 | Inputs | Stabiliser C5 recovery (`eff_C5`), overhead temperature, reflux, cooling water, the crude |
-| Drift-watch agent | Flags C5-recovery drift against expected for this crude as it starts |
+| Anomaly detection | Flags C5-recovery drift against expected for this crude as it starts |
 | Optimiser | Smallest overhead move that keeps C5 recovery in its band, inside the SOP step; expected effect shown before acting |
 | Card | Move, chance before → after, **scripted** tag, effect on the gas plant (shared overhead) |
 
@@ -38,7 +38,7 @@ The C5 slip is flagged as it starts instead of at the next lab, and the overhead
 > At `random_s107` 10:00 the D7 card is on **U5 · Gas plant**. A D7 card appears on U6 only when a stabiliser drift is live — **check on the day** which minute shows it, or present it through U5 as above.
 
 ## 6. If asked
-- *"Do you have a reformer?"* — "No. Same stabiliser problem on the FCC; the reformer is a new agent on the same lakehouse."
+- *"Do you have a reformer?"* — "No. Same stabiliser problem on the FCC; the reformer would use the same models on the same lakehouse."
 - *"How big is the C5 gain?"* — "The move size is scripted. On your plant, a short overhead step test measures it."
 
 ## 7. Pilot on IOCL's plant

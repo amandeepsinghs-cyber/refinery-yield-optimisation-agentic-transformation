@@ -19,7 +19,7 @@
 1. **A refinery:** crude in → the crude unit splits it by boiling range → the heavy gas oil nobody can sell goes to the **FCC**, which cracks it into petrol, diesel and LPG.
 2. **The catch:** the crude changes every day or two, the FCC's six units are one connected loop, and product quality comes back from the lab only every 8 hours.
 3. **So follow the oil:** feed arrives → furnace → riser → regenerator → fractionator → gas plant & stabiliser. At each stop there's one decision, and each decision ripples into the next unit hours later.
-4. **What we built:** one agentic digital twin of the six units, one agent per decision, one shared data foundation. The fractionator decision (your rows #1 and #11) runs on real models; it moves before the lab would and says **"Not yet"** when it isn't sure.
+4. **What we built:** one digital twin of the six units, one shared data foundation, and shared AI and physics models (crude classifier, four-model soft sensor incl. PINN, anomaly detection, optimiser) behind nine decisions. The fractionator decision (your rows #1 and #11) runs on real models; it moves before the lab would and says **"Not yet"** when it isn't sure.
 5. **The ask:** a pilot on one FCC with read-only historian + lab data. We prove each lever on your plant before any advice goes live.
 
 ---
@@ -90,10 +90,10 @@ flowchart LR
 
 ### Beat 3 · One data foundation (≈ 90 s) — app: **Overview** (`/platform`)
 
-**Click:** open the app → lands on **Overview**. Read **"Six layers, each with one job"** left to right: lakehouse → data processing → models → agents, one per use case → decisions, person in the loop → whole refinery optimised. Scroll past **"Your use cases → the agent that owns it → the decision on screen"**, **"A person decides — every time"** (we are at *Advise*), **"MeitY data boundary"**.
+**Click:** open the app → lands on **Overview**. Read **"Six layers, each with one job"** left to right: lakehouse → data processing → models → detect, check and propose (shared across use cases) → decisions, person in the loop → whole refinery optimised. Scroll past **"Your use cases → the AI that answers it → the decision on screen"**, **"A person decides — every time"** (we are at *Advise*), **"MeitY data boundary"**.
 
 **Say:**
-> *"You can look at a refinery unit by unit, or as one system. Your DCS is excellent unit by unit — it handles the seconds. What nobody has is the hours: the quality between labs and the consequence across consoles. So we built one foundation: every tag every minute and every lab result in one lakehouse; models that give a number and how sure they are; one agent per decision; and a person who decides. Nothing is written to the control system. Category A data stays in your refinery; this demo uses simulated data only."*
+> *"You can look at a refinery unit by unit, or as one system. Your DCS is excellent unit by unit — it handles the seconds. What nobody has is the hours: the quality between labs and the consequence across consoles. So we built one foundation: every tag every minute and every lab result in one lakehouse; AI and physics models that give a number and how sure they are, shared across your use cases; and a person who decides. Nothing is written to the control system. Category A data stays in your refinery; this demo uses simulated data only."*
 
 **Click:** **Open the refinery →**
 
@@ -248,7 +248,7 @@ Say which kind each answer is: **Shown** (real models on simulated data) · **Sc
 | "Will this change our plant settings?" | "No. It advises. A person accepts, holds or declines; it's recorded; there is no write path to the DCS." | Shown |
 | "How do you know a move increases yield?" | "Predict, decide, measure, learn. We don't ask you to trust the first prediction — we show the measurement. On your plant, small step tests prove each lever first." | Shown / Pilot |
 | "Why are some outcomes scripted?" | "The simulator data has too few clean test moves of those levers. Rather than show a number the data can't back, we label it." | Honest |
-| "Do you have a reformer / CDU model?" | "No. We show the same problem on its FCC equivalent and say so. Those are new agents on the same lakehouse." | Honest |
+| "Do you have a reformer / CDU model?" | "No. We show the same problem on its FCC equivalent and say so. The same models and checks would be trained on that unit's data, on the same lakehouse." | Honest |
 | "A crude you've never seen?" | "A novelty check flags it; physics models get more weight; the spread widens; past 14 °F it says 'Not yet'." | Shown |
 | "Is it streaming live?" | "The demo loads simulator data in batches. On site it reads the historian every minute." | Gap |
 | "Where does our data go?" | "Category A stays on site. An edge gateway de-identifies and sends one way only to India regions. Designed for MeitY; the gateway is a design today." | Design |

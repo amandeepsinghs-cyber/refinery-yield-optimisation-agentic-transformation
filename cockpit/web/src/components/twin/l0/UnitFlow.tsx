@@ -108,7 +108,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
 
         {/* 2 OBSERVE */}
         <li className="uf-step">
-          <div className="uf-h"><span className="uf-n">2</span>What we observe <Who k="agent">drift-watch agent</Who>{members.length ? <Who k="ml">soft sensor</Who> : null}</div>
+          <div className="uf-h"><span className="uf-n">2</span>What we observe <Who k="agent">anomaly detection</Who>{members.length ? <Who k="ml">soft sensor</Who> : null}</div>
           {k ? <p className="uf-kicker">Measured now</p> : null}
           {k ? (
             <p className="uf-big">
@@ -191,7 +191,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
           ) : d?.proposed.sample ? (
             <p className="uf-why">The spread of the estimate is near its limit and the next lab is {d.observed?.next_lab_in_min} min away; a sample now is the cheapest way to cut uncertainty.</p>
           ) : (
-            <p className="uf-why subtle">Nothing to optimise on this unit right now; the systems agent keeps watching the downstream effect.</p>
+            <p className="uf-why subtle">Nothing to optimise on this unit right now; the consequence check keeps watching the downstream effect.</p>
           )}
         </li>
       </ol>

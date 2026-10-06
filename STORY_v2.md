@@ -23,7 +23,7 @@ Written 3 Oct 2026; revised to v2 on 6 Oct 2026 to incorporate process engineeri
 ## Executive Briefing & Leadership Pre-Read
 
 > [!IMPORTANT]
-> **BLUF:** The FCC Soft-Sensor Decision Cockpit is an advisory-only, multi-agent AI system that eliminates the 8-hour blind spot between lab samples by predicting distillation cut points every minute, recommending safe operator adjustments during crude switches, and explicitly refusing to advise when models disagree.
+> **BLUF:** The FCC Soft-Sensor Decision Cockpit is an advisory-only AI and physics system that eliminates the 8-hour blind spot between lab samples by predicting distillation cut points every minute, recommending safe operator adjustments during crude switches, and explicitly refusing to advise when models disagree.
 
 ### The "So What" for a Refinery Head
 
@@ -55,7 +55,7 @@ Today, FCC operators fly blind for 4–9 hours between laboratory distillation a
 
 | Phase | Screen / Route | What to Show | Executive Talk Track |
 |---|---|---|---|
-| **1. Overview (60 sec)** | `/platform` | Six-layer architecture and use-case alignment cards. | *"Behind this screen are modular agents for each plant use case sharing one source of truth. They advise; your operators decide. Zero control system actuation."* |
+| **1. Overview (60 sec)** | `/platform` | Six-layer architecture and use-case alignment cards. | *"Behind this screen: AI and physics — a crude classifier, a four-model soft sensor including a PINN, anomaly detection on every unit and an optimiser — shared across your use cases, on one source of truth. They advise; your operators decide. Zero control system actuation."* |
 | **2. Refinery Top View** | `/twin` (`random_s107`, $t=600$) | 6 units on the flowsheet; one glowing yellow with **"Decide"**; the riser on **"Watch"**. | *"A crude switch occurred at 07:25. The plant responded hours before the lab assay arrived. The fractionator is off plan, while the riser needs no intervention. Each unit sees only what matters to it."* |
 | **3. Unit Deep Dive** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=600$) | Live column drawing $\to$ Model ensemble bell curves $\to$ Decision D1 (*Raise LCO cut point $+2.5^\circ\text{F}$*). | *"Here is a run the model never saw. The 4 models agree within $14^\circ\text{F}$, giving $95\%$ probability on-spec. It advises the smallest SOP-compliant move to recover giveaway."* |
 | **4. The Honesty Moment** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=720$) | Decision status changes to **"Not yet"** with an amber alert. | *"Two hours later, process uncertainty widens. Rather than averaging 4 divergent guesses, the system withholds advice and prompts the board operator to request a physical lab draw."* |
@@ -242,8 +242,8 @@ To understand why furnace preheat is the master thermal lever for the entire FCC
 
 | Dimension | How Operators Do It Today | How Our Cockpit Decides (D6) |
 |---|---|---|
-| **Trigger** | Crude changes; operators adjust preheat by **habit, tribal memory, or past shift logs**. | **Crude-switch agent** identifies the new crude family (e.g. R4 Light) and loads its target preheat operating window. |
-| **Observation** | Operators wait for regenerator temperatures to alarm 2–3 hours later. | **Drift-watch agent** calculates the exact deviation: `dev = -1.5 °F` below the crude's optimal operating point. |
+| **Trigger** | Crude changes; operators adjust preheat by **habit, tribal memory, or past shift logs**. | **Crude classifier** identifies the new crude family (e.g. R4 Light) and loads its target preheat operating window. |
+| **Observation** | Operators wait for regenerator temperatures to alarm 2–3 hours later. | **Anomaly detection** calculates the exact deviation: `dev = -1.5 °F` below the crude's optimal operating point. |
 | **Move Calculation** | Operator turns a dial by a rough 5 °F or 10 °F. | Uses the **measured causal response model**: Across 52 simulator step tests, the furnace outlet follows setpoint **1.0 : 1** ($R^2 = 1.0$).<br>Move size: $\text{Delta} = -\text{dev} / \text{gain} = +1.5\text{ }^\circ\text{F}$. |
 | **Safety Limits** | Subject to operator judgment. | Hardcoded to **`SOP-FURN-002`**: Capped at maximum 5.0 °F per step, enforced 20-minute thermal settling time, staying strictly within licensor nozzle limits. |
 | **Outcome** | Unit swings for an entire shift. | Probability of preheat sitting inside the target band jumps from **31% to 98%**, stabilizing catalyst circulation immediately. |
@@ -415,7 +415,7 @@ We replayed the proposed recipe (ROT $+3.5^\circ\text{F}$, LCO cut $-1.0^\circ\t
 1. **Lakehouse:** Single source of truth in BigQuery (bronze telemetry, silver clean, gold models).
 2. **Data Processing:** De-noising, timestamp reconciliation, lag compensation, de-identification.
 3. **Models:** 4-model soft sensor, causal response models, dynamic crude weighting.
-4. **Agents:** Specialized agent per unit (Furnace, Riser, Regenerator, Fractionator, Gas Plant, Stabilizer).
+4. **Detect, check and propose:** anomaly detection on every unit (Furnace, Riser, Regenerator, Fractionator, Gas Plant, Stabilizer), downstream consequence check, constrained optimiser — one shared engine, not a separate agent per unit.
 5. **Decisions + Person:** Operational cards presenting D1–D9 with Accept/Hold/Decline buttons.
 6. **Whole Refinery View:** 19 systems knock-on rules evaluating plant-wide constraints.
 

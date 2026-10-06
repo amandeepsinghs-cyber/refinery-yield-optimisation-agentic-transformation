@@ -91,4 +91,4 @@
 | **Pipeline & movement** | Custody / meter monitoring at scale | ⚪ Not claimed | — |
 | **Pipeline & movement** | Line-pressure optimisation | ⚪ Not claimed | — |
 
-**Every ⚪ row** is the same pattern on a different unit: a new agent on the same lakehouse, the same decision desk, the same person in the loop. See [UC-OUT_OF_SCOPE](./UC-OUT_OF_SCOPE_non_fcc_refinery_assets.md).
+**Every ⚪ row** is the same pattern on a different unit: the same models, trained on that unit's data, on the same lakehouse, the same decision desk, the same person in the loop. See [UC-OUT_OF_SCOPE](./UC-OUT_OF_SCOPE_non_fcc_refinery_assets.md).
