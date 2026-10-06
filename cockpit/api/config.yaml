@@ -34,7 +34,8 @@ lab:
   seed: 42
 regimes: {heavy: [0, 22], medium: [22, 26], light: [26, 99]}
 features:
-  exclude: [LCO_T98_F, HN_T98_F, dist_condenser_eff, lab_sample, crude_id, event_code, cutpoint_auto, time_min]
+  exclude: [LCO_T98_F, HN_T98_F, dist_condenser_eff, lab_sample, crude_id, event_code, cutpoint_auto, time_min,
+            reactor_MB, mass_balance_err_pct]   # 6 Oct: simulator mass-balance diagnostics; no plant instrument
   exclude_patterns: ["*_dup", "eff_*"]
   key_tags: [T_tray06_F, T_tray13_F, P5_frac_psia, Tr_riser_F, feed_flow_lb_s, MV_PA2, MV_PA3]
   ewma_tau_min: 10
@@ -71,6 +72,7 @@ training:
 hybrid:
   draw_tray: {LCO_T98_F: T_tray13_F, HN_T98_F: T_tray06_F}
   p_ref_psia: 24.9
+  # b_min: 0.5                       # 6 Oct: T98 must rise with the draw-tray temperature (fit gave -2.8 on closed-loop data)
 gpr: {max_train: 450, max_train_cv: 350, restarts: 1}
 pinn: {members: 5, hidden: [32, 32], epochs: 250, lr: 0.01, lambda_phys: 0.1, lambda_mono: 1.0, threads: 1,
        max_unlabelled: 1000, max_labelled: 3000}

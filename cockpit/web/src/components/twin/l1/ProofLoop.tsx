@@ -82,7 +82,7 @@ export function ProofLoop({ d, nextLab }: { d: Decision; nextLab?: string | null
   );
 }
 
-export function CrudeSwitchStory({ r, physicsPct }: { r: TwinRegime; physicsPct: string | null }) {
+export function CrudeSwitchStory({ r }: { r: TwinRegime; physicsPct?: string | null }) {
   const t = r.time_min;
   const segs = (r.segments ?? []).filter((s) => s.t_start_min <= t);
   if (segs.length < 2) return null;
@@ -92,7 +92,7 @@ export function CrudeSwitchStory({ r, physicsPct }: { r: TwinRegime; physicsPct:
     [clock(cur.t_start_min), `A new crude starts arriving. The lab assay says ${cur.regime_id} (API ${r.declared_api?.toFixed(1) ?? "—"}); the unit was on ${prev.regime_id}.`],
     [`${clock(cur.transition_start_min ?? cur.t_start_min)}–${clock(tEnd)}`, "The unit's behaviour shifts: riser temperature rise, conversion, coke and regenerator temperature move to a new pattern."],
     [r.detected_at_min != null ? clock(r.detected_at_min) : "—", `The crude is named${r.detection_delay_min != null ? `, ${r.detection_delay_min} min after the blend settles` : ""}. It must hold for 15 min before the label changes, so noise does not flip it.`],
-    ["then", `The soft sensor re-weights its models for this crude${physicsPct ? ` (physics-based models ${physicsPct} %)` : ""} while the data-driven ones catch up.`],
+    ["then", `The trust checks confirm the soft sensor has lab labels for this crude before it advises; the set-point search looks for this crude's settings.`],
     ["then", "The set-point search uses this crude's response models, so the advice changes with the crude."],
   ];
   return (

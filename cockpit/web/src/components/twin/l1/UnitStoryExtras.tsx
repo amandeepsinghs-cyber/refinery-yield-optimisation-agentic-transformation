@@ -184,7 +184,13 @@ export function WhatSetsTheMove({ d, stepLimit = 5 }: { d: Decision; stepLimit?:
   const giveBack = isGiveBack(d);
   return (
     <ul className="us-binding">
-      {giveBack ? (
+      {d.type === "D1" && p.target != null ? (
+        <li className="bind">
+          <span>Sets the move</span>
+          <b>Land on the {fx(p.target, 1)} {tu} target, never below 95 % chance on spec</b>
+          <em>{mv.delta != null && mv.delta < 0 ? "−" : "+"}{fx(used, nd)} {mv.unit} takes the estimate from {fx(p.mu_before, 1)} to {fx(p.mu_after, 1)} {tu}{Math.abs(used - stepLimit) < 1e-6 && Math.abs((p.mu_after ?? 0) - p.target) > 1 ? `; the ${fx(stepLimit, nd)} ${mv.unit} SOP step stops it short, so a second step follows` : " — on target"}. Chance on spec {probPct(p.p_on_spec_after)}.</em>
+        </li>
+      ) : giveBack ? (
         <li className="bind">
           <span>Sets the move</span>
           <b>Take back margin while the chance on spec stays at 95 % or more</b>
@@ -198,7 +204,7 @@ export function WhatSetsTheMove({ d, stepLimit = 5 }: { d: Decision; stepLimit?:
         </li>
       )}
       <li>
-        <span>Not limiting</span>
+        <span>{Math.abs(used - stepLimit) < 1e-6 ? "Limiting" : "Not limiting"}</span>
         <b>SOP step ≤ {fx(stepLimit, nd)} {mv.unit}</b>
         <em>{fx(used, nd)} of {fx(stepLimit, nd)} {mv.unit} used.</em>
       </li>

@@ -10,13 +10,18 @@ from .base import BaseEstimator, PhysicsBase
 from .classic import GPRModel
 
 
+def _bmin(s):
+    v = (s["hybrid"] or {}).get("b_min") if hasattr(s["hybrid"], "get") else None
+    return None if v is None else float(v)
+
+
 class HybridDeltaModel(BaseEstimator):
     model_id = "hybrid_delta_v1"
     family = "hybrid_delta"
 
     def __init__(self, target, s, max_features, max_train, restarts, seed=0):
         super().__init__(target, s, max_features)
-        self.phys = PhysicsBase(self.draw_tray, float(s["hybrid"]["p_ref_psia"]))
+        self.phys = PhysicsBase(self.draw_tray, float(s["hybrid"]["p_ref_psia"]), _bmin(s))
         self.delta = GPRModel(target, s, max_features, max_train, restarts, seed)
 
     def fit(self, X, y, candidates, X_unlabelled=None):
@@ -84,7 +89,7 @@ class PinnEnsembleModel(BaseEstimator):
 
     def fit(self, X, y, candidates, X_unlabelled=None):
         self._select(X, y, candidates)
-        self.phys = PhysicsBase(self.draw_tray, float(self.s["hybrid"]["p_ref_psia"])).fit(X, y)
+        self.phys = PhysicsBase(self.draw_tray, float(self.s["hybrid"]["p_ref_psia"]), _bmin(self.s)).fit(X, y)
         self.ym, self.ys = float(np.mean(y)), float(np.std(y) + 1e-6)
         Xl = torch.tensor(self.scaler.transform(X), dtype=torch.float32)
         yl = torch.tensor((y - self.ym) / self.ys, dtype=torch.float32)

@@ -523,6 +523,10 @@ def _recipe(run_id: str, t: int) -> list[dict]:
                     "consequence": "Running the new crude on the old crude's set points", "decide_by_label": None}
     d["diagnosed"] = {"text": r.get("explanation"), "data_support": r.get("data_support")}
     why_not = _plausible(r)
+    cap = float((get_state().s["recommend"] or {}).get("max_move_F", 5.0))
+    big = [m for m in r.get("moves", []) if m.get("sp_tag") in ("SP_LCO_T98", "SP_HN_T98") and abs(m.get("delta") or 0) > cap + 1e-6]
+    if big and not why_not:   # 6 Oct: the same 5 °F SOP step the single cut-point advice obeys
+        why_not = ", ".join(f"{m['label']} {m['delta']:+.1f} °F exceeds the {cap:.0f} °F SOP step" for m in big)
     if r.get("gate") == "ISSUED" and not why_not:
         d["headline"] = "Coordinated move: " + ", ".join(f"{m['label']} {m['delta']:+.1f} {m['unit']}" for m in r["moves"])
         d["proposed"] = {"moves": [{"tag": m["sp_tag"], "label": m["label"], "from": m["current"], "to": m["recommended"],

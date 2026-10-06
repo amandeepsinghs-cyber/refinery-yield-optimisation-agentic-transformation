@@ -12,10 +12,12 @@ from ..data.features import Scaler, select_features
 
 
 class PhysicsBase:
-    def __init__(self, draw_tray: str, p_ref: float):
+    def __init__(self, draw_tray: str, p_ref: float, b_min: float | None = None):
         self.draw_tray = draw_tray
         self.p_ref = p_ref
+        self.b_min = b_min   # physical sign: T98 rises with the draw-tray temperature (None = unconstrained, legacy)
         self.a = self.b = self.c = 0.0
+        self.b_constrained = False
 
     def _L(self, X: pd.DataFrame) -> np.ndarray:
         if "P5_frac_psia" not in X.columns:
@@ -35,6 +37,16 @@ class PhysicsBase:
             A = np.column_stack([np.ones_like(T), T])
             coef, *_ = np.linalg.lstsq(A, y, rcond=None)
             self.a, self.b, self.c = float(coef[0]), float(coef[1]), 0.0
+        # 6 Oct: on closed-loop data the free fit can give a negative slope (the controller moves the draw temperature
+        # against disturbances). Clamp to b_min and refit the intercept and pressure term with b fixed.
+        if self.b_min is not None and self.b < self.b_min:
+            self.b, self.b_constrained = float(self.b_min), True
+            r = y - self.b * T
+            if np.std(L) > 1e-9:
+                coef, *_ = np.linalg.lstsq(np.column_stack([np.ones_like(T), L]), r, rcond=None)
+                self.a, self.c = float(coef[0]), float(coef[1] / self.b)
+            else:
+                self.a, self.c = float(np.mean(r)), 0.0
         return self
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
@@ -43,7 +55,7 @@ class PhysicsBase:
 
     def params(self) -> dict:
         return {"a": round(self.a, 4), "b": round(self.b, 5), "c": round(self.c, 4), "draw_tray": self.draw_tray,
-                "p_ref_psia": self.p_ref}
+                "p_ref_psia": self.p_ref, "b_constrained": self.b_constrained}
 
 
 class BaseEstimator:

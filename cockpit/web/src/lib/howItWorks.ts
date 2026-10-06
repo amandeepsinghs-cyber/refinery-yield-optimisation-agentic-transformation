@@ -333,11 +333,11 @@ export interface DecisionCard {
 export const DECISION_CARD: Record<DecisionId, DecisionCard> = {
   D4: { question: "Has the FCC feed changed after the crude switch, and has the change finished?",
     pain: "The crude slate changes every 12–48 h, so the FCC feed changes too; models tuned on yesterday's feed go wrong, and the change does not arrive when the schedule says",
-    solve: "Tells from the unit's own behaviour which crude family the FCC feed now comes from, confirms when the change is done, and re-weights every model for it",
+    solve: "Tells from the unit's own behaviour which crude family the FCC feed now comes from, confirms when the change is done, and tells the trust checks which crude's training labels to look for",
     dataIn: "Coke per feed, riser ΔT, fuel per feed, regenerator temperature, conversion, tray ΔT — every minute; the crude the schedule declares",
     algorithms: "Crude classifier: probability for each crude family (R1–R4) from the unit's behaviour → switch declared after a 15-min dwell → novelty score for a crude unlike any trained",
     checks: "Novelty ≥ 0.5 → recipes held, crude assay requested; detected ≠ declared → operator asked to confirm",
-    operatorGets: "The feed's crude family with a % confidence and the change time; Confirm / keep declared; every model re-weights for it",
+    operatorGets: "The feed's crude family with a % confidence and the change time; Confirm / keep declared; the trust checks use it",
     onYourPlant: "Trained on your crude history and assay library; a new crude starts from its nearest family",
     needFromYou: "Historian tags above, crude schedule, assay library" },
   D6: { question: "What preheat for this feed?", statusNote: "gain measured",

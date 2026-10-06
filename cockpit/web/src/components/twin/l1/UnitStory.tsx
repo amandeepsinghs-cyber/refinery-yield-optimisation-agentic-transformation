@@ -591,7 +591,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
               <>
                 <h3>The search, in plain words</h3>
                 <ul className="uf-opt">
-                  <li><span>Goal</span>{d && isGiveBack(d) ? `take back margin with ${move.label.charAt(0).toLowerCase() + move.label.slice(1)} while ${goal.charAt(0).toLowerCase() + goal.slice(1)} stays ≥ 95 %` : `${goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of ${move.label.charAt(0).toLowerCase() + move.label.slice(1)}`}</li>
+                  <li><span>Goal</span>{d?.type === "D1" && p.target != null ? `bring the estimate to the ${fx(p.target, 1)} ${p.unit ?? move.unit} target with ${move.label.charAt(0).toLowerCase() + move.label.slice(1)}, never below 95 % chance on spec` : d && isGiveBack(d) ? `take back margin with ${move.label.charAt(0).toLowerCase() + move.label.slice(1)} while ${goal.charAt(0).toLowerCase() + goal.slice(1)} stays ≥ 95 %` : `${goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of ${move.label.charAt(0).toLowerCase() + move.label.slice(1)}`}</li>
                   <li><span>Limits</span>SOP step ≤ {fx(stepMax, nd)} {move.unit} · time between moves · lever window</li>
                   <li><span>Model</span>{p.model ?? `Soft-sensor committee: 4 models, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended`}</li>
                   <TrainedOn />
