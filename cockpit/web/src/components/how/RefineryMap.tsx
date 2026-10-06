@@ -109,9 +109,9 @@ export default function RefineryMap() {
       <div className="rf-legend">
         <span className="rf-legend-dots">
           {STATUS_ORDER.map((s) => <StatusDot key={s} status={s} />)}
-          <span className="rf-eq">FCC equivalent = IOCL named a unit we do not have; the same problem is shown on the FCC</span>
+          <span className="rf-eq">FCC equivalent = IOCL named something outside the FCC; the same problem is shown on the FCC</span>
         </span>
-        <b className="rf-summary">{statusSummary()}</b>
+        <b className="rf-summary">Use cases: {statusSummary()}</b>
       </div>
     </section>
   );

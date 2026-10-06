@@ -5,7 +5,7 @@ produce into first-class ``Decision`` objects:
 
 * soft-sensor estimate + spread gate + recommendation (``state.recommendations``)  → D1 cut point now or wait, D2 trust,
   D9 extra lab sample
-* crude-regime posterior (``regime_at``)                                           → D4 which crude is in the unit
+* crude-regime posterior (``regime_at``)                                           → D4 has the FCC feed changed after the crude switch
 * multi-lever recipe search (``recipe_for``)                                       → D3 coordinated recipe
 * sentinels + consequence rules (``events_for_run`` / ``needs_attention``)        → D5 regenerator air, D6 furnace,
   D7 overhead / stabiliser, D8 cross-unit watch items
@@ -62,7 +62,7 @@ TYPES: dict[str, dict[str, Any]] = {
            "today": "A number is always shown → the cockpit says when it does not know and why"},
     "D9": {"name": "Pull an extra lab sample", "problem": ["P1", "P4"], "uc": ["UC-11"],
            "today": "Fixed 8-h sampling → sample when the estimate is least certain"},
-    "D4": {"name": "Which crude is in the unit; is the transition done?", "problem": ["P2"], "uc": ["FEED"],
+    "D4": {"name": "Has the FCC feed changed after the crude switch; is the change finished?", "problem": ["P2"], "uc": ["FEED"],
            "today": "Declared crude from the schedule → detected crude from unit behaviour, with a probability"},
     "D3": {"name": "Coordinated recipe for the new crude", "problem": ["P2", "P3"], "uc": ["UC-01", "UC-06"],
            "today": "One loop at a time by experience → several set points searched together inside limits"},
@@ -557,7 +557,7 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
     if t == "D4":
         steps.append(_step("ml", "Crude-regime model", f"Posterior over four crude families: {regime}; novelty "
                                                        f"{(o.get('novelty') or 0):.2f}"))
-        steps.append(_step("agent", "Crude-switch check", "Compares detected with the declared schedule; 15-min dwell "
+        steps.append(_step("agent", "Feed-change check", "Compares detected with the declared schedule; 15-min dwell "
                                                           "before declaring a switch"))
     if t == "D3":
         steps.append(_step("ml", "Crude-specific response models", f"Fitted per crude regime ({regime})"))

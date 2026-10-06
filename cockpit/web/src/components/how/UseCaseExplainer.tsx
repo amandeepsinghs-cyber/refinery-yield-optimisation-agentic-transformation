@@ -94,7 +94,7 @@ export function UnitUseCases({ unitId }: { unitId: string }) {
         <span className="uuc-n">{ids.length} IOCL use case{ids.length > 1 ? "s" : ""}: {ids.map((i) => USE_CASES.find((x) => x.id === i)!.row).join(" · ")}</span>
         <span className="uuc-sub">{home
           ? "Use cases only the whole-plant view can solve. Each unit page explains its own."
-          : "Problem, how it is solved, and which step above does the work."}</span>
+          : "Problem, how we would solve it, and which step above does the work."}</span>
         <span className="uuc-more">{open ? "Close ▴" : "Open ▾"}</span>
       </summary>
       {ids.map((i, n) => {

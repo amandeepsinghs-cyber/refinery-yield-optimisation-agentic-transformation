@@ -5,7 +5,7 @@
 import type { Status } from "@/lib/howItWorks";
 
 export const STATUS_WORD: Record<Status, string> = {
-  real: "Live",
+  real: "Interactive",
   scripted: "Scripted outcome",
   partly: "Partly",
   watch: "Watch only",

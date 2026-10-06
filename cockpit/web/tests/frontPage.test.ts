@@ -30,7 +30,7 @@ describe("FP-1 refinery map", () => {
   });
 
   it("computes the status summary from USE_CASES", () => {
-    expect(statusSummary()).toBe("2 live · 5 scripted outcome · 3 partly · 2 watch only · rest not claimed");
+    expect(statusSummary()).toBe("2 interactive · 4 scripted outcome · 3 partly · 2 watch only · rest not claimed");
   });
 
   it("shows no value figures", () => {

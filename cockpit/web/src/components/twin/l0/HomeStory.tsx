@@ -149,7 +149,7 @@ export function UseCaseBand({ rows, selected }: { rows: CoverageRow[]; selected:
   useScreenPart("use_cases", rows.map((r) => ({ use_case: r.iocl_title, row: r.iocl_row, state: r.state })));
   return (
     <section className="ucb" data-testid="use-case-band" aria-label="IOCL use cases">
-      <h2 className="hs-h">IOCL use cases this shift <span className="ucb-hint">click one to see how it is solved</span></h2>
+      <h2 className="hs-h">IOCL use cases this shift <span className="ucb-hint">click one to see how we would solve it</span></h2>
       <ul className="ucb-list">
         {rows.map((r) => {
           const id = r.platform_id;

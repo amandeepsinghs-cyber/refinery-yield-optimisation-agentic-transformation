@@ -45,11 +45,11 @@ export const PARTS: Part[] = [
     status: "real", statusNote: "Runs on the simulator data as it is.",
   },
   {
-    id: "crude", n: 2, name: "Crude classifier", question: "Which crude is running, and has the switch finished?",
-    kind: "A classification model. It reads the unit’s behaviour (riser ΔT, conversion, coke per feed, regenerator temperature, column ΔT) and names the crude type, with a confidence.",
+    id: "crude", n: 2, name: "Crude classifier", question: "Which crude family is the FCC feed coming from, and has the change finished?",
+    kind: "A classification model. It reads the unit’s behaviour (riser ΔT, conversion, coke per feed, regenerator temperature, column ΔT) and names the crude family the FCC feed comes from, with a confidence.",
     input: "Those behaviour signals, plus the crude the schedule declares.",
     output: "Crude R1–R4 with a % confidence and the time the switch was confirmed. Every model below uses this to pick its weights.",
-    where: "Unit page step ② · “Which crude is running” block.",
+    where: "Unit page step ② · “Which feed is arriving” block.",
     status: "scripted", statusNote: "Agrees with the lab assay at 93 %, confirmed 12 min after the switch ends.",
   },
   {
@@ -62,7 +62,7 @@ export const PARTS: Part[] = [
     members: [
       ["Bayesian ridge", "statistical regression; simple and stable"],
       ["Hybrid delta", "physics model plus a data-driven correction"],
-      ["PINN ensemble", "neural networks held to the physics (mass and energy balance)"],
+      ["PINN ensemble", "neural networks held to the column's boiling-point physics"],
       ["GPR", "Gaussian process; says how unsure it is"],
     ],
   },
@@ -127,9 +127,9 @@ export const DECISIONS: DecisionInfo[] = [
   { id: "D9", unit: "Main fractionator", unitHref: U("unit_4_fractionator"), question: "Pull an extra lab sample now?",
     lever: "Lab sampling (no set point)", parts: ["estimators", "checks"],
     ucs: ["UC-11"], problem: ["P1", "P4"], status: "real", note: "Asks for a sample when the estimate is least certain." },
-  { id: "D4", unit: "Whole FCC", unitHref: null, question: "Which crude is in the unit, and has the switch finished?",
+  { id: "D4", unit: "Whole FCC", unitHref: null, question: "Has the FCC feed changed after the crude switch, and has the change finished?",
     lever: "None. Every other model uses the answer.", parts: ["crude"],
-    ucs: ["FEED"], problem: ["P2"], status: "scripted", note: "Shown in step ② of every unit page, not as a card." },
+    ucs: ["UC-01", "UC-11"], problem: ["P2"], status: "scripted", note: "Shown in step ② of every unit page, not as a card." },
   { id: "D3", unit: "Main fractionator + riser", unitHref: U("unit_4_fractionator"), question: "Which set points, together, for the new crude?",
     lever: "Riser outlet temperature, LCO and HN T98 set points", parts: ["crude", "estimators", "response", "checks", "optimiser"],
     ucs: ["UC-01", "UC-06"], problem: ["P2", "P3"], status: "scripted", note: "Held back while D2 says the estimate is too uncertain." },
@@ -217,10 +217,6 @@ export const USE_CASES: UseCase[] = [
     problem: "The LPG / light-naphtha split is run by experience, and the effect of a move shows up hours later.",
     here: "The split is moved through the same overhead set point, with the expected result shown before you act.",
     decisions: ["D7"], status: "scripted" },
-  { id: "FEED", row: "Catalogue", where: "Scheduling and planning", iocl: "Feedstock evaluation", stage: "whole",
-    problem: "The schedule says which crude is coming, but not when it really reaches the unit or whether it behaves as assayed. Every model tuned on yesterday’s crude is now wrong.",
-    here: "The crude classifier names the crude from the unit’s own behaviour and confirms when the switch is done; every model then re-weights for it.",
-    decisions: ["D4"], status: "scripted" },
   { id: "UC-06", row: "#6", where: "Multi-unit utilities", iocl: "Energy-management across units", stage: "whole",
     problem: "Each console optimises its own unit. A move in one shows up hours later in another, and no one sees the whole chain.",
     here: "Partly: the D3 recipe moves several set points together, and D8 traces what one unit’s drift does downstream. No energy dashboard.",
@@ -288,14 +284,13 @@ export interface UcPin {
   /** Where the work can be seen in the cockpit. */
   shownOn: string;
   href: string;
-  /** IOCL named a unit we do not have; the same problem is shown on the FCC. */
+  /** IOCL named something outside the FCC; the same problem is shown on the FCC. */
   fccEquivalent: boolean;
 }
 
 const UNIT = (id: string) => `/twin/unit/${id}`;
 
 export const UC_PINS: UcPin[] = [
-  { uc: "FEED", step: "crude", shownOn: "every FCC unit (D4)", href: UNIT("unit_4_fractionator"), fccEquivalent: false },
   { uc: "UC-07", step: "cdu", shownOn: "U5 Gas plant", href: UNIT("unit_5_condenser"), fccEquivalent: true },
   { uc: "UC-10", step: "cdu", shownOn: "U1 Furnace", href: UNIT("unit_1_furnace"), fccEquivalent: true },
   { uc: "UC-02", step: "reformer", shownOn: "U6 Stabiliser", href: UNIT("unit_6_stabiliser"), fccEquivalent: true },
@@ -312,7 +307,7 @@ export const UC_PINS: UcPin[] = [
 /** "2 live · 5 scripted outcome · 3 partly · 2 watch only · rest not claimed", counted from USE_CASES. */
 export function statusSummary(ucs: UseCase[] = USE_CASES): string {
   const n = (s: Status) => ucs.filter((u) => u.status === s).length;
-  return `${n("real")} live · ${n("scripted")} scripted outcome · ${n("partly")} partly · ${n("watch")} watch only · rest not claimed`;
+  return `${n("real")} interactive · ${n("scripted")} scripted outcome · ${n("partly")} partly · ${n("watch")} watch only · rest not claimed`;
 }
 
 /* ---------------------------------------------------------------- FP-2 front page: decisions (SDD §14.6E SDD-FP-06..08)
@@ -336,13 +331,13 @@ export interface DecisionCard {
 }
 
 export const DECISION_CARD: Record<DecisionId, DecisionCard> = {
-  D4: { question: "Which crude is in the unit, and has the switch finished?",
-    pain: "The crude slate changes every 12–48 h; models tuned on yesterday's feed go wrong, and the real arrival is not when the schedule says",
-    solve: "Names the crude from the unit's own behaviour, confirms when the switch is done, and re-weights every model for it",
+  D4: { question: "Has the FCC feed changed after the crude switch, and has the change finished?",
+    pain: "The crude slate changes every 12–48 h, so the FCC feed changes too; models tuned on yesterday's feed go wrong, and the change does not arrive when the schedule says",
+    solve: "Tells from the unit's own behaviour which crude family the FCC feed now comes from, confirms when the change is done, and re-weights every model for it",
     dataIn: "Coke per feed, riser ΔT, fuel per feed, regenerator temperature, conversion, tray ΔT — every minute; the crude the schedule declares",
     algorithms: "Crude classifier: probability for each crude family (R1–R4) from the unit's behaviour → switch declared after a 15-min dwell → novelty score for a crude unlike any trained",
     checks: "Novelty ≥ 0.5 → recipes held, crude assay requested; detected ≠ declared → operator asked to confirm",
-    operatorGets: "The crude with a % confidence and the switch time; Confirm / keep declared; every model re-weights for it",
+    operatorGets: "The feed's crude family with a % confidence and the change time; Confirm / keep declared; every model re-weights for it",
     onYourPlant: "Trained on your crude history and assay library; a new crude starts from its nearest family",
     needFromYou: "Historian tags above, crude schedule, assay library" },
   D6: { question: "What preheat for this feed?", statusNote: "gain measured",
@@ -510,13 +505,6 @@ export const UC_DETAIL: Record<string, UseCaseDetail> = {
     value: "LPG and naphtha stay on target after a crude change.",
     valueArea: "Yield & quality",
   },
-  "FEED": {
-    inputs: ["Riser ΔT, conversion, coke per feed, regenerator temperature, column ΔT", "The crude the schedule declares"],
-    outputs: ["The crude now running (R1–R4) with a % confidence", "The time the switch is confirmed"],
-    decides: "The switch is confirmed once one crude is clearly ahead and stays ahead; every other model then re-weights for it.",
-    value: "Models switch to the new crude when it really arrives, not when the schedule says it should.",
-    valueArea: "Scheduling & planning",
-  },
   "UC-06": {
     inputs: ["Every unit’s drift and its levers", "The crude now running"],
     outputs: ["A recipe of several set points moved together", "The downstream trace of each drift (D8)"],
@@ -544,11 +532,11 @@ USE_CASES.sort((a, b) => ioclRank(a.row) - ioclRank(b.row));
 
 /** IOCL use cases each unit page explains, in IOCL order. */
 export const UNIT_UCS: Record<string, string[]> = {
-  refinery: ["UC-06", "FEED"],
+  refinery: ["UC-06"],
   unit_1_furnace: ["UC-05", "UC-10"],
   unit_2_riser: ["UC-06", "UC-08", "UC-09"],
   unit_3_regenerator: ["UC-04"],
-  unit_4_fractionator: ["UC-01", "UC-06", "UC-11", "FEED"],
+  unit_4_fractionator: ["UC-01", "UC-06", "UC-11"],
   unit_5_condenser: ["UC-02", "UC-03", "UC-07"],
   unit_6_stabiliser: ["UC-02", "UC-03"],
 };
@@ -571,7 +559,7 @@ export const STEP_HOW: Record<StepKey, StepHow> = {
     read: "The drawing shows each live reading where it is measured. The list shows every tag, its value and how old it is.",
   },
   observe: {
-    q: "Is something off, which crude is running, and what is the quality now?",
+    q: "Is something off, has the feed changed, and what is the quality now?",
     by: "", parts: ["watch", "crude", "estimators"],
     io: ["The tags from step ①", "How far the unit has drifted and since when · the crude, with a % · the quality now ± its spread and the chance on spec"],
     read: "Top chart: measured against expected. When the two lines part, the unit has drifted. Second chart: the gap, with its ±3σ limits (dashed) and CUSUM (orange). Crossing a dashed line is a breach; a CUSUM that keeps climbing is a slow, lasting drift. Bell curves: what the models believe now, against plan and spec (four estimators on the fractionator, the crude model on other units). The more they overlap, the more the estimate can be trusted.",

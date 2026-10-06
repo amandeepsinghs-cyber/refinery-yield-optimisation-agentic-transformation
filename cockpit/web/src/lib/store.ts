@@ -138,7 +138,7 @@ export const useCockpit = create<CockpitState>()(
       setPinnedUnit: (pinnedUnit) => set({ pinnedUnit }),
     }),
     {
-      name: "fcc-cockpit-context",
+      name: "fcc-cockpit-context-v2", // v2 (6 Oct): resets stored run/time so browsers open at the demo minute
       storage: createJSONStorage(() => sessionStorage),
       partialize: (s) => ({ runId: s.runId, property: s.property, timeMin: s.timeMin, lang: s.lang }),
       skipHydration: true,

@@ -4,6 +4,7 @@ import {
   IconGauge,
   IconLines,
   IconBook,
+  IconDatabase,
 } from "@/components/ui/icons";
 
 export type DashboardId = "twin";
@@ -38,6 +39,7 @@ export const TWIN_DASHBOARD: Dashboard = {
   href: "/twin",
   pages: [
     { href: "/platform", label: "Overview", Icon: IconBook },
+    { href: "/architecture", label: "Architecture", Icon: IconDatabase },
     { href: "/twin", label: "FCC Complex", Icon: IconGauge },
     ...TWIN_UNITS.map((u) => ({ href: `/twin/unit/${u.unit_id}`, label: `${u.short} · ${u.label}`, Icon: IconLines })),
   ],

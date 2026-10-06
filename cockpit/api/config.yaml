@@ -6,6 +6,7 @@ data:
                                    # lab schedule + crude segments from fcc_bronze; local CSV only if BigQuery is unreachable
   bigquery: {project: fcc-soft-sensor, location: us-central1, silver: fcc_silver, bronze: fcc_bronze, cache_dir: bq_cache}
   primary_batch: full_v1           # source of truth for training, evaluation and the demo
+  default_time_min: 600            # demo opens at 10:00: the soft sensor gives confident moves here (its last minutes are all "Not yet")
   default_run: random_s144         # demo default (clean 13h held-out test run in [742, 758.2] °F while s140 catches up)
   fallback_batches: [frontend_sample_1h]   # TEMPORARY: used only while full_v1 has no data rows; drops out automatically
   min_rows: 550                    # interim 600-720 min full_v1 live preview threshold (restore to 1500 when all 54 runs hit 1600)

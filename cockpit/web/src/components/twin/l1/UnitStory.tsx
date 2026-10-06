@@ -14,6 +14,7 @@
  * The engineer's all-panels view stays one click away (?view=classic).
  */
 
+import ProductLadder from "@/components/how/ProductLadder";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCockpit } from "@/lib/store";
@@ -73,7 +74,7 @@ function CrudeBlock({ r, physicsPct }: { r: import("@/lib/twinTypes").TwinRegime
   return (
     <div className="us-crude">
       <div>
-        <h3>Which crude is running — classifier{r.scripted ? <em className="us-scripted">scripted</em> : null}</h3>
+        <h3>Which feed is arriving — crude-family classifier{r.scripted ? <em className="us-scripted">scripted</em> : null}</h3>
         <ul className="us-crude-bars">
           {CRUDES.map(([id, name, type]) => {
             const v = r.p_regime?.[id] ?? 0;
@@ -414,6 +415,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           </div>
         </div>
         <TagList data={data} t={t} labels={labels} />
+        {isU4 ? <ProductLadder compact /> : null}
       </Step>
 
       {/* ② OBSERVE */}

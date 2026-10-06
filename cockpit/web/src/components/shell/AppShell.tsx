@@ -46,7 +46,10 @@ function ContextBootstrap() {
       (apiDefault ? runs.data.find((r) => r.run_id === apiDefault) : undefined) ??
       runs.data.find((r) => r.run_id === "random_s140") ??
       runs.data[0];
-    setRun(pick.run_id, pick.n_minutes);
+    // 6 Oct: open the default run at its demo minute (10:00), not its last minute, where the soft sensor is always "Not yet".
+    const dt = (cfg.data as { default_time_min?: number | null } | undefined)?.default_time_min;
+    const start = pick.run_id === apiDefault && typeof dt === "number" && dt <= pick.n_minutes ? dt : pick.n_minutes;
+    setRun(pick.run_id, start);
   }, [runs.data, runId, setRun, cfg.data, cfg.isLoading]);
 
   return null;
@@ -160,11 +163,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </Link>
         {/* No left rail (owner, 2 Oct): one slim strip — the plant, its six units, the record. */}
         <nav className="strip-nav" aria-label="Pages">
-          {dash.pages.map((p) => (
+          {dash.pages.filter((p) => !p.href.startsWith("/twin")).map((p) => (
             <Link key={p.href} href={p.href} className="strip-link" aria-current={isRailActive(p.href, pathname) ? "page" : undefined}>
-              {p.label.replace(/^U\d · /, "")}
+              {p.label}
             </Link>
           ))}
+          {/* The complex view and its six units sit inside one labelled FCC group (owner, 6 Oct: they must read as parts of the FCC). */}
+          <div className="strip-group" role="group" aria-label="FCC unit">
+            <span className="strip-group-label" aria-hidden="true">FCC</span>
+            {dash.pages.filter((p) => p.href.startsWith("/twin")).map((p) => (
+              <Link key={p.href} href={p.href} className="strip-link" aria-current={isRailActive(p.href, pathname) ? "page" : undefined}>
+                {p.label.replace(/^U\d · /, "").replace(/^FCC Complex$/, "Whole unit")}
+              </Link>
+            ))}
+          </div>
           {SHARED_PAGES.filter((p) => !p.planned).map((p) => (
             <Link key={p.href} href={p.href} className="strip-link subtle-link" aria-current={pathname === p.href ? "page" : undefined}>{p.label}</Link>
           ))}

@@ -867,3 +867,21 @@ New crude: nearest family, physics weight, smaller moves or "Not yet", learns in
 
 Recorded: D5 and D7 stay scripted (labelled); D6 decided after the new lever runs (~01:00 UTC 4 Oct); "Overview" is the first demo screen.
 
+
+---
+
+## Part 11: Target architecture for the discovery call (6 Oct 2026)
+
+Moved here from `use_cases/ARCHITECTURE_AND_PHILOSOPHY.md` §0 (client-facing doc keeps one line of rationale).
+
+> *"So can you tell me the rationality? So they gave use case by use case. Can you tell me the rationality, why did we go about building the entire kind of a monolithic software? While Google advises it to be microservices, so this looks like a monolith. Or are we saying that these are microservices, and the front end is just a visual dashboard, and underneath ultimately there'll be individual agents?*
+>
+> *And these agents would be sitting on big data lakehouse. And I can show examples of that lakehouse how we have built, because ultimately we can collect data from the entire refinery, so that'll be the data lake, right? On top of the data lake there'll be different agents. And my pitch will be, of those agents, the use cases that you are showing will be those agents.*
+>
+> *Now those agents would be strictly in the capacity of advisory in this particular case, which will be using real-time data, building machine learning and physics-based neural networks, and giving the insights in advance. This is the pitch, right? And then I will show you one such agent which is built for FCC."*
+
+Owner, 6 Oct 2026 10:45 UTC:
+
+> *"This architecture is what I am pitching how it will be actually. It will be one data lake and then specialised agents which can be controlled by gemini that you see on your screen. Then I will say at the end of the day its one refinery I will showcase 1 or 2 example of some of the agents. Then they will be able to see the big picture which will solve all of their problems and also show that this is 1 or 2 such agents. The idea is not to build all of them from the get go but to showcase that we can build them all once we setup the data. This is a discovery call"*
+
+Recorded: the architecture doc is the **target** (one lakehouse → one specialist agent per use case → Gemini orchestrating → a person decides), marked Shown today / Preview / Next. Shown today: **soft-sensor agent** (live; #1, #11) and **crude-switch agent** (scripted outcome; Feedstock). Owner approved 10:46 UTC. Next: an "Architecture" tab after Overview, built from the doc.

@@ -66,7 +66,7 @@ def config():
             "properties": s.targets,
             "models": [{"model_id": m, "label": MODEL_META[m]["label"], "color": MODEL_META[m]["color"]} for m in MODEL_IDS],
             "mixture_color": "text", "sigma_lab": round(s.sigma_lab, 4),
-            "default_run": default_run(), "data_source": st.catalog.data_mode,
+            "default_run": default_run(), "default_time_min": s["data"].get("default_time_min"), "data_source": st.catalog.data_mode,
             "recommend": {k: s["recommend"][k] for k in ("every_min", "max_move_F", "step_F", "p_on_spec_min", "valid_min")}}
 
 
