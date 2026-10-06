@@ -1033,7 +1033,7 @@ cockpit: {sse_window_points: 720, default_speed: 10, ts_max_points: 2000, defaul
 
 Owner, 6 Oct 2026: 06:47 *"there should be an overview of refinery … the refinery view is critical, and then we go to FCC"*; 06:51 *"make a front overview page. That will have details about the refinery, what happens on the top level with sufficient details, and then mention where their use cases fit and then, on that, which we have built. Then subsequently in the bottom part as an expandable screen the decisions being made. Then the individual sections as they are today on tabs will remain"*; 06:53 *"let's keep them for now"* (existing Overview sections); 06:39 *"I want to see the coloured dots"*; 06:43 *"they don't want to have a black box"*.
 
-Docs only until the owner approves each build step. Changes `components/how/PlatformOverview.tsx`, `lib/howItWorks.ts` and `app/globals.css`, plus two new components `components/how/StatusDot.tsx` (SDD-FP-01, reused by FP-2) and `components/how/RefineryMap.tsx` (FP-1). **No change** to the unit tabs (FCC Complex `/twin`, U1–U6 `/twin/unit/*`, Decision record `/audit`), engines, decisions, gates, API or audit.
+Docs only until the owner approves each build step. Changes `components/how/PlatformOverview.tsx`, `lib/howItWorks.ts` and `app/globals.css`, plus three new components `components/how/StatusDot.tsx` (SDD-FP-01, reused by FP-2) `components/how/RefineryMap.tsx` (FP-1) and `components/how/DecisionsPanel.tsx` (FP-2). **No change** to the unit tabs (FCC Complex `/twin`, U1–U6 `/twin/unit/*`, Decision record `/audit`), engines, decisions, gates, API or audit.
 
 **Layout of `/platform`, top to bottom:** header → **FP-1 The refinery** → **FP-2 Decisions the platform enables (expandable)** → existing sections, unchanged and in their current order (six layers · use-case cards · person decides · MeitY · how it learns · proof loop; owner reviews later whether they stay) → "Open the refinery →".
 
@@ -1110,7 +1110,7 @@ Docs only until the owner approves each build step. Changes `components/how/Plat
 | Feature | SDD | BDD | Status |
 |---|---|---|---|
 | FP-1 The refinery — use cases and what we built | SDD-FP-01..05 | BDD-37 | 🟢 built 6 Oct — owner approved; `tests/frontPage.test.ts` |
-| FP-2 Decisions the platform enables (expandable) | SDD-FP-06..08 | BDD-38 | ⚪ proposed — docs agreed |
+| FP-2 Decisions the platform enables (expandable) | SDD-FP-06..08 | BDD-38 | 🟢 built 6 Oct — pushed for owner review; `tests/frontPage.test.ts`; Playwright not yet written |
 
 ### 14.7 Traceability (Epic J)
 

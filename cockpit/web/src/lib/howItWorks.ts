@@ -315,6 +315,119 @@ export function statusSummary(ucs: UseCase[] = USE_CASES): string {
   return `${n("real")} live · ${n("scripted")} scripted outcome · ${n("partly")} partly · ${n("watch")} watch only · rest not claimed`;
 }
 
+/* ---------------------------------------------------------------- FP-2 front page: decisions (SDD §14.6E SDD-FP-06..08)
+ * Order follows the oil through the FCC. Text is verbatim from the SDD tables; status is read from DECISIONS. */
+
+export const DECISION_ORDER: DecisionId[] = ["D4", "D6", "D8", "D5", "D1", "D2", "D9", "D3", "D7"];
+
+export interface DecisionCard {
+  /** The question as worded on the front page. */
+  question: string;
+  /** Short qualifier after the status, e.g. "gain measured". */
+  statusNote?: string;
+  pain: string;
+  solve: string;
+  dataIn: string;
+  algorithms: string;
+  checks: string;
+  operatorGets: string;
+  onYourPlant: string;
+  needFromYou: string;
+}
+
+export const DECISION_CARD: Record<DecisionId, DecisionCard> = {
+  D4: { question: "Which crude is in the unit, and has the switch finished?",
+    pain: "The crude slate changes every 12–48 h; models tuned on yesterday's feed go wrong, and the real arrival is not when the schedule says",
+    solve: "Names the crude from the unit's own behaviour, confirms when the switch is done, and re-weights every model for it",
+    dataIn: "Coke per feed, riser ΔT, fuel per feed, regenerator temperature, conversion, tray ΔT — every minute; the crude the schedule declares",
+    algorithms: "Crude classifier: probability for each crude family (R1–R4) from the unit's behaviour → switch declared after a 15-min dwell → novelty score for a crude unlike any trained",
+    checks: "Novelty ≥ 0.5 → recipes held, crude assay requested; detected ≠ declared → operator asked to confirm",
+    operatorGets: "The crude with a % confidence and the switch time; Confirm / keep declared; every model re-weights for it",
+    onYourPlant: "Trained on your crude history and assay library; a new crude starts from its nearest family",
+    needFromYou: "Historian tags above, crude schedule, assay library" },
+  D6: { question: "What preheat for this feed?", statusNote: "gain measured",
+    pain: "A heavier feed shifts catalyst-to-oil and regenerator temperature; preheat is set by habit and corrected after the riser reacts",
+    solve: "A sized preheat move for this crude, with its effect on riser and regenerator shown before anyone acts",
+    dataIn: "Preheat set point and outlet, fired duty, flue-gas CO/O₂, feed rate, riser outlet and regenerator temperatures; the crude (D4)",
+    algorithms: "Drift watch (expected value for this crude, ±3σ, CUSUM) → response model (preheat gain; 1.007 °F/°F from 52 simulator step tests) → optimiser: smallest move to this crude's target with ≥ 95 % chance → systems check of the effect on riser and regenerator",
+    checks: "≤ 5 °F per step, ≥ 20 min between steps, feed-nozzle limit, inputs inside the training range",
+    operatorGets: "Preheat from → to, with its effect on riser and regenerator; Accept / Hold / Decline",
+    onYourPlant: "Gain refitted from your past preheat moves and a few planned step tests",
+    needFromYou: "Furnace and riser tags, SOP step limits, log of past moves" },
+  D8: { question: "Act on the riser now, before it reaches the regenerator?",
+    pain: "A riser drift shows up hours later in the regenerator, compressor and air blower; each console sees only its own unit",
+    solve: "Flags the drift with its downstream consequence and when it will land; no move proposed",
+    dataIn: "Riser outlet temperature, conversion, hydraulic signals, catalyst loading; wet-gas compressor and air-blower load",
+    algorithms: "Drift watch → cross-unit consequence trace (systems agent, with the time lag to each unit)",
+    checks: "Flagged only on a ±3σ breach or a CUSUM that keeps building",
+    operatorGets: "A watch item: what is drifting, what it will do downstream, and roughly when. No move",
+    onYourPlant: "Time lags learned from your historian",
+    needFromYou: "Riser and downstream machine tags" },
+  D5: { question: "Rebalance regenerator air against afterburn?",
+    pain: "Afterburn is found when the cyclone temperatures alarm; the cause is worked out after the event",
+    solve: "Tracks cyclone ΔT against expected for this feed and proposes the air move before the limit, with the likely cause",
+    dataIn: "Cyclone ΔT, regenerator bed temperature, air flow, flue-gas O₂/CO, riser severity; the crude (D4)",
+    algorithms: "Drift watch on cyclone ΔT → event log with the likely cause (air or riser severity) → response model (≈ 0.4 °F ΔT per 0.01 lb/s air) → optimiser: smallest air move back into band with ≥ 95 % chance",
+    checks: "≤ 3 % air per step, ≥ 15 min between steps",
+    operatorGets: "Air from → to before the alarm limit; the cause on record",
+    onYourPlant: "Gain fitted from your air moves and afterburn history",
+    needFromYou: "Regenerator tags, afterburn alarm history, air SOP" },
+  D1: { question: "Move the LCO cut point now, or wait for the lab?",
+    pain: "Quality is known only from the lab every 8 h; the column runs blind after a crude change, so product is given away or goes off spec",
+    solve: "A cut-point estimate every minute with the chance of being on spec, and the move now — or \"wait for the lab\"",
+    dataIn: "Tray and draw temperatures, pumparound duties, feed rate — every minute; lab LCO T98 every 8 h, matched to the minute it was drawn; the crude (D4)",
+    algorithms: "Four quality estimators (Bayesian ridge · hybrid physics + data · physics-informed neural nets · Gaussian process) → combined estimate ± spread and chance on spec → response model (cut point moves 1 : 1 with its set point) → optimiser: smallest move to ≥ 95 % chance on spec",
+    checks: "Spread ≤ 14 °F, estimators agree, inputs inside the training range, move ≤ 5 °F SOP step; else \"Not yet\" or \"pull a sample\" (D2, D9)",
+    operatorGets: "Move from → to, chance on spec before → after; Accept / Hold / Decline to the decision record; nothing written to the control system",
+    onYourPlant: "Models retrain on your historian and LIMS history; each new lab re-anchors the estimate",
+    needFromYou: "Column tags (1-min), LIMS T98 history, crude schedule, cut-point SOP limits" },
+  D2: { question: "Can the estimate be trusted right now?",
+    pain: "A single soft sensor always gives a number, even when it should not be trusted",
+    solve: "Four different estimators; when they disagree the cockpit says \"Not yet\" and holds every move",
+    dataIn: "The four estimators' outputs and their training ranges",
+    algorithms: "Trust checks — fixed rules, not a model",
+    checks: "Spread (W90) ≤ 14 °F, no split between estimators, inputs inside the training range",
+    operatorGets: "Pass → advice shown; fail → \"Not yet\" with the reason, and every move on that product is held",
+    onYourPlant: "Limits set with your process engineers",
+    needFromYou: "Agreed spec limits and acceptable spread" },
+  D9: { question: "Pull an extra lab sample now?",
+    pain: "Lab samples follow a fixed round, not the moments of most doubt",
+    solve: "Asks for an extra sample exactly when the estimate is least certain",
+    dataIn: "Spread, trust state, time to the next scheduled lab",
+    algorithms: "Uncertainty trigger",
+    checks: "Raised when the spread is ≥ 90 % of its 14 °F limit (or trust is amber/red, or advice is held) and the next lab is ≥ 2 h away",
+    operatorGets: "\"Pull a T98 sample now\", with the reason; the result re-anchors the estimate",
+    onYourPlant: "Wired to your LIMS sample request",
+    needFromYou: "LIMS schedule and sampling procedure" },
+  D3: { question: "Which set points, together, for the new crude?",
+    pain: "A new feed needs several set points moved together; consoles move one at a time, by trial",
+    solve: "A recipe of several set points checked against limits — held back while D2 says the estimate is too uncertain",
+    dataIn: "Everything D1 uses, riser outlet temperature, the per-crude response models; asked only within 12 h of a confirmed switch",
+    algorithms: "Multi-lever recipe search (riser outlet temperature, LCO and HN T98 set points) → plausibility check of the predicted effects → yield ripple",
+    checks: "Released only if D2 passes and the predicted effects are physically plausible; otherwise held with the reason",
+    operatorGets: "A recipe of moves to make together, with the yield effect",
+    onYourPlant: "Per-crude response models refitted from your data and step tests",
+    needFromYou: "Per-crude operating history, SOP limits for each lever" },
+  D7: { question: "Move the overhead temperature target?",
+    pain: "Condenser fouling and C5 lost to LPG are found late, after the limit is hit or the next lab",
+    solve: "Flags cooling-water demand above expected for the load and proposes the overhead move; cooling water stays at fixed duty",
+    dataIn: "Overhead temperature, condenser cooling-water flow against load, condenser duty; stabiliser C5 recovery and LPG / naphtha split (lab)",
+    algorithms: "Drift watch (cooling water above expected for the load = fouling signal) → response model → optimiser: smallest overhead move that stays inside the fixed cooling duty and the C5 band with ≥ 95 % chance",
+    checks: "≤ 3 °F per step; cooling water is never adjusted",
+    operatorGets: "Overhead target from → to, with its effect on C5 recovery and the split",
+    onYourPlant: "Fitted to your condenser and stabiliser history",
+    needFromYou: "Gas-plant and stabiliser tags, LPG / C5 lab results" },
+};
+
+export const SCRIPTED_LINE =
+  "In this demo the size of the move is scripted on real simulator inputs; on your plant it comes from the models in 2, refitted as in 5.";
+export const WATCH_LINE = "Watch only — no move is proposed.";
+export const FP2_FOOTER =
+  "What we need from your plant: 1-minute historian tags · LIMS lab results · crude assays and schedule · SOP limits for each lever · the decision log. Nothing is written to the control system.";
+
+/** D4 has no single unit page; it is shown in step ② of every unit page, so its link opens U4. */
+export const decisionHref = (d: DecisionInfo): string => d.unitHref ?? U("unit_4_fractionator");
+
 export const UC_TITLE: Record<string, string> = Object.fromEntries(USE_CASES.map((u) => [u.id, u.iocl]));
 export const PART_NAME: Record<PartId, string> = Object.fromEntries(PARTS.map((p) => [p.id, p.name])) as Record<PartId, string>;
 
