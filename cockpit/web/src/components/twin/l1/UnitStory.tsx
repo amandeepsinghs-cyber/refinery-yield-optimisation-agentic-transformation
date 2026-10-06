@@ -51,7 +51,7 @@ const KIND: Record<string, string> = { agent: "Rule-based", ml: "ML", check: "Ch
 function plainRegime(reason: string): string {
   const m = reason.match(/Regime (\w+) \((.*)\) detected with novelty [\d.]+: physics-anchored members carry (\d+) %/);
   if (!m) return reason;
-  const label = m[2].replace(/\s*\((.*?)(-type)?\)\s*$/, " · $1").replace(/-/g, " ");
+  const label = m[2].replace(/\s*\((.*?)(-type)?\)\s*$/, (_s: string, g1: string) => ` · ${g1}`).replace(/-/g, " ");
   return `Crude ${m[1]} (${label}) recognised. The physics-based models carry ${m[3]} % of the weight while the data-driven ones catch up.`;
 }
 

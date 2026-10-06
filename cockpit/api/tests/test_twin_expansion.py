@@ -213,11 +213,11 @@ def test_sdd_nfr_11_zero_financial_terms_in_twin_and_ui(client, run_id):
     assert m2 is None, f"Forbidden financial term '{m2.group(0)}' in /api/twin/use-case/UC-01 response"
 
     web_root = pathlib.Path(__file__).resolve().parents[2] / "web" / "src"
-    target_files = [
-        web_root / "components" / "twin" / "RefineryTwinSchematic.tsx",
-        web_root / "components" / "views" / "UseCaseCatalogueView.tsx",
-        web_root / "app" / "decision" / "use-cases" / "page.tsx",
-    ]
+    # 6 Oct 2026: the legacy screens this test used to scan were removed; scan every page and screen component instead.
+    target_files = sorted(
+        p for d in ("app", "components/how", "components/twin", "components/record") for p in (web_root / d).rglob("*.tsx")
+    )
+    assert target_files, f"No frontend files found under {web_root}"
     for fp in target_files:
         assert fp.exists(), f"Missing expected frontend file: {fp}"
         txt = fp.read_text()

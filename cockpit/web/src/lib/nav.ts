@@ -1,22 +1,12 @@
 import type { ComponentType, SVGProps } from "react";
 import {
   IconAudit,
-  IconFan,
-  IconFlask,
   IconGauge,
-  IconGear,
   IconLines,
-  IconListCheck,
-  IconPulse,
-  IconReplay,
-  IconSliders,
-  IconTable,
-  IconTarget,
-  IconBell,
   IconBook,
 } from "@/components/ui/icons";
 
-export type DashboardId = "twin" | "decision" | "technical" | "modelling" | "knowledge";
+export type DashboardId = "twin";
 
 export interface NavPage {
   href: string;
@@ -54,52 +44,10 @@ export const TWIN_DASHBOARD: Dashboard = {
 };
 
 /**
- * Navigation shows the FCC Complex Twin only (SDD-L1-05, D3: Phase-13 catalogue and the Decision / Technical /
- * Modelling / Knowledge dashboards are retired from nav once L0/L1 ship). Their routes still resolve — see
- * LEGACY_DASHBOARDS — so deep links from Gemini citations and the audit log keep working.
+ * Navigation shows the FCC Complex Twin only. The legacy Decision / Technical / Modelling dashboards and Settings were
+ * removed on 6 Oct 2026 (not used in the demo). /knowledge stays as a route because Gemini's source links open it.
  */
 export const DASHBOARDS: Dashboard[] = [TWIN_DASHBOARD];
-
-export const LEGACY_DASHBOARDS: Dashboard[] = [
-  {
-    id: "decision",
-    label: "Decision (legacy)",
-    href: "/decision/overview",
-    pages: [
-      { href: "/decision/overview", label: "Overview & Twin", Icon: IconGauge },
-      { href: "/decision/decisions", label: "Decisions", Icon: IconListCheck },
-      { href: "/decision/quality", label: "Quality", Icon: IconFan },
-    ],
-  },
-  {
-    id: "technical",
-    label: "Technical (legacy)",
-    href: "/technical/timeseries",
-    pages: [
-      { href: "/technical/timeseries", label: "Time-Series Explorer", Icon: IconLines },
-      { href: "/technical/replay", label: "Replay", Icon: IconReplay },
-      { href: "/technical/data-quality", label: "Data quality", Icon: IconPulse, planned: true },
-      { href: "/technical/labs", label: "Labs", Icon: IconFlask, planned: true },
-      { href: "/technical/whatif", label: "What-if", Icon: IconSliders, planned: true },
-    ],
-  },
-  {
-    id: "modelling",
-    label: "Modelling (legacy)",
-    href: "/modelling/models",
-    pages: [
-      { href: "/modelling/models", label: "Model comparison", Icon: IconTable },
-      { href: "/modelling/confidence", label: "Confidence", Icon: IconTarget },
-      { href: "/modelling/calibration", label: "Calibration", Icon: IconBell },
-    ],
-  },
-  {
-    id: "knowledge",
-    label: "Knowledge (legacy)",
-    href: "/knowledge",
-    pages: [{ href: "/knowledge", label: "Library", Icon: IconBook }],
-  },
-];
 
 /** Rail highlight: exact match, unit workbench prefix, plus /knowledge/{docId} under the Library entry. */
 export function isRailActive(pageHref: string, pathname: string): boolean {
@@ -110,10 +58,9 @@ export function isRailActive(pageHref: string, pathname: string): boolean {
 
 export const SHARED_PAGES: NavPage[] = [
   { href: "/audit", label: "Decision record", Icon: IconAudit },
-  { href: "/settings", label: "Settings", Icon: IconGear, planned: true },
 ];
 
 export function dashboardFor(pathname: string): Dashboard {
   const seg = pathname.split("/")[1] ?? "";
-  return DASHBOARDS.find((d) => d.id === seg) ?? LEGACY_DASHBOARDS.find((d) => d.id === seg) ?? TWIN_DASHBOARD;
+  return DASHBOARDS.find((d) => d.id === seg) ?? TWIN_DASHBOARD;
 }
