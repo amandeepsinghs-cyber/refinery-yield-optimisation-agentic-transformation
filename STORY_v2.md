@@ -55,7 +55,7 @@ Today, FCC operators fly blind for 4–9 hours between laboratory distillation a
 
 | Phase | Screen / Route | What to Show | Executive Talk Track |
 |---|---|---|---|
-| **1. Overview (60 sec)** | `/platform` | Six-layer architecture and use-case alignment cards. | *"Behind this screen: AI and physics — a crude classifier, a four-model soft sensor including a PINN, anomaly detection on every unit and an optimiser — shared across your use cases, on one source of truth. They advise; your operators decide. Zero control system actuation."* |
+| **1. Overview (60 sec)** | `/platform` | Six-layer architecture and use-case alignment cards. | *"Behind this screen: AI and physics — a feed-quality model, a four-model soft sensor including a PINN, anomaly detection on every unit and an optimiser — shared across your use cases, on one source of truth. They advise; your operators decide. Zero control system actuation."* |
 | **2. Refinery Top View** | `/twin` (`random_s107`, $t=600$) | 6 units on the flowsheet; one glowing yellow with **"Decide"**; the riser on **"Watch"**. | *"A crude switch occurred at 07:25. The plant responded hours before the lab assay arrived. The fractionator is off plan, while the riser needs no intervention. Each unit sees only what matters to it."* |
 | **3. Unit Deep Dive** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=600$) | Live column drawing $\to$ Model ensemble bell curves $\to$ Decision D1 (*Raise LCO cut point $+2.0^\circ\text{F}$, 752.8 → 754.8, toward the 755.3 °F target*). | *"Here is a run the model never saw. The three blended models agree within $14^\circ\text{F}$ (the linear model is shown for reference), and the chance on spec is above 99 %. It advises the move that brings the cut to its target, inside the 5-degree SOP step."* |
 | **4. The Honesty Moment** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=720$) | Decision status changes to **"Not yet"** with an amber alert. | *"Two hours later, process uncertainty widens. Rather than averaging 4 divergent guesses, the system withholds advice and prompts the board operator to request a physical lab draw."* |
@@ -87,7 +87,7 @@ Today, FCC operators fly blind for 4–9 hours between laboratory distillation a
    - **Q1: What is the quality now?** A soft sensor, trained on past lab results lined up with the process readings at the minute each sample was drawn.
    - **Q2: If I move a setting, what changes?** A response model, from physics, from moves operators already made, and from small planned step tests.
    - **Q3: Which move is best?** A search that uses Q1 and Q2 to pick the move that brings the quality to its target (LCO 755.3, HN 530.3 °F), never below 95 % chance on spec, inside every limit.
-4. **New crude.** It starts from its nearest crude family, leans on physics, moves smaller (or says "Not yet"), and learns that crude within a few lab cycles.
+4. **New feed.** The feed model flags the change and holds advice until the new feed has settled; for a feed outside the training data (novel) it leans on physics, moves smaller (or says "Not yet"), and learns that feed within a few lab cycles.
 5. **Proof.** Every move goes round **predict, decide, measure, learn**. On IOCL's plant, a pilot proves each lever before its advice goes live.
 6. **On IOCL's plant (§11).** Trained on their history before day one; shadow mode; advise on proven levers first; step tests for the rest; benefit measured in plant terms from about week 6.
 7. **Today's build.** The method is real and runs on simulated data. Some move sizes are scripted and labelled. A pilot on IOCL's plant replaces the simulator with their historian and lab data.
@@ -236,13 +236,13 @@ To understand why furnace preheat is the master thermal lever for the entire FCC
    * **Case 2: Switching to a Light Crude (Low Coke — The Run `s107` Demo Scenario):**
      * Light crude cracks easily and produces very little coke.
      * With insufficient fuel in the regenerator, bed temperatures drop below 1250 °F. Carbon monoxide (CO) stops burning in the bed and ignites in the cyclones (the dreaded **afterburn alarm**).
-     * *The Cockpit Move (D6):* The cockpit identifies the light crude and commands **preheat trimming** so catalyst-to-oil circulation stays in the sweet spot, preventing afterburn.
+     * *The Cockpit Move (D6):* The feed model estimates a lighter feed and the cockpit advises **preheat trimming** (catalyst-to-oil itself is never advised; it follows) so catalyst-to-oil circulation stays in the sweet spot, preventing afterburn.
 
 6. **How It is Done Today vs. How the Cockpit Decides (D6):**
 
 | Dimension | How Operators Do It Today | How Our Cockpit Decides (D6) |
 |---|---|---|
-| **Trigger** | Crude changes; operators adjust preheat by **habit, tribal memory, or past shift logs**. | **Crude classifier** identifies the new crude family (e.g. R4 Light) and loads its target preheat operating window. |
+| **Trigger** | Crude changes; operators adjust preheat by **habit, tribal memory, or past shift logs**. | **Feed model** detects the feed change, estimates the new feed's API (e.g. 27.2, light) and loads the preheat window for that feed. |
 | **Observation** | Operators wait for regenerator temperatures to alarm 2–3 hours later. | **Anomaly detection** calculates the exact deviation: `dev = -1.5 °F` below the crude's optimal operating point. |
 | **Move Calculation** | Operator turns a dial by a rough 5 °F or 10 °F. | Uses the **measured causal response model**: Across 52 simulator step tests, the furnace outlet follows setpoint **1.0 : 1** ($R^2 = 1.0$).<br>Move size: $\text{Delta} = -\text{dev} / \text{gain} = +1.5\text{ }^\circ\text{F}$. |
 | **Safety Limits** | Subject to operator judgment. | Hardcoded to **`SOP-FURN-002`**: Capped at maximum 5.0 °F per step, enforced 20-minute thermal settling time, staying strictly within licensor nozzle limits. |
@@ -316,7 +316,7 @@ flowchart LR
    - Hybrid Physics-Delta (first-principles physics plus ML residual correction);
    - Physics-Informed Neural Network (PINN; respects conservation laws).
    *Their disagreement is the primary safety alarm.*
-6. **Weigh per crude family:** Dynamic Bayesian model averaging re-weights the models based on crude type.
+6. **Weigh per crude family:** Model weights come from each model's accuracy on recent lab results (else held-out runs), never from the crude; the feed estimate decides only when to reset the lab bias.
 7. **Correct live:** Every new lab sample applies a rate-limited bias update to eliminate drift.
 
 ---
@@ -403,7 +403,7 @@ We replayed the proposed recipe (ROT $+3.5^\circ\text{F}$, LCO cut $-1.0^\circ\t
 | Cut-Point Gain ($1:1$) | **Physics Assumption** | Direct regulatory control assumption; validated by standard distillation practice. |
 | Preheat Gain (D6) | **Measured** | 52 step-test runs proved preheat gain at $1.007^\circ\text{F} / ^\circ\text{F}$ ($R^2 = 1.0$). |
 | Riser & Regenerator Gains | **Scripted on Screen** | Inputs are real simulator data; response sizes are scripted to demonstrate UI flow until site step tests calibrate them. |
-| Crude Classifier | **Scripted (Follows Assay)** | Accurately identifies 8 of 15 held-out switches ($53\%$), so assay is used as primary anchor. |
+| Feed model | **Interactive (simulated data)** | Held-out feed API error 0.20 (R² 0.98); 15 of 15 held-out feed changes caught, 2 false alarms. Crude family is context only. |
 | Human in the Loop & Audit Log | **Real** | Accept/Hold/Decline workflow with immutable audit log; zero DCS writeback. |
 | MeitY Edge Gateway | **Design** | Architectural design complete; demo resides in `us-central1`. |
 
@@ -479,7 +479,7 @@ This build maps directly to the refinery use cases in `refinery_optimisation_use
 | **Scripted** | **UC-04** (Row #4) | **Reactor regeneration** (regeneration-cycle tracking & root-cause analysis) | **D5**<br>`Fair` (Air flow) | Detects cyclone afterburn $\Delta T$ drift; isolates air vs. riser severity causes; proposes air trim before high-temp alarms trip. |
 | **Scripted** | **UC-02** (Row #2) | **Catalytic reformer** (stabiliser-tower overhead to maximise C5 recovery) | **D7**<br>`SP_T_overhead` | Re-anchored to the FCC Gas Plant/Stabilizer: advises overhead temperature target against C5 loss to LPG. |
 | **Scripted** | **UC-03** (Row #3) | **LPG balance & distillation split** (C4/C5 split optimization) | **D7**<br>`SP_T_overhead` | Optimizes LPG vs. light naphtha recovery through the overhead target, showing predicted yield shifts before acting. |
-| **Scripted** | **Supports UC-11 / UC-01** (not a separate IOCL row) | **Crude-switch check for the soft sensor** | **D4**<br>Crude Classifier | Detects crude slate switch from plant thermal/yield response; confirms switch 12 min after completion and re-weights models. |
+| **Scripted** | **Supports UC-11 / UC-01** (not a separate IOCL row) | **Crude-switch check for the soft sensor** | **D4**<br>Feed model | Detects the feed change from the unit's response, estimates the new feed's API and holds advice until it has settled; then the soft sensor resets its lab bias. |
 | **Partly** | **UC-10** (Row #10) | **Crude-unit furnaces** (coke build-up & hydraulic constraint prediction) | **D6** | Watches furnace outlet temperature drift against fired duty baseline; flags anomalies. *(No physical coking growth kinetics model).* |
 | **Partly** | **UC-07** (Row #7) | **Heat exchangers / preheat trains** (UA-based fouling health signal) | **D7** | Flags abnormal cooling-water demand as a condenser fouling indicator. *(No automated cleaning schedule planner).* |
 | **Partly** | **UC-06** (Row #6) | **Multi-unit utilities** (energy management across units) | **D3, D8** | D3 coordinates multi-setpoint moves across furnace, riser, and column to minimize energy penalty. *(No standalone utility-plant dashboard).* |

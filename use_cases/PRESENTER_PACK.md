@@ -19,7 +19,7 @@
 1. **A refinery:** crude in → the crude unit splits it by boiling range → the heavy gas oil nobody can sell goes to the **FCC**, which cracks it into petrol, diesel and LPG.
 2. **The catch:** the crude changes every day or two, the FCC's six units are one connected loop, and product quality comes back from the lab only every 8 hours.
 3. **So follow the oil:** feed arrives → furnace → riser → regenerator → fractionator → gas plant & stabiliser. At each stop there's one decision, and each decision ripples into the next unit hours later.
-4. **What we built:** one digital twin of the six units, one shared data foundation, and shared AI and physics models (crude classifier, four-model soft sensor incl. PINN, anomaly detection, optimiser) behind nine decisions. The fractionator decision (your rows #1 and #11) runs on real models; it moves before the lab would and says **"Not yet"** when it isn't sure.
+4. **What we built:** one digital twin of the six units, one shared data foundation, and shared AI and physics models (feed-quality model, four-model soft sensor incl. PINN, anomaly detection, optimiser) behind nine decisions. The fractionator decision (your rows #1 and #11) runs on real models; it moves before the lab would and says **"Not yet"** when it isn't sure.
 5. **The ask:** a pilot on one FCC with read-only historian + lab data. We prove each lever on your plant before any advice goes live.
 
 ---
@@ -111,9 +111,9 @@ flowchart LR
 - **Say:** *"It's ten in the morning. A new crude arrived at dawn. Here's the whole FCC: four units need a decision, one only needs watching. Let's follow the oil and take them in order."*
 
 ### Stop 1 · The feed arrives — "Which feed is this, and has the switch finished?" (D4 · 🟠 scripted)
-- **Screen:** **U4 · Fractionator** → step **②** (crude block + switch walkthrough). *(The "Which crude is running" block also appears in step ② of other unit pages — check on the day; the full timeline is on U4.)*
-- **Point at:** crude family and confidence; **How it knows** (lab assay vs the unit's behaviour — riser ΔT, conversion, coke, regenerator temperature); walkthrough **06:25** arriving → **06:25–07:25** behaviour shifts → **07:37** named after a 15-min hold → models re-weight; the **scripted** chip.
-- **Say:** *"Everything starts with the feed. The schedule says what's coming, not when it really arrives or how it behaves. The name follows your lab assay; the unit's behaviour confirms it, and it has to hold fifteen minutes so noise doesn't flip it. From here, every model and every move is for the new feed."*
+- **Screen:** **U4 · Fractionator** → step **②** ("Feed arriving" panel + feed-change walkthrough). *(The panel also appears in step ② of the other unit pages; the full walkthrough is on U4.)*
+- **Point at:** rows ①–④ (feed changing? · estimated feed API · novelty · feed class); the crude family is one context line; **How it knows** (API estimated from the unit's response; held-out error 0.2 API; 15 of 15 held-out feed changes caught, 2 false alarms); walkthrough **06:25** slate changes → **06:25–07:25** behaviour shifts → **07:07** feed change detected, advice held → **08:47** new feed settled at API 27.2, lab bias reset, advice resumes. Optional: clock to **07:20** to show D4 and the holds.
+- **Say:** *"Everything starts with the feed. The schedule says what's coming, not when it really arrives or how it will crack. Your FCC sees gas oil, not crude, so we estimate the feed's quality from how the unit responds and hold advice until the new feed has settled. From here, every move says which feed it was sized for — and catalyst circulation follows from the heat balance; we never advise it."*
 - **IOCL:** Supports #1 and #11 (the soft sensor resets its lab bias for the new feed). Feedstock evaluation itself is not on IOCL's list — do not present it as a use case.
 
 ### Stop 2 · Furnace — "What preheat for this feed?" (D6 · 🟠 gain measured, chance scripted)
@@ -230,7 +230,7 @@ flowchart LR
 | Training labels | Simulator values sampled every 30 min (the simulated lab record is too thin to train on) | On site: trains on your lab results |
 | Trust gate | Spread (W90) > 14 °F → "Not yet" | Shown |
 | Preheat gain (D6) | 1.007 °F/°F, 52 step tests, held-out R² 1.0 | Measured (chance band scripted) |
-| Crude classifier | 8 of 15 held-out switches | Not shown as the source; the name follows the assay (labelled). Only if pressed |
+| Feed model | API error 0.2 (held-out); 15 of 15 held-out feed changes caught, 2 false alarms | Shown on the "How it knows" panel. Simulator has API only: CCR, K-factor, metals need site lab data |
 | Recipe check | Conversion +0.44 % vs +0.42 % predicted | Partly confirmed |
 
 ---
@@ -262,7 +262,7 @@ Say which kind each answer is: **Shown** (real models on simulated data) · **Sc
 - "MeitY-certified", "real IOCL data", "agents act on the plant", "deployed as separate services".
 - Cooling-water flow, feed rate or catalyst addition as a recommendation. Catalyst-to-oil or excess O₂ as set points (they are effects of preheat and regenerator air).
 - "We built a reformer / LPG splitter / CDU model."
-- The crude classifier's 8/15 figure unless pressed.
+- Crude identification as the purpose: the crude family is context only.
 
 ---
 

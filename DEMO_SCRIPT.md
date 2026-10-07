@@ -33,12 +33,12 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
 
 ## Part 1 — The story on one page
 
-**Line for the room:** *"What you see is one screen. Behind it: AI and physics — a crude classifier, a four-model soft sensor including a physics-informed neural network, anomaly detection on every unit and an optimiser — sharing one source of truth across your use cases. They advise; your operators decide."*
+**Line for the room:** *"What you see is one screen. Behind it: AI and physics — a feed-quality model, a four-model soft sensor including a physics-informed neural network, anomaly detection on every unit and an optimiser — sharing one source of truth across your use cases. They advise; your operators decide."*
 
 | # | Existing problem (today) | How the tech solves it | Action in the cockpit | How it is supported | Result |
 |:-:|---|---|---|---|---|
 | **P1** | Product quality is known only every 8 h from the lab, so the unit runs blind in between | A soft sensor, a committee of 4 models (Bayesian ridge, Gaussian process, hybrid physics, PINN), estimates LCO and heavy-naphtha T98 every minute, with a spread | **D1** move the cut point now or wait for the lab; **D9** pull an extra sample | Estimate ± spread, chance on spec, 7–8 trust checks, held-out runs, lab points on the chart | Quality is known every minute, not every 8 h; the cut point moves before the lab result |
-| **P2** | Crude changes every 12–48 h; yesterday's models drift and the right set points for the new crude are unknown | Crude classifier names the crude (lab assay + the unit's behaviour); the soft sensor resets its lab bias and checks it has labels for that crude; recipe and preheat target follow that crude | **D4** which crude, is the switch done; **D3** recipe for the new crude; **D6** feed preheat for the crude | Crude bars, "how it knows", switch walkthrough, bias reset | Settings follow the crude, not yesterday's crude *(crude name and D3/D6 outcomes scripted, labelled)* |
+| **P2** | Crude changes every 12–48 h; yesterday's models drift and the right set points for the new crude are unknown | The feed model detects the feed change and estimates the new feed's API gravity from the unit's response (crude family is context only); the soft sensor resets its lab bias; every decision is sized "for this feed" and held while it is changing or novel | **D4** is the feed changing, has it settled; **D3** recipe for this feed; **D6** feed preheat for this feed | "Feed arriving" panel ①–④, "how it knows", feed-change walkthrough, bias reset | Settings follow the feed, not yesterday's feed *(D3/D6 outcomes scripted, labelled)* |
 | **P3** | A move in one unit shows up hours later in another; unit-by-unit optimisation misses it | Consequence check: 19 rules over the catalyst, heat and hydrocarbon loops; every move shows what it does to the next units | **D5** regenerator air, **D7** overhead temperature target, **D8** what first / what breaks downstream | "If nothing is done" line with time to consequence; "Next units" line under each move | The knock-on effect is on the card before the move is made |
 | **P4** | An AI that always answers is dangerous | Trust checks before any advice; when the models disagree beyond 14 °F the cockpit says **"Not yet"** and asks for a lab sample | **D2** can the estimate be trusted now | Each check with value, limit, pass / fail; the decision record keeps every time advice was held back | It refuses rather than guesses; operators see why |
 
@@ -102,22 +102,22 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
   - ☐ The four-step flow ①–④ sits under the drawing.
 - **Say:** *"The crude switched. The plant tells us before the lab does. Each unit gets its own move, and the riser is only watched, because nothing needs moving there yet."*
 
-### Scene B — The crude switch: "Which crude, and is the switch done?" (P2 · D4) · Fractionator step ② · `random_s107` · 10:00
-- **Problem:** the new crude arrives. Models and set points are still tuned for the old one.
-- **How the tech solves it:** the crude block, with four crude families and how sure it is. "How it knows": the lab assay versus the unit's behaviour (riser ΔT, conversion, coke, regenerator T, column ΔT). Then the **crude-switch walkthrough**:
-  - **06:25** the new crude starts arriving;
+### Scene B — The feed changes: "Is the feed changing, and what is it now?" (P2 · D4) · Fractionator step ② · `random_s107` · 10:00
+- **Problem:** the FCC is fed heavy gas oil (VGO), not crude. When the crude slate changes, the VGO changes with it, and its quality (API gravity, carbon, crackability) sets coke make, regenerator temperature and cut points. Models and set points are still tuned for the old feed.
+- **How the tech solves it:** the **Feed arriving** panel: ① is the feed changing and how far through; ② the estimated feed API with its band; ③ novelty (is this feed outside the training data); ④ the feed class derived from the API. The crude family is one context line. "How it knows": the API is estimated from the unit's response (coke per feed, riser ΔT, fuel per feed, regenerator T, conversion, tray ΔT); held-out error 0.2 API. Then the **feed-change walkthrough**:
+  - **06:25** the crude slate changes on the schedule (R3 → R4);
   - **06:25–07:25** the unit's behaviour shifts;
-  - **07:37** the crude is named, after a 15-min hold;
-  - then the soft sensor resets its lab bias (model weights stay accuracy-based; they are not set by the crude);
-  - then the advice changes for this crude.
+  - **07:07** feed change detected; riser, preheat, air, cut-point and overhead advice is held;
+  - **08:47** new feed settled at API 27.2 (light, easy-cracking); the soft sensor resets its lab bias (model weights stay accuracy-based) and advice resumes;
+  - then every decision says which feed it was sized for ("For this feed …"); catalyst circulation follows from the heat balance and is not advised.
 - **Action:** open the Fractionator → scroll to ②.
-- **How it is supported:** "they agree" (assay R4 = behaviour R4); the fingerprint values; the **scripted** chip on the classifier and on the walkthrough.
-- **Result:** the switch is named 12 min after the blend settles, and every model and move is for the new crude.
+- **How it is supported:** held-out results on the "How it knows" panel (API error 0.2, 15 of 15 held-out feed changes caught, 2 false alarms). To show the hold, move the clock to **07:20**: D4 appears ("feed changing, 55 % through") and the other decisions say "Not yet — the feed is still changing".
+- **Result:** advice is held while the feed is changing and resumes for the new feed, sized for its estimated quality.
 - **Test:**
-  - ☐ Classifier header shows **scripted**.
-  - ☐ The walkthrough shows 06:25 / 06:25–07:25 / 07:37.
-  - ☐ The text reads "12 min after the blend settled".
-- **Say:** *"The name follows your lab assay; the unit's behaviour confirms it. It must hold for fifteen minutes so noise doesn't flip it."* (If pressed on accuracy: `PROBING_QUESTIONS.md` B2.)
+  - ☐ The panel shows ①–④ and the crude family as a context line only.
+  - ☐ The walkthrough shows 06:25 / 06:25–07:25 / 07:07 / 08:47.
+  - ☐ At 07:20, D4 is shown and D1/D5/D6/D7 are held.
+- **Say:** *"Your FCC doesn't see crude; it sees gas oil. What matters is how that feed will crack, so we estimate its quality from how the unit responds and hold advice until the new feed has settled."* (If pressed: `PROBING_QUESTIONS.md` B1–B4.)
 
 ### Scene C — Move now or wait for the lab? (P1 · D1, live) · Fractionator step ③ · `random_s107` · 10:00
 - **Problem:** heavy-naphtha T98 is drifting toward spec. The next lab is at 14:00, 4 h away.
@@ -152,8 +152,8 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
   - ☐ Step ④ shows the goal, the limits, the model, "Trained on 40 runs, checked on 14 held-out runs" and the result.
 - **Say:** *"This run was never used for training. It moves the cut to its target, never below ninety-five percent chance on spec and never more than five degrees in one step, and you can see which limit set it."*
 
-### Scene E — Recipe for the new crude, and how we know it works (P2 + P3 · D3, scripted) · Fractionator steps ③–④ · `random_s144` · 10:00
-- **Problem:** a new crude needs a new riser outlet temperature. The recipe sets it (scripted outcome); the cut points stay with D1, so there is one piece of advice per set point.
+### Scene E — Recipe for the new feed, and how we know it works (P2 + P3 · D3, scripted) · Fractionator steps ③–④ · `random_s144` · 10:00
+- **Problem:** a new feed needs a new riser outlet temperature. The recipe sets it (scripted outcome); the cut points stay with D1, so there is one piece of advice per set point.
 - **How the tech solves it:** the real recipe engine (a multi-set-point search) is withheld on this data, so the move is a scripted outcome: **riser outlet temperature +3.5 °F**, from a fixed response gain (conversion +0.12 % per °F), inside the 5 °F SOP step. The cut points are not part of the recipe; D1 advises them (LCO +2.0 °F to its 755.3 °F target at this minute).
 - **Action:** select the D3 tab → note the **scripted outcome** tag → scroll to ④ → **"How do we know the move works?"**.
 - **How it is supported:**
@@ -161,7 +161,7 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
   - **Evidence:** the recipe fed back through the simulator, the same run replayed with and without it. Status: **partly confirmed**. Conversion +0.44 % after 1 h vs +0.42 % predicted (inside band). Cut points: rose with the controllers in manual; back to within 0.2 °F in auto. The cut-point trims tested then were dropped from the recipe. **Say:** "The conversion prediction held. The move stays labelled scripted until a plant step test confirms the gain — that is the point of measuring."
   - Lever test moves measured in the data.
   - The **pilot line**.
-- **Result:** one riser move for the new crude, consistent with the D1 cut-point advice, and an honest path to proving it.
+- **Result:** one riser move for the new feed, consistent with the D1 cut-point advice, and an honest path to proving it.
 - **Test:**
   - ☐ D3 shows one move (riser outlet temperature +3.5 °F), "cut points advised separately (D1)" and the scripted tag.
   - ☐ The proof loop is visible with four chips.
@@ -192,7 +192,7 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
 - **How the tech solves it:** **Raise feed preheat set point +1.5 °F (616.0 → 617.5)**, inside the feed-nozzle limit.
 - **Action:** Scenario ▾ → `random_s107`, 10:00 → Furnace. Read ③, then ④ including the proof loop.
 - **How it is supported:**
-  - Chance at this crude's target **31 % → 96 %**; 4 of 4 checks pass.
+  - Chance at this feed's target **31 % → 96 %**; 4 of 4 checks pass.
   - **The gain is measured:** 52 simulator step tests show the outlet follows the set point 1 : 1 and lower preheat raises catalyst circulation every time. The chance band is still scripted.
   - "If nothing is done": riser inlet enthalpy falls; catalyst circulation rises in about 170 min; afterburn margin narrows.
   - The model text claims catalyst-to-oil only. Conversion and a cooler regenerator are stated as plant practice.

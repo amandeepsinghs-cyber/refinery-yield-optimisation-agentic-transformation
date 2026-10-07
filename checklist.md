@@ -15,7 +15,7 @@ Owner, 7 Oct 2026, 04:17–05:40: the FCC sees heavy gas oil, so a crude-name cl
 - [x] R-1c API: feed-API estimate with held-out error; change detection replaces the 12-min scripted lag; novelty cap removed; derived class; `feed` block; `feed_used` + hold on D1/D3/D5/D6/D7; D4 wording.
 - [x] R-1d Web: "Feed arriving" panel; "For this feed …" line on each decision; catalyst-to-oil as a result on U2/U3.
 - [x] R-1e Gemini guide and guardrails (no crude identification as purpose; no catalyst-flow advice).
-- [ ] R-1f Pitch docs (DEMO_SCRIPT Scene B, PRESENTER_PACK stop 1, PROBING_QUESTIONS incl. two new questions, STORY_v2, API_CONTRACT).
+- [x] R-1f Pitch docs (DEMO_SCRIPT Scene B, PRESENTER_PACK stop 1, PROBING_QUESTIONS incl. two new questions, STORY_v2, API_CONTRACT).
 - [ ] R-1g Tests pass; deployed v0.5.6. **Data check:** `/api/decisions` on `random_s107` 10:00 shows the feed changing with progress from detection (not the scripted lag); on `random_s144` 10:00 estimated API is near 23.3; novelty above 0.4 is possible.
 
 ---

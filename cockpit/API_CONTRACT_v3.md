@@ -31,7 +31,9 @@ Regimes: `R1..R4` from `app/regimes.py` (API bands, labels). Train runs: seed < 
              {"crude_id":2,"regime_id":"R2","t_start_min":427,"t_end_min":1140,"transition_start_min":427,"transition_end_min":487}],
  "detected_at_min":505,"detection_delay_min":18}
 ```
-`declared_vs_detected ∈ {match, lagging, mismatch}`. `GET /api/regime/timeseries?run_id&step=5` → `{"time_min":[],"regime_id":[],"novelty":[],"declared_api":[],"p_regime":{"R1":[],...}}`.
+`declared_vs_detected ∈ {match, lagging, mismatch}`.
+
+**Feed block (R-1c, DECISIONS S-8).** The response also carries `crude_family_is_context: true` and `feed`: `{time_min, state: "changing"|"settled", flagged_at_min, settled_at_min, last_change: {flagged_at_min, from_api, settled_at_min, to_api}, pct_through, expected_finish_min, api_est, api_band, api_declared, novelty, novel, feed_class, feed_class_label, crude_family_context, hold, hold_reason: null|"feed_changing"|"feed_novel", model: {what, train, heldout: {mae_api, p90_abs_err_api, r2}, detector_heldout}}`. In scripted mode `detected_at_min` = `feed.last_change.settled_at_min`. `p_regime` is kept for compatibility; the screens do not show it. Decisions D1/D3/D5/D6/D7 carry `feed_used` ("For this feed …") and are `withheld` with `withheld_reason` `feed_changing` or `feed_novel` while `feed.hold` is true. `GET /api/regime/timeseries?run_id&step=5` → `{"time_min":[],"regime_id":[],"novelty":[],"declared_api":[],"p_regime":{"R1":[],...}}`.
 
 ## 2. `GET /api/adaptation?run_id&time_min&property=LCO_T98_F` — E2
 
@@ -220,7 +222,7 @@ Grid, axes and borders may be grey; data traces may not.
 | Field | Values / rule |
 |---|---|
 | `id` | `{type}-{key}-{run_id}-{onset:04d}`; one D9 per run merges LCO + HN (`D9-lab-{run}-{onset}`, with `related[]`) |
-| `type` | `D1` cut point now or wait · `D2` trust the estimate · `D3` coordinated recipe · `D4` which crude · `D5` regenerator air vs severity · `D6` furnace preheat / excess O₂ · `D7` overhead condenser and stabiliser · `D8` what first, downstream · `D9` extra lab sample |
+| `type` | `D1` cut point now or wait · `D2` trust the estimate · `D3` coordinated recipe · `D4` is the feed changing (feed model) · `D5` regenerator air vs severity · `D6` furnace preheat / excess O₂ · `D7` overhead condenser and stabiliser · `D8` what first, downstream · `D9` extra lab sample |
 | `status` | `open` · `watch` · `withheld` (UI label "Not yet") · `accepted` · `held` · `declined` · `expired` |
 | `withheld_reason` | `wide` · `bimodal` · `spread_gate` · `novelty` · `insufficient_data` · `infeasible` · `no_gain` · `implausible` · `transition` · `trust_red`; `withheld_text` is the plain sentence |
 | `proposed` | `moves[]` (real set-point tags, from → to, unit); D9 carries `sample`; D4 carries `confirm`; always an `alternative` |
