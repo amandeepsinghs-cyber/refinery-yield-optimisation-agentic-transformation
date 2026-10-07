@@ -85,7 +85,7 @@ PAGE_GUIDES: dict[str, str] = {
         "U5 Gas plant, U6 Stabiliser.\n"
         "- Step ① Data in / out: the tags this unit reads and the products it sends on.\n"
         "- Step ② What we observe: anomaly detection (measured vs expected for this feed, ±3σ band, CUSUM), the feed model "
-        "(① is the feed changing and how far through, ② estimated feed API with its band, ③ novelty: is this feed outside the training data, ④ feed class derived from the API; the crude family is a context line only), on U2/U3 catalyst-to-oil shown as a result (never advised), and on U4 the four-model soft sensor with its bell curves "
+        "(the Feed arriving panel: a headline with the feed now — class, estimated API ± band, schedule API, steady since when, and whether advice for this feed is active — or, during a change, how far through and that advice is paused; then the chance of each feed class (heavy / intermediate / light) from the API estimate and its band; then a familiarity gauge from familiar to unfamiliar with a pause-advice line, familiar meaning the estimated API is inside the trained range; the crude family is a context line only), on U2/U3 catalyst-to-oil shown as a result (never advised), and on U4 the four-model soft sensor with its bell curves "
         "and the estimate between lab samples.\n"
         "- Step ③ Decision and lever: the move (from → to), chance on spec before → after, and Accept / Hold / Decline. "
         "'Try another move' is a slider over set-point moves. On the cut-point decisions the chart has one solid bell (the product "

@@ -32,10 +32,10 @@ Advice is held while the feed is changing and resumes when the new feed **really
 | Step | Do | Point at | Say |
 |---|---|---|---|
 | 1 | **Scenario** → `random_s107`, 10:00 → **FCC Complex** | **What went wrong:** new feed settled at API 27.2 (08:47) | "The feed changed. The plant tells us before the lab does." |
-| 2 | **U4 · Fractionator** → step ② | "Feed arriving" rows ①–④, **How it knows** (held-out error 0.2 API; 15/15 changes caught); walkthrough **06:25** slate R3 → R4 → **06:25–07:25** behaviour shifts → **07:07** feed change detected, advice held → **08:47** new feed settled, lab bias reset, advice resumes | "Your FCC sees gas oil, not crude. We estimate the feed's quality from how the unit responds and hold advice until the new feed has settled." |
+| 2 | **U4 · Fractionator** → step ② | "Feed arriving" headline, class bars and familiarity gauge, **How it knows** (held-out error 0.2 API; 15/15 changes caught); walkthrough **06:25** slate R3 → R4 → **06:25–07:25** behaviour shifts → **07:07** feed change detected, advice held → **08:47** new feed settled, lab bias reset, advice resumes | "Your FCC sees gas oil, not crude. We estimate the feed's quality from how the unit responds and hold advice until the new feed has settled." |
 | 3 (optional) | Clock → **07:20** | D4 "feed changing, 55 % through"; D1/D5/D6/D7 "Not yet — the feed is still changing" | "No move until the new feed has settled." |
 
-**Pass check:** panel shows ①–④ with the crude family as context only; walkthrough shows 06:25 / 06:25–07:25 / 07:07 / 08:47; at 07:20 D4 is shown and the other decisions are held.
+**Pass check:** panel shows the headline, class bars and familiarity gauge, with the crude family as context only; walkthrough shows 06:25 / 06:25–07:25 / 07:07 / 08:47; at 07:20 D4 is shown and the other decisions are held.
 
 ## 6. If asked
 - *"Why classify crude when the FCC sees VGO?"* — "We don't. The crude family is context; what drives the decisions is the feed's quality." (`PROBING_QUESTIONS.md` B2)
