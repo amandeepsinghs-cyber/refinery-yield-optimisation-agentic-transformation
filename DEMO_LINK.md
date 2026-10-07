@@ -4,8 +4,8 @@
 
 | | |
 |---|---|
-| Version | v0.5.4 (commit `e671c5b`) |
-| Cloud Run | service `fcc-cockpit`, revision `fcc-cockpit-00010-96j`, project `fcc-soft-sensor`, region `us-central1` |
+| Version | v0.5.5 (commit `0b31ede`) |
+| Cloud Run | service `fcc-cockpit`, revision `fcc-cockpit-00011-2hn`, project `fcc-soft-sensor`, region `us-central1` |
 | Access | Behind Identity-Aware Proxy: sign in with an allowed Google account |
 | Deployed | 7 Oct 2026 |
 
