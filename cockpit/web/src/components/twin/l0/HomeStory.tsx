@@ -91,7 +91,7 @@ export function DecisionFocus({ d, total, index, onStep, runId, timeMin, onActed
             <span className="hs-p-sub num">now {f1(p.mu_before)}{p.mu_after != null ? ` → ${f1(p.mu_after)}` : ""} ± {f1(p.sigma)} °F{spec != null ? ` · spec ≤ ${f1(spec)}` : ""}</span>
           </div>
           <div className="hs-pdf">
-            <GaussianPdf members={members} spec={spec != null ? { hi: spec, label: "spec" } : null} target={o.plan != null ? { value: o.plan, label: "plan" } : null}
+            <GaussianPdf members={members} spec={spec != null ? { hi: spec, label: "spec" } : null} target={p.target != null ? { value: p.target, label: "target" } : o.plan != null ? { value: o.plan, label: "set point" } : null}
               unit="°F" height={118} compact showMixture={false} showP={false} ariaLabel="now vs after the move" />
           </div>
         </div>

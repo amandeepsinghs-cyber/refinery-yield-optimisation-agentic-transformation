@@ -305,7 +305,7 @@ def workbench(unit_id: str, run_id: str, time_min: int, window_min: int = 720, s
     kpi = unit.get("kpi_vs_plan") or {}
     headline = {"label": kpi.get("label") or (_label(primary) if primary else ""), "value": kpi.get("value"),
                 "plan": kpi.get("plan"), "tol": kpi.get("tol"), "unit": kpi.get("unit") or (_unit(primary) if primary else ""),
-                "state": kpi.get("state")}
+                "state": kpi.get("state"), "plan_source": kpi.get("plan_source")}
     # Signature chart per use case (SDD-L1-04, BDD-28 "use-case entry opens the owning unit scrolled to its signature chart").
     SIGNATURE_PANEL = {"UC-03": "quality_2", "UC-04": "yield", "UC-05": "combustion", "UC-06": "mv", "UC-07": "mv",
                        "UC-08": "yield", "UC-09": "yield", "UC-10": "mv", "UC-02": "yield"}

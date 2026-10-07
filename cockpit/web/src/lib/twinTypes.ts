@@ -30,6 +30,8 @@ export interface TwinUnit {
     tol: number;
     unit: string;
     state?: "OK" | "WATCH" | "ACT";
+    /** "set point" when the reference is the controller set point; otherwise an expected value. */
+    plan_source?: string | null;
   };
   io: {
     inputs: TwinUnitIO[];

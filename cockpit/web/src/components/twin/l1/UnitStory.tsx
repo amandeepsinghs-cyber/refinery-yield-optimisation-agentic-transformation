@@ -374,7 +374,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           {k ? (
             <p className="us-kpi">{k.label} <b className="num">{fx(k.value)}</b> {k.unit}{isSuspect(data.analysis.primary_tag) ? <span className="suspect-mark" title={SUSPECT[data.analysis.primary_tag]}>under review</span> : null}
               <span className={`us-dev s-${k.state} num`}> {k.value - k.plan >= 0 ? "+" : "−"}{Math.abs(k.value - k.plan).toFixed(1)}</span>
-              <span className="subtle"> vs plan {fx(k.plan)}</span></p>
+              <span className="subtle"> vs {k.plan_source === "set point" ? "set point" : "expected"} {fx(k.plan)}{d?.predicted?.target != null ? ` · target ${fx(d.predicted.target)}` : ""}</span></p>
           ) : null}
           <span className="us-clock num">{clock(t)} · next lab {clock(data.time.next_lab_min)}</span>
           <LangToggle />
@@ -438,7 +438,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           <div className="us-chart"><ChartStack data={data} panels={obsPanels} hoverMin={null} onHover={() => undefined} /></div>
           <div className="us-side">
             <h3>{isU4 ? "What the 4 models believe now" : d?.scripted ? "What the response model expects now (scripted)" : "What the crude model expects now"}</h3>
-            {members.length ? <GaussianPdf members={members} spec={spec} target={k ? { value: k.plan, label: "plan" } : null} measured={null} unit={k?.unit ?? ""} height={150} compact showP={false} ariaLabel="soft-sensor bell curves" /> : <p className="subtle">No estimate for this unit.</p>}
+            {members.length ? <GaussianPdf members={members} spec={spec} target={d?.predicted?.target != null ? { value: d.predicted.target, label: "target" } : k ? { value: k.plan, label: k.plan_source === "set point" ? "set point" : "expected" } : null} measured={null} unit={k?.unit ?? ""} height={150} compact showP={false} ariaLabel="soft-sensor bell curves" /> : <p className="subtle">No estimate for this unit.</p>}
             {isU4 && d?.models?.members?.length ? (
               <>
                 <ul className="us-weights">{d.models.members.map((w) => <li key={w.id}><span>{w.name}</span><i style={{ width: `${Math.round((w.weight ?? 0) * 100)}%` }} /><b className="num">{w.role === "reference" ? "ref." : `${Math.round((w.weight ?? 0) * 100)} %`}</b></li>)}</ul>

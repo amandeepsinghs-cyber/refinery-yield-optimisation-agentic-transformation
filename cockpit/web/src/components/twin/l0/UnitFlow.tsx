@@ -5,7 +5,7 @@
  * how we are optimising"). Four steps left → right, each saying which AI piece does the work:
  *
  *   1 DATA        what goes in and out of the unit, and what is measured (live values)
- *   2 OBSERVE     measured vs plan / expected, since when; the soft-sensor estimate N(μ,σ) between labs
+ *   2 OBSERVE     measured vs set point / expected, since when; the soft-sensor estimate N(μ,σ) between labs
  *   3 DECIDE      the decision and the lever (set point from → to), Accept / Hold
  *   4 OPTIMISE    how the move was found: objective, limits, checks, result — or why no move is proposed yet
  */
@@ -119,7 +119,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
             <p className="uf-big">
               <span className="num">{n(k.value)}</span> <span className="uf-u">{k.unit}</span>
               <span className={`uf-dev s-${k.state} num`}>{k.deviation >= 0 ? "+" : "−"}{Math.abs(k.deviation).toFixed(1)}</span>
-              <span className="uf-vs">{k.label} · plan {n(k.plan)}</span>
+              <span className="uf-vs">{k.label} · {k.plan_source === "set point" ? "set point" : "expected"} {n(k.plan)}{p.target != null ? ` · target ${n(p.target, 1)}` : ""}</span>
             </p>
           ) : null}
           {att.length ? (
@@ -127,7 +127,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
           ) : <p className="uf-quiet">Tracking expected — nothing unusual.</p>}
           {members.length ? (
             <>
-              <GaussianPdf members={members.slice(0, 1)} spec={spec != null ? { hi: spec, label: "spec" } : null} target={d?.observed?.plan != null ? { value: d.observed.plan, label: "plan" } : null}
+              <GaussianPdf members={members.slice(0, 1)} spec={spec != null ? { hi: spec, label: "spec" } : null} target={p.target != null ? { value: p.target, label: "target" } : d?.observed?.plan != null ? { value: d.observed.plan, label: d.scripted ? "expected" : "set point" } : null}
                 unit={pUnit} height={92} compact showMixture={false} showP={false} ariaLabel="estimate now" />
               {scriptTag ? (
                 <p className="uf-note"><b>Response model</b> <em className="us-scripted">{scriptTag}</em>: measured <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} {pUnit}</span>, chance in band <b className="num">{pct(p.p_on_spec_before)}</b> (no soft sensor or lab on this item)</p>
