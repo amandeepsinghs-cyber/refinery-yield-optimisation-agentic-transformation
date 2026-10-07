@@ -178,8 +178,9 @@ MEMBER_INFO = {   # MODEL_IDS order (app/config.py); wording checked against app
     "hybrid_delta_v1": ("Physics + correction (hybrid)", "Physics line from the draw-tray temperature corrected for column "
                                                        "pressure, plus a Gaussian-process correction"),
     "pinn_ens_v1": ("Physics-informed neural nets (5)", "Five small neural nets trained to stay close to the physics line "
-                                                         "and to rise with draw-tray temperature; their disagreement "
-                                                         "widens the band"),
+                                                         "and penalised when T98 falls as draw-tray temperature rises "
+                                                         "(a soft rule, not always met); their disagreement widens the "
+                                                         "band"),
 }
 INPUT_LABEL = {"T_tray06_F": "Tray 6 temperature", "T_tray13_F": "Tray 13 temperature",
                "P5_frac_psia": "Fractionator pressure", "Tr_riser_F": "Riser outlet temperature",
@@ -248,7 +249,11 @@ def _formula(mid: str, card: dict, arrs: dict, prop: str, j: int) -> str:
         return (f"Physics part: T98 = {pr.get('a', 0):.1f} + ({pr.get('b', 0):.3f}) × T_corr, where T_corr = "
                 f"{pr.get('draw_tray')} + ({pr.get('c', 0):.1f}) × ln({pr.get('p_ref_psia')} / P5_frac_psia). The physics part "
                 f"explains {float(pr.get('physics_share_var') or 0) * 100:.0f} % of the variation in training; a Gaussian "
-                f"process fits the rest.{now}")
+                f"process fits the rest."
+                + (" The fitted slope is negative: the training data are closed-loop (the cut-point controller moves "
+                   "the draw-tray temperature to hold T98), so the physics part alone does not show the plant's "
+                   "positive response; the correction term carries it. Forcing a positive slope made it 14 % less accurate."
+                   if (pr.get("b") or 0) < 0 else "") + now)
     if mid == "pinn_ens_v1":
         return (f"{pr.get('architecture')}. Loss = fit to labels + {pr.get('lambda_phys')} × distance from the physics "
                 f"line + {pr.get('lambda_mono')} × penalty when T98 falls as the draw-tray temperature rises. "
