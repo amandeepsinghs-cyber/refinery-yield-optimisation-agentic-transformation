@@ -1050,7 +1050,7 @@ Docs only until the owner approves each build step. Changes `components/how/Plat
 
 **Layout of `/platform`, top to bottom:** header → **FP-1 The refinery** → **FP-2 Decisions the platform enables (expandable)** → existing sections, unchanged and in their current order (six layers · use-case cards · person decides · MeitY · how it learns · proof loop; owner reviews later whether they stay) → "Open the refinery →".
 
-- **SDD-FP-01 Status dots.** One component: coloured dot + word — 🟢 Live (`real`) · 🟠 Scripted outcome (`scripted`) · 🟡 Partly (`partly`) · 👁 Watch only (`watch`) · ⚪ Not claimed (`absent`). CSS from theme tokens (not emoji), always with the word (projector, print, colour-blind). Tag *FCC equivalent* where IOCL named a unit we do not have. Same words as `use_cases/INDEX.md`.
+- **SDD-FP-01 Status dots.** One component: coloured dot + word — 🟢 Interactive (`real`) · 🟠 Scripted outcome (`scripted`) · 🟡 Partly (`partly`) · 👁 Watch only (`watch`) · ⚪ Not claimed (`absent`). CSS from theme tokens (not emoji), always with the word (projector, print, colour-blind). Tag *FCC equivalent* where IOCL named a unit we do not have. Same words as `use_cases/INDEX.md`.
 - **SDD-FP-02 FP-1 title and intro.** "The refinery — and where your use cases fit". One sentence: crude changes every 1–2 days, so every unit downstream has to keep adjusting.
 - **SDD-FP-03 FP-1 refinery picture (top level, enough detail).** A left-to-right flow; each step has its name and one line on what happens:
 
@@ -1071,8 +1071,8 @@ Docs only until the owner approves each build step. Changes `components/how/Plat
 
   | Pin | Placed on | Status | Shown on |
   |---|---|---|---|
-  | #1 Product-quality inferential | FCC | 🟢 Live | U4 Fractionator |
-  | #11 Product soft sensors | FCC | 🟢 Live | U4 Fractionator |
+  | #1 Product-quality inferential | FCC | 🟢 Interactive | U4 Fractionator |
+  | #11 Product soft sensors | FCC | 🟢 Interactive | U4 Fractionator |
   | #2 Stabiliser overhead, C5 recovery | Reformer | 🟠 Scripted outcome · FCC equivalent | U6 Stabiliser / U5 |
   | #3 LPG / LSR naphtha C4/C5 split | LPG & alkylation | 🟠 Scripted outcome · FCC equivalent | U6 / U5 |
   | #4 Regeneration-cycle tracking | Reformer (CCR) / hydrotreaters | 🟠 Scripted outcome · FCC equivalent | U3 Regenerator |

@@ -76,7 +76,7 @@ flowchart LR
 | 2 · Furnace | #5 combustion · #10 furnace coke | ~$0.4–1M/yr per site · ~1% margin / ~3% production | 🟠 gain measured · 🟡 Partly |
 | 3 · Riser | #8 filtration · #9 rotating equipment | ~$2M/yr+ · order $1–9M | 👁 Watch only |
 | 4 · Regenerator | #4 regeneration tracking | ~$0.7M/yr+ | 🟠 Scripted · FCC equivalent |
-| 5 · Fractionator | **#1 quality inferential · #11 soft sensors** | ~$0.4–0.5M/yr per unit · earlier off-spec detection | 🟢 **Live** |
+| 5 · Fractionator | **#1 quality inferential · #11 soft sensors** | ~$0.4–0.5M/yr per unit · earlier off-spec detection | 🟢 **Interactive** |
 | 6 · Gas plant & stabiliser | #2 C5 recovery · #3 LPG split · #7 fouling | ~$2–3M/yr · ~$2–2.5M/yr · heat recovery | 🟠 / 🟡 · FCC equivalent |
 | 7 · The whole unit | #6 multi-unit energy | >$10M/yr (multi-refinery) | 🟡 Partly |
 | Outside the FCC | Coker, alkylation, flare, utilities, pipelines | (various) | ⚪ Not claimed |

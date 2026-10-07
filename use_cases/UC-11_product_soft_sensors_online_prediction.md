@@ -1,6 +1,6 @@
 # UC-11: Product Soft Sensors — Online Prediction Between Lab Samples
 
-> **Status:** 🟢 **Live — real models on simulated data**
+> **Status:** 🟢 **Interactive — real models on simulated data**
 > - **IOCL row #11:** Product soft sensors — *Online property prediction between lab samples (e.g. ATF freezing point, bitumen viscosity, VR penetration)* · Yield & quality
 > - **IOCL-reported benefit:** Earlier off-spec detection; reduced reprocessing *(IOCL's wording)*
 > - **Cockpit:** **U4 · Fractionator** · answered by: *4-model soft sensor (incl. PINN) · trust checks*

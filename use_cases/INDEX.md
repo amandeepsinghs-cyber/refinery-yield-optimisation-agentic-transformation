@@ -14,7 +14,7 @@ Value figures are **IOCL's own** (from their list) and are shown so the audience
 
 | IOCL # | Use case | IOCL-reported benefit | Status | Cockpit unit (nav) | Decision · lever | Detail |
 |:-:|---|---|---|---|---|---|
-| #1 | FCC product-quality inferential | ~$0.4–0.5M/yr per unit | 🟢 **Live** | U4 · Fractionator | D1 · `SP_LCO_T98`, `SP_HN_T98` | [UC-01](./UC-01_fcc_product_quality_inferential.md) |
+| #1 | FCC product-quality inferential | ~$0.4–0.5M/yr per unit | 🟢 **Interactive** | U4 · Fractionator | D1 · `SP_LCO_T98`, `SP_HN_T98` | [UC-01](./UC-01_fcc_product_quality_inferential.md) |
 | #2 | Stabiliser overhead, C5 recovery *(reformer)* | ~$2–3M/yr | 🟠 Scripted outcome · FCC equivalent | U5 · Gas plant / U6 · Stabiliser | D7 · `SP_T_overhead` | [UC-02](./UC-02_stabiliser_overhead_c5_recovery.md) |
 | #3 | LPG / LSR naphtha C4/C5 split | ~$2–2.5M/yr | 🟠 Scripted outcome · FCC equivalent | U5 / U6 | D7 · `SP_T_overhead`, `MV_reflux_ratio` | [UC-03](./UC-03_lpg_balance_distillation_split.md) |
 | #4 | Regeneration-cycle tracking & RCA *(CCR / hydroprocessing)* | ~$0.7M/yr+ | 🟠 Scripted outcome · FCC equivalent | U3 · Regenerator | D5 · `Fair` | [UC-04](./UC-04_reactor_regeneration_tracking.md) |
@@ -24,7 +24,7 @@ Value figures are **IOCL's own** (from their list) and are shown so the audience
 | #8 | Filter / coalescer breakthrough | ~$2M/yr+ | 👁 Watch only · FCC equivalent | U2 · Riser | D8 (watch) | [UC-08](./UC-08_filtration_systems_breakthrough.md) |
 | #9 | Rotating-equipment asset health | order $1–9M | 👁 Watch only | U2 · Riser (consequence) | D8 (watch) | [UC-09](./UC-09_rotating_equipment_asset_health.md) |
 | #10 | Crude-furnace coke & hydraulics | ~1% margin / ~3% production | 🟡 Partly · FCC equivalent | U1 · Furnace | D6 (drift watch) | [UC-10](./UC-10_furnace_coke_hydraulic_constraints.md) |
-| #11 | Product soft sensors between labs | Earlier off-spec detection | 🟢 **Live** | U4 · Fractionator | D2 trust · D9 extra sample | [UC-11](./UC-11_product_soft_sensors_online_prediction.md) |
+| #11 | Product soft sensors between labs | Earlier off-spec detection | 🟢 **Interactive** | U4 · Fractionator | D2 trust · D9 extra sample | [UC-11](./UC-11_product_soft_sensors_online_prediction.md) |
 | Cat. | Feedstock evaluation (crude switch) | — | 🟠 Scripted outcome | U4 step ② (all units) | D4 crude regime | [UC-FEED](./UC-FEED_feedstock_evaluation_crude_tracking.md) |
 | — | Coker, CDU/VDU, alkylation, utilities & flare, pipelines | (various) | ⚪ Not claimed | — | — | [Out of scope](./UC-OUT_OF_SCOPE_non_fcc_refinery_assets.md) |
 
@@ -32,7 +32,7 @@ Value figures are **IOCL's own** (from their list) and are shown so the audience
 
 | Chip | Meaning | What we say |
 |---|---|---|
-| 🟢 **Live** | Real models trained on simulator data, running minute by minute with uncertainty and trust checks. | "Shown." |
+| 🟢 **Interactive** | Real models trained on simulator data, running minute by minute with uncertainty and trust checks. | "Shown." |
 | 🟠 **Scripted outcome** | Real simulator inputs and a real drift / event; the *size* of the move is scripted and labelled on screen. | "Real input, scripted outcome, labelled." |
 | 🟡 **Partly** | Part of the use case is shown (e.g. a drift flag); the rest (e.g. a coke model, a cleaning planner) is not built. | "Partly — here's the part." |
 | 👁 **Watch only** | The signal is flagged with its downstream consequence; no move is advised. | "We flag it; we don't advise." |
@@ -54,15 +54,15 @@ Value figures are **IOCL's own** (from their list) and are shown so the audience
 
 | ID | Question on the card | Unit | Status |
 |:-:|---|---|---|
-| D1 | Move the cut point now, or wait for the lab? | U4 Fractionator | 🟢 Live |
-| D2 | Can the estimate be trusted right now? ("Not yet") | U4 Fractionator | 🟢 Live |
+| D1 | Move the cut point now, or wait for the lab? | U4 Fractionator | 🟢 Interactive |
+| D2 | Can the estimate be trusted right now? ("Not yet") | U4 Fractionator | 🟢 Interactive |
 | D3 | Which set points, together, for the new crude? | U4 + U2 | 🟠 Scripted; withheld when D2 fails |
 | D4 | Which crude is running, and is the switch done? | All (step ②) | 🟠 Scripted (follows assay) |
 | D5 | Rebalance regenerator air against afterburn? | U3 Regenerator | 🟠 Scripted |
 | D6 | Trim feed preheat for the new crude? | U1 Furnace | 🟠 Gain measured · chance scripted |
 | D7 | Move the overhead temperature target (condenser duty / C5 / split)? | U5 Gas plant, U6 Stabiliser | 🟠 Scripted |
 | D8 | Act on the riser now, before it reaches the regenerator? | U2 Riser + downstream | 👁 Watch |
-| D9 | Pull an extra lab sample now? | U4 Fractionator | 🟢 Live |
+| D9 | Pull an extra lab sample now? | U4 Fractionator | 🟢 Interactive |
 
 ## 4. Screen map
 
