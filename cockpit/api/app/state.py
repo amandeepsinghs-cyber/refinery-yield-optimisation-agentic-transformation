@@ -184,6 +184,10 @@ class State:
             if time_min is not None and int(r["time_min"]) > t_ref:
                 continue
             r = dict(r)
+            if r.get("rationale"):
+                from .recommend import clean_rationale
+                gsrc = str(((self.bundle or {}).get("gains") or {}).get(r["property"], {}).get("gain_source", "default"))
+                r["rationale"] = clean_rationale(r["rationale"], gsrc.startswith("default"))
             if r["status"] == "OPEN":
                 if r["rec_id"] in dec:
                     r["status"] = "ACCEPTED" if dec[r["rec_id"]]["decision"] == "accepted" else "DECLINED"

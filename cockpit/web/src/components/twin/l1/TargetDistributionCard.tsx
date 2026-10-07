@@ -7,6 +7,7 @@
  * (rose) and the measured value (cyan) sit on the same axis so the operator sees belief vs target vs reality at once.
  */
 
+import { probPct } from "@/lib/prob";
 import { useMemo } from "react";
 import { useCockpit } from "@/lib/store";
 import { useDistribution } from "@/lib/api";
@@ -72,7 +73,7 @@ export default function TargetDistributionCard({ data, runId, timeMin }: { data:
     tag: local.label, unit: local.unit,
     members: members.map((m) => ({ model: m.label, mu: dg(m.mu), sigma: dg(m.sigma, 2), weight_pct: Math.round(m.weight * 100), shadow_or_not_admitted: !!m.dashed })),
     plan: dg(local.plan), spec: spec ? { lo: dg(spec.lo), hi: dg(spec.hi), kind: spec.label } : null, measured_simulator_truth: dg(truth),
-    p_on_spec_pct: pSpec != null ? Math.round(pSpec * 100) : null, gate: gateLine,
+    p_on_spec: pSpec != null ? probPct(pSpec) : null, gate: gateLine,
   } : null);
 
   return (
@@ -106,7 +107,7 @@ export default function TargetDistributionCard({ data, runId, timeMin }: { data:
         {spec?.hi != null && spec.lo == null ? (<><dt>Spec</dt><dd className="mono">≤ {num(spec.hi)} {local.unit}</dd></>) : null}
         {spec?.lo != null ? (<><dt>Tolerance</dt><dd className="mono">{num(spec.lo)} – {num(spec.hi)} {local.unit}</dd></>) : null}
         {truth != null ? (<><dt>Measured now</dt><dd className="mono">{num(truth)} {local.unit}</dd></>) : null}
-        {pSpec != null ? (<><dt>P(on-spec)</dt><dd className={`mono ${pSpec >= 0.9 ? "ok" : pSpec >= 0.6 ? "warn" : "bad"}`}>{Math.round(pSpec * 100)} %</dd></>) : null}
+        {pSpec != null ? (<><dt>P(on-spec)</dt><dd className={`mono ${pSpec >= 0.9 ? "ok" : pSpec >= 0.6 ? "warn" : "bad"}`}>{probPct(pSpec)}</dd></>) : null}
         {gateLine ? (<><dt>Spread</dt><dd className="mono">{gateLine}</dd></>) : null}
       </dl>
     </section>

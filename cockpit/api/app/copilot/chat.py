@@ -13,6 +13,7 @@ from ..knowledge.index import CITE_RE
 from ..state import get_state
 from .tools import ToolBox, declarations, model_labels
 from .ui_guide import page_guide_for
+from ..recommend import prob_text as _pp
 
 MAX_TOOL_ROUNDS = 6
 UNIT_IDS = ("unit_1_furnace", "unit_2_riser", "unit_3_regenerator", "unit_4_fractionator", "unit_5_condenser",
@@ -135,7 +136,7 @@ def decisions_block(ctx: dict, sc: dict) -> str:
             "why": dg.get("text"), "trust": dg.get("trust"), "half_move_because_amber": bool(dg.get("conservative")),
             "if_you_hold": u.get("consequence"), "decide_by": u.get("decide_by_label"),
             "alternative": (d.get("proposed") or {}).get("alternative"),
-            "p_on_spec_before_after": [pr.get("p_on_spec_before"), pr.get("p_on_spec_after")] if pr else None,
+            "chance_on_spec_before_after": [_pp(pr.get("p_on_spec_before")), _pp(pr.get("p_on_spec_after"))] if pr else None,
             "checks_failed": [g.get("name") for g in d.get("gates") or [] if not g.get("pass")],
             "not_yet_because": d.get("withheld_text"),
         })
@@ -241,7 +242,10 @@ GUARDRAILS (mandatory):
    checkboxes, legend entries, colours or lines that are not listed there; if something is not in that block, say "that is not on this screen"
    and name the screen or panel where it lives. The measured value is always drawn (legend "Measured (simulator truth)") — never say it is hidden
    or must be switched on. In a voice session, the most recent [SCREEN CONTEXT UPDATE] supersedes the screen described at connect time: when the
-   operator moves to another unit or page, answer about the new screen and do not carry the previous unit's recipe or gate into it unless asked."""
+   operator moves to another unit or page, answer about the new screen and do not carry the previous unit's recipe or gate into it unless asked.
+13. Probabilities. A chance on spec comes from a Gaussian estimate and is never certain: never say 0 %, 100 %, 0.000 or 1.000, "certain" or
+   "guaranteed". Round as the screen does: above 99.5 % say "> 99 %", below 0.5 % say "< 1 %", otherwise whole percent. Use the
+   chance_on_spec_before_after strings as given."""
 
 
 def _sse(event: str, data) -> str:

@@ -9,6 +9,28 @@ from .config import PROP_SHORT
 from .dist import mix_cdf
 
 
+
+def prob_text(x) -> str:
+    """Probability as the screen shows it: never 0 % or 100 % (a Gaussian has no certainty)."""
+    v = (x or 0) * 100
+    return "> 99 %" if v >= 99.5 else "< 1 %" if v < 0.5 else f"{v:.0f} %"
+
+
+_LEGACY_P = __import__("re").compile(r"P\(on-spec\) after ([0-9.]+)")
+_LEGACY_MIN = __import__("re").compile(r"P\(on-spec\) ≥ 0\.95")
+_LEGACY_GAIN = __import__("re").compile(r"\(gain ([0-9.]+) °F/°F\)")
+
+
+def clean_rationale(txt: str | None, gain_default: bool = True) -> str | None:
+    """Rewrite rationales cached in runs/*.json before 7 Oct (P(on-spec) after 1.000, gain without its source)."""
+    if not txt:
+        return txt
+    txt = _LEGACY_P.sub(lambda m: f"chance on spec after {prob_text(float(m.group(1)))}", txt)
+    txt = _LEGACY_MIN.sub("chance on spec ≥ 95 %", txt)
+    if gain_default:
+        txt = _LEGACY_GAIN.sub(lambda m: f"(gain {m.group(1)} °F/°F default)", txt)
+    return txt
+
 def estimate_gain_and_yield(frames: list, prop: str, s) -> dict:
     """Estimate response gain g = dT98/dSP and yield_sens = d prod / d T98 from set-point-move windows
     (event_code 5 for LCO, 6 for HN, window extended by 60 min after the ramp). Falls back to documented defaults."""
@@ -124,7 +146,7 @@ def build_recommendation(run_id, t, prop, est, sp_before, feed_lb_min, gainfo, s
              f"W90 {est['w90']:.1f} °F within the {s.w90_max:.1f} °F limit; trust {est['trust']}."]
     if not feasible:
         # No candidate move reaches P(on-spec) >= p_min: HOLD, not actionable (never an OPEN card below p_min).
-        parts.append(f"No set-point move within ±{max_move:.1f} °F reaches P(on-spec) ≥ {p_min:.2f} "
+        parts.append(f"No set-point move within ±{max_move:.1f} °F reaches chance on spec ≥ {p_min:.0%} "
                      f"(best {p_full:.3f}); hold and request a lab sample. Advisory only; operator decides.")
         return {**base, "status": "HOLD", "action": "HOLD", "delta_F": 0.0, "sp_after": base["sp_before"],
                 "p_on_spec_after": round(float(est["p_on_spec"]), 4), "margin_after_F": base["margin_before_F"],
@@ -146,17 +168,18 @@ def build_recommendation(run_id, t, prop, est, sp_before, feed_lb_min, gainfo, s
     yield_pct = 100.0 * delta * g * ys / feed_lb_min if feed_lb_min else 0.0
     sp_after = None if sp_before is None else round(float(sp_before) + delta, 2)
     if action == "HOLD":
-        parts.append(f"On target ({target:.1f} °F) and P(on-spec) ≥ {p_min:.2f}; hold." if target is not None else
-                     f"No set-point move improves the margin while keeping P(on-spec) ≥ {p_min:.2f}; hold.")
+        parts.append(f"On target ({target:.1f} °F) and chance on spec ≥ {p_min:.0%}; hold." if target is not None else
+                     f"No set-point move improves the margin while keeping chance on spec ≥ {p_min:.0%}; hold.")
     else:
         if target is not None:
             parts.append(f"Aim: {short} T98 back to its {target:.1f} °F target, never below {p_min:.0%} chance on spec.")
-        parts.append(f"{action.title()} the {short} T98 set point by {abs(delta):.1f} °F (gain {g:.2f} °F/°F): "
-                     f"P(on-spec) after {p_after:.3f}, margin after {margin_after:.1f} °F.")
+        g_src = " default" if str(gainfo.get("gain_source", "")).startswith("default") else ""
+        parts.append(f"{action.title()} the {short} T98 set point by {abs(delta):.1f} °F (gain {g:.2f} °F/°F{g_src}): "
+                     f"chance on spec after {prob_text(p_after)}, margin after {margin_after:.1f} °F.")
     if conservative:
         parts.append(f"Conservative: trust AMBER, half move ({delta_full:+.1f} → {delta:+.1f} °F)." if halved else
-                     "Trust AMBER: lowering move not halved (needed to keep P(on-spec) ≥ "
-                     f"{p_min:.2f})." if delta_full < 0 else "Trust AMBER.")
+                     "Trust AMBER: lowering move not halved (needed to keep chance on spec ≥ "
+                     f"{p_min:.0%})." if delta_full < 0 else "Trust AMBER.")
     parts.append("Advisory only; operator decides.")
     return {**base, "status": "OPEN", "action": action, "delta_F": round(delta, 2), "sp_after": sp_after,
             "p_on_spec_after": round(p_after, 4), "margin_after_F": round(margin_after, 2),

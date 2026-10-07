@@ -6,6 +6,7 @@
  * POST /api/recipe/whatif). When the recipe is WITHHELD the card still lets the operator explore, but says so.
  */
 
+import { probPct } from "@/lib/prob";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { postWhatIf } from "@/lib/twinApi";
 import { num, signed } from "@/lib/format";
@@ -131,7 +132,7 @@ export default function OptimisationCard({ recipe, decision, inputs, unitId, run
         })}
       </div>
       <div className="l1-effects">
-        <div><span className="l1-stat-k">P(off-spec){pKey ? ` ${pKey}` : ""}</span><span className="l1-stat-v mono big">{pNow == null ? "—" : `${((1 - pNow) * 100).toFixed(1)} %`}</span></div>
+        <div><span className="l1-stat-k">P(off-spec){pKey ? ` ${pKey}` : ""}</span><span className="l1-stat-v mono big">{pNow == null ? "—" : probPct(1 - pNow)}</span></div>
         <div><span className="l1-stat-k">Yield shift{yKey ? ` ${yKey}` : ""}</span><span className="l1-stat-v mono big">{dyNow == null ? "—" : `${signed(dyNow, 2)} % feed`}</span></div>
         {effects && (
           <div className="l1-effects-row mono muted">

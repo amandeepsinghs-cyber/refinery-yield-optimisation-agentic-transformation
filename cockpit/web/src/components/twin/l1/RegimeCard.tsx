@@ -2,6 +2,7 @@
 
 /** Rail card 1 — Crude family & bias reset (E1 + E2, SDD-L1-03). Weights are not regime-based (7 Oct). */
 
+import { probPct } from "@/lib/prob";
 import { clock, num } from "@/lib/format";
 import type { TwinModels, TwinRegime } from "@/lib/twinTypes";
 
@@ -20,10 +21,10 @@ export default function RegimeCard({ regime, committee }: { regime: TwinRegime |
       </div>
       <div className="l1-bars" role="img" aria-label="Regime probabilities">
         {probs.map(([id, p]) => (
-          <div key={id} className="l1-bar-row" title={`${id}: ${(p * 100).toFixed(0)} %`}>
+          <div key={id} className="l1-bar-row" title={`${id}: ${probPct(p)}`}>
             <span className="l1-bar-k mono">{id}</span>
             <span className="l1-bar-track"><span className="l1-bar-fill" style={{ width: `${Math.max(2, p * 100)}%`, background: REGIME_COLOR[id] ?? "#4338ca" }} /></span>
-            <span className="l1-bar-v mono">{(p * 100).toFixed(0)}%</span>
+            <span className="l1-bar-v mono">{probPct(p, "")}</span>
           </div>
         ))}
       </div>

@@ -6,6 +6,7 @@
  * (rose dashed) and the measured value (cyan tick). Pure SVG so it is cheap enough for six L0 tiles.
  */
 
+import { probPct } from "@/lib/prob";
 import { useId } from "react";
 import { useCockpit } from "@/lib/store";
 import { gaussGrid, gaussPath, mixtureMoments, pOnSpec, sharedPeak, type GaussMember } from "@/lib/gauss";
@@ -138,7 +139,7 @@ export default function GaussianPdf({ members, target, spec, measured, unit = ""
       ) : null}
       {pSpec != null && !compact && showP ? (
         <text x={box.x0 + 2} y={compact ? box.yBase - 3 : T + 9} textAnchor="start" className={compact ? "gauss-p compact" : "gauss-p"} fill={pSpec >= 0.9 ? "var(--green)" : pSpec >= 0.6 ? "var(--amber)" : "var(--red)"}>
-          P(on-spec) {Math.round(pSpec * 100)} %
+          P(on-spec) {probPct(pSpec)}
         </text>
       ) : null}
     </svg>

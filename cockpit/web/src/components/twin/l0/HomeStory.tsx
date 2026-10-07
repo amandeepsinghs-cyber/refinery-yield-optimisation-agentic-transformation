@@ -6,6 +6,7 @@
  * and, underneath, the IOCL use cases this shift is exercising. Every number comes from /api/twin and /api/decisions.
  */
 
+import { probPct } from "@/lib/prob";
 import UseCaseExplainer from "@/components/how/UseCaseExplainer";
 import { UC_DETAIL } from "@/lib/howItWorks";
 import { useEffect, useState } from "react";
@@ -17,7 +18,7 @@ import { actOnDecision, type CoverageRow, type Decision } from "@/lib/decisionsA
 import type { TwinOverview } from "@/lib/twinTypes";
 import GaussianPdf from "@/components/twin/shared/GaussianPdf";
 
-const pct = (p?: number | null) => (p == null ? "—" : `${Math.round(p * 100)}%`);
+const pct = (p?: number | null) => probPct(p, "");
 const f1 = (v?: number | null) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(1));
 const KIND: Record<string, string> = { agent: "Rule-based", ml: "ML model", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
 const UNIT: Record<string, string> = {

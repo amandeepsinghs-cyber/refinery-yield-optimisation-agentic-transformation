@@ -407,8 +407,8 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
         d["diagnosed"] = {"text": rec.get("rationale"), "trust": rec.get("trust"), "conservative": rec.get("conservative")}
         d["proposed"] = {"moves": [{"tag": sp_tag, "label": f"{short} T98 set point", "from": sp0, "to": sp1,
                                     "delta": dl, "unit": "°F"}],
-                         "alternative": f"Wait for the lab — {nl_txt}; estimate stays at P(on-spec) "
-                                        f"{(e['p_on_spec'] or 0) * 100:.0f} % meanwhile"}
+                         "alternative": f"Wait for the lab — {nl_txt}; chance on spec stays at "
+                                        f"{_pp(e['p_on_spec'])} meanwhile"}
         d["predicted"] = {"mu_before": e["mu"], "mu_after": mu_after, "sigma": e["sigma"],
                           "p_on_spec_before": e["p_on_spec"], "p_on_spec_after": _f(rec.get("p_on_spec_after"), 3),
                           "w90": e["w90"], "spec_max": observed["spec_max"], "margin_after": _f(rec.get("margin_after_F")),
