@@ -318,7 +318,7 @@ def get_scope_snapshot(
     run_id: str | None = None,
     time_min: int | None = None,
 ) -> dict:
-    """Snapshot of what is on screen: unit scope (regime, residual/breach, recipe moves, open decisions) or the whole plant when unit_id is None."""
+    """Snapshot of what is on screen: unit scope (feed, residual/breach, recipe moves, open decisions) or the whole plant when unit_id is None."""
     ctx: dict[str, Any] = {}
     if run_id:
         ctx["run_id"] = run_id
@@ -328,7 +328,7 @@ def get_scope_snapshot(
 
 
 def get_regime(run_id: str | None = None, time_min: int | None = None) -> dict:
-    """Crude regime recognised from the unit response (E1): regime, p_regime, novelty, declared vs detected."""
+    """Feed model (E1, DECISIONS S-8): feed change, feed API estimate, novelty and class; the crude family is context only."""
     ctx: dict[str, Any] = {}
     if run_id:
         ctx["run_id"] = run_id

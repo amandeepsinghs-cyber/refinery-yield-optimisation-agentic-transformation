@@ -39,7 +39,7 @@ PAGE_GUIDES: dict[str, str] = {
         "- Then the decisions panel, 'A person decides — every time' (advisory only), the MeitY-compliant boundary (data "
         "stays in India under keys IOCL holds; control and safety systems stay on site and nothing is written to them; do "
         "not go into Category A / B), and 'How it learns and proves itself' (predict, decide, measure, learn).\n"
-        "- What is used in this build: crude classifier (Bayesian/Gaussian, 15-min confirmation), a four-model soft sensor "
+        "- What is used in this build: a feed-quality model (feed-change detection, feed API soft sensor, novelty check, feed class), a four-model soft sensor "
         "(Bayesian ridge, hybrid physics + ML, PINN ensemble, Gaussian process), anomaly detection on every unit (±3σ, "
         "CUSUM; statistical), response models, a constrained optimiser, a rule-based consequence check, and Gemini."
     ),
@@ -68,7 +68,7 @@ PAGE_GUIDES: dict[str, str] = {
         "Cloud Audit Logs. MeitY-compliant boundary: the data stays in India under keys IOCL holds; control and "
         "safety systems stay on site and nothing is written to them. Do not go into Category A / B on this page.\n"
         "- Agents: soft-sensor agent (IOCL #1, #11; In the demo, interactive); furnace, regenerator, light-ends and systems agents (Preview); coker, CDU/VDU, alkylation, "
-        "utilities & flare agents (Next). Feedstock evaluation is not on IOCL's use-case list: do not present it as a use case; when the FCC feed changes after a crude switch, the soft sensor resets its lab bias and checks it has lab results for this crude, and the recipe and preheat target follow the new crude. The soft-sensor model weights come from each model's accuracy on recent lab results (else held-out runs), never from the crude; Bayesian ridge has weight 0 (reference only). Vertex AI for training and serving each agent's models is Next.\n"
+        "utilities & flare agents (Next). Feedstock evaluation is not on IOCL's use-case list: do not present it as a use case; when the FCC feed changes after a crude switch, the feed model detects the change and estimates the new feed's API gravity; the soft sensor resets its lab bias and checks it has lab results for this feed, and the recipe and preheat target follow the new feed estimate. The crude family is context only. The soft-sensor model weights come from each model's accuracy on recent lab results (else held-out runs), never from the crude; Bayesian ridge has weight 0 (reference only). Vertex AI for training and serving each agent's models is Next.\n"
         "- If asked what is built: the demo runs these as separate modules inside one service on simulated data; "
         "Gemini 2.5 Flash calls the platform's tools. Never say an agent is 'live' or 'working': nothing is deployed on a plant. Below: a collapsed agent ↔ use case table."
     ),
@@ -84,8 +84,8 @@ PAGE_GUIDES: dict[str, str] = {
         "CURRENT PAGE: a unit page (/twin/unit/<unit_id>): U1 Furnace, U2 Riser, U3 Regenerator, U4 Fractionator, "
         "U5 Gas plant, U6 Stabiliser.\n"
         "- Step ① Data in / out: the tags this unit reads and the products it sends on.\n"
-        "- Step ② What we observe: anomaly detection (measured vs expected for this crude, ±3σ band, CUSUM), which feed is "
-        "arriving (crude-family classifier: which crude the FCC feed now comes from, with confidence and change time), and on U4 the four-model soft sensor with its bell curves "
+        "- Step ② What we observe: anomaly detection (measured vs expected for this feed, ±3σ band, CUSUM), the feed model "
+        "(① is the feed changing and how far through, ② estimated feed API with its band, ③ novelty: is this feed outside the training data, ④ feed class derived from the API; the crude family is a context line only), on U2/U3 catalyst-to-oil shown as a result (never advised), and on U4 the four-model soft sensor with its bell curves "
         "and the estimate between lab samples.\n"
         "- Step ③ Decision and lever: the move (from → to), chance on spec before → after, and Accept / Hold / Decline. "
         "'Try another move' is a slider over set-point moves. On the cut-point decisions the chart has one solid bell (the product "
@@ -97,7 +97,7 @@ PAGE_GUIDES: dict[str, str] = {
         "- 'Full explanation' (expandable): the data in (columns and their values at this minute), each model's inputs and fitted "
         "formula, its estimate and weight (ridge reference only; hybrid, PINN ×5 and GP weighted by accuracy), the checks, and how "
         "the move was chosen (toward the target, never below 95 % chance on spec, ≤ 5 °F per SOP step).\n"
-        "- Step ④ How the move is found: the chain of steps (anomaly detection, soft sensor, crude-regime model, trust checks, "
+        "- Step ④ How the move is found: the chain of steps (anomaly detection, soft sensor, feed model, trust checks, "
         "optimiser, consequence check, Gemini), the checks before advising, and what set the size of the move.\n"
         "- Status words: Interactive = the models really run, on simulated data (nothing is deployed on a plant); Scripted outcome = the size of the move is scripted on real "
         "simulator inputs; Watch only = no move is proposed."
@@ -119,7 +119,7 @@ DEMO FLOW (demoflow.md, 6 Oct — story of a refinery, then follow the oil):
 - Overview (/platform): the refinery and where IOCL's use cases fit; use case → its agent → decision; how an agent works (models → agent → Gemini → person); person in the loop; MeitY line.
 - Architecture (/architecture): the target — one lakehouse, one agent per use case, Gemini on top, one screen.
 - FCC Complex (/twin), run random_s107 at 10:00: what went wrong; decision pins.
-- Follow the oil at s107 10:00: U4 step ② which crude (D4, scripted) → U1 preheat (D6) → U2 riser watch (D8) →
+- Follow the oil at s107 10:00: U4 step ② feed model (the new feed settled; D4 appears only while the feed is changing, e.g. s107 07:20) → U1 preheat (D6) → U2 riser watch (D8) →
   U3 regenerator air (D5, scripted) → U4 step ③ D1 interactive cut-point move, Accept → U5/U6 overhead target (D7, scripted) →
   back to FCC Complex for the whole-unit effect.
 - Stress tests on U4: run random_s144 at 10:00 (held-out run), then 12:00 'Not yet' (spread above 14 °F) → pull a sample,
