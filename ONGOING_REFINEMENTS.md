@@ -6,7 +6,7 @@
 
 | # | Item | Status | Owner ask |
 |---|---|---|---|
-| R-1 | **Feed quality drives the whole FCC.** Replace the crude-name classifier with a feed-quality model (feed change, feed properties, novelty; class derived from properties) and show, on every decision from the riser onward, which feed values it used | **Proposed** (7 Oct) | Owner, 7 Oct 04:17–05:40 |
+| R-1 | **Feed quality drives the whole FCC.** Replace the crude-name classifier with a feed-quality model (feed change, feed properties, novelty; class derived from properties) and show, on every decision from the riser onward, which feed values it used | **Built R-1a–R-1f** (7 Oct, local commits); R-1g push + deploy v0.5.6 awaits owner go-ahead | Owner, 7 Oct 04:17–05:40 |
 
 ---
 
@@ -30,7 +30,7 @@ Heavier / higher-carbon-residue feed → more coke on catalyst → hotter regene
 
 | Area | Operator decision | Why feed quality matters | In the build | Status |
 |---|---|---|---|---|
-| Feed | **Has the feed changed, is the change finished, is it new to the models?** | Times the soft-sensor bias reset, picks response gains, holds advice during the transition | D4 + crude card | 🟠 Scripted name at fixed 93 % — **the weak spot (this item)** |
+| Feed | **Has the feed changed, is the change finished, is it new to the models?** | Times the soft-sensor bias reset, picks response gains, holds advice during the transition | D4 + "Feed arriving" panel | 🟢 Feed model (R-1c): detected change, API estimate, novelty, class |
 | Riser | **ROT set point** (severity) | Heavier feed needs a different severity for the same conversion | D3 recipe (ROT +3.5 °F) | 🟠 Scripted (fixed gain 0.12 % conversion / °F) |
 | Riser | Catalyst-to-oil / circulation | Result of ROT + preheat + regenerator temperature | Shown as a measured value | 👁 Shown, never advised |
 | Feed furnace | **Feed preheat** | Lower preheat → more catalyst at the same ROT; the main way to adjust catalyst-to-oil | D6 | 🟠 Gain measured (52 step tests, 1.007 °F/°F); chance scripted; move on s107 |
@@ -84,4 +84,10 @@ About 3–4 hours in total (the feed-API model and change detection are the new 
 ---
 
 ## Done
-*(none yet)*
+| # | Commits (local, not pushed) | Result |
+|---|---|---|
+| R-1a–R-1f | b316ec2 (a), 023e35f (b), b5a9386 (c), 6893c51 (d), 5d8cc6e (e), be277e9 (f) | Feed model in `engines/feed.py`: held-out feed-API error 0.20 API (p90 0.41, R² 0.98); change detector caught 15 of 15 held-out feed changes with 2 false alarms. D1/D3/D5/D6/D7 carry "For this feed …" and hold while the feed is changing or novel. Catalyst-to-oil shown as a result on U2 (U3 has no circulation tag). Gemini guardrail 14. API tests 321 passed / 2 skipped (`-k "not regime"`); web 93 passed; no `src` type errors. R-1g (push + deploy v0.5.6) awaits owner go-ahead. |
+
+**Deviations from the plan above (owner to confirm):**
+- *Done when* said `random_s107` 10:00 shows the feed **mid-switch**. With a detected (not scripted) change, the s107 feed is flagged at 07:07 and settled at 08:47, so at 10:00 it is **settled** (no holds; the demo numbers are unchanged). The mid-switch view is at **07:20** (55 % through; D4 shown; D1/D5/D6/D7 held), added to the scripts as an optional step.
+- *Leave alone* listed `use_cases/UC-FEED_*.md`; it was rewritten in R-1f because it still taught the crude classifier, the 8/15 figure and a money figure. Revert that one file if the original is wanted.

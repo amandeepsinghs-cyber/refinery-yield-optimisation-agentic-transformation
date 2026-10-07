@@ -10,11 +10,11 @@
 
 ---
 
-## 2026-10-07 refinement R-1 — feed quality drives the whole FCC (proposed, not built)
+## 2026-10-07 refinement R-1 — feed quality drives the whole FCC (built R-1c/R-1d, 7 Oct)
 
 Owner, 7 Oct 2026: 04:17 *"why would someone like to run a classification model for crude identification when the input is heavy gas oil?"*; 04:25 *"the problem is not just with fractionator … it is with the entire FCC unit starting from riser"*. Facts: [DECISIONS.md](DECISIONS.md) S-8; spec: [ONGOING_REFINEMENTS.md](ONGOING_REFINEMENTS.md) R-1.
 
-**F-FEED "Feed arriving" (R-1c/R-1d, proposed).** Replaces the crude-family classifier card. Four rows: ① feed change — changing / settled, % through, expected finish, detected from the response fingerprint (coke per feed, riser ΔT, fuel per feed, regenerator temperature, conversion, tray ΔT), no scripted lag; ② feed properties — estimated API gravity ± band from the same fingerprint, trained on `s100–s139`, held-out error reported (on site: plus Conradson carbon, K-factor, nitrogen, metals from IOCL lab history); ③ novelty — uncapped; high novelty holds advice; ④ feed-quality class derived from the API estimate. Crude family: one context line. **F-FEED-USED:** D1, D3, D5, D6 and D7 each carry *"For this feed (API ≈ x) …"* and are held while the feed is changing or novel. **F-CTO:** catalyst-to-oil shown on U2/U3 as a result of ROT, preheat and air — never a lever, never advised.
+**F-FEED "Feed arriving" (R-1c/R-1d, built).** Replaces the crude-family classifier card. Four rows: ① feed change — changing / settled, % through, expected finish, detected from the response fingerprint (coke per feed, riser ΔT, fuel per feed, regenerator temperature, conversion, tray ΔT), no scripted lag; ② feed properties — estimated API gravity ± band from the same fingerprint, trained on `s100–s139`, held-out error reported (on site: plus Conradson carbon, K-factor, nitrogen, metals from IOCL lab history); ③ novelty — uncapped; high novelty holds advice; ④ feed-quality class derived from the API estimate. Crude family: one context line. **F-FEED-USED:** D1, D3, D5, D6 and D7 each carry *"For this feed (API ≈ x) …"* and are held while the feed is changing or novel. **F-CTO:** catalyst-to-oil shown on U2/U3 as a result of ROT, preheat and air — never a lever, never advised.
 
 ---
 
