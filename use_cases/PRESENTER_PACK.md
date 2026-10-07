@@ -136,9 +136,9 @@ flowchart LR
 
 ### Stop 5 · Fractionator — "Where do I cut, and can I trust the number?" (D1 · 🟢 **live**)
 - **Screen:** **U4 · Fractionator** → ② → ③ (D1 tab).
-- **Point at:** ② four bell curves (one per model) and their weights, lab points on the chart; ③ estimate **535.1 ± 3.8 °F** vs the **540 °F** heavy-naphtha spec; next lab 14:00, four hours away; **Lower heavy-naphtha cut point −1.0 °F (530.3 → 529.3)**; chance on spec **91 % → 95 %**; **7 of 8** trust checks pass; **If nothing is done:** line.
+- **Point at:** ② four bell curves (one per model) and their weights — three blended, Bayesian ridge shown as "ref." —, lab points on the chart; ③ estimate **536.4 ± 2.8 °F** vs the **540 °F** heavy-naphtha spec and the **530.3 °F** target; next lab 14:00, four hours away; **Lower heavy-naphtha cut point −5.0 °F (530.3 → 525.3)** — the 5 °F SOP step stops it about 1 °F short of the target, so a second step follows; chance on spec **90 % → > 99 %**; **8 of 8** trust checks pass; **If nothing is done:** line.
 - **Click:** drag **Try another move** (chance on spec updates live) → put it back → **Accept** → toast *"recorded in audit, nothing sent to the plant"*; footer **Actions taken on this unit**.
-- **Say:** *"Now the cracked vapour is split into petrol, diesel and slurry. Where the cut sits decides how much product lands in each stream — and the lab won't tell us for four hours. Four different models estimate it every minute. They agree inside the 14-degree spread, so we're allowed to advise: the smallest move that gets us to 95 % on spec. A person decides. Nothing goes to the control system."*
+- **Say:** *"Now the cracked vapour is split into petrol, diesel and slurry. Where the cut sits decides how much product lands in each stream — and the lab won't tell us for four hours. Four different models estimate it every minute; three are blended, the linear one is a reference. They agree inside the 14-degree spread, so we're allowed to advise: the move that brings the cut to its target, never below 95 % chance on spec and never more than five degrees in one step. A person decides. Nothing goes to the control system."*
 - **IOCL:** **#1 quality inferential · #11 soft sensor — live, real models.**
 
 ### Stop 6 · Gas plant & stabiliser — "What overhead temperature?" (D7 · 🟠 scripted)
@@ -159,9 +159,9 @@ flowchart LR
 
 **Say as you switch:** *"Fair question: does it only work on data it was trained on? Here's a day it never saw."*
 
-### Test 1 · Held-out run — take back margin (D1 · 🟢 live) · **Scenario** → `random_s144`, **10:00** → **U4 · Fractionator**
-- **Point at:** estimate **751.5 ± 4.0 °F** vs **765 °F** LCO spec; **Raise LCO cut point +2.5 °F (752.8 → 755.2)** (and HN 532.8 → 535.3); chance on spec stays ≥ 95 %; step ④ **What sets the size of the move**; "Trained on 40 runs, checked on 14 held-out runs".
-- **Say:** *"Never used for training. The diesel cut is lighter than it needs to be, so product leaks into the cheaper stream every hour. The smallest move that keeps more diesel while staying above 95 % on spec — and you can see which limit set it."*
+### Test 1 · Held-out run — back to target (D1 · 🟢 live) · **Scenario** → `random_s144`, **10:00** → **U4 · Fractionator**
+- **Point at:** estimate **753.1 ± 3.2 °F** vs **765 °F** LCO spec and **755.3 °F** target; **Raise LCO cut point +2.0 °F (752.8 → 754.8)** (and HN +2.0 °F, 532.8 → 534.8); estimate after the move 755.1 °F (green tick); chance on spec **> 99 % → > 99 %**; step ④ **What sets the size of the move**; "Trained on 40 runs, checked on 14 held-out runs".
+- **Say:** *"Never used for training. The diesel cut is 2 degrees below its target, so it runs lighter than planned. The cockpit brings it back to the target, never below 95 % chance on spec, inside one five-degree step — and you can see which limit set it."*
 
 ### Test 2 · "Not yet" — the moment that wins the room (D2, D9 · 🟢 live) · **Scenario** → **12:00**
 - **Click:** **D2** tab → step ④ (failed checks, "what data is missing") → **D9** → **Pull sample** → **Ask Gemini**: *"Why is the recipe withheld right now?"*
@@ -211,10 +211,10 @@ flowchart LR
 | 2 | **U1 · Furnace** | D6 preheat | Heavier feed → more coke → circulation shifts | #5, #10 | 🟠 measured gain | +1.5 °F (616.0 → 617.5) |
 | 3 | **U2 · Riser** | D8 move or watch | Cracking severity shifts | #8, #9 | 👁 | Watch: conversion +0.5 % |
 | 4 | **U3 · Regenerator** | D5 air | More coke → afterburn | #4 | 🟠 | −0.03 lb/s (2.65 → 2.62) |
-| 5 | **U4 · Fractionator** | D1 cut point (D2, D9) | Quality drifts, lab 4 h away | **#1, #11** | 🟢 | HN −1.0 °F (530.3 → 529.3) |
+| 5 | **U4 · Fractionator** | D1 cut point (D2, D9) | Quality drifts, lab 4 h away | **#1, #11** | 🟢 | HN −5.0 °F (530.3 → 525.3) |
 | 6 | **U5 · Gas plant** / U6 | D7 overhead target | Vapour load, fouling, LPG split | #2, #3, #7 | 🟠 / 🟡 | +1.5 °F (245.9 → 247.4) |
 | 7 | **FCC Complex** | (D3) whole unit | All of the above, hours apart | #6 | 🟡 | Pins + consequences |
-| T1 | U4 · `random_s144` 10:00 | D1 held-out | — | #1 | 🟢 | LCO +2.5 °F (752.8 → 755.2) |
+| T1 | U4 · `random_s144` 10:00 | D1 held-out | — | #1 | 🟢 | LCO +2.0 °F (752.8 → 754.8) |
 | T2 | U4 · `random_s144` 12:00 | D2 Not yet · D9 | — | #11 | 🟢 | Spread 17.3 > 14 °F |
 | T3 | Decision record | — | — | all | 🟢 | Accepts + withheld rows |
 

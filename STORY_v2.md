@@ -57,7 +57,7 @@ Today, FCC operators fly blind for 4–9 hours between laboratory distillation a
 |---|---|---|---|
 | **1. Overview (60 sec)** | `/platform` | Six-layer architecture and use-case alignment cards. | *"Behind this screen: AI and physics — a crude classifier, a four-model soft sensor including a PINN, anomaly detection on every unit and an optimiser — shared across your use cases, on one source of truth. They advise; your operators decide. Zero control system actuation."* |
 | **2. Refinery Top View** | `/twin` (`random_s107`, $t=600$) | 6 units on the flowsheet; one glowing yellow with **"Decide"**; the riser on **"Watch"**. | *"A crude switch occurred at 07:25. The plant responded hours before the lab assay arrived. The fractionator is off plan, while the riser needs no intervention. Each unit sees only what matters to it."* |
-| **3. Unit Deep Dive** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=600$) | Live column drawing $\to$ Model ensemble bell curves $\to$ Decision D1 (*Raise LCO cut point $+2.0^\circ\text{F}$, 752.8 → 754.8, toward the 755.3 °F target*). | *"Here is a run the model never saw. The 4 models agree within $14^\circ\text{F}$, giving $95\%$ probability on-spec. It advises the move that brings the cut to its target, inside the 5-degree SOP step."* |
+| **3. Unit Deep Dive** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=600$) | Live column drawing $\to$ Model ensemble bell curves $\to$ Decision D1 (*Raise LCO cut point $+2.0^\circ\text{F}$, 752.8 → 754.8, toward the 755.3 °F target*). | *"Here is a run the model never saw. The three blended models agree within $14^\circ\text{F}$ (the linear model is shown for reference), and the chance on spec is above 99 %. It advises the move that brings the cut to its target, inside the 5-degree SOP step."* |
 | **4. The Honesty Moment** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=720$) | Decision status changes to **"Not yet"** with an amber alert. | *"Two hours later, process uncertainty widens. Rather than averaging 4 divergent guesses, the system withholds advice and prompts the board operator to request a physical lab draw."* |
 | **5. Audit & Governance** | `/audit` | Timestamped log of accepted moves and model withholdings. | *"Full accountability: every recommendation, operator override, and safety withhold is logged for engineering audit."* |
 
@@ -265,7 +265,7 @@ To understand why furnace preheat is the master thermal lever for the entire FCC
 
 Without minute-by-minute quality, operators keep a **safety margin**: they cut lighter than needed so that, whatever the lab says later, the product is on spec. That margin is product sent to a lower-value stream every hour.
 
-*Example from run `s144` at 10:00:* the LCO cut is **6.7 °F inside spec**, lighter than it needs to be. The cockpit recommends raising the setpoint by $+2.5^\circ\text{F}$, safely recovering margin while keeping $P(\text{on-spec})$ at $98.5\%$.
+*Example from run `s144` at 10:00:* the LCO estimate is **753.1 ± 3.2 °F**, 2.2 °F below its 755.3 °F target and 11.9 °F inside the 765 °F spec. The cockpit recommends raising the set point by $+2.0^\circ\text{F}$ (752.8 → 754.8), which brings the estimate to 755.1 °F, with the chance on spec staying above 99 %.
 
 ---
 
