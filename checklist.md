@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-10-07 refinement R-1: "Feed arriving" (proposed)
+
+Owner, 7 Oct 2026, 04:17–04:21: the FCC sees heavy gas oil, so a crude-name classifier fixed at 93 % answers the wrong question; renaming is not enough. Spec and file list: [ONGOING_REFINEMENTS.md](ONGOING_REFINEMENTS.md) R-1; build step: [build.md](build.md) "2026-10-07 refinement R-1".
+
+- [ ] R-1a `DECISIONS.md` S-8 (D4 = feed change, feed quality, novelty; crude family = context).
+- [ ] R-1b `demoflow.md`, `features.md`, `SDD.md`, `BDD.md` updated in authority order.
+- [ ] R-1c API: panel data (fingerprint, transition timing, uncapped novelty); 0.4 novelty cap removed; D4 wording.
+- [ ] R-1d Web: 4-row "Feed arriving" panel with real / scripted / next chips.
+- [ ] R-1e Gemini guide and guardrails.
+- [ ] R-1f Pitch docs (DEMO_SCRIPT Scene B, PRESENTER_PACK stop 1, PROBING_QUESTIONS, STORY_v2, API_CONTRACT).
+- [ ] R-1g Tests pass; deployed. **Data check:** `/api/decisions` D4 on `random_s107` 10:00 shows transition progress from the simulator segments, and novelty above 0.4 is possible.
+
+---
+
 ## 2026-10-06 story-first pitch (6 Oct)
 
 Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, so we can keep them, otherwise they may feel we are not listening or we are not focussing on the high value use cases"*; 05:52 *"going use case by use case is not the most optimal … I am still missing … the story of a refinery … should I not read the story of the refinery first and then go? then … how we are helping in taking those decisions … the first decision is what should be the temp of furnace, which first and foremost is decided based on the input crude"*; 05:55 "sure" (restructure); 06:03 "update the relevant files that define the build". Context: [use_cases/important_context.ipynb](use_cases/important_context.ipynb).

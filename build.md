@@ -1,10 +1,28 @@
 # Build Guide: FCC Soft Sensor & Decision Cockpit, Step by Step
 
-> **Companion documents:** [DECISIONS](DECISIONS.md) (canonical facts) · [Demo flow](demoflow.md) (what we show; top-level scope) · [Features](features.md) · [SDD](SDD.md) (specs) · [BDD](BDD.md) (acceptance tests) · [Checklist](checklist.md) (progress tracker for this guide) · [Delegation](delegation.md) (task board)
+> **Companion documents:** [DECISIONS](DECISIONS.md) (canonical facts) · [Demo flow](demoflow.md) (what we show; top-level scope) · [Features](features.md) · [SDD](SDD.md) (specs) · [BDD](BDD.md) (acceptance tests) · [Checklist](checklist.md) (progress tracker for this guide) · [Ongoing refinements](ONGOING_REFINEMENTS.md) (agreed, not built) · [Delegation](delegation.md) (task board)
 >
 > **Authority:** `DECISIONS.md` → `demoflow.md` → `features.md` → `SDD.md` → `BDD.md` → `build.md` → `checklist.md`. If this guide disagrees with a file to its left, this guide is wrong.
 >
 > **Who this is for:** an engineer finishing the Demo MVP in this folder. The steps follow the **demo critical path** in [demoflow.md §5](demoflow.md). Each step lists its **goal**, **status**, **what exists** (paths), **what remains**, a **✅ done-check**, and the **demo scene it unlocks**.
+
+---
+
+## 2026-10-07 refinement R-1: "Feed arriving" (proposed, not built)
+
+Owner, 7 Oct 2026: 04:17 *"why would someone like to run a classification model for crude identification when the input is heavy gas oil? … any way this is scripted and fixed at 93 %"*; 04:20 *"just renaming may not solve the problem … we can bring this messaging"*; 04:21 *"make a file … ongoing refinements … change the checklist and build files. Then we will make the changes"*. Full spec and file list: [ONGOING_REFINEMENTS.md](ONGOING_REFINEMENTS.md) R-1.
+
+| Item | Where | Status |
+|---|---|---|
+| R-1a DECISIONS S-8: D4 = feed change, feed quality, novelty; crude family is context only | `DECISIONS.md` §0A | ☐ |
+| R-1b Docs in authority order: demoflow, features, SDD (REG-02, DEC-07, D4 rows), BDD | `demoflow.md`, `features.md`, `SDD.md`, `BDD.md` | ☐ |
+| R-1c API: fingerprint + transition timing + uncapped novelty for the panel; drop the 0.4 novelty cap; D4 text and `enabled_by` say feed change / feed quality | `engines/scripted.py`, `regime.py`, `decisions.py`, `workbench.py` | ☐ |
+| R-1d Web: 4-row "Feed arriving" panel replaces the crude-family classifier card (U4 step ② and other unit pages) | `UnitStory.tsx` (CrudeSwitchStory), `RegimeCard.tsx`, `howItWorks.ts`, types | ☐ |
+| R-1e Gemini: guide and guardrails explain feed change / quality; never "identifies the crude" as the purpose | `copilot/ui_guide.py`, `copilot/chat.py` | ☐ |
+| R-1f Pitch: Scene B, PRESENTER_PACK stop 1, PROBING_QUESTIONS (B1, B2, new "Why classify crude when the FCC sees VGO?"), STORY_v2, API_CONTRACT | pitch docs | ☐ |
+| R-1g Tests + deploy (next version) | API + web tests | ☐ |
+
+**✅ Done-check:** U4 step ② on `random_s107` 10:00 shows the 4-row panel mid-switch and on `random_s144` 10:00 after it (100 %, novelty 0.08, crude family as context); a high-novelty minute holds D3/D1; no screen, doc or Gemini answer presents crude identification as the purpose.
 
 ---
 
