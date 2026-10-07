@@ -8,21 +8,21 @@
 
 ---
 
-## 2026-10-07 refinement R-1: "Feed arriving" (proposed, not built)
+## 2026-10-07 refinement R-1: feed quality drives the whole FCC (proposed, not built)
 
-Owner, 7 Oct 2026: 04:17 *"why would someone like to run a classification model for crude identification when the input is heavy gas oil? … any way this is scripted and fixed at 93 %"*; 04:20 *"just renaming may not solve the problem … we can bring this messaging"*; 04:21 *"make a file … ongoing refinements … change the checklist and build files. Then we will make the changes"*. Full spec and file list: [ONGOING_REFINEMENTS.md](ONGOING_REFINEMENTS.md) R-1.
+Owner, 7 Oct 2026: 04:17 *"why would someone like to run a classification model for crude identification when the input is heavy gas oil? … any way this is scripted and fixed at 93 %"*; 04:20 *"just renaming may not solve the problem"*; 04:25 *"the problem is not just with fractionator … it is with the entire FCC unit starting from riser … the classification would identify or use the properties of the input gas oil"*; 05:40 *"capture this under the documents and lets tackle it one by one"*. Full spec, decision table and file/line list: [ONGOING_REFINEMENTS.md](ONGOING_REFINEMENTS.md) R-1.
 
 | Item | Where | Status |
 |---|---|---|
-| R-1a DECISIONS S-8: D4 = feed change, feed quality, novelty; crude family is context only | `DECISIONS.md` §0A | ☐ |
-| R-1b Docs in authority order: demoflow, features, SDD (REG-02, DEC-07, D4 rows), BDD | `demoflow.md`, `features.md`, `SDD.md`, `BDD.md` | ☐ |
-| R-1c API: fingerprint + transition timing + uncapped novelty for the panel; drop the 0.4 novelty cap; D4 text and `enabled_by` say feed change / feed quality | `engines/scripted.py`, `regime.py`, `decisions.py`, `workbench.py` | ☐ |
-| R-1d Web: 4-row "Feed arriving" panel replaces the crude-family classifier card (U4 step ② and other unit pages) | `UnitStory.tsx` (CrudeSwitchStory), `RegimeCard.tsx`, `howItWorks.ts`, types | ☐ |
-| R-1e Gemini: guide and guardrails explain feed change / quality; never "identifies the crude" as the purpose | `copilot/ui_guide.py`, `copilot/chat.py` | ☐ |
-| R-1f Pitch: Scene B, PRESENTER_PACK stop 1, PROBING_QUESTIONS (B1, B2, new "Why classify crude when the FCC sees VGO?"), STORY_v2, API_CONTRACT | pitch docs | ☐ |
-| R-1g Tests + deploy (next version) | API + web tests | ☐ |
+| R-1a DECISIONS S-8: feed quality drives every FCC decision; feed model = property estimate (API) with a derived class; crude family is context only; catalyst flow is a result of the heat balance, never advised | `DECISIONS.md` §0A | ☐ |
+| R-1b Specs in authority order: demoflow, features, SDD (REG-02, DEC-07, D4 rows), BDD | `demoflow.md`, `features.md`, `SDD.md`, `BDD.md` | ☐ |
+| R-1c API: feed-API estimate from the fingerprint (train s100–s139, report held-out error); change detection replaces the scripted 12-min lag; novelty cap removed; derived class; one `feed` block on `/api/decisions` and the workbench; D1/D3/D5/D6/D7 carry `feed_used` and hold while changing or novel; D4 wording | `engines/regime.py`, `engines/scripted.py`, `engines/decisions.py`, `engines/workbench.py`, `routers/regime.py` | ☐ |
+| R-1d Web: "Feed arriving" panel (stop 1 and every unit page step ②); "For this feed …" line on each decision; catalyst-to-oil shown as a result on U2/U3 | `UnitStory.tsx` (CrudeSwitchStory), `RegimeCard.tsx`, `UnitFlow.tsx`, `howItWorks.ts`, `decisionsApi.ts`, `twinTypes.ts` | ☐ |
+| R-1e Gemini: explain feed change, feed properties and the heat balance; never present crude identification as the purpose; never advise catalyst flow directly | `copilot/ui_guide.py`, `copilot/chat.py` | ☐ |
+| R-1f Pitch: DEMO_SCRIPT Scene B, PRESENTER_PACK stop 1, PROBING_QUESTIONS (B1, B2 + new "Why classify crude when the FCC sees VGO?" and "Why don't you advise catalyst flow?"), STORY_v2, API_CONTRACT | pitch docs | ☐ |
+| R-1g Tests + deploy (v0.5.6) | API + web tests | ☐ |
 
-**✅ Done-check:** U4 step ② on `random_s107` 10:00 shows the 4-row panel mid-switch and on `random_s144` 10:00 after it (100 %, novelty 0.08, crude family as context); a high-novelty minute holds D3/D1; no screen, doc or Gemini answer presents crude identification as the purpose.
+**✅ Done-check:** stop 1 on `random_s107` 10:00 shows the panel mid-switch and on `random_s144` 10:00 settled (100 %, estimated API near the declared 23.3, novelty 0.08, crude family as context); the feed-API held-out error is shown; D1/D3/D5/D6/D7 each show "For this feed …"; a changing or high-novelty feed holds D3/D1 (test); no screen, doc or Gemini answer presents crude identification as the purpose or advises catalyst flow.
 
 ---
 
