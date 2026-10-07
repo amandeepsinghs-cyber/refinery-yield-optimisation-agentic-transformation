@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-10-07 refinement R-1 — feed quality drives the whole FCC (proposed, not built)
+
+Owner, 7 Oct 2026: 04:17 *"why would someone like to run a classification model for crude identification when the input is heavy gas oil?"*; 04:25 *"the problem is not just with fractionator … it is with the entire FCC unit starting from riser"*. Facts: [DECISIONS.md](DECISIONS.md) S-8; spec: [ONGOING_REFINEMENTS.md](ONGOING_REFINEMENTS.md) R-1.
+
+**F-FEED "Feed arriving" (R-1c/R-1d, proposed).** Replaces the crude-family classifier card. Four rows: ① feed change — changing / settled, % through, expected finish, detected from the response fingerprint (coke per feed, riser ΔT, fuel per feed, regenerator temperature, conversion, tray ΔT), no scripted lag; ② feed properties — estimated API gravity ± band from the same fingerprint, trained on `s100–s139`, held-out error reported (on site: plus Conradson carbon, K-factor, nitrogen, metals from IOCL lab history); ③ novelty — uncapped; high novelty holds advice; ④ feed-quality class derived from the API estimate. Crude family: one context line. **F-FEED-USED:** D1, D3, D5, D6 and D7 each carry *"For this feed (API ≈ x) …"* and are held while the feed is changing or novel. **F-CTO:** catalyst-to-oil shown on U2/U3 as a result of ROT, preheat and air — never a lever, never advised.
+
+---
+
 ## 2026-10-06 story-first pitch (6 Oct) — Epic L
 
 Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, so we can keep them, otherwise they may feel we are not listening or we are not focussing on the high value use cases"*; 05:52 *"going use case by use case is not the most optimal … I am still missing … the story of a refinery … should I not read the story of the refinery first and then go? then … how we are helping in taking those decisions … the first decision is what should be the temp of furnace, which first and foremost is decided based on the input crude"*; 05:55 "sure" (restructure); 06:03 "update the relevant files that define the build". Context: [use_cases/important_context.ipynb](use_cases/important_context.ipynb). Facts: [DECISIONS.md](DECISIONS.md) §0A. Script: [use_cases/PRESENTER_PACK.md](use_cases/PRESENTER_PACK.md).
@@ -56,7 +64,7 @@ Owner, 04:24: *"no flow of how will we actually know if a particular parameter w
 | D1 Cut point: move now or wait for the lab | `SP_LCO_T98`, `SP_HN_T98` | P1 | UC-01, UC-11 | **Live** |
 | D2 Can the estimate be trusted now? | — | P4 | UC-11, UC-01 | **Live** |
 | D9 Pull an extra lab sample | sampling schedule | P1, P4 | UC-11 | **Live** |
-| D4 Which crude is in the unit | — | P2 | Supports #11 · #1 | **Live** |
+| D4 Is the feed changing, and what are its properties? (S-8; was "which crude") | — | P2 | Supports #11 · #1 | **Scripted** (93 % crude-family and 12-min lag) → feed-API estimate and change detection in R-1c |
 | D8 What first; what breaks downstream | — | P3 | UC-06, UC-08, UC-09 | **Live** (watch items) |
 | D3 Coordinated recipe for the new crude | `SP_T_riser_ROT_F`, `MV_PA1..4`, cut points | P2, P3 | UC-01, UC-06 | **Not yet** (plausibility check withholds it; PA moves not in training data) |
 | D5 Regenerator air vs severity | `Fair` (via `SP_T_reg_F`), `SP_T_riser_ROT_F` | P3 | UC-04 | **Not yet** (air never moved in training data) |
@@ -416,7 +424,7 @@ flowchart TD
 | ID | Feature | Description | Priority | Phase | Decision | Status | BDD |
 |---|---|---|---|---|---|---|---|
 | **J1** | **Regime data & staging** | `cockpit/api/app/regimes.py` (4 API-band regimes R1–R4 with illustrative family labels), `sim_octave/stage_regimes.py` → `_staged/regimes.csv` + `_staged/lab_results.csv`; optional `crude_campaign` scenario in `scenario.m` | Must | v3 P1 | D8 | ☐ | BDD-24 |
-| **J2** | **E1 Regime engine** | Response-fingerprint classifier (coke/feed, riser ΔT, fuel/feed, `Treg`, conversion, tray ΔT) → `regime_id`, `p_regime`, `novelty`, `transition_pct`, `declared_vs_detected`; `GET /api/regime`; `crude_slate` in `/api/twin` | Must | v3 P2 | — | ☐ | BDD-24 |
+| **J2** | **E1 Regime engine** | Response-fingerprint classifier (coke/feed, riser ΔT, fuel/feed, `Treg`, conversion, tray ΔT) → `regime_id`, `p_regime`, `novelty`, `transition_pct`, `declared_vs_detected`. **7 Oct (S-8, R-1c):** the same fingerprint drives a feed-API estimate (with held-out error), feed-change detection and uncapped novelty; `regime_id` becomes context only; `GET /api/regime`; `crude_slate` in `/api/twin` | Must | v3 P2 | — | ☐ | BDD-24 |
 | **J3** | **E2 Regime-aware adaptation** | Per-regime committee weights, physics weight rising with novelty, bias reset at detected switch; `GET /api/adaptation` | Must | v3 P3 | — | ☐ | BDD-25 |
 | **J4** | **E3 Detection & event store** | Per-unit residual ±3σ, CUSUM change-point, MV contribution root cause; SQLite `agent_events`; `GET /api/agents/events`, SSE `GET /api/agents/stream`; trilingual briefings | Must | v3 P2/P4 | — | ☐ | BDD-26 |
 | **J5** | **E4 Multi-set-point recipe** | Yield / fuel / power / coke surrogates per regime, constrained search (P(on-spec) ≥ 95 %, IOW, step limits), `GET /api/recipe`, replay harness | Must | v3 P3 | — | ☐ | BDD-27 |

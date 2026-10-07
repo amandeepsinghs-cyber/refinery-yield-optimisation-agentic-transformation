@@ -14,13 +14,15 @@ Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, s
 
 > **Front Overview page (proposed, 6 Oct 06:53 — SDD §14.6E):** once built, `/platform` opens on **the refinery** (what happens, crude in → products out), with IOCL's use cases pinned where they fit and what we built shown as status dots; the FCC is highlighted and opens `/twin`. Below it, an expandable **Decisions the platform enables** section answers "how does it actually work?" for each of the nine decisions. Until it is deployed, use the slide / `use_cases/INDEX.md`.
 
+> **2026-10-07 R-1 — feed quality, not crude name (DECISIONS S-8; spec [ONGOING_REFINEMENTS.md](ONGOING_REFINEMENTS.md)).** Stop 1 shows a **"Feed arriving"** panel: ① is the feed changing and how far through (detected from the unit's own response); ② estimated feed API with a band and its held-out error; ③ novelty (outside training → advice held); ④ a feed-quality class derived from the estimate. The crude family is one context line. Every later stop says *"For this feed (API ≈ x) …"*; catalyst-to-oil is shown as a result of ROT, preheat and air, never advised. **Line for the room:** *"The FCC never sees crude — it sees heavy gas oil. So we don't name the crude; we estimate what the feed will do in the riser, and every setting downstream says which feed it was sized for."* Until R-1c/R-1d are deployed the current crude-family card is on screen: call it scripted and use this line.
+
 | Act | Screen | Run · minute | What happens | IOCL rows |
 |---|---|---|---|---|
 | 1 Story of a refinery (90 s) | none / one picture | — | Crude → CDU/VDU → heavy gas oil → **FCC** → petrol, diesel, LPG → treating & blending. Six FCC units in one breath. Three gaps: quality (lab every 8 h), crude (changes every 12–48 h), time lag (2–3 h across consoles) | — |
 | 2 What you asked (60 s) | slide / `use_cases/refinery_optimisation_use_cases.md` | — | IOCL's list **with IOCL's figures, attributed**, laid out along the oil's path, our status per row | all |
 | 3 One data foundation (90 s) | **Overview** `/platform` | — | Six layers; "your DCS handles the seconds, nobody has the hours"; person in the loop; MeitY | — |
 | Map | **FCC Complex** `/twin` | `random_s107` 10:00 | What went wrong; pins Decide ×4, Watch ×1 | #6 |
-| Stop 1 Feed arrives | U4 step ② (crude block) | s107 10:00 | D4 which feed, is the switch done (scripted) | Feed |
+| Stop 1 Feed arrives | U4 step ② ("Feed arriving" panel; crude block until R-1d) | s107 10:00 | D4 is the feed changing, what are its properties (estimated API), is it novel; crude family = context (scripted until R-1c) | Feed |
 | Stop 2 Furnace | U1 | s107 10:00 | D6 preheat +1.5 °F (gain measured, chance scripted) | #5, #10 |
 | Stop 3 Riser | U2 | s107 10:00 | D8 watch: conversion +0.5 % | #8, #9 |
 | Stop 4 Regenerator | U3 | s107 10:00 | D5 air −0.03 lb/s (scripted) | #4 |
@@ -41,7 +43,7 @@ Why: the room (and our own team) needs the refinery before the FCC and the FCC b
 Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → detection, checks and optimiser shared across use cases (6 Oct: not one agent per use case) → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
 
 **Scene 0 — Overview (`/platform`, ~60 s).** `/` now redirects here.
-1. Point left to right along the six layers. **Line for the room:** *"What you see is one screen. Behind it: AI and physics — a crude classifier, a four-model soft sensor including a physics-informed neural network, anomaly detection on every unit and an optimiser — sharing one source of truth across your use cases. They advise; your operators decide."*
+1. Point left to right along the six layers. **Line for the room:** *"What you see is one screen. Behind it: AI and physics — a feed-quality model, a four-model soft sensor including a physics-informed neural network, anomaly detection on every unit and an optimiser — sharing one source of truth across your use cases. They advise; your operators decide."*
 2. Run a finger down the use-case cards: "Each of the use cases you gave us has an owner agent and a decision on screen. Green is live on real models; amber is a scripted outcome on real inputs; the grey card is what we have not claimed."
 3. Person-in-the-loop band: "Today it only advises. Nothing is written to your control system."
 4. MeitY band: "Category A stays in the refinery; an edge gateway de-identifies; only Category B leaves, to India regions. Designed for MeitY — this demo uses simulated data only."
@@ -54,7 +56,7 @@ Never say: "agents act", "MeitY-certified", "real IOCL data", "modular services 
 Owner, 04:24: *"no flow of how will we actually know if a particular parameter will actually maximise the yield? … they will ask probing questions. Is our system answering those questions?"* Answer: partly — predict and decide were built; measure-and-learn was not shown, and the crude classifier in the demo is scripted. Owner, 04:58: "yes add".
 
 - **Scene 0 (Overview):** end on the band "How do we know a move works?": *"We don't ask you to trust the first prediction. Every move goes predict, decide, measure, learn. On your plant a short pilot proves each lever first."*
-- **Fractionator step ②:** point at the crude walkthrough: new crude 06:25, behaviour shifts until 07:25, named at 07:37 after a 15-minute hold. It's labelled scripted. Say *"the name follows your lab assay; the unit's behaviour confirms it."* Don't volunteer the 8-of-15 classifier figure; use `PROBING_QUESTIONS.md` B2 only if pressed.
+- **Fractionator step ②:** point at the feed walkthrough: feed starts changing 06:25, behaviour shifts until 07:25, change confirmed after a hold. Say *"what matters is when the new feed is fully in and how it will crack — its estimated API — not the crude's name."* (S-8). Until R-1c is deployed the timing is scripted; don't volunteer the 8-of-15 crude-classifier figure; use `PROBING_QUESTIONS.md` B2 only if pressed.
 - **Furnace step ④:** scroll to the proof loop: Predict (scripted gain), Decide (built), Measure (shown), Learn (pilot). Then the evidence: recipe fed back through the simulator.
 - Keep `PROBING_QUESTIONS.md` open on a second screen.
 
@@ -86,7 +88,7 @@ Owner, 04:24: *"no flow of how will we actually know if a particular parameter w
 
 **Gemini** (any screen): "Explain this decision and what happens if I hold" — in English, Hinglish or Hindi (unchanged from Scene 6).
 
-**Scripted outcomes (owner decision, 2 Oct 13:56):** 1.5 months of simulated data cannot honestly train the crude classifier and per-unit response models, so the classifier (93 %, detected 12 min after the switch ends) and the D3 / D5–D7 moves are scripted to show what the verbatim expects. Inputs are the real simulator data. The top-bar pill reads *scripted outcomes* and each scripted move carries a tag. Stay before **12:20** on the Scenario control (simulator LCO data is corrupt after that in s107).
+**Scripted outcomes (owner decision, 2 Oct 13:56):** 1.5 months of simulated data cannot honestly train the crude classifier and per-unit response models, so the classifier (93 %, detected 12 min after the switch ends) and the D3 / D5–D7 moves are scripted. **7 Oct (S-8, R-1c):** the crude-family classifier is replaced by feed-change detection, a feed-API estimate with held-out error and uncapped novelty; the 93 % and the 12-min lag go; D3 / D5–D7 moves stay scripted to show what the verbatim expects. Inputs are the real simulator data. The top-bar pill reads *scripted outcomes* and each scripted move carries a tag. Stay before **12:20** on the Scenario control (simulator LCO data is corrupt after that in s107).
 
 > [!WARNING]
 > Never say on stage: dollar or rupee figures; "reformer", "LPG splitter", "CDU" (not in this build); cat-to-oil or excess-O₂ *as set points* (they are effects of preheat and regenerator air, not levers in the simulator); cooling-water flow, feed rate or catalyst addition as recommendations; ROT targets above 985 °F (outside the allowed range).
@@ -95,7 +97,7 @@ Owner, 04:24: *"no flow of how will we actually know if a particular parameter w
 
 ## 1. The Story in One Line
 
-**"The refinery changes crude every day or two, and every unit runs on yesterday's settings for hours. This twin detects the new crude from the plant's own response, resets its lab bias, tells each unit what to move — with the consequence in plant units — and refuses when the models disagree."**
+**"The refinery changes crude every day or two, and every unit runs on yesterday's settings for hours. This twin detects the feed change from the plant's own response, resets its lab bias, tells each unit what to move — with the consequence in plant units — and refuses when the models disagree."**
 
 - **Decision shown:** per unit, the coordinated multi-set-point **recipe** after a crude switch (U4 cut points first; U1/U3/U5/U6 the same way), and whether it may be acted on (spread gate) or must wait for a lab.
 - **Not shown:** D1 (hydrotreater sulfur) — the simulator has no sulfur; proven on the refinery's own data (§6).
@@ -134,7 +136,7 @@ The demo run is picked from the **hold-out runs** (never used for training) afte
 
 ### Scene 0: Hook and Honesty (1 min) — `/twin` · random_s107 · t 600 (10:00)
 - **Screen:** Refinery Twin home. Provenance chip highlighted.
-- **Say:** *"A refinery changes crude every day or two. Every model and every operator setting lags that change by hours. This cockpit watches all six FCC units at once, detects the new crude from the plant's own response, resets its lab bias and tells each unit what to move — and when not to. The data is a peer-reviewed physics simulator: 54 runs, 50 labelled crude switches. We use it to show behaviour, not to claim accuracy on your unit."*
+- **Say:** *"A refinery changes crude every day or two. Every model and every operator setting lags that change by hours. This cockpit watches all six FCC units at once, detects the feed change from the plant's own response, resets its lab bias and tells each unit what to move — and when not to. The data is a peer-reviewed physics simulator: 54 runs, 50 labelled crude switches. We use it to show behaviour, not to claim accuracy on your unit."*
 - **Must be true:** the chip shows batch, run and minute; `plotly:0` on this screen.
 - **Backend:** `GET /api/twin`
 
@@ -152,7 +154,7 @@ The demo run is picked from the **hold-out runs** (never used for training) afte
 - **Backend:** `GET /api/unit/unit_4_fractionator/workbench` · **BDD-28** one cursor, `?uc=` / `?tag=` entry
 
 ### Scene 3: Regime & models — "The models adapted, here is the evidence" (1.5 min) — U4 rail · t 600
-- **Screen:** **Crude family & bias reset** (R1–R4 bars, declared vs detected, detected at, novelty, bias reset time and offset, "model weights from held-out accuracy · not set by the crude"); **Model evidence** (member weights: ridge reference only, hybrid / PINN / GP blended, physics checks: mass closure, tray monotonic, reactor balance; **Spread gate PASS · W90 13.7 / 14**).
+- **Screen:** **Feed arriving & bias reset** (after R-1d: feed changing / % through, estimated API ± band vs declared, novelty, derived feed class, crude family as one context line; until then the R1–R4 bars), declared vs detected, detected at, novelty, bias reset time and offset, "model weights from held-out accuracy · not set by the crude"); **Model evidence** (member weights: ridge reference only, hybrid / PINN / GP blended, physics checks: mass closure, tray monotonic, reactor balance; **Spread gate PASS · W90 13.7 / 14**).
 - **Say:** *"No retraining in the loop. The three blended models are weighted by their accuracy on recent labs, the lab bias resets after the switch, and the gate only passes when the models agree within fourteen degrees."*
 - **Backend:** `regime`, `models` blocks of the workbench payload (SDD-REG, SDD-ADP)
 

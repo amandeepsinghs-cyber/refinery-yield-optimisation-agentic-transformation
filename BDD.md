@@ -57,6 +57,7 @@ Feature: The cockpit shows how a move is proven, not just predicted
     Then no proof loop is shown for it
 
   Scenario: Crude switch walkthrough is labelled
+    # 7 Oct (S-8): superseded by BDD-39 once R-1d is deployed; kept until then
     Given run random_s107 at 10:00 and the main fractionator page
     Then step 2 shows "How a crude switch plays out on this run" marked "scripted walkthrough"
     And it lists 06:25 new crude, 06:25–07:25 behaviour shifts, 07:37 crude named
@@ -1110,6 +1111,8 @@ Feature: Complete unit and use-case data workspaces, actionable decisions, and p
 
 ```gherkin
 Feature: Recognise the active crude regime from what the unit actually sees
+  # 7 Oct (DECISIONS S-8): the purpose moves from naming the crude family to feed change,
+  # feed properties and novelty — see BDD-39. These scenarios stay for the fingerprint engine.
   As a shift superintendent
   I want the twin to tell me which crude family the unit is really running on, and how sure it is
   So that I stop trusting a model that was fitted on the previous crude
@@ -1495,7 +1498,7 @@ Feature: Clicking a unit opens its four steps, top to bottom
   Scenario: ② What we observe
     Then the live value is drawn against its expected band
     And the four models' bell curves are shown against plan and spec with P(on-spec)
-    And the crude block says which crude is in the unit and when it switched
+    And the feed block says whether the feed is changing, its estimated API and novelty, with the crude family as context (BDD-39; until R-1d: which crude and when it switched)
     # ⏳ And the soft-sensor estimate is drawn over time with the lab results marked on it
 
   @ui @demo  # ✅ (history ⏳)
@@ -1759,3 +1762,53 @@ Feature: Decisions the platform enables
 |---|---|---|
 | BDD-37 | FP-1 | `components/how/PlatformOverview.tsx`, status-dot component, `lib/howItWorks.ts` (`REFINERY_STEPS`, `UC_PINS`, `USE_CASES`) |
 | BDD-38 | FP-2 | `components/how/PlatformOverview.tsx`, `lib/howItWorks.ts` (`DECISION_ORDER`, `DECISION_CARD`), `tests/` vitest, `e2e/twin.spec.ts` |
+
+## 11. R-1 Feed quality drives the whole FCC (`BDD-39`, 2026-10-07, DECISIONS S-8)
+
+### BDD-39: The feed panel answers "is the feed changing, what will it do, is it new" — not "which crude" `@regime @ui @api` (NEW, proposed)
+
+```gherkin
+Feature: Feed arriving
+  As a shift superintendent on an FCC fed heavy gas oil
+  I want to know when the new feed is fully in, how it will crack, and whether the models have seen it
+  So that every setting from the riser onward is sized for the feed actually in the unit
+
+  Scenario: Mid-switch on the demo run
+    Given run random_s107 at a minute during the 06:25–07:25 feed change
+    When I open stop 1 (main fractionator, step 2)
+    Then the panel says the feed is changing, with the percent through and the expected finish
+    And the change time comes from detection on the unit's response, not a fixed 12-minute lag
+
+  Scenario: Settled on the held-out run
+    Given run random_s144 at 10:00
+    Then the panel says the feed is settled
+    And it shows an estimated API with a band, near the declared 23.3
+    And it shows the held-out error of the API estimate
+    And novelty is 0.08 and the feed class is derived from the estimate
+    And the crude family appears as one context line, never as probability bars
+
+  Scenario: Every downstream decision says which feed it used
+    Given run random_s107 at 10:00
+    Then D1, D3, D5, D6 and D7 each read "For this feed (API ≈ x) …"
+
+  Scenario: Advice is held while the feed is changing or novel
+    Given the feed state is "changing" or novelty is at least 0.5
+    Then D1, D3, D5, D6 and D7 read "Not yet" with the reason "feed changing" or "feed outside training"
+    And D1 still shows its estimate
+
+  Scenario: Novelty is not capped
+    Given a minute whose fingerprint is far outside the training runs
+    Then the reported novelty can exceed 0.4
+
+  Scenario: Catalyst flow is a result, never advice
+    When I open the riser or regenerator page
+    Then catalyst-to-oil is shown as a result of riser outlet temperature, preheat and air
+    And no decision, recipe or Gemini answer recommends a catalyst flow, catalyst-to-oil or slide-valve move
+
+  Scenario: No crude identification as the purpose
+    Then no screen, document or Gemini answer says the platform's job is to identify the crude
+```
+
+| BDD | Feature | Code |
+|---|---|---|
+| BDD-39 | F-FEED, F-FEED-USED, F-CTO (SDD-FEED-01..08) | `engines/regime.py`, `engines/scripted.py`, `engines/decisions.py`, `engines/workbench.py`, `twin/l1/UnitStory.tsx`, `twin/l1/RegimeCard.tsx`, `twin/l0/UnitFlow.tsx`, `copilot/ui_guide.py`, `copilot/chat.py` |

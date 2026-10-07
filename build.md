@@ -15,7 +15,7 @@ Owner, 7 Oct 2026: 04:17 *"why would someone like to run a classification model 
 | Item | Where | Status |
 |---|---|---|
 | R-1a DECISIONS S-8: feed quality drives every FCC decision; feed model = property estimate (API) with a derived class; crude family is context only; catalyst flow is a result of the heat balance, never advised | `DECISIONS.md` §0A | ☑ |
-| R-1b Specs in authority order: demoflow, features, SDD (REG-02, DEC-07, D4 rows), BDD | `demoflow.md`, `features.md`, `SDD.md`, `BDD.md` | ☐ |
+| R-1b Specs in authority order: demoflow, features, SDD (REG-02, DEC-07, D4 rows), BDD | `demoflow.md`, `features.md`, `SDD.md`, `BDD.md` | ☑ |
 | R-1c API: feed-API estimate from the fingerprint (train s100–s139, report held-out error); change detection replaces the scripted 12-min lag; novelty cap removed; derived class; one `feed` block on `/api/decisions` and the workbench; D1/D3/D5/D6/D7 carry `feed_used` and hold while changing or novel; D4 wording | `engines/regime.py`, `engines/scripted.py`, `engines/decisions.py`, `engines/workbench.py`, `routers/regime.py` | ☐ |
 | R-1d Web: "Feed arriving" panel (stop 1 and every unit page step ②); "For this feed …" line on each decision; catalyst-to-oil shown as a result on U2/U3 | `UnitStory.tsx` (CrudeSwitchStory), `RegimeCard.tsx`, `UnitFlow.tsx`, `howItWorks.ts`, `decisionsApi.ts`, `twinTypes.ts` | ☐ |
 | R-1e Gemini: explain feed change, feed properties and the heat balance; never present crude identification as the purpose; never advise catalyst flow directly | `copilot/ui_guide.py`, `copilot/chat.py` | ☐ |
