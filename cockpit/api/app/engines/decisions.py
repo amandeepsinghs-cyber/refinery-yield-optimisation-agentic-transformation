@@ -299,8 +299,8 @@ def _explain_models(arrs: dict, prop: str, j: int, run_id: str | None = None, t:
         v = row.get(c) if row else None
         if c.split("__")[0] in ("V2", "V4", "V6") or (v is not None and un == "frac" and abs(float(v)) > 1.5):
             un = "% open"
-        if c.split("__")[0] == "F5_fuel":
-            un = ""   # simulator scale; the twin's "lb/s" label does not match the magnitude
+        if c.split("__")[0] in ("F5_fuel", "power_CAB", "power_WGC", "dP_reactor_frac", "F_regen_cat", "F_coke"):
+            un = "sim. units"   # simulator scale; no plant unit matches the magnitude
         inputs.append({"tag": c, "label": nm, "unit": un, "value": _f(v, 3), "used_by": who})
     inputs.sort(key=lambda x: (-len(x["used_by"]), x["tag"]))
     bias, wsrc = P("bias"), P("weight_source")
@@ -364,7 +364,7 @@ def _ripple(run_id: str, t: int, unit_id: str, sp_tag: str, sp_after: float, del
     for k, lab in (("d_fuel_lb_s", "furnace fuel"), ("d_power_MW", "compressor power")):
         v = w.get(k)
         if v and abs(v) >= 0.01:
-            out.append({"what": lab, "delta": _f(v, 3), "unit": "lb/s" if "fuel" in k else "MW",
+            out.append({"what": lab, "delta": _f(v, 3), "unit": "sim. units",
                         "source": "regime surrogate"})
     return out
 

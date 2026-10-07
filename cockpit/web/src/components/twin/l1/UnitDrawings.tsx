@@ -47,7 +47,7 @@ function Furnace({ at }: { at: At }) {
       <L x={496} y={286} k="Hot feed → riser" />
       <L x={496} y={304} k="Preheat outlet" v={fx(at("T2_preheat_F"), 1)} u="°F" />
       <L x={496} y={322} k="" v={`lever: set point ${fx(at("SP_T_preheat_F"), 1)} °F`} lever />
-      <L x={40} y={366} k="Fuel gas" v={fx(at("F5_fuel"))} />
+      <L x={40} y={366} k="Fuel gas" v={fx(at("F5_fuel"))} tag="F5_fuel" />
       <L x={40} y={384} k="Fuel valve V1" v={fx(at("V1"), 1)} u="%" />
       <Line d="M320 60 V36 H460" />
       <L x={466} y={32} k="Flue gas" />
@@ -75,13 +75,13 @@ function Riser({ at }: { at: At }) {
       <Line d="M90 380 H300" prod />
       <L x={90} y={372} k="Hot feed" v={`${fx(at("feed_flow_lb_s"))} lb/s · API ${fx(at("dist_feed_API"), 1)}`} />
       <path d="M560 410 H330" className="us-line cat" markerEnd="url(#ud-ar)" />
-      <L x={560} y={402} k="Regenerated catalyst" v={fx(at("F_regen_cat"))} end />
+      <L x={560} y={402} k="Regenerated catalyst" v={fx(at("F_regen_cat"))} end tag="F_regen_cat" />
       {/* vapour out */}
       <Line d="M320 40 V22 H560" prod />
       <L x={566} y={18} k="Cracked vapour → fractionator" end />
-      <L x={400} y={70} k="Conversion" v={fx(at("conversion_pct"), 1)} u="%" />
+      <L x={400} y={70} k="Conversion" v={fx(at("conversion_pct"), 1)} u="%" tag="conversion_pct" />
       <L x={400} y={90} k="" v={`lever: riser outlet T set point ${fx(at("SP_T_riser_ROT_F"), 0)} °F`} lever />
-      <L x={400} y={110} k="Reactor–fractionator ΔP" v={fx(at("dP_reactor_frac"), 1)} />
+      <L x={400} y={110} k="Reactor–fractionator ΔP" v={fx(at("dP_reactor_frac"), 1)} tag="dP_reactor_frac" />
       <text x={320} y={92} textAnchor="middle" className="us-k us-v small">cyclones</text>
     </svg>
   );
@@ -101,7 +101,7 @@ function Regenerator({ at }: { at: At }) {
       <L x={566} y={26} k="Flue gas" end />
       <L x={420} y={110} k="Cyclone ΔT (afterburn)" v={fx(at("dT_cyc_reg_F"), 1)} u="°F" />
       <L x={420} y={130} k="" v={`lever: bed T set point ${fx(at("SP_T_reg_F"), 0)} °F`} lever />
-      <L x={420} y={150} k="Coke burn" v={fx(at("F_coke"))} />
+      <L x={420} y={150} k="Coke burn" v={fx(at("F_coke"))} tag="F_coke" />
       {/* spent cat in */}
       <path d="M80 200 H226" className="us-line cat" markerEnd="url(#ud-ar)" />
       <L x={80} y={192} k="Spent catalyst from riser" />
@@ -109,11 +109,11 @@ function Regenerator({ at }: { at: At }) {
       <Line d="M120 400 H320 V354" />
       <L x={40} y={392} k="Combustion air" v={fx(at("Fair"), 2)} u="lb/s" lever />
       <L x={40} y={412} k="Valves V6 / V7" v={`${fx(at("V6"), 0)} / ${fx(at("V7"), 0)}`} u="%" small />
-      <L x={40} y={430} k="Air blower power" v={fx(at("power_CAB"))} small />
+      <L x={40} y={430} k="Air blower power" v={fx(at("power_CAB"))} small tag="power_CAB" />
       {/* regen cat out */}
       <path d="M380 350 V400 H560" className="us-line cat" markerEnd="url(#ud-ar)" />
       <L x={566} y={392} k="Regenerated catalyst → riser" end />
-      <L x={566} y={412} k="Carbon left on catalyst" v={fx(at("C_regen_cat"), 3)} u="wt %" end small />
+      <L x={566} y={412} k="Carbon left on catalyst" v={fx(at("C_regen_cat") != null ? (at("C_regen_cat") as number) * 100 : null, 2)} u="wt %" end small />
     </svg>
   );
 }
@@ -140,7 +140,7 @@ function GasPlant({ at }: { at: At }) {
       <path d="M520 130 L560 140 L560 160 L520 170 z" className="us-tray" fill="none" />
       <path d="M440 240 V150 H506" className="us-line" fill="none" markerEnd="url(#ud-ar)" />
       <L x={540} y={204} k="Wet-gas compressor" end={false} />
-      <L x={540} y={222} k="Power" v={fx(at("power_WGC"))} />
+      <L x={540} y={222} k="Power" v={fx(at("power_WGC"))} tag="power_WGC" />
       {/* reflux back */}
       <path d="M300 290 V350 H80" className="us-line" fill="none" markerEnd="url(#ud-ar)" />
       <L x={80} y={370} k="Reflux → fractionator" />

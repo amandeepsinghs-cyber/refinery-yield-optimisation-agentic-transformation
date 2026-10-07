@@ -72,6 +72,13 @@ def _recorded_decisions_map() -> dict[str, str]:
     return out
 
 
+
+def _frac_open(v: float) -> float:
+    """Valve position as a fraction 0–1. The simulator logs some valves in percent (46–55); 7 Oct: normalise once
+    so every '% open' display and the 15–85 % band checks use the same scale."""
+    v = float(v)
+    return v / 100.0 if v > 1.5 else v
+
 def _build_tag_row(
     df_win: pd.DataFrame,
     row: pd.Series,
@@ -225,7 +232,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     f5_fuel = _val(row, "F5_fuel", default=35.09)
     flue_o2 = _val(row, "fluegas_O2_pct", default=2.68)
     flue_co = _val(row, "fluegas_CO_ppm", default=30.45)
-    v1_pos = _val(row, "V1", default=0.50)
+    v1_pos = _frac_open(_val(row, "V1", default=0.50))
 
     # Unit 2: Riser Reactor, Standpipe & Transfer Line
     tr_riser = _val(row, "Tr_riser_F", "Tr_riser_out_F", default=969.0)
@@ -238,8 +245,8 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     standpipe_lvl = _val(row, "standpipe_level", default=35.09)
     f_regen_cat = _val(row, "F_regen_cat", default=2473.4)
     f_spent_cat = _val(row, "F_spent_cat", default=2443.8)
-    v2_pos = _val(row, "V2", default=0.50)
-    v3_pos = _val(row, "V3", default=0.50)
+    v2_pos = _frac_open(_val(row, "V2", default=0.50))
+    v3_pos = _frac_open(_val(row, "V3", default=0.50))
 
     # Unit 3: Catalyst Regenerator, Cyclones & Main Air Blower (CAB)
     treg_f = _val(row, "Treg_F", default=1250.0)
@@ -254,9 +261,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     f_air = _val(row, "Fair", "F_air_x29", default=40.04)
     power_cab = _val(row, "power_CAB", default=6.31)
     f_fluegas = _val(row, "F_fluegas", default=42.5)
-    v4_pos = _val(row, "V4", default=0.50)
-    v6_pos = _val(row, "V6", default=0.50)
-    v7_pos = _val(row, "V7", default=0.50)
+    v4_pos = _frac_open(_val(row, "V4", default=0.50))
+    v6_pos = _frac_open(_val(row, "V6", default=0.50))
+    v7_pos = _frac_open(_val(row, "V7", default=0.50))
 
     # Unit 4: 20-Tray Main Fractionator, 4 Pumparounds & Control Valves
     lco_truth = _val(row, "LCO_T98_F", default=lco_q50)
@@ -275,10 +282,10 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     mv_pa2 = _val(row, "MV_PA2", default=216.5)
     mv_pa3 = _val(row, "MV_PA3", default=35.04)
     mv_pa4 = _val(row, "MV_PA4", default=1243.4)
-    v8_pos = _val(row, "valve_V8", default=0.52)
-    v9_pos = _val(row, "valve_V9", default=0.48)
-    v10_pos = _val(row, "valve_V10", default=0.55)
-    v11_pos = _val(row, "valve_V11", default=0.51)
+    v8_pos = _frac_open(_val(row, "valve_V8", default=0.52))
+    v9_pos = _frac_open(_val(row, "valve_V9", default=0.48))
+    v10_pos = _frac_open(_val(row, "valve_V10", default=0.55))
+    v11_pos = _frac_open(_val(row, "valve_V11", default=0.51))
     f_v11 = _val(row, "F_V11", "MV_LCO_draw", default=163.6)
 
     # Unit 5: Overhead Condenser, Reflux Drum & Wet Gas Compressor (WGC)
@@ -338,9 +345,8 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     )
 
     hydraulic_dp_norm = round(dp_reactor / 0.43126, 3)
-    flooding_status = (
-        "GREEN" if hydraulic_dp_norm <= 1.08 else ("AMBER" if hydraulic_dp_norm <= 1.16 else "RED")
-    )
+    # 7 Oct: dP_reactor_frac is on a simulator scale (often negative), so no flooding status is derived from it.
+    flooding_status = "GREEN"
 
     # 5-Channel Dual-Sensor Drift Matrix (SDD-PINN-04)
     t2_dup = _val(row, "T2_dup", default=t2_preheat)
@@ -522,7 +528,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "metrics": [
                     {"label": "Furnace fuel (F5_fuel, sim. units)", "before": round(f5_fuel, 2), "after": None, "delta": None, "unit": "", "direction": "not quantified"},
                     {"label": "Feed preheat temp (T2_preheat_F)", "before": round(t2_preheat, 1), "after": None, "delta": None, "unit": "°F", "direction": "not quantified"},
-                    {"label": "Wet gas compressor power (power_WGC)", "before": round(power_wgc, 2), "after": None, "delta": None, "unit": "MW", "direction": "not quantified"},
+                    {"label": "Wet gas compressor power (power_WGC)", "before": round(power_wgc, 2), "after": None, "delta": None, "unit": "sim. units", "direction": "not quantified"},
                 ],
             },
             "regeneration": {
@@ -532,7 +538,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "metrics": [
                     {"label": "Flue gas excess O2 (fluegas_O2_pct)", "before": round(flue_o2, 2), "after": None, "delta": None, "unit": "%", "direction": "not quantified"},
                     {"label": "Cyclone afterburn ΔT (dT_cyc_reg_F)", "before": round(dt_cyc_reg, 1), "after": None, "delta": None, "unit": "°F", "direction": "not quantified"},
-                    {"label": "Main air blower power (power_CAB)", "before": round(power_cab, 2), "after": None, "delta": None, "unit": "MW", "direction": "not quantified"},
+                    {"label": "Main air blower power (power_CAB)", "before": round(power_cab, 2), "after": None, "delta": None, "unit": "sim. units", "direction": "not quantified"},
                 ],
             },
             "reliability": {
@@ -553,14 +559,14 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         _build_tag_row(df_win, row, "T2_preheat_F", "Feed Preheat Outlet Temperature", "CV", "°F", f"SP {sp_t_preheat:.1f} °F"),
         _build_tag_row(df_win, row, "SP_T_preheat_F", "Feed Preheat Outlet Set Point", "SP", "°F", "610–625 °F"),
         _build_tag_row(df_win, row, "T3_furnace_F", "Fired Heater Radiant Firebox Temp", "CV", "°F", "<= 1620.0 °F IOW", furnace_status),
-        _build_tag_row(df_win, row, "F5_fuel", "Furnace Fuel Gas Firing Rate", "MV", "lb/s", "20–45 lb/s"),
+        _build_tag_row(df_win, row, "F5_fuel", "Furnace Fuel Gas Firing Rate", "MV", "sim. units", "simulator scale; no plant limit", "N/A"),
         _build_tag_row(df_win, row, "fluegas_O2_pct", "Stack Flue Gas Excess Oxygen", "CV", "%", "1.8–2.5% O2", "GREEN" if 1.5 <= flue_o2 <= 3.0 else "AMBER"),
         _build_tag_row(df_win, row, "fluegas_CO_ppm", "Stack Flue Gas CO Breakthrough", "CV", "ppm", "<= 150 ppm", "GREEN" if flue_co <= 150.0 else "RED"),
         _build_tag_row(df_win, row, "feed_flow_lb_s", "Fresh VGO Feed Mass Flow Rate", "DISTURBANCE", "lb/s", "140–190 lb/s"),
         _build_tag_row(df_win, row, "dist_feed_API", "Fresh VGO Feed API Gravity", "DISTURBANCE", "°API", "21–28 °API"),
         _build_tag_row(df_win, row, "dist_T_feed_in_F", "Battery-Limit VGO Feed Inlet Temp", "DISTURBANCE", "°F", "440–480 °F"),
         _build_tag_row(df_win, row, "dist_T_ambient_F", "Ambient Air Temperature", "DISTURBANCE", "°F", "50–105 °F"),
-        _build_tag_row(df_win, row, "V1", "Furnace Fuel Gas Control Valve V1", "VALVE", "frac", "0.15–0.85"),
+        _build_tag_row(df_win, row, "V1", "Furnace Fuel Gas Control Valve V1", "VALVE", "% open", "15–85 %"),
         _build_tag_row(df_win, row, "T2_dup", "Redundant Preheat Thermocouple T2_dup", "DUP_SENSOR", "°F", f"|dT| <= 2.5 °F (actual {abs(t2_preheat-t2_dup):.2f})"),
     ]
 
@@ -568,15 +574,15 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         _build_tag_row(df_win, row, "Tr_riser_F", "Riser Reactor Outlet Temperature (ROT)", "CV", "°F", f"SP {sp_t_riser:.1f} °F"),
         _build_tag_row(df_win, row, "SP_T_riser_ROT_F", "Riser Outlet Temperature Set Point", "SP", "°F", "966–974 °F"),
         _build_tag_row(df_win, row, "conversion_pct", "Once-Through Cracking Conversion", "CV", "%", "71.0–75.5%"),
-        _build_tag_row(df_win, row, "dP_reactor_frac", "Reactor / Main Column Hydraulic dP", "CV", "frac", "<= 0.480 IOW", flooding_status),
+        _build_tag_row(df_win, row, "dP_reactor_frac", "Reactor–Column ΔP", "CV", "sim. units", "simulator scale; no IOW", "N/A"),
         _build_tag_row(df_win, row, "P4_reactor_psia", "Reactor Disengager Vessel Pressure", "CV", "psia", "22.5–26.5 psia"),
         _build_tag_row(df_win, row, "W_riser", "Riser Catalyst Holdup Inventory", "CV", "lb", "8500–10500 lb"),
         _build_tag_row(df_win, row, "standpipe_level", "Regenerated Standpipe Catalyst Level", "CV", "ft", "30–40 ft"),
         _build_tag_row(df_win, row, "W_standpipe", "Standpipe Catalyst Mass Holdup", "CV", "lb", "200–300 lb"),
-        _build_tag_row(df_win, row, "F_regen_cat", "Regenerated Catalyst Circulation Rate", "MV", "lb/min", "2200–2750 lb/min"),
+        _build_tag_row(df_win, row, "F_regen_cat", "Regenerated Catalyst Circulation Rate", "MV", "sim. units", "simulator scale; no plant limit", "N/A"),
         _build_tag_row(df_win, row, "F_spent_cat", "Spent Catalyst Circulation Rate", "MV", "lb/min", "2200–2750 lb/min"),
-        _build_tag_row(df_win, row, "V3", "Regenerated Catalyst Slide Valve V3", "VALVE", "frac", "0.15–0.85"),
-        _build_tag_row(df_win, row, "V2", "Spent Catalyst Slide Valve V2", "VALVE", "frac", "0.15–0.85"),
+        _build_tag_row(df_win, row, "V3", "Regenerated Catalyst Slide Valve V3", "VALVE", "% open", "15–85 %"),
+        _build_tag_row(df_win, row, "V2", "Spent Catalyst Slide Valve V2", "VALVE", "% open", "15–85 %"),
         _build_tag_row(df_win, row, "Tr_dup", "Redundant Riser ROT Thermocouple Tr_dup", "DUP_SENSOR", "°F", f"|dT| <= 2.5 °F (actual {abs(tr_riser-tr_dup):.2f})"),
     ]
 
@@ -587,12 +593,12 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         _build_tag_row(df_win, row, "dT_cyc_reg_F", "Cyclone Afterburn Delta-T (Tcyc - Treg)", "CV", "°F", "5.0–18.0 °F", "GREEN" if abs(dt_cyc_reg) <= 20.0 else "AMBER"),
         _build_tag_row(df_win, row, "C_spent_cat", "Carbon on Spent Catalyst", "CV", "wt frac", "0.008–0.013"),
         _build_tag_row(df_win, row, "C_regen_cat", "Carbon on Regenerated Catalyst", "CV", "wt frac", "<= 0.0035"),
-        _build_tag_row(df_win, row, "F_coke", "Catalytic Coke Burn Rate", "CV", "lb/min", "11–18 lb/min"),
+        _build_tag_row(df_win, row, "F_coke", "Catalytic Coke Burn Rate", "CV", "sim. units", "simulator scale; no plant limit", "N/A"),
         _build_tag_row(df_win, row, "Fair", "Main Air Blower Combustion Air Flow", "MV", "lb/s", "35–46 lb/s"),
-        _build_tag_row(df_win, row, "power_CAB", "Main Air Blower (CAB) Shaft Power", "CV", "MW", "<= 7.20 MW"),
+        _build_tag_row(df_win, row, "power_CAB", "Main Air Blower (CAB) Shaft Power", "CV", "sim. units", "simulator scale; no plant limit", "N/A"),
         _build_tag_row(df_win, row, "P6_regen_psia", "Regenerator Vessel Pressure", "CV", "psia", f"SP {sp_p_reg:.1f} psia"),
-        _build_tag_row(df_win, row, "V4", "Main Air Blower Discharge Valve V4", "VALVE", "frac", "0.15–0.85"),
-        _build_tag_row(df_win, row, "V6", "Flue Gas Pressure Slide Valve V6", "VALVE", "frac", "0.15–0.85"),
+        _build_tag_row(df_win, row, "V4", "Main Air Blower Discharge Valve V4", "VALVE", "% open", "15–85 %"),
+        _build_tag_row(df_win, row, "V6", "Flue Gas Pressure Slide Valve V6", "VALVE", "% open", "15–85 %"),
         _build_tag_row(df_win, row, "Treg_dup", "Redundant Regen Bed Thermocouple Treg_dup", "DUP_SENSOR", "°F", f"|dT| <= 3.0 °F (actual {abs(treg_f-treg_dup):.2f})"),
         _build_tag_row(df_win, row, "P6_dup", "Redundant Regen Pressure Transmitter P6_dup", "DUP_SENSOR", "psia", f"|dP| <= 0.35 psia (actual {abs(p6_regen-p6_dup):.2f})"),
     ]
@@ -613,8 +619,8 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         _build_tag_row(df_win, row, "MV_PA3", "Lower-Mid Pumparound PA3 Circulation Rate", "MV", "klb/h", "28–42 klb/h"),
         _build_tag_row(df_win, row, "MV_PA4", "Bottom Slurry Pumparound PA4 Rate", "MV", "klb/h", "1200–1300 klb/h"),
         _build_tag_row(df_win, row, "P5_frac_psia", "Main Fractionator Overhead Pressure", "CV", "psia", f"SP {sp_p_frac:.1f} psia"),
-        _build_tag_row(df_win, row, "valve_V10", "Heavy Naphtha Draw Control Valve V10", "VALVE", "frac", "0.15–0.85"),
-        _build_tag_row(df_win, row, "valve_V11", "LCO Product Draw Control Valve V11", "VALVE", "frac", "0.15–0.85"),
+        _build_tag_row(df_win, row, "valve_V10", "Heavy Naphtha Draw Control Valve V10", "VALVE", "% open", "15–85 %"),
+        _build_tag_row(df_win, row, "valve_V11", "LCO Product Draw Control Valve V11", "VALVE", "% open", "15–85 %"),
         _build_tag_row(df_win, row, "P5_dup", "Redundant Fractionator Pressure P5_dup", "DUP_SENSOR", "psia", f"|dP| <= 0.35 psia (actual {abs(p5_frac-p5_dup):.2f})"),
     ]
 
@@ -624,18 +630,18 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         _build_tag_row(df_win, row, "MV_reflux_ratio", "Main Fractionator Overhead Reflux Ratio", "MV", "L/D", "0.71–0.76 sweet spot"),
         _build_tag_row(df_win, row, "SP_T_overhead", "Overhead Accumulator Drum Temp SP", "SP", "°F", "244.5–247.0 °F"),
         _build_tag_row(df_win, row, "SP_acc_level", "Overhead Reflux Drum Level Set Point", "SP", "%", "65–75%"),
-        _build_tag_row(df_win, row, "power_WGC", "Wet Gas Compressor (WGC) Shaft Power", "CV", "MW", "<= 5.40 MW"),
+        _build_tag_row(df_win, row, "power_WGC", "Wet Gas Compressor (WGC) Shaft Power", "CV", "sim. units", "simulator scale; no plant limit", "N/A"),
         _build_tag_row(df_win, row, "F7", "Overhead Wet Gas & Distillate Vapor Flow", "CV", "lb/min", "420–490 lb/min"),
-        _build_tag_row(df_win, row, "valve_V8", "Overhead Reflux Control Valve V8", "VALVE", "frac", "0.15–0.85"),
-        _build_tag_row(df_win, row, "valve_V9", "Condenser Cooling Water Valve V9", "VALVE", "frac", "0.15–0.85"),
+        _build_tag_row(df_win, row, "valve_V8", "Overhead Reflux Control Valve V8", "VALVE", "% open", "15–85 %"),
+        _build_tag_row(df_win, row, "valve_V9", "Condenser Cooling Water Valve V9", "VALVE", "% open", "15–85 %"),
     ]
 
     u6_tag_table = [
-        _build_tag_row(df_win, row, "eff_C5", "Light-Ends C5 Pentane Molar Yield", "PRODUCT", "mol", "Maximize recovery"),
-        _build_tag_row(df_win, row, "eff_C4", "Light-Ends C4 Butane Molar Yield", "PRODUCT", "mol", "LPG / RVP balance"),
-        _build_tag_row(df_win, row, "eff_C3", "Light-Ends C3 Propane Molar Yield", "PRODUCT", "mol", "LPG recovery"),
-        _build_tag_row(df_win, row, "eff_C2", "Light-Ends C2 Ethane Dry Gas Yield", "PRODUCT", "mol", "<= 0.75 mol"),
-        _build_tag_row(df_win, row, "eff_C1", "Light-Ends C1 Methane Dry Gas Yield", "PRODUCT", "mol", "<= 0.75 mol"),
+        _build_tag_row(df_win, row, "eff_C5", "Light-Ends C5 Pentane Molar Yield", "PRODUCT", "sim. units", "Maximize recovery"),
+        _build_tag_row(df_win, row, "eff_C4", "Light-Ends C4 Butane Molar Yield", "PRODUCT", "sim. units", "LPG / RVP balance"),
+        _build_tag_row(df_win, row, "eff_C3", "Light-Ends C3 Propane Molar Yield", "PRODUCT", "sim. units", "LPG recovery"),
+        _build_tag_row(df_win, row, "eff_C2", "Light-Ends C2 Ethane Dry Gas Yield", "PRODUCT", "sim. units", "<= 0.75 mol"),
+        _build_tag_row(df_win, row, "eff_C1", "Light-Ends C1 Methane Dry Gas Yield", "PRODUCT", "sim. units", "<= 0.75 mol"),
         _build_tag_row(df_win, row, "prod_LN", "Stabilised Light Naphtha Rundown Flow", "PRODUCT", "lb/min", "90–115 lb/min"),
         _build_tag_row(df_win, row, "prod_LPG", "Overhead LPG (C3+C4) Rundown Flow", "PRODUCT", "lb/min", "40–55 lb/min"),
         _build_tag_row(df_win, row, "prod_HN", "Heavy Naphtha Rundown Flow", "PRODUCT", "lb/min", "100–125 lb/min"),
@@ -651,7 +657,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         "LOWER" if flue_o2 > 2.5 else "HOLD", "SP_T_preheat_F / Damper O2 Trim",
         flue_o2, max(2.0, round(flue_o2 - 0.45, 2)), round(max(2.0, flue_o2 - 0.45) - flue_o2, 2), "% O2",
         lco_gate, lco_trust,
-        f"Shift heat duty from fired fuel (F5 = {f5_fuel:.2f} lb/s) to fractionator bottom pumparound PA4 while maintaining T3_furnace_F ({t3_furnace:.1f} °F) below 1620 °F tube coking IOW.",
+        f"Shift heat duty from fired fuel (F5 = {f5_fuel:.2f} (sim. units)) to fractionator bottom pumparound PA4 while maintaining T3_furnace_F ({t3_furnace:.1f} °F) below 1620 °F tube coking IOW.",
         {
             "yield_impact": "Stable feed enthalpy entering riser prevents thermal cracking into C1/C2 dry gas.",
             "energy_impact": "Fuel effect not quantified by the advisor.",
@@ -669,12 +675,12 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         "SP_T_riser_ROT_F (Slide Valve V3)",
         sp_t_riser, min(972.0, max(968.0, sp_t_riser)), round(min(972.0, max(968.0, sp_t_riser)) - sp_t_riser, 2), "°F",
         lco_gate, lco_trust,
-        f"Maintain catalyst-to-oil ratio via slide valve V3 (pos {v3_pos*100:.1f}%) to stabilize conversion ({conv_pct:.1f}%) while keeping hydraulic dP ({dp_reactor:.3f}) below 0.48 incipient flooding ceiling.",
+        f"Maintain catalyst-to-oil ratio via slide valve V3 (pos {v3_pos*100:.1f}%) to stabilize conversion ({conv_pct:.1f}%); reactor–column ΔP is {dp_reactor:.3f} (simulator scale, no flooding limit applied).",
         {
             "yield_impact": f"Optimizes conversion ({conv_pct:.1f}%) toward LN/HN/LCO while capping C1+C2 dry gas ({eff_c1+eff_c2:.2f} mol).",
             "energy_impact": "Controls wet gas compressor suction load by preventing thermal over-cracking.",
             "regeneration_impact": f"Regulates delta-coke laid down on catalyst (F_coke = {f_coke:.1f} lb/min).",
-            "reliability_impact": f"Holds hydraulic dP ratio at {hydraulic_dp_norm:.2f}x nominal (<= 1.08x IOW).",
+            "reliability_impact": f"Reactor–column ΔP {dp_reactor:.3f} (simulator scale; no flooding limit applied).",
         },
         [_cite("SOP-FCC-010", "3.2", "SOP — Riser Outlet Temperature & Catalyst Circulation")],
     )
@@ -687,7 +693,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         f"Trim Main Air Blower discharge valve V4 to hold C_regen_cat <= 0.30 wt% ({c_regen*100:.3f} wt% now); cyclone afterburn ΔT now {dt_cyc_reg:+.1f} °F. Blower power effect not quantified.",
         {
             "yield_impact": f"Clean regenerated catalyst ({c_regen*100:.3f} wt% carbon) sustains {conv_pct:.1f}% riser conversion.",
-            "energy_impact": f"Main air blower power now {power_cab:.2f} MW; change not quantified by the advisor.",
+            "energy_impact": f"Main air blower power now {power_cab:.2f} (sim. units); change not quantified by the advisor.",
             "regeneration_impact": f"Stabilizes dense-bed temperature Treg_F at {treg_f:.1f} °F and cyclone dT at {dt_cyc_reg:+.1f} °F.",
             "reliability_impact": f"Protects cyclone diplegs and plenum metallurgy (Tcyc_F = {tcyc_f:.1f} °F <= 1310 °F IOW).",
         },
@@ -756,10 +762,10 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         "MV_cw_flow / Reflux Trim (Valve V9)",
         mv_cw, round(mv_cw + (15.0 if cond_eff < 0.86 else 0.0), 1), 15.0 if cond_eff < 0.86 else 0.0, "lb/s",
         lco_gate, lco_trust,
-        f"Condenser UA efficiency at {cond_eff*100:.1f}% (residual {condenser_ua_residual:.3f}); coordinate top pumparound PA1 ({mv_pa1:.1f}) and cooling water flow ({mv_cw:.1f} lb/s) to unload Wet Gas Compressor ({power_wgc:.2f} MW).",
+        f"Condenser UA efficiency at {cond_eff*100:.1f}% (residual {condenser_ua_residual:.3f}); coordinate top pumparound PA1 ({mv_pa1:.1f}) and cooling water flow ({mv_cw:.1f} lb/s) to unload Wet Gas Compressor ({power_wgc:.2f} (sim. units)).",
         {
             "yield_impact": "Stabilizes overhead drum temperature, preventing C5 flash-off into wet gas.",
-            "energy_impact": f"Wet gas compressor power now {power_wgc:.2f} MW; change not quantified by the advisor.",
+            "energy_impact": f"Wet gas compressor power now {power_wgc:.2f} (sim. units); change not quantified by the advisor.",
             "regeneration_impact": "Maintains steady P5_frac_psia backpressure on riser reactor.",
             "reliability_impact": f"Flags exchanger bundle cleaning before cooling water valve V9 ({v9_pos*100:.1f}%) saturates.",
         },
@@ -775,7 +781,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         f"Trim overhead drum temperature SP ({sp_t_ovhd:.2f} °F) and reflux ratio ({mv_reflux:.3f}) to maximize C5 pentane recovery ({c5_recovery_pct:.1f}%) in stabilised Light Naphtha ({prod_ln:.1f} lb/min).",
         {
             "yield_impact": f"Recovers C5 pentanes into Light Naphtha ({prod_ln:.1f} lb/min) instead of slipping into LPG ({prod_lpg:.1f} lb/min).",
-            "energy_impact": f"Reduces overhead condenser duty and WGC suction load ({power_wgc:.2f} MW).",
+            "energy_impact": f"Reduces overhead condenser duty and WGC suction load ({power_wgc:.2f} (sim. units)).",
             "regeneration_impact": "Minimizes uncondensed C1/C2 fuel gas recycle.",
             "reliability_impact": "Maintains overhead accumulator level at SP 70%.",
         },
@@ -785,9 +791,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     dec_uc09 = _make_decision_card(
         rec_map, f"TWIN-{rid}-UC09-{t_val}", rid, t_val, "valve_V11", "unit_3_regenerator", "UC-09",
         "HOLD", "CAB / WGC & Control Valve Authority Envelope",
-        round(power_cab + power_wgc, 2), round(power_cab + power_wgc, 2), 0.0, "MW",
+        round(power_cab + power_wgc, 2), round(power_cab + power_wgc, 2), 0.0, "sim. units",
         lco_gate, lco_trust,
-        f"Watch only: combined CAB + WGC load {power_cab + power_wgc:.2f} MW; keep all 8 control valves inside 15–85 % travel. No power reduction is claimed.",
+        f"Watch only: combined CAB + WGC load {power_cab + power_wgc:.2f} (sim. units); keep all 8 control valves inside 15–85 % travel. No power reduction is claimed.",
         {
             "yield_impact": "Eliminates valve-stiction limit cycles on Tray 6 (HN) and Tray 13 (LCO) draws.",
             "energy_impact": "Compressor power effect not quantified by the advisor.",
@@ -804,7 +810,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         "HOLD", "Furnace tube-coking margin (T3 vs 1620 °F IOW)",
         t3_furnace, t3_furnace, 0.0, "°F",
         lco_gate, lco_trust,
-        f"Firebox T3 = {t3_furnace:.1f} °F, margin {1620.0 - t3_furnace:.1f} °F to the 1620 °F tube-coking IOW; preheat outlet T2 = {t2_preheat:.1f} °F, fuel F5 = {f5_fuel:.2f} lb/s.",
+        f"Firebox T3 = {t3_furnace:.1f} °F, margin {1620.0 - t3_furnace:.1f} °F to the 1620 °F tube-coking IOW; preheat outlet T2 = {t2_preheat:.1f} °F, fuel F5 = {f5_fuel:.2f} (sim. units).",
         {
             "yield_impact": "Prevents tray entrainment/flooding that would contaminate LCO with black bottom slurry oil.",
             "energy_impact": "Caps preheat furnace firing below tube-coking thermal flux limits.",
@@ -849,7 +855,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "subtitle": "Combustion stoichiometry and fuel gas duty coupled with PA4 heat recovery",
             "unit": "mixed",
             "traces": [
-                {"tag": "F5_fuel", "label": "Fuel Gas F5 (lb/s)", "color": "#f59e0b"},
+                {"tag": "F5_fuel", "label": "Fuel Gas F5 (sim. units)", "color": "#f59e0b"},
                 {"tag": "fluegas_O2_pct", "label": "Stack Excess O2 (%)", "color": "#10b981"},
                 {"tag": "fluegas_CO_ppm", "label": "Stack CO (ppm)", "color": "#f43f5e"},
                 {"tag": "dist_feed_API", "label": "Feed API Gravity (°API)", "color": "#60a5fa"},
@@ -872,13 +878,13 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         },
         {
             "panel_id": "u2_hydraulics",
-            "title": "Reactor Pressure (P4), Hydraulic dP & Standpipe Level",
+            "title": "Reactor Pressure (P4), Reactor–Column ΔP & Standpipe Level",
             "subtitle": "Catalyst circulation hydraulics and incipient flooding surveillance",
             "unit": "psia / ft",
             "traces": [
                 {"tag": "P4_reactor_psia", "label": "Reactor Pressure P4 (psia)", "color": "#60a5fa"},
                 {"tag": "standpipe_level", "label": "Standpipe Level (ft)", "color": "#10b981"},
-                {"tag": "dP_reactor_frac", "label": "Hydraulic dP (frac)", "color": "#f43f5e"},
+                {"tag": "dP_reactor_frac", "label": "Reactor–column ΔP (sim. units)", "color": "#f43f5e"},
             ],
         },
     ]
@@ -898,13 +904,13 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         },
         {
             "panel_id": "u3_blower_coke",
-            "title": "Main Air Blower Flow (Fair), Shaft Power (CAB MW) & Coke Burn (F_coke)",
+            "title": "Main Air Blower Flow (Fair), Shaft Power (CAB) & Coke Burn (F_coke)",
             "subtitle": "Air blower compression load vs catalytic coke burn kinetics",
-            "unit": "lb/s / MW",
+            "unit": "lb/s / sim. units",
             "traces": [
                 {"tag": "Fair", "label": "Combustion Air Fair (lb/s)", "color": "#38bdf8"},
                 {"tag": "F_coke", "label": "Coke Burn F_coke (lb/min)", "color": "#f97316"},
-                {"tag": "power_CAB", "label": "CAB Shaft Power (MW)", "color": "#10b981"},
+                {"tag": "power_CAB", "label": "CAB Shaft Power (sim. units)", "color": "#10b981"},
                 {"tag": "P6_regen_psia", "label": "Regen Pressure P6 (psia)", "color": "#eab308"},
             ],
         },
@@ -944,11 +950,11 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "panel_id": "u5_condenser_wgc",
             "title": "Condenser UA Efficiency, Reflux Ratio & Wet Gas Compressor Power (WGC)",
             "subtitle": "Overhead heat removal efficiency vs compressor shaft load",
-            "unit": "frac / MW",
+            "unit": "frac / sim. units",
             "traces": [
                 {"tag": "dist_condenser_eff", "label": "Condenser Eff (0–1)", "color": "#10b981"},
                 {"tag": "MV_reflux_ratio", "label": "Reflux Ratio (L/D)", "color": "#38bdf8"},
-                {"tag": "power_WGC", "label": "WGC Power (MW)", "color": "#f59e0b"},
+                {"tag": "power_WGC", "label": "WGC Power (sim. units)", "color": "#f59e0b"},
                 {"tag": "valve_V9", "label": "CW Valve V9 (0–1)", "color": "#f43f5e"},
             ],
         },
@@ -1028,7 +1034,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "kpis": [
                 {"tag": "T2_preheat_F", "label": "Feed Preheat Temp (T2)", "value": round(t2_preheat, 1), "unit": "°F", "status": "GREEN"},
                 {"tag": "T3_furnace_F", "label": "Furnace Firebox Temp (T3)", "value": round(t3_furnace, 1), "unit": "°F", "status": furnace_status},
-                {"tag": "F5_fuel", "label": "Fuel Gas Firing Rate (F5)", "value": round(f5_fuel, 2), "unit": "lb/s", "status": "GREEN"},
+                {"tag": "F5_fuel", "label": "Fuel Gas Firing Rate (F5)", "value": round(f5_fuel, 2), "unit": "sim. units", "status": "N/A"},
                 {"tag": "fluegas_O2_pct", "label": "Stack Excess O2", "value": round(flue_o2, 2), "unit": "%", "status": "GREEN" if 1.5 <= flue_o2 <= 3.0 else "AMBER"},
                 {"tag": "fluegas_CO_ppm", "label": "Stack CO Breakthrough", "value": round(flue_co, 1), "unit": "ppm", "status": "GREEN" if flue_co <= 150.0 else "RED"},
                 {"tag": "dist_feed_API", "label": "Feed API Gravity", "value": round(feed_api, 2), "unit": "°API", "status": "GREEN"},
@@ -1063,7 +1069,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "use_case_ids": ["UC-08", "UC-10"],
             "use_case_numbers": [8, 10],
             "status": flooding_status if abs(tr_riser - sp_t_riser) <= 8.0 else "AMBER",
-            "status_label": "OPTIMAL CRACKING SEVERITY" if flooding_status == "GREEN" else "HIGH HYDRAULIC dP WATCH",
+            "status_label": "ROT ON SET POINT" if abs(tr_riser - sp_t_riser) <= 8.0 else "ROT OFF SET POINT · WATCH",
             "headline_kpi": {
                 "label": "Riser Outlet (ROT)",
                 "value": round(tr_riser, 1),
@@ -1088,7 +1094,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "kpis": [
                 {"tag": "Tr_riser_out_F", "label": "Riser Outlet Temp (ROT)", "value": round(tr_riser, 1), "unit": "°F", "status": "GREEN"},
                 {"tag": "conversion_pct", "label": "Once-Through Conversion", "value": round(conv_pct, 2), "unit": "%", "status": "GREEN"},
-                {"tag": "dP_reactor_frac", "label": "Reactor/Fractionator Hydraulic dP", "value": round(dp_reactor, 3), "unit": "frac", "status": flooding_status},
+                {"tag": "dP_reactor_frac", "label": "Reactor–Fractionator ΔP", "value": round(dp_reactor, 3), "unit": "sim. units", "status": "N/A"},
                 {"tag": "F_regen_cat", "label": "Regen Catalyst Circulation", "value": round(f_regen_cat, 1), "unit": "lb/min", "status": "GREEN"},
                 {"tag": "standpipe_level", "label": "Standpipe Catalyst Level", "value": round(standpipe_lvl, 1), "unit": "ft", "status": "GREEN"},
                 {"tag": "P4_reactor_psia", "label": "Reactor Vessel Pressure (P4)", "value": round(p4_reactor, 2), "unit": "psia", "status": "GREEN"},
@@ -1107,7 +1113,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "scale_max": 990.0,
                 "zone": "SWEET_SPOT" if 966.0 <= tr_riser <= 974.0 else ("OVER_TREATING" if tr_riser < 966.0 else "UNDER_TREATING"),
                 "zone_label": "SWEET SPOT CRACKING SEVERITY" if 966.0 <= tr_riser <= 974.0 else "ADJUST CATALYST SLIDE VALVE V3",
-                "advice": f"ROT is {tr_riser:.1f} °F at {conv_pct:.1f}% conversion with hydraulic dP = {dp_reactor:.3f} ({hydraulic_dp_norm:.2f}x nominal). Keeping ROT inside 966–974 °F maximizes gasoline/LCO selectivity without over-cracking into dry gas (C1/C2) or triggering riser/fractionator flooding.",
+                "advice": f"ROT is {tr_riser:.1f} °F at {conv_pct:.1f}% conversion with hydraulic dP = {dp_reactor:.3f} (simulator scale). Keeping ROT inside 966–974 °F maximizes gasoline/LCO selectivity without over-cracking into dry gas (C1/C2) or triggering riser/fractionator flooding.",
             },
             "recommendation": dec_u2,
             "tag_table": u2_tag_table,
@@ -1153,7 +1159,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 {"tag": "dT_cyc_reg_F", "label": "Cyclone Afterburn dT", "value": round(dt_cyc_reg, 1), "unit": "°F", "status": "GREEN" if abs(dt_cyc_reg) <= 20.0 else "AMBER"},
                 {"tag": "C_regen_cat", "label": "Carbon on Regen Catalyst", "value": round(c_regen * 100.0, 3), "unit": "wt%", "status": "GREEN" if c_regen <= 0.004 else "AMBER"},
                 {"tag": "Fair", "label": "Main Air Blower Flow (Fair)", "value": round(f_air, 2), "unit": "lb/s", "status": "GREEN"},
-                {"tag": "power_CAB", "label": "Main Air Blower Power (CAB)", "value": round(power_cab, 2), "unit": "MW", "status": "GREEN"},
+                {"tag": "power_CAB", "label": "Main Air Blower Power (CAB)", "value": round(power_cab, 2), "unit": "sim. units", "status": "N/A"},
             ],
             "envelope": {
                 "parameter": "dT_cyc_reg_F",
@@ -1169,7 +1175,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "scale_max": 35.0,
                 "zone": "SWEET_SPOT" if 5.0 <= dt_cyc_reg <= 18.0 else ("OVER_TREATING" if dt_cyc_reg < 5.0 else "UNDER_TREATING"),
                 "zone_label": "CONTROLLED COKE COMBUSTION" if dt_cyc_reg <= 18.0 else "AFTERBURN EXCURSION RISK",
-                "advice": f"Regenerated catalyst carbon is {c_regen*100:.3f} wt% (down from {c_spent*100:.2f} wt% spent) with cyclone dT = {dt_cyc_reg:+.1f} °F and CAB power = {power_cab:.2f} MW. Maintaining balanced combustion Air/Coke stoichiometry avoids both catalyst pore sintering (Tcyc > 1310 °F) and excess blower compression work.",
+                "advice": f"Regenerated catalyst carbon is {c_regen*100:.3f} wt% (down from {c_spent*100:.2f} wt% spent) with cyclone dT = {dt_cyc_reg:+.1f} °F and CAB power = {power_cab:.2f} (sim. units). Maintaining balanced combustion Air/Coke stoichiometry avoids both catalyst pore sintering (Tcyc > 1310 °F) and excess blower compression work.",
             },
             "recommendation": dec_u3,
             "tag_table": u3_tag_table,
@@ -1267,7 +1273,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "label": "Condenser UA Eff",
                 "value": round(cond_eff * 100.0, 1),
                 "unit": "%",
-                "target": f"Reflux {mv_reflux:.3f} · WGC {power_wgc:.2f} MW",
+                "target": f"Reflux {mv_reflux:.3f} · WGC {power_wgc:.2f} (sim. units)",
             },
             "tags": {
                 "dist_condenser_eff": round(cond_eff, 4),
@@ -1283,7 +1289,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 {"tag": "MV_cw_flow", "label": "Cooling Water Flow (MV_cw)", "value": round(mv_cw, 1), "unit": "lb/s", "status": "GREEN"},
                 {"tag": "MV_reflux_ratio", "label": "Overhead Reflux Ratio", "value": round(mv_reflux, 3), "unit": "L/D", "status": "GREEN"},
                 {"tag": "SP_T_overhead", "label": "Overhead Drum Temp SP", "value": round(sp_t_ovhd, 1), "unit": "°F", "status": "GREEN"},
-                {"tag": "power_WGC", "label": "Wet Gas Compressor Power", "value": round(power_wgc, 2), "unit": "MW", "status": "GREEN"},
+                {"tag": "power_WGC", "label": "Wet Gas Compressor Power", "value": round(power_wgc, 2), "unit": "sim. units", "status": "N/A"},
                 {"tag": "valve_V9", "label": "Cooling Water Valve V9 Open", "value": round(v9_pos * 100.0, 1), "unit": "%", "status": "GREEN" if v9_pos <= 0.85 else "AMBER"},
             ],
             "envelope": {
@@ -1300,7 +1306,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "scale_max": 0.88,
                 "zone": "SWEET_SPOT" if 0.71 <= mv_reflux <= 0.76 else ("OVER_TREATING" if mv_reflux > 0.76 else "UNDER_TREATING"),
                 "zone_label": "BALANCED REFLUX & WGC LOAD" if 0.71 <= mv_reflux <= 0.76 else "TRIM OVER-REFLUXING",
-                "advice": f"Condenser efficiency is {cond_eff*100:.1f}% (UA residual {condenser_ua_residual:.3f}) with cooling water flow = {mv_cw:.1f} lb/s and WGC power = {power_wgc:.2f} MW. Avoiding excessive reflux ratio (>0.76) reduces overhead vapor load and WGC suction pressure drop.",
+                "advice": f"Condenser efficiency is {cond_eff*100:.1f}% (UA residual {condenser_ua_residual:.3f}) with cooling water flow = {mv_cw:.1f} lb/s and WGC power = {power_wgc:.2f} (sim. units). Avoiding excessive reflux ratio (>0.76) reduces overhead vapor load and WGC suction pressure drop.",
             },
             "recommendation": dec_u5,
             "tag_table": u5_tag_table,
@@ -1392,7 +1398,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "loop_id": "loop_heat",
             "name": "Loop 3 · Pumparound & Preheat Thermal Integration Loop",
             "path": ["unit_4_fractionator", "unit_1_furnace"],
-            "flow_label": f"PA1-PA4 Duty ({mv_pa1:.0f}/{mv_pa2:.0f}/{mv_pa3:.0f}/{mv_pa4:.0f}) -> Feed Preheat T2 {t2_preheat:.1f} °F -> Furnace Fuel F5 {f5_fuel:.2f} lb/s",
+            "flow_label": f"PA1-PA4 Duty ({mv_pa1:.0f}/{mv_pa2:.0f}/{mv_pa3:.0f}/{mv_pa4:.0f}) -> Feed Preheat T2 {t2_preheat:.1f} °F -> Furnace Fuel F5 {f5_fuel:.2f} (sim. units)",
             "conservation_metric": f"Firebox T3 margin to 1620 °F IOW: {1620.0 - t3_furnace:.1f} °F",
             "status": furnace_status,
         },
@@ -1505,7 +1511,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 {"label": "Regen Catalyst Carbon", "tag": "C_regen_cat", "value": round(c_regen * 100.0, 3), "unit": "wt%", "target": "<= 0.35 wt%"},
                 {"label": "Cyclone Afterburn dT", "tag": "dT_cyc_reg_F", "value": round(dt_cyc_reg, 1), "unit": "°F", "target": "5.0–18.0 °F"},
                 {"label": "Flue Gas O2 / CO", "tag": "fluegas_O2_pct", "value": f"{flue_o2:.2f}% / {flue_co:.0f} ppm", "unit": "", "target": "1.8–2.5% O2"},
-                {"label": "CAB Shaft Power", "tag": "power_CAB", "value": round(power_cab, 2), "unit": "MW", "target": f"Fair {f_air:.1f} lb/s"},
+                {"label": "CAB Shaft Power", "tag": "power_CAB", "value": round(power_cab, 2), "unit": "sim. units", "target": f"Fair {f_air:.1f} lb/s"},
             ],
             "envelope": units[2]["envelope"],
             "recommendation": dec_u3,
@@ -1525,11 +1531,11 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "status": units[0]["status"],
             "badge_text": units[0]["status_label"],
             "problem_statement": "Over-firing the feed preheat heater with high excess air wastes fuel gas (F5_fuel) and accelerates internal tube coking when firebox temperature T3_furnace_F approaches metallurgical IOW limits.",
-            "solution_summary": f"Monitors furnace firebox T3 ({t3_furnace:.1f} °F), preheat outlet T2 ({t2_preheat:.1f} °F), fuel gas F5 ({f5_fuel:.2f} lb/s), and PINN tube-coking thermal residual ({furnace_coking_residual_F:+.1f} °F).",
+            "solution_summary": f"Monitors furnace firebox T3 ({t3_furnace:.1f} °F), preheat outlet T2 ({t2_preheat:.1f} °F), fuel gas F5 ({f5_fuel:.2f} (sim. units)), and PINN tube-coking thermal residual ({furnace_coking_residual_F:+.1f} °F).",
             "kpis": [
                 {"label": "Feed Preheat Outlet (T2)", "tag": "T2_preheat_F", "value": round(t2_preheat, 1), "unit": "°F", "target": f"SP {sp_t_preheat:.1f} °F"},
                 {"label": "Firebox Temp (T3)", "tag": "T3_furnace_F", "value": round(t3_furnace, 1), "unit": "°F", "target": "<= 1620.0 °F IOW"},
-                {"label": "Fuel Gas Rate (F5)", "tag": "F5_fuel", "value": round(f5_fuel, 2), "unit": "lb/s", "target": "sim. units; change not quantified"},
+                {"label": "Fuel Gas Rate (F5)", "tag": "F5_fuel", "value": round(f5_fuel, 2), "unit": "sim. units", "target": "change not quantified"},
                 {"label": "Tube Coking Residual", "tag": "furnace_coking_residual_F", "value": furnace_coking_residual_F, "unit": "°F", "target": "|res| <= 25 °F"},
             ],
             "envelope": units[0]["envelope"],
@@ -1615,9 +1621,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "status": units[1]["status"],
             "badge_text": units[1]["status_label"],
             "problem_statement": "Rising reactor-to-main-column hydraulic dP is the early sign of entrainment, tray flooding or fouled internals; once it breaks through, the LCO draw is contaminated and throughput must be cut. Severity (ROT) and feed rate are the levers that relieve it.",
-            "solution_summary": f"Tracks hydraulic dP ({dp_reactor:.3f}, {hydraulic_dp_norm:.2f}x nominal, IOW 0.48) against expected for the crude in the unit, with ROT ({tr_riser:.1f} °F vs SP {sp_t_riser:.1f} °F) and conversion ({conv_pct:.2f}%) as the relieving levers.",
+            "solution_summary": f"Tracks hydraulic dP ({dp_reactor:.3f}, simulator scale, simulator scale) against expected for the crude in the unit, with ROT ({tr_riser:.1f} °F vs SP {sp_t_riser:.1f} °F) and conversion ({conv_pct:.2f}%) as the relieving levers.",
             "kpis": [
-                {"label": "Hydraulic dP", "tag": "dP_reactor_frac", "value": round(dp_reactor, 3), "unit": "frac", "target": "<= 0.480 IOW"},
+                {"label": "Reactor–Column ΔP", "tag": "dP_reactor_frac", "value": round(dp_reactor, 3), "unit": "sim. units", "target": "simulator scale; no IOW"},
                 {"label": "Once-Through Conversion", "tag": "conversion_pct", "value": round(conv_pct, 2), "unit": "%", "target": "71.0–75.5%"},
                 {"label": "Riser Outlet Temp (ROT)", "tag": "Tr_riser_out_F", "value": round(tr_riser, 1), "unit": "°F", "target": "966.0–974.0 °F"},
                 {"label": "Dry Gas Slip (C1+C2)", "tag": "eff_C1_C2", "value": round(eff_c1 + eff_c2, 3), "unit": "mol", "target": "<= 1.40"},
@@ -1638,12 +1644,12 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "unit_id": "unit_3_regenerator",
             "unit_name": "Unit 3, 4 & 5 · Compressors & Final Control Elements",
             "status": "GREEN" if all(v["status"] == "GREEN" for v in valve_health_matrix) else "AMBER",
-            "badge_text": f"CAB {power_cab:.2f} MW · WGC {power_wgc:.2f} MW · 8 VALVES TRACKED",
+            "badge_text": f"CAB {power_cab:.2f} (sim. units) · WGC {power_wgc:.2f} (sim. units) · 8 VALVES TRACKED",
             "problem_statement": "Compressor surge/overload on CAB or WGC and control valve stiction/saturation (V8–V11, V1–V7) cause hunting in fractionator cut-points and pressure control loops.",
-            "solution_summary": f"Continuously monitors CAB power ({power_cab:.2f} MW), WGC power ({power_wgc:.2f} MW), and stem travel positions across all fractionator (V8–V11) and reactor/regen (V1–V7) control valves against [15%, 85%] linear authority bands.",
+            "solution_summary": f"Continuously monitors CAB power ({power_cab:.2f} (sim. units)), WGC power ({power_wgc:.2f} (sim. units)), and stem travel positions across all fractionator (V8–V11) and reactor/regen (V1–V7) control valves against [15%, 85%] linear authority bands.",
             "kpis": [
-                {"label": "Main Air Blower (CAB)", "tag": "power_CAB", "value": round(power_cab, 2), "unit": "MW", "target": "<= 7.20 MW"},
-                {"label": "Wet Gas Compressor (WGC)", "tag": "power_WGC", "value": round(power_wgc, 2), "unit": "MW", "target": "<= 5.40 MW"},
+                {"label": "Main Air Blower (CAB)", "tag": "power_CAB", "value": round(power_cab, 2), "unit": "sim. units", "target": "simulator scale"},
+                {"label": "Wet Gas Compressor (WGC)", "tag": "power_WGC", "value": round(power_wgc, 2), "unit": "sim. units", "target": "simulator scale"},
                 {"label": "LCO Draw Valve V11", "tag": "valve_V11", "value": round(v11_pos * 100.0, 1), "unit": "% open", "target": "15–85% band"},
                 {"label": "HN Draw Valve V10", "tag": "valve_V10", "value": round(v10_pos * 100.0, 1), "unit": "% open", "target": "15–85% band"},
             ],
@@ -1661,39 +1667,39 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "scale_max": 95.0,
                 "zone": "SWEET_SPOT" if 25.0 <= v11_pos * 100.0 <= 75.0 else "OVER_TREATING",
                 "zone_label": "LINEAR CONTROL AUTHORITY",
-                "advice": f"Valves V8 ({v8_pos*100:.1f}%), V9 ({v9_pos*100:.1f}%), V10 ({v10_pos*100:.1f}%), and V11 ({v11_pos*100:.1f}%) are within linear authority bands; combined CAB+WGC shaft load is {power_cab+power_wgc:.2f} MW.",
+                "advice": f"Valves V8 ({v8_pos*100:.1f}%), V9 ({v9_pos*100:.1f}%), V10 ({v10_pos*100:.1f}%), and V11 ({v11_pos*100:.1f}%) are within linear authority bands; combined CAB+WGC shaft load is {power_cab+power_wgc:.2f} (sim. units).",
             },
             "recommendation": dec_uc09,
             "systems_ripple": dec_uc09["systems_ripple"],
             "citations": dec_uc09["citations"],
             "tag_table": [
-                _build_tag_row(df_win, row, "power_CAB", "Main Air Blower Shaft Power", "CV", "MW", "<= 7.20 MW"),
-                _build_tag_row(df_win, row, "power_WGC", "Wet Gas Compressor Shaft Power", "CV", "MW", "<= 5.40 MW"),
-                _build_tag_row(df_win, row, "valve_V8", "Overhead Reflux Control Valve V8", "VALVE", "frac", "0.15–0.85"),
-                _build_tag_row(df_win, row, "valve_V9", "Condenser Cooling Water Valve V9", "VALVE", "frac", "0.15–0.85"),
-                _build_tag_row(df_win, row, "valve_V10", "Heavy Naphtha Draw Valve V10", "VALVE", "frac", "0.15–0.85"),
-                _build_tag_row(df_win, row, "valve_V11", "LCO Diesel Draw Valve V11", "VALVE", "frac", "0.15–0.85"),
-                _build_tag_row(df_win, row, "V1", "Furnace Fuel Valve V1", "VALVE", "frac", "0.15–0.85"),
-                _build_tag_row(df_win, row, "V3", "Regen Catalyst Slide Valve V3", "VALVE", "frac", "0.15–0.85"),
-                _build_tag_row(df_win, row, "V4", "Air Blower Discharge Valve V4", "VALVE", "frac", "0.15–0.85"),
-                _build_tag_row(df_win, row, "V6", "Flue Gas Slide Valve V6", "VALVE", "frac", "0.15–0.85"),
+                _build_tag_row(df_win, row, "power_CAB", "Main Air Blower Shaft Power", "CV", "sim. units", "simulator scale; no plant limit", "N/A"),
+                _build_tag_row(df_win, row, "power_WGC", "Wet Gas Compressor Shaft Power", "CV", "sim. units", "simulator scale; no plant limit", "N/A"),
+                _build_tag_row(df_win, row, "valve_V8", "Overhead Reflux Control Valve V8", "VALVE", "% open", "15–85 %"),
+                _build_tag_row(df_win, row, "valve_V9", "Condenser Cooling Water Valve V9", "VALVE", "% open", "15–85 %"),
+                _build_tag_row(df_win, row, "valve_V10", "Heavy Naphtha Draw Valve V10", "VALVE", "% open", "15–85 %"),
+                _build_tag_row(df_win, row, "valve_V11", "LCO Diesel Draw Valve V11", "VALVE", "% open", "15–85 %"),
+                _build_tag_row(df_win, row, "V1", "Furnace Fuel Valve V1", "VALVE", "% open", "15–85 %"),
+                _build_tag_row(df_win, row, "V3", "Regen Catalyst Slide Valve V3", "VALVE", "% open", "15–85 %"),
+                _build_tag_row(df_win, row, "V4", "Air Blower Discharge Valve V4", "VALVE", "% open", "15–85 %"),
+                _build_tag_row(df_win, row, "V6", "Flue Gas Slide Valve V6", "VALVE", "% open", "15–85 %"),
             ],
             "chart_panels": [
                 {
                     "panel_id": "uc09_compressors",
-                    "title": "Main Air Blower (CAB MW) & Wet Gas Compressor (WGC MW) Shaft Power",
+                    "title": "Main Air Blower (CAB) & Wet Gas Compressor (WGC) Shaft Power (sim. units)",
                     "subtitle": "Rotating machinery load across regenerator and overhead gas plant",
-                    "unit": "MW",
+                    "unit": "sim. units",
                     "traces": [
-                        {"tag": "power_CAB", "label": "CAB Shaft Power (MW)", "color": "#38bdf8"},
-                        {"tag": "power_WGC", "label": "WGC Shaft Power (MW)", "color": "#f59e0b"},
+                        {"tag": "power_CAB", "label": "CAB Shaft Power", "color": "#38bdf8"},
+                        {"tag": "power_WGC", "label": "WGC Shaft Power", "color": "#f59e0b"},
                     ],
                 },
                 {
                     "panel_id": "uc09_valves",
                     "title": "Final Control Valve Stem Positions (V8, V9, V10, V11, V3, V4)",
-                    "subtitle": "Surveillance against [0.15, 0.85] linear control authority limits",
-                    "unit": "frac",
+                    "subtitle": "Surveillance against the 15–85 % linear control band",
+                    "unit": "% open",
                     "traces": [
                         {"tag": "valve_V11", "label": "LCO Draw V11", "color": "#38bdf8"},
                         {"tag": "valve_V10", "label": "HN Draw V10", "color": "#10b981"},
@@ -1714,9 +1720,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "status": "GREEN" if (flooding_status == "GREEN" and furnace_status == "GREEN" and mass_closure_ok) else "AMBER",
             "badge_text": "ALL IOW GUARDRAILS SATISFIED" if flooding_status == "GREEN" else "IOW BOUNDARY WATCH",
             "problem_statement": "Coke builds inside the preheat furnace tubes when firebox temperature runs close to the 1620 °F tube-coking IOW; it narrows the heat-transfer and hydraulic margin and forces a mid-run decoke. The same guardrails also cover tray flooding and cyclone metallurgy.",
-            "solution_summary": f"Enforces hard PINN physical conservation and IOW boundaries across all 6 units: hydraulic dP ratio = {hydraulic_dp_norm:.2f}x nominal, furnace T3 = {t3_furnace:.1f} °F, cyclone Tcyc = {tcyc_f:.1f} °F, and mass balance error = {mb_err_pct:+.2f}%.",
+            "solution_summary": f"Enforces hard PINN physical conservation and IOW boundaries across all 6 units: hydraulic dP ratio = simulator scale, furnace T3 = {t3_furnace:.1f} °F, cyclone Tcyc = {tcyc_f:.1f} °F, and mass balance error = {mb_err_pct:+.2f}%.",
             "kpis": [
-                {"label": "Hydraulic Flooding Ratio", "tag": "hydraulic_dp_norm", "value": hydraulic_dp_norm, "unit": "x nom", "target": "<= 1.08x"},
+                {"label": "Reactor–Column ΔP", "tag": "dP_reactor_frac", "value": round(dp_reactor, 3), "unit": "sim. units", "target": "simulator scale; no flooding limit"},
                 {"label": "Furnace Firebox IOW Margin", "tag": "T3_margin_F", "value": round(1620.0 - t3_furnace, 1), "unit": "°F", "target": ">= 30.0 °F"},
                 {"label": "Cyclone Metallurgy Margin", "tag": "Tcyc_margin_F", "value": round(1310.0 - tcyc_f, 1), "unit": "°F", "target": ">= 25.0 °F"},
                 {"label": "PINN Mass Closure Error", "tag": "mass_balance_err_pct", "value": round(mb_err_pct, 3), "unit": "%", "target": "|err| <= 1.5%"},
@@ -1735,13 +1741,13 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "scale_max": 1650.0,
                 "zone": "SWEET_SPOT" if t3_furnace <= 1590.0 else "UNDER_TREATING",
                 "zone_label": "TUBE-COKING MARGIN",
-                "advice": f"Firebox T3 is {t3_furnace:.1f} °F, {1620.0 - t3_furnace:.1f} °F below the 1620 °F tube-coking IOW; hydraulic dP {dp_reactor:.3f} ({hydraulic_dp_norm:.2f}x nominal).",
+                "advice": f"Firebox T3 is {t3_furnace:.1f} °F, {1620.0 - t3_furnace:.1f} °F below the 1620 °F tube-coking IOW; hydraulic dP {dp_reactor:.3f} (simulator scale).",
             },
             "recommendation": dec_uc10,
             "systems_ripple": dec_uc10["systems_ripple"],
             "citations": dec_uc10["citations"],
             "tag_table": [
-                _build_tag_row(df_win, row, "dP_reactor_frac", "Reactor / Column Hydraulic Pressure Drop", "CV", "frac", "<= 0.480 IOW", flooding_status),
+                _build_tag_row(df_win, row, "dP_reactor_frac", "Reactor–Column ΔP", "CV", "sim. units", "simulator scale; no IOW", "N/A"),
                 _build_tag_row(df_win, row, "T3_furnace_F", "Furnace Firebox Tube Metallurgy Temp", "CV", "°F", "<= 1620.0 °F IOW", furnace_status),
                 _build_tag_row(df_win, row, "Tcyc_F", "Regenerator Cyclone Metallurgy Temp", "CV", "°F", "<= 1310.0 °F IOW"),
                 _build_tag_row(df_win, row, "dT_cyc_reg_F", "Cyclone Afterburn Delta-T", "CV", "°F", "<= 25.0 °F IOW"),
@@ -1888,7 +1894,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "use_case_ids": ["UC-05", "UC-10"],
             "status": units[0]["status"],
             "priority_rank": 2,
-            "proactive_alert": f"Unit 1 Furnace: Firebox T3 = {t3_furnace:.1f} °F (margin {1620.0 - t3_furnace:.1f} °F to 1620 °F IOW), Stack O2 = {flue_o2:.2f}%, Fuel F5 = {f5_fuel:.2f} lb/s.",
+            "proactive_alert": f"Unit 1 Furnace: Firebox T3 = {t3_furnace:.1f} °F (margin {1620.0 - t3_furnace:.1f} °F to 1620 °F IOW), Stack O2 = {flue_o2:.2f}%, Fuel F5 = {f5_fuel:.2f} (sim. units).",
             "briefings": {
                 "en": f"Unit 1 Furnace Sentinel: Preheat outlet T2 is {t2_preheat:.1f} °F (SP {sp_t_preheat:.1f} °F) and firebox T3 is {t3_furnace:.1f} °F with coking residual {furnace_coking_residual_F:+.1f} °F. Stack O2 is {flue_o2:.2f}% and CO is {flue_co:.0f} ppm. O2 trim is a watch item; the fuel effect is not quantified.",
                 "hinglish": f"Unit 1 Furnace Sentinel alert: Preheat outlet T2 abhi {t2_preheat:.1f} °F hai aur firebox T3 {t3_furnace:.1f} °F hai (1620 °F tube coking IOW se {1620.0 - t3_furnace:.1f} °F safe margin). Stack O2 {flue_o2:.2f}% aur CO {flue_co:.0f} ppm hai. O2 trim watch item hai; fuel ka asar quantify nahi kiya gaya.",
@@ -1903,11 +1909,11 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "use_case_ids": ["UC-08", "UC-10"],
             "status": units[1]["status"],
             "priority_rank": 3,
-            "proactive_alert": f"Unit 2 Riser: ROT = {tr_riser:.1f} °F, Conversion = {conv_pct:.1f}%, Hydraulic dP = {dp_reactor:.3f} ({hydraulic_dp_norm:.2f}x nominal).",
+            "proactive_alert": f"Unit 2 Riser: ROT = {tr_riser:.1f} °F, Conversion = {conv_pct:.1f}%, Hydraulic dP = {dp_reactor:.3f} (simulator scale).",
             "briefings": {
-                "en": f"Unit 2 Riser Sentinel: Riser outlet temperature is {tr_riser:.1f} °F against SP {sp_t_riser:.1f} °F, achieving {conv_pct:.1f}% once-through conversion at feed API {feed_api:.1f}. Hydraulic dP is {dp_reactor:.3f} ({hydraulic_dp_norm:.2f}x nominal), safely below the 0.48 flooding ceiling.",
-                "hinglish": f"Unit 2 Riser Sentinel report: Riser ROT {tr_riser:.1f} °F chal raha hai (SP {sp_t_riser:.1f} °F) aur conversion {conv_pct:.1f}% hai. Hydraulic dP {dp_reactor:.3f} ({hydraulic_dp_norm:.2f}x nominal) hai jo 0.48 flooding limit ke andar safe hai. Slide valve V3 {v3_pos*100:.1f}% open hai.",
-                "hi": f"यूनिट 2 राइज़र सेंटिनल: राइज़र आउटलेट तापमान (ROT) {tr_riser:.1f} °F है और कन्वर्ज़न {conv_pct:.1f}% है। हाइड्रोलिक dP {dp_reactor:.3f} ({hydraulic_dp_norm:.2f}x सामान्य) है, जो 0.48 फ्लडिंग सीमा से नीचे सुरक्षित है।",
+                "en": f"Unit 2 Riser Sentinel: Riser outlet temperature is {tr_riser:.1f} °F against SP {sp_t_riser:.1f} °F, achieving {conv_pct:.1f}% once-through conversion at feed API {feed_api:.1f}. Reactor–column ΔP is {dp_reactor:.3f} (simulator scale; no flooding limit applied).",
+                "hinglish": f"Unit 2 Riser Sentinel report: Riser ROT {tr_riser:.1f} °F chal raha hai (SP {sp_t_riser:.1f} °F) aur conversion {conv_pct:.1f}% hai. Hydraulic dP {dp_reactor:.3f} (simulator scale) hai. Slide valve V3 {v3_pos*100:.1f}% open hai.",
+                "hi": f"यूनिट 2 राइज़र सेंटिनल: राइज़र आउटलेट तापमान (ROT) {tr_riser:.1f} °F है और कन्वर्ज़न {conv_pct:.1f}% है। हाइड्रोलिक dP {dp_reactor:.3f} (सिम्युलेटर स्केल) है।",
             },
         },
         {
@@ -1920,9 +1926,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "priority_rank": 4,
             "proactive_alert": f"Unit 3 Regenerator: Bed Treg = {treg_f:.1f} °F, Cyclone Tcyc = {tcyc_f:.1f} °F (Afterburn dT {dt_cyc_reg:+.1f} °F), Regen Carbon = {c_regen*100:.3f} wt%.",
             "briefings": {
-                "en": f"Unit 3 Regenerator Sentinel: Dense bed Treg is {treg_f:.1f} °F and cyclone Tcyc is {tcyc_f:.1f} °F (afterburn dT = {dt_cyc_reg:+.1f} °F vs 25 °F limit). Regenerated catalyst carbon is {c_regen*100:.3f} wt% at CAB power {power_cab:.2f} MW (Fair = {f_air:.1f} lb/s).",
-                "hinglish": f"Unit 3 Regenerator Sentinel: Dense bed Treg {treg_f:.1f} °F aur cyclone Tcyc {tcyc_f:.1f} °F hai — afterburn dT {dt_cyc_reg:+.1f} °F control mein hai. Regenerated catalyst carbon {c_regen*100:.3f} wt% hai aur Main Air Blower (CAB) {power_cab:.2f} MW le raha hai.",
-                "hi": f"यूनिट 3 रीजेनरेटर सेंटिनल: बेड तापमान Treg {treg_f:.1f} °F और साइक्लोन तापमान Tcyc {tcyc_f:.1f} °F है (आफ्टरबर्न dT = {dt_cyc_reg:+.1f} °F)। रीजेनरेटेड कैटेलिस्ट कार्बन {c_regen*100:.3f} wt% है और मुख्य एयर ब्लोअर (CAB) पावर {power_cab:.2f} MW है।",
+                "en": f"Unit 3 Regenerator Sentinel: Dense bed Treg is {treg_f:.1f} °F and cyclone Tcyc is {tcyc_f:.1f} °F (afterburn dT = {dt_cyc_reg:+.1f} °F vs 25 °F limit). Regenerated catalyst carbon is {c_regen*100:.3f} wt% at CAB power {power_cab:.2f} (sim. units) (Fair = {f_air:.1f} lb/s).",
+                "hinglish": f"Unit 3 Regenerator Sentinel: Dense bed Treg {treg_f:.1f} °F aur cyclone Tcyc {tcyc_f:.1f} °F hai — afterburn dT {dt_cyc_reg:+.1f} °F control mein hai. Regenerated catalyst carbon {c_regen*100:.3f} wt% hai aur Main Air Blower (CAB) {power_cab:.2f} (sim. units) le raha hai.",
+                "hi": f"यूनिट 3 रीजेनरेटर सेंटिनल: बेड तापमान Treg {treg_f:.1f} °F और साइक्लोन तापमान Tcyc {tcyc_f:.1f} °F है (आफ्टरबर्न dT = {dt_cyc_reg:+.1f} °F)। रीजेनरेटेड कैटेलिस्ट कार्बन {c_regen*100:.3f} wt% है और मुख्य एयर ब्लोअर (CAB) पावर {power_cab:.2f} (sim. units) है।",
             },
         },
         {
@@ -1948,11 +1954,11 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "use_case_ids": ["UC-07", "UC-09"],
             "status": units[4]["status"],
             "priority_rank": 6,
-            "proactive_alert": f"Unit 5 Condenser: UA Efficiency = {cond_eff*100:.1f}% (Fouling Res {condenser_ua_residual:.3f}), WGC Power = {power_wgc:.2f} MW, Reflux = {mv_reflux:.3f}.",
+            "proactive_alert": f"Unit 5 Condenser: UA Efficiency = {cond_eff*100:.1f}% (Fouling Res {condenser_ua_residual:.3f}), WGC Power = {power_wgc:.2f} (sim. units), Reflux = {mv_reflux:.3f}.",
             "briefings": {
-                "en": f"Unit 5 Condenser Sentinel: Overhead condenser UA efficiency is {cond_eff*100:.1f}% (residual {condenser_ua_residual:.3f} vs 90% clean baseline). Cooling water flow is {mv_cw:.1f} lb/s (valve V9 {v9_pos*100:.1f}% open) and Wet Gas Compressor power is {power_wgc:.2f} MW.",
-                "hinglish": f"Unit 5 Condenser Sentinel: Overhead condenser UA efficiency {cond_eff*100:.1f}% hai (fouling residual {condenser_ua_residual:.3f}). Cooling water flow {mv_cw:.1f} lb/s (valve V9 {v9_pos*100:.1f}%) aur Wet Gas Compressor (WGC) load {power_wgc:.2f} MW hai.",
-                "hi": f"यूनिट 5 कंडेनसर सेंटिनल: ओवरहेड कंडेनसर की UA दक्षता {cond_eff*100:.1f}% है (फाउलिंग अवशेष {condenser_ua_residual:.3f})। कूलिंग वाटर प्रवाह {mv_cw:.1f} lb/s है और वेट गैस कंप्रेसर (WGC) पावर {power_wgc:.2f} MW है।",
+                "en": f"Unit 5 Condenser Sentinel: Overhead condenser UA efficiency is {cond_eff*100:.1f}% (residual {condenser_ua_residual:.3f} vs 90% clean baseline). Cooling water flow is {mv_cw:.1f} lb/s (valve V9 {v9_pos*100:.1f}% open) and Wet Gas Compressor power is {power_wgc:.2f} (sim. units).",
+                "hinglish": f"Unit 5 Condenser Sentinel: Overhead condenser UA efficiency {cond_eff*100:.1f}% hai (fouling residual {condenser_ua_residual:.3f}). Cooling water flow {mv_cw:.1f} lb/s (valve V9 {v9_pos*100:.1f}%) aur Wet Gas Compressor (WGC) load {power_wgc:.2f} (sim. units) hai.",
+                "hi": f"यूनिट 5 कंडेनसर सेंटिनल: ओवरहेड कंडेनसर की UA दक्षता {cond_eff*100:.1f}% है (फाउलिंग अवशेष {condenser_ua_residual:.3f})। कूलिंग वाटर प्रवाह {mv_cw:.1f} lb/s है और वेट गैस कंप्रेसर (WGC) पावर {power_wgc:.2f} (sim. units) है।",
             },
         },
         {
@@ -1978,7 +1984,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         {"number": 17, "title": "Catalytic Reformer (CCR) Octane & Reformate Yield", "tier": "BOUNDARY_LINKED", "boundary_tag": "prod_HN / HN_T98_F", "boundary_value": f"{prod_hn:.1f} lb/min @ {hn_q50:.1f} °F T98", "integration_note": "Heavy Naphtha side-cut flow and end-point govern CCR naphthene/paraffin charge quality."},
         {"number": 19, "title": "Alkylation / MTBE Light-Olefins Feed Optimization", "tier": "BOUNDARY_LINKED", "boundary_tag": "prod_LPG / eff_C3_C4", "boundary_value": f"{prod_lpg:.1f} lb/min (C3+C4 {lpg_c3_c4_share_pct:.1f}%)", "integration_note": "Riser ROT severity and gas plant recovery set C3=/C4= olefin feed to alkylation."},
         {"number": 20, "title": "Gasoline Blending RVP & Octane Give-Away Control", "tier": "BOUNDARY_LINKED", "boundary_tag": "prod_LN / c5_recovery_pct", "boundary_value": f"{prod_ln:.1f} lb/min (C5 Rec {c5_recovery_pct:.1f}%)", "integration_note": "Stabilised Light Naphtha C5 retention directly controls blendstock Reid Vapor Pressure."},
-        {"number": 23, "title": "Refinery Fuel Gas Header & Wobbe Index Balancing", "tier": "BOUNDARY_LINKED", "boundary_tag": "eff_C1_C2 / F5_fuel", "boundary_value": f"C1+C2 {eff_c1+eff_c2:.2f} mol · Fuel {f5_fuel:.2f} lb/s", "integration_note": "FCC dry gas make and furnace firing rate close the plant fuel gas balance."},
+        {"number": 23, "title": "Refinery Fuel Gas Header & Wobbe Index Balancing", "tier": "BOUNDARY_LINKED", "boundary_tag": "eff_C1_C2 / F5_fuel", "boundary_value": f"C1+C2 {eff_c1+eff_c2:.2f} sim. units · Fuel {f5_fuel:.2f} (sim. units)", "integration_note": "FCC dry gas make and furnace firing rate close the plant fuel gas balance."},
         {"number": 24, "title": "Heavy Fuel Oil / Slurry Clarified Oil Blending & Viscosity", "tier": "BOUNDARY_LINKED", "boundary_tag": "prod_slurry / eff_VGO", "boundary_value": f"{prod_slurry:.1f} lb/min", "integration_note": "Main fractionator bottoms slurry draw and catalyst fines govern fuel oil viscosity."},
         {"number": 12, "title": "Crude Distillation Unit (CDU) Atmospheric Cut-Point Soft Sensors", "tier": "ARCHITECTURE_READY", "boundary_tag": "feed_flow_lb_s / dist_feed_API", "boundary_value": f"{feed_flow:.1f} lb/s @ {feed_api:.1f} °API", "integration_note": "Identical 4-model committee + Spread Gate architecture applied to CDU kerosene/diesel/AGO draws."},
         {"number": 13, "title": "Vacuum Distillation Unit (VDU) HVGO/LVGO Flash-Zone Optimization", "tier": "ARCHITECTURE_READY", "boundary_tag": "dist_T_feed_in_F", "boundary_value": f"VGO Feed {t_feed_in:.1f} °F", "integration_note": "Supplies VGO feed to Unit 1; uses same PINN tray enthalpy and cut-point committee."},
@@ -1989,7 +1995,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         {"number": 22, "title": "Hydrogen Network Purity & PSA/Compressor Allocation", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "Plant Utility Grid", "boundary_value": "Phase 2 Integration", "integration_note": "Couples CCR H2 generation with DHT/HCU hydrotreating demand."},
         {"number": 25, "title": "Sulfur Recovery Unit (SRU) Claus Stoichiometry & Tail-Gas Air Demand", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "Acid Gas Header", "boundary_value": "Phase 2 Integration", "integration_note": "Mirrors Unit 3 regenerator O2/CO combustion stoichiometry control."},
         {"number": 26, "title": "Amine Treating / Sour Water Stripper (SWS) Reboiler Steam Optimization", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "LP Steam Header", "boundary_value": "Phase 2 Integration", "integration_note": "Reboiler duty vs H2S/NH3 stripping efficiency envelope."},
-        {"number": 27, "title": "Steam & Power Cogeneration Header Pressure Balancing", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "power_CAB + power_WGC", "boundary_value": f"{power_cab+power_wgc:.2f} MW shaft load", "integration_note": "Links FCC flue gas steam generation and compressor turbine drivers."},
+        {"number": 27, "title": "Steam & Power Cogeneration Header Pressure Balancing", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "power_CAB + power_WGC", "boundary_value": f"{power_cab+power_wgc:.2f} (sim. units) shaft load", "integration_note": "Links FCC flue gas steam generation and compressor turbine drivers."},
         {"number": 28, "title": "Cooling Tower & Plant Cooling Water Network dT Balancing", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "MV_cw_flow", "boundary_value": f"{mv_cw:.1f} lb/s", "integration_note": "Extends Unit 5 condenser cooling water optimization across plant exchangers."},
         {"number": 29, "title": "Flare Gas Recovery & Relief Valve Leakage Diagnostics", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "P5_frac_psia / V6", "boundary_value": f"{p5_frac:.2f} psia", "integration_note": "Uses pressure residual and acoustic/valve travel diagnostics."},
         {"number": 30, "title": "Crude Tank Farm Blend Compatibility & Asphaltene Precipitation", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "dist_feed_API / crude_id", "boundary_value": f"{feed_api:.1f} °API", "integration_note": "Feeds directly into Event Code 1 crude-switch early warning."},

@@ -43,9 +43,9 @@ PLAUSIBLE = {"d_power_MW": 3.0, "d_fuel_lb_s": 50.0, "d_yield_pct_feed": 1.5}
 def plausibility_issue(r: dict) -> str | None:
     """Plain-words reason if the predicted effects are physically implausible, else None."""
     if abs(r.get("d_power_MW") or 0) > PLAUSIBLE["d_power_MW"]:
-        return f"predicted compressor power {r['d_power_MW']:+.1f} MW"
+        return f"predicted compressor power {r['d_power_MW']:+.1f} (sim. units)"
     if abs(r.get("d_fuel_lb_s") or 0) > PLAUSIBLE["d_fuel_lb_s"]:
-        return f"predicted furnace fuel {r['d_fuel_lb_s']:+.1f} lb/s"
+        return f"predicted furnace fuel {r['d_fuel_lb_s']:+.1f} (sim. units)"
     big = {k: v for k, v in (r.get("d_yield_pct_feed") or {}).items() if abs(v or 0) > PLAUSIBLE["d_yield_pct_feed"]}
     if big:
         k, v = next(iter(big.items()))
