@@ -1,8 +1,8 @@
 /**
  * "How it works" content (owner, 2 Oct 2026 14:31–14:33): one page that explains the tool — what each part does, the
  * question it answers, every decision it helps with, and how each ties back to the IOCL use-case list
- * (refinery_optimisation_use_cases.md, "High-value use cases by value area", rows 1–11, plus "Feedstock evaluation"
- * from the catalogue). Decision ids, levers and use-case ids match api/app/engines/decisions.py and scripted.py.
+ * (refinery_optimisation_use_cases.md, "High-value use cases by value area", rows 1–11; feedstock evaluation is not on
+ * IOCL's list and is not shown). Decision ids, levers and use-case ids match api/app/engines/decisions.py and scripted.py.
  *
  * Honesty: every part, decision and use case carries a status. "Scripted" = the owner's 13:56 decision to keep the real
  * simulator inputs and script the outputs (1.5 months of simulated data cannot honestly train the classifier and the
@@ -525,7 +525,7 @@ export const UC_DETAIL: Record<string, UseCaseDetail> = {
 /* ---------------------------------------------------------------- on-screen explainers (owner, 14:49)
  * "We have a product build and different screens; we need a how it works there, not as a separate dangler." The unit
  * page carries its own use cases (top) and a how-this-step-works strip under each step ①–④. Use cases always in IOCL
- * order (#1 … #11, then the catalogue). */
+ * order (#1 … #11). */
 
 const ioclRank = (row: string) => (row.startsWith("#") ? Number(row.slice(1)) : 99);
 USE_CASES.sort((a, b) => ioclRank(a.row) - ioclRank(b.row));

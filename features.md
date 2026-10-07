@@ -26,7 +26,7 @@ Owner, 6 Oct 2026: 04:32 *"they gave us the value figures. It's them not ours, s
 
 Owner, Voice Note 12 (3 Oct, 03:24 UTC): tying the platform back to IOCL's use cases is **the single most critical task**. Full analysis in [verbatim.md](verbatim.md) Part 10. The UI is a façade; the brain is modular: one lakehouse → data processing → models (ML / PINN) → detection, checks and optimiser shared across use cases (6 Oct: not one agent per use case) → decisions with a person in the loop → the whole refinery optimised. No agents act on the plant. MeitY: Category A stays on site; de-identified data becomes Category B.
 
-**F-OV Opening page (`/platform`, nav "Overview").** First screen. Shows (1) the six layers left to right with what each is in this build; (2) one card per IOCL use case (rows #1–#11 + feedstock evaluation) with its agent, its decision and a status chip — Live / Scripted / Partly / Watch — plus a "Not claimed" card (coker, alkylation, gas turbines, flare, pipelines); each card opens its unit page; (3) a person-in-the-loop band: Advise (this build) → Assist (only if IOCL asks) → Act within an envelope (never in this pitch); (4) a MeitY band: Category A stays on site, the edge gateway de-identifies, Category B in India cloud regions — marked "designed for", not certified; (5) "Open the refinery". No value figures.
+**F-OV Opening page (`/platform`, nav "Overview").** First screen. Shows (1) the six layers left to right with what each is in this build; (2) one card per IOCL use case (rows #1–#11; feedstock evaluation is not on IOCL's list) with its agent, its decision and a status chip — Live / Scripted / Partly / Watch — plus a "Not claimed" card (coker, alkylation, gas turbines, flare, pipelines); each card opens its unit page; (3) a person-in-the-loop band: Advise (this build) → Assist (only if IOCL asks) → Act within an envelope (never in this pitch); (4) a MeitY band: Category A stays on site, the edge gateway de-identifies, Category B in India cloud regions — marked "designed for", not certified; (5) "Open the refinery". No value figures.
 
 ### 2026-10-03 05:00 — "How do we know?"
 
@@ -56,7 +56,7 @@ Owner, 04:24: *"no flow of how will we actually know if a particular parameter w
 | D1 Cut point: move now or wait for the lab | `SP_LCO_T98`, `SP_HN_T98` | P1 | UC-01, UC-11 | **Live** |
 | D2 Can the estimate be trusted now? | — | P4 | UC-11, UC-01 | **Live** |
 | D9 Pull an extra lab sample | sampling schedule | P1, P4 | UC-11 | **Live** |
-| D4 Which crude is in the unit | — | P2 | Feedstock evaluation | **Live** |
+| D4 Which crude is in the unit | — | P2 | Supports #11 · #1 | **Live** |
 | D8 What first; what breaks downstream | — | P3 | UC-06, UC-08, UC-09 | **Live** (watch items) |
 | D3 Coordinated recipe for the new crude | `SP_T_riser_ROT_F`, `MV_PA1..4`, cut points | P2, P3 | UC-01, UC-06 | **Not yet** (plausibility check withholds it; PA moves not in training data) |
 | D5 Regenerator air vs severity | `Fair` (via `SP_T_reg_F`), `SP_T_riser_ROT_F` | P3 | UC-04 | **Not yet** (air never moved in training data) |

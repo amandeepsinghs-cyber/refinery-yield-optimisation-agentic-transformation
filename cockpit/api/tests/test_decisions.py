@@ -72,7 +72,7 @@ def test_d2_trust_and_d4_novel_crude():
     b = _get(T_NOVEL)
     types = {d["type"]: d for d in b["decisions"]}
     assert types["D2"]["status"] == "withheld" and "uncertain" in types["D2"]["withheld_text"]
-    assert types["D4"]["withheld_reason"] == "novelty" and types["D4"]["use_case"]["platform_id"] == "FEED"
+    assert types["D4"]["withheld_reason"] == "novelty" and types["D4"]["use_case"]["platform_id"] == "UC-11"
 
 
 def test_d9_merged_single_sample_decision():

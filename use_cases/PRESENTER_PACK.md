@@ -72,7 +72,7 @@ flowchart LR
 
 | Stop on the journey | IOCL rows | IOCL-reported benefit* | Our status |
 |---|---|---|---|
-| 1 · Feed arrives | Feedstock evaluation | — | 🟠 Scripted outcome |
+| 1 · Feed arrives | — (supports #1 · #11: the soft sensor resets its lab bias for the new feed) | — | 🟠 Scripted outcome |
 | 2 · Furnace | #5 combustion · #10 furnace coke | ~$0.4–1M/yr per site · ~1% margin / ~3% production | 🟠 gain measured · 🟡 Partly |
 | 3 · Riser | #8 filtration · #9 rotating equipment | ~$2M/yr+ · order $1–9M | 👁 Watch only |
 | 4 · Regenerator | #4 regeneration tracking | ~$0.7M/yr+ | 🟠 Scripted · FCC equivalent |
@@ -114,7 +114,7 @@ flowchart LR
 - **Screen:** **U4 · Fractionator** → step **②** (crude block + switch walkthrough). *(The "Which crude is running" block also appears in step ② of other unit pages — check on the day; the full timeline is on U4.)*
 - **Point at:** crude family and confidence; **How it knows** (lab assay vs the unit's behaviour — riser ΔT, conversion, coke, regenerator temperature); walkthrough **06:25** arriving → **06:25–07:25** behaviour shifts → **07:37** named after a 15-min hold → models re-weight; the **scripted** chip.
 - **Say:** *"Everything starts with the feed. The schedule says what's coming, not when it really arrives or how it behaves. The name follows your lab assay; the unit's behaviour confirms it, and it has to hold fifteen minutes so noise doesn't flip it. From here, every model and every move is for the new feed."*
-- **IOCL:** Feedstock evaluation.
+- **IOCL:** Supports #1 and #11 (the soft sensor resets its lab bias for the new feed). Feedstock evaluation itself is not on IOCL's list — do not present it as a use case.
 
 ### Stop 2 · Furnace — "What preheat for this feed?" (D6 · 🟠 gain measured, chance scripted)
 - **Screen:** **U1 · Furnace** → ② → ③ → ④.

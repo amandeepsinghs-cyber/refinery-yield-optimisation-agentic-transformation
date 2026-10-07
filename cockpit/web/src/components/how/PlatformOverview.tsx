@@ -93,7 +93,7 @@ export default function PlatformOverview() {
             const to = href[u.stage] ?? "/twin";
             return (
               <Link key={u.id} href={to} className="pf-uc">
-                <span className="pf-uc-top"><em>{u.row === "Catalogue" ? "Catalogue" : `IOCL ${u.row}`}</em><i className={`pf-st ${cls}`}>{label}</i></span>
+                <span className="pf-uc-top"><em>{`IOCL ${u.row}`}</em><i className={`pf-st ${cls}`}>{label}</i></span>
                 <b>{u.iocl}</b>
                 <span className="pf-agent">{AGENT[u.id] ?? ""}</span>
                 <small className="pf-models">{MODELS[u.id] ?? ""}</small>

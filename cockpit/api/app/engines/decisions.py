@@ -52,7 +52,6 @@ USE_CASES = {
     "UC-09": ("High-value #9", "Rotating-equipment health"),
     "UC-10": ("High-value #10", "Furnace coke build-up and hydraulic-constraint prediction"),
     "UC-11": ("High-value #11", "Product soft sensor between lab samples"),
-    "FEED": ("Catalogue · scheduling & planning", "Feedstock evaluation"),
 }
 # type -> question template, problems, use cases (first = primary), what changes versus today
 TYPES: dict[str, dict[str, Any]] = {
@@ -62,7 +61,7 @@ TYPES: dict[str, dict[str, Any]] = {
            "today": "A number is always shown → the cockpit says when it does not know and why"},
     "D9": {"name": "Pull an extra lab sample", "problem": ["P1", "P4"], "uc": ["UC-11"],
            "today": "Fixed 8-h sampling → sample when the estimate is least certain"},
-    "D4": {"name": "Has the FCC feed changed after the crude switch; is the change finished?", "problem": ["P2"], "uc": ["FEED"],
+    "D4": {"name": "Has the FCC feed changed after the crude switch; is the change finished?", "problem": ["P2"], "uc": ["UC-11", "UC-01"],
            "today": "Declared crude from the schedule → detected crude from unit behaviour, with a probability"},
     "D3": {"name": "Coordinated recipe for the new crude", "problem": ["P2", "P3"], "uc": ["UC-01", "UC-06"],
            "today": "One loop at a time by experience → several set points searched together inside limits"},

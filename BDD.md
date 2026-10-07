@@ -1692,7 +1692,7 @@ Feature: Refinery overview with use cases and build status
     And the text says the FCC is fed heavy gas oil, not crude
 
   Scenario: IOCL use cases are pinned where they fit
-    Then every IOCL use case (#1 to #11 and Feedstock evaluation) appears once as a pin on its step
+    Then every IOCL use case (#1 to #11) appears once as a pin on its step
     And #1 and #11 sit on the FCC with a green dot "Live"
     And #2 sits on the Reformer with an amber dot "Scripted outcome", tagged "FCC equivalent", and "shown on FCC · U6"
     And the coker, alkylation, utilities & flare and pipelines carry "Not claimed"

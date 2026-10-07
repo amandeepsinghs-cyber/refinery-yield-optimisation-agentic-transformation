@@ -462,7 +462,7 @@ To master this build in ~3 hours:
 
 ## 12. Refinery Optimisation Use-Case Coverage Matrix
 
-This build maps directly to the refinery use cases in `refinery_optimisation_use_cases.md` ("High-value use cases by value area", rows 1–11, plus Feedstock Evaluation from the catalogue):
+This build maps directly to the refinery use cases in `refinery_optimisation_use_cases.md` ("High-value use cases by value area", rows 1–11). Feedstock evaluation is not on IOCL's list; the crude-switch check (D4) supports #1 and #11:
 
 - **Real:** Full end-to-end ML pipeline with live models trained on simulated physics and validated on held-out runs.
 - **Scripted Outcome:** Real simulator inputs wired to scripted response gains to demonstrate multi-unit coordination until plant step-tests calibrate them.
@@ -479,7 +479,7 @@ This build maps directly to the refinery use cases in `refinery_optimisation_use
 | **Scripted** | **UC-04** (Row #4) | **Reactor regeneration** (regeneration-cycle tracking & root-cause analysis) | **D5**<br>`Fair` (Air flow) | Detects cyclone afterburn $\Delta T$ drift; isolates air vs. riser severity causes; proposes air trim before high-temp alarms trip. |
 | **Scripted** | **UC-02** (Row #2) | **Catalytic reformer** (stabiliser-tower overhead to maximise C5 recovery) | **D7**<br>`SP_T_overhead` | Re-anchored to the FCC Gas Plant/Stabilizer: advises overhead temperature target against C5 loss to LPG. |
 | **Scripted** | **UC-03** (Row #3) | **LPG balance & distillation split** (C4/C5 split optimization) | **D7**<br>`SP_T_overhead` | Optimizes LPG vs. light naphtha recovery through the overhead target, showing predicted yield shifts before acting. |
-| **Scripted** | **FEED** (Catalogue) | **Feedstock evaluation** (crude slate transition tracking) | **D4**<br>Crude Classifier | Detects crude slate switch from plant thermal/yield response; confirms switch 12 min after completion and re-weights models. |
+| **Scripted** | **Supports UC-11 / UC-01** (not a separate IOCL row) | **Crude-switch check for the soft sensor** | **D4**<br>Crude Classifier | Detects crude slate switch from plant thermal/yield response; confirms switch 12 min after completion and re-weights models. |
 | **Partly** | **UC-10** (Row #10) | **Crude-unit furnaces** (coke build-up & hydraulic constraint prediction) | **D6** | Watches furnace outlet temperature drift against fired duty baseline; flags anomalies. *(No physical coking growth kinetics model).* |
 | **Partly** | **UC-07** (Row #7) | **Heat exchangers / preheat trains** (UA-based fouling health signal) | **D7** | Flags abnormal cooling-water demand as a condenser fouling indicator. *(No automated cleaning schedule planner).* |
 | **Partly** | **UC-06** (Row #6) | **Multi-unit utilities** (energy management across units) | **D3, D8** | D3 coordinates multi-setpoint moves across furnace, riser, and column to minimize energy penalty. *(No standalone utility-plant dashboard).* |

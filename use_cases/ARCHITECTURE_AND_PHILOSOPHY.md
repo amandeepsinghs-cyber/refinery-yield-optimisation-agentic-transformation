@@ -52,7 +52,7 @@ Source wording: [verbatim.md](../verbatim.md) Part 11.
 | Agent | IOCL use cases | Decision it brings to the operator | Status |
 |---|---|---|---|
 | **Soft-sensor agent** | #1 Product-quality inferential · #11 Product soft sensors | D1 move the cut point now or wait for the lab · D2 can the estimate be trusted · D9 pull an extra sample | **Shown today — live** |
-| **Crude-switch agent** | Feedstock evaluation | D4 which crude is in the unit, has the switch finished; every other agent re-weights for it | **Shown today — scripted outcome** |
+| **Crude-switch agent** | Supports #1 · #11 (not a separate IOCL use case) | D4 which crude is in the unit, has the switch finished; every other agent re-weights for it | **Shown today — scripted outcome** |
 | Furnace agent | #5 Fired-heater combustion · #10 Crude-furnace coke & hydraulics | D6 preheat for this feed | Preview (gain measured, outcome scripted) |
 | Regenerator agent | #4 Regeneration-cycle tracking | D5 regenerator air against afterburn | Preview (scripted) |
 | Light-ends agent | #2 Stabiliser C5 recovery · #3 LPG / naphtha split · #7 Exchanger fouling | D7 overhead temperature target | Preview (scripted) |
