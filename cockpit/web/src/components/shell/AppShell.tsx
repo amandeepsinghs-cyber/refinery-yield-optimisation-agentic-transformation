@@ -183,12 +183,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="topbar-spacer" />
         <div className="topbar-ctx">
-          <Provenance />
           <ThemeToggle />
-          {/* UI v2: demo / scenario controls live behind one tray so the ops header carries only provenance. */}
+          {/* Demo / scenario controls and the data provenance live behind one tray, so the header stays clean
+              (owner, 7 Oct: the provenance line on top "steals the thunder"). Pages still say "Simulated data" in
+              their footers. */}
           <details className="scenario-tray" data-testid="scenario-tray">
             <summary aria-label="Scenario and display controls">Scenario</summary>
             <div className="scenario-tray-body">
+              <Provenance />
               <span className="tray-label">Simulated run</span>
               <div className="tray-row"><RunPropertySelect /></div>
             </div>

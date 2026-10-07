@@ -69,7 +69,7 @@ export default function PlatformOverview() {
     <main id="main" className="pf">
       <header className="pf-head">
         <p className="pf-kicker">How it works</p>
-        <h1>All your refinery use cases, on one screen</h1>
+        <h1>One screen to steer the agentic transformation of refinery operations</h1>
         <p className="pf-lede">
           Behind the screen, a separate AI agent handles each use case, from product quality between lab samples to feed
           changes and furnace settings. All the agents work from the same refinery data, so each new use case is quicker
