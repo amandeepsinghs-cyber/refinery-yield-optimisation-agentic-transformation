@@ -39,7 +39,8 @@ feed_model:                          # DECISIONS S-8 / SDD-FEED-01..04 (engines/
   baseline_tau_min: 480              # slow baseline while settled
   settle_api: 0.3                    # settled once it moves less than this per smooth_min ...
   dwell_min: 15                      # ... for this many minutes
-  novel_at: 0.5                      # novelty at or above this holds advice
+  novel_at: 0.5                      # feed novelty at or above this holds advice (0.5 = estimated API at the edge of the training range)
+  familiar_margin_api: 1.0           # feed novelty is 0 this far inside the training API range, 1 this far beyond it
 features:
   exclude: [LCO_T98_F, HN_T98_F, dist_condenser_eff, lab_sample, crude_id, event_code, cutpoint_auto, time_min,
             reactor_MB, mass_balance_err_pct]   # 6 Oct: simulator mass-balance diagnostics; no plant instrument

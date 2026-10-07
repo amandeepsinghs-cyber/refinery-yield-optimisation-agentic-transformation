@@ -61,34 +61,54 @@ function FeedBlock({ r }: { r: import("@/lib/twinTypes").TwinRegime }) {
   const f = r.feed;
   if (!f) return null;
   const ho = f.model?.heldout, dh = f.model?.detector_heldout, tr = f.model?.train;
-  const lo = tr?.api_range?.[0] ?? 20, hi = tr?.api_range?.[1] ?? 29;
-  const apiPos = Math.min(100, Math.max(1, ((f.api_est - lo) / Math.max(0.1, hi - lo)) * 100));
   const changing = f.state === "changing";
   const nov = f.novelty ?? 0;
-  const rows: [string, string, number | null, string][] = [
-    ["① Is the feed changing?",
-      changing ? `Changing since ${clock(f.flagged_at_min)}${f.pct_through != null ? ` · about ${f.pct_through} % through` : ""}${f.expected_finish_min != null ? ` · fully in around ${clock(f.expected_finish_min)}` : ""}`
-        : f.settled_at_min != null ? `Settled since ${clock(f.settled_at_min)}` : "Settled",
-      changing ? (f.pct_through ?? 0) : 100, changing ? "warn" : "good"],
-    ["② Feed properties — estimated API",
-      `${fx(f.api_est, 1)} ± ${fx(f.api_band, 1)}${f.api_declared != null ? ` (schedule says ${fx(f.api_declared, 1)})` : ""}`, apiPos, ""],
-    ["③ Has the model seen a feed like this?",
-      f.novel ? `No — novelty ${fx(nov, 2)}; advice held, not extrapolated` : `Yes — novelty ${fx(nov, 2)} (held at 0.5)`, Math.max(1, nov * 100), f.novel ? "bad" : "good"],
-    ["④ Feed class (from the estimate)", f.feed_class_label ?? "—", null, ""],
-  ];
+  const fr = f.familiar_range_api ?? tr?.api_range;
+  const cls = (f.feed_class_label ?? "").split(",")[0] || "—";
+  const probs = f.class_probs ?? [];
+  const holdAt = 0.5;
   return (
     <div className="us-crude" data-testid="feed-block">
       <div>
         <h3>Feed arriving — what the FCC is being fed</h3>
-        <ul className="us-crude-bars us-feed-rows">
-          {rows.map(([q, v, bar, tone]) => (
-            <li key={q}>
-              <span>{q}</span>
-              <i>{bar != null ? <s style={{ width: `${bar}%` }} /> : null}</i>
-              <b className={tone || undefined}>{v}</b>
-            </li>
-          ))}
-        </ul>
+        {changing ? (
+          <div className="us-feed-now warn" data-testid="feed-now">
+            <b>Feed changing{f.pct_through != null ? ` — about ${f.pct_through} % through` : ""}</b>
+            <span>Change detected at {clock(f.flagged_at_min)}{f.expected_finish_min != null ? ` · steady around ${clock(f.expected_finish_min)}` : ""} · estimate now API {fx(f.api_est, 1)}</span>
+            <span className="hold">Advice on riser, preheat, air, cut points and overhead is paused until the new feed settles.</span>
+          </div>
+        ) : (
+          <div className={`us-feed-now ${f.novel ? "bad" : "good"}`} data-testid="feed-now">
+            <b>Feed now: {cls} gas oil — API {fx(f.api_est, 1)} <small>± {fx(f.api_band, 1)}</small>{f.api_declared != null ? <small> (schedule said {fx(f.api_declared, 1)})</small> : null}</b>
+            <span>{f.settled_at_min != null ? `Arrived and steady since ${clock(f.settled_at_min)}` : "Steady"} · {f.novel ? "outside the feeds the model was trained on — advice paused" : "✓ advice for this feed is active"}</span>
+          </div>
+        )}
+
+        {probs.length ? (
+          <>
+            <h4 className="us-feed-h">Which class is it? <small>chance, from the API estimate and its error band</small></h4>
+            <ul className="us-feed-probs">
+              {probs.map((c) => (
+                <li key={c.class} className={c.class === f.feed_class ? "on" : ""}>
+                  <span>{c.label.split(",")[0]} <em>API {c.api_lo <= 0 ? `< ${c.api_hi}` : c.api_hi >= 90 ? `≥ ${c.api_lo}` : `${c.api_lo}–${c.api_hi}`}</em></span>
+                  <i><s style={{ width: `${Math.max(1, Math.min(99, c.p * 100))}%` }} /></i>
+                  <b className="num">{probPct(c.p)}</b>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+
+        <h4 className="us-feed-h">Familiar to the model? <small>{fr ? `trained on feeds of API ${fx(fr[0], 1)}–${fx(fr[1], 1)}` : ""}</small></h4>
+        <div className="us-feed-gauge" role="img" aria-label={`Feed familiarity ${fx(nov, 2)}; advice paused at ${holdAt}`}>
+          <span>familiar</span>
+          <div className="track">
+            <i className="hold" style={{ left: `${holdAt * 100}%` }}><em>pause advice</em></i>
+            <b className={nov >= holdAt ? "bad" : nov >= 0.35 ? "warn" : "good"} style={{ left: `${Math.max(1, Math.min(99, nov * 100))}%` }} />
+          </div>
+          <span>unfamiliar</span>
+        </div>
+
         {f.crude_family_context ? (
           <p className="us-note subtle">Context: crude slate {f.crude_family_context}. The FCC sees its heavy gas oil, not the crude — so the advice follows the feed&apos;s properties, not the crude&apos;s name.</p>
         ) : null}

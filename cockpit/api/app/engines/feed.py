@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 FEED_FIT_VERSION = 1
 FEATURES = ["coke_per_feed", "riser_dT_F", "fuel_per_feed", "Treg_F", "conversion_pct", "tray_dT_F"]
 DEFAULTS = {"smooth_min": 20, "threshold_api": 0.7, "baseline_tau_min": 480, "settle_api": 0.3, "dwell_min": 15,
-            "warmup_min": 60, "novel_at": 0.5, "ridge": 1.0}
+            "warmup_min": 60, "novel_at": 0.5, "ridge": 1.0, "familiar_margin_api": 1.0}
 CLASS_TEXT = {"heavy": "heavy, high-carbon", "medium": "intermediate", "light": "light, easy-cracking"}
 
 
@@ -221,6 +221,19 @@ def feed_class(api: float | None) -> str | None:
     return None
 
 
+def class_probs(api: float | None, band_p90: float) -> list[dict]:
+    """Chance the feed is in each class: a Gaussian on the API estimate with sigma = held-out p90 error / 1.645,
+    integrated over the class bands (config ``regimes``). Ordered heavy → light. The screen never shows 0 or 100 %."""
+    if api is None or not math.isfinite(api):
+        return []
+    bands = get_state().s.get("regimes", {}) or {"heavy": [0, 22], "medium": [22, 26], "light": [26, 99]}
+    sig = max(0.05, float(band_p90) / 1.645)
+    cdf = lambda x: 0.5 * (1 + math.erf((x - api) / (sig * math.sqrt(2))))  # noqa: E731
+    out = [{"class": n, "label": CLASS_TEXT.get(n, n), "api_lo": float(lo), "api_hi": float(hi),
+            "p": round(cdf(float(hi)) - cdf(float(lo)), 4)} for n, (lo, hi) in bands.items()]
+    return sorted(out, key=lambda c: c["api_lo"])
+
+
 def feed_at(run_id: str, time_min: int | None, reg: dict | None = None) -> dict:
     """The ``feed`` block (SDD-FEED-06). ``reg`` is the regime payload at the same minute (novelty, declared API)."""
     rf = run_feed(run_id)
@@ -248,9 +261,17 @@ def feed_at(run_id: str, time_min: int | None, reg: dict | None = None) -> dict:
             gap = float(declared) - api_est
             if rate and gap * rate > 0:
                 finish = int(t + min(240, abs(gap / rate)))
-    novelty = reg.get("novelty")
-    novel = novelty is not None and float(novelty) >= float(cfg["novel_at"])
+    # ③ Feed familiarity (7 Oct, owner review): is the estimated API inside the range the model was trained on? 0 when
+    # at least `familiar_margin_api` inside the range, 0.5 at the edge, 1 that far beyond it. The regime engine's
+    # operating-pattern score also rises for non-feed reasons (fouling, a run heading for breakdown), so it is reported
+    # as `unit_pattern_novelty` for engineers and left to the soft sensor's own trust checks (D2), not to the feed hold.
+    lo_hi = (fit.get("train") or {}).get("api_range") or [20.0, 29.0]
+    m = float(cfg.get("familiar_margin_api", 1.0))
+    outside = max(float(lo_hi[0]) - api_est, api_est - float(lo_hi[1]))
+    novelty = float(min(1.0, max(0.0, (outside + m) / (2 * m))))
+    novel = novelty >= float(cfg["novel_at"])
     cls = feed_class(api_est)
+    probs = class_probs(api_est, band)
     fam = reg.get("declared_regime_id")
     try:
         from app.regimes import regime_by_id
@@ -269,10 +290,13 @@ def feed_at(run_id: str, time_min: int | None, reg: dict | None = None) -> dict:
         "api_est": round(api_est, 1),
         "api_band": round(band, 1),
         "api_declared": None if declared is None else round(float(declared), 1),
-        "novelty": None if novelty is None else round(float(novelty), 2),
+        "novelty": round(novelty, 2),
         "novel": novel,
+        "familiar_range_api": [float(lo_hi[0]), float(lo_hi[1])],
+        "unit_pattern_novelty": None if reg.get("novelty") is None else round(float(reg["novelty"]), 2),
         "feed_class": cls,
         "feed_class_label": CLASS_TEXT.get(cls or "", cls),
+        "class_probs": probs,
         "crude_family_context": (f"{fam} {fam_label}".strip() if fam else None),
         "hold": changing or novel,
         "hold_reason": ("feed_changing" if changing else "feed_novel") if (changing or novel) else None,

@@ -3410,6 +3410,26 @@ button.wr-item:hover { background: var(--hover); }
 /* S-8 feed panel: question + small bar on one line, the answer underneath (answers are sentences, not percentages) */
 .us-feed-rows { gap: 12px; }
 .us-feedused { margin: 2px 0 8px; font-size: 12.5px; }
+/* Feed arriving (owner review 7 Oct): headline, class chances, familiarity gauge */
+.us-feed-now { display: grid; gap: 3px; padding: 10px 12px; border-radius: 10px; border-left: 4px solid var(--green); background: color-mix(in srgb, var(--green) 8%, transparent); font-size: 13.5px; color: var(--muted); }
+.us-feed-now b { color: var(--ink); font-size: 15px; } .us-feed-now small { color: var(--subtle); font-weight: 500; font-size: 12.5px; }
+.us-feed-now.warn { border-left-color: var(--amber); background: color-mix(in srgb, var(--amber) 10%, transparent); }
+.us-feed-now.bad { border-left-color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent); }
+.us-feed-now .hold { color: var(--amber); font-weight: 600; }
+.us-feed-h { margin: 14px 0 6px; font-size: 13px; color: var(--ink); } .us-feed-h small { font-weight: 400; color: var(--subtle); margin-left: 6px; }
+.us-feed-probs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.us-feed-probs li { display: grid; grid-template-columns: 170px minmax(0, 1fr) 56px; gap: 12px; align-items: center; font-size: 13.5px; color: var(--muted); }
+.us-feed-probs li em { font-style: normal; color: var(--subtle); font-size: 12px; margin-left: 4px; }
+.us-feed-probs li i { height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--muted) 15%, transparent); overflow: hidden; }
+.us-feed-probs li s { display: block; height: 100%; border-radius: 5px; background: color-mix(in srgb, var(--cyan) 40%, transparent); }
+.us-feed-probs li.on { color: var(--ink); font-weight: 600; } .us-feed-probs li.on s { background: var(--cyan); }
+.us-feed-probs li > b { text-align: right; color: var(--ink); }
+.us-feed-gauge { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 12.5px; color: var(--subtle); margin-top: 4px; }
+.us-feed-gauge .track { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--green) 35%, transparent), color-mix(in srgb, var(--amber) 35%, transparent) 50%, color-mix(in srgb, var(--red) 35%, transparent)); margin: 14px 0 4px; }
+.us-feed-gauge .track > b { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid var(--card); background: var(--green); }
+.us-feed-gauge .track > b.warn { background: var(--amber); } .us-feed-gauge .track > b.bad { background: var(--red); }
+.us-feed-gauge .track > i.hold { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--ink); transform: translateX(-50%); }
+.us-feed-gauge .track > i.hold em { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-style: normal; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
 .us-feed-rows li { grid-template-columns: minmax(0, 1fr) 96px; row-gap: 3px; }
 .us-feed-rows li > b { grid-column: 1 / -1; text-align: left; font-weight: 600; }
 .us-feed-rows li > b.good { color: var(--green); } .us-feed-rows li > b.warn { color: var(--amber); } .us-feed-rows li > b.bad { color: var(--red); }

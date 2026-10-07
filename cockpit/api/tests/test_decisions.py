@@ -69,10 +69,12 @@ def test_withheld_decisions_stay_visible_with_reason():
 
 
 def test_d2_trust_and_d4_novel_crude():
+    # 7 Oct (S-8, owner review): the unit behaving unlike training is caught by the soft sensor's trust checks (D2);
+    # D4 no longer calls it a "novel feed" — feed novelty is the estimated API against the trained range.
     b = _get(T_NOVEL)
     types = {d["type"]: d for d in b["decisions"]}
     assert types["D2"]["status"] == "withheld" and "uncertain" in types["D2"]["withheld_text"]
-    assert types["D4"]["withheld_reason"] == "novelty" and types["D4"]["use_case"]["platform_id"] == "UC-11"
+    assert "D4" not in types or types["D4"].get("withheld_reason") != "novelty"
 
 
 def test_d9_merged_single_sample_decision():

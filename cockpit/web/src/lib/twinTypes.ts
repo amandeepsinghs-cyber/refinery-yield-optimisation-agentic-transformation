@@ -283,6 +283,9 @@ export interface TwinFeed {
   novel: boolean;
   feed_class: string | null;
   feed_class_label: string | null;
+  class_probs?: { class: string; label: string; api_lo: number; api_hi: number; p: number }[];
+  familiar_range_api?: [number, number];
+  unit_pattern_novelty?: number | null;
   crude_family_context: string | null;
   hold: boolean;
   hold_reason: "feed_changing" | "feed_novel" | null;

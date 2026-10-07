@@ -82,3 +82,23 @@ def test_catalyst_flow_is_never_advised():
             assert m.get("tag") not in ("F_regen_cat", "F_spent_cat", "C_regen_cat"), d["headline"]
         for lv in d.get("levers") or []:
             assert "cat" not in lv["tag"].lower(), lv
+
+
+def test_feed_novelty_is_about_the_feed_not_the_unit(monkeypatch):
+    # 7 Oct owner review: s107 after 11:00 drifts toward breakdown (unit pattern), but the feed itself is familiar,
+    # so no feed hold; the operating-pattern score is still reported for engineers.
+    monkeypatch.setenv("FCC_SCRIPTED", "1")
+    for t in range(660, 851, 30):
+        f = client.get("/api/regime", params={"run_id": "random_s107", "time_min": t}).json()["feed"]
+        assert f["novel"] is False and f["novelty"] < 0.5
+        assert f["hold_reason"] in (None, "feed_changing")
+        assert "unit_pattern_novelty" in f
+
+
+def test_class_probabilities_from_the_estimate(monkeypatch):
+    monkeypatch.setenv("FCC_SCRIPTED", "1")
+    f = client.get("/api/regime", params={"run_id": "random_s144", "time_min": 600}).json()["feed"]
+    cp = f["class_probs"]
+    assert [c["class"] for c in cp] == ["heavy", "medium", "light"]
+    assert abs(sum(c["p"] for c in cp) - 1) < 0.01
+    assert max(cp, key=lambda c: c["p"])["class"] == f["feed_class"]
