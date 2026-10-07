@@ -153,17 +153,17 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
 - **Say:** *"This run was never used for training. It moves the cut to its target, never below ninety-five percent chance on spec and never more than five degrees in one step, and you can see which limit set it."*
 
 ### Scene E — Recipe for the new crude, and how we know it works (P2 + P3 · D3, scripted) · Fractionator steps ③–④ · `random_s144` · 10:00
-- **Problem:** a new crude needs several set points moved together. One at a time misses the interaction.
-- **How the tech solves it:** a multi-set-point search scores yield (LCO, heavy naphtha, LPG) minus energy and coke, inside limits. The recipe is: **riser outlet temperature +3.5 °F, LCO T98 −1.0 °F, HN T98 +1.0 °F**.
+- **Problem:** a new crude needs a new riser outlet temperature. The recipe sets it (scripted outcome); the cut points stay with D1, so there is one piece of advice per set point.
+- **How the tech solves it:** the real recipe engine (a multi-set-point search) is withheld on this data, so the move is a scripted outcome: **riser outlet temperature +3.5 °F**, from a fixed response gain (conversion +0.12 % per °F), inside the 5 °F SOP step. The cut points are not part of the recipe; D1 advises them (LCO +2.0 °F to its 755.3 °F target at this minute).
 - **Action:** select the D3 tab → note the **scripted outcome** tag → scroll to ④ → **"How do we know the move works?"**.
 - **How it is supported:**
   - Proof loop: **Predict** (scripted gain) → **Decide** (built) → **Measure** (shown, not run in the replay) → **Learn** (built for the soft sensor; lever models refit on site).
-  - **Evidence:** the recipe fed back through the simulator, the same run replayed with and without it. Status: **partly confirmed**. Conversion +0.44 % after 1 h vs +0.42 % predicted (inside band). Cut points: rose with the controllers in manual; back to within 0.2 °F in auto; the ±1 °F trims are too small to judge against the ±8 °F spread; after the trim the conversion gain settled at +0.11 % (a quarter of the prediction). **Say:** "The conversion prediction held. The cut-point part we could not prove yet, so it stays labelled scripted — that is the point of measuring."
+  - **Evidence:** the recipe fed back through the simulator, the same run replayed with and without it. Status: **partly confirmed**. Conversion +0.44 % after 1 h vs +0.42 % predicted (inside band). Cut points: rose with the controllers in manual; back to within 0.2 °F in auto. The cut-point trims tested then were dropped from the recipe. **Say:** "The conversion prediction held. The move stays labelled scripted until a plant step test confirms the gain — that is the point of measuring."
   - Lever test moves measured in the data.
   - The **pilot line**.
-- **Result:** a coordinated recipe with its knock-on effects, and an honest path to proving it.
+- **Result:** one riser move for the new crude, consistent with the D1 cut-point advice, and an honest path to proving it.
 - **Test:**
-  - ☐ D3 shows the three moves and the scripted tag.
+  - ☐ D3 shows one move (riser outlet temperature +3.5 °F), "cut points advised separately (D1)" and the scripted tag.
   - ☐ The proof loop is visible with four chips.
   - ☐ The evidence shows the recipe check status.
   - ☐ The pilot line is visible.

@@ -24,9 +24,9 @@ export interface ProofCheck {
 export const RECIPE_CHECK: ProofCheck = {
   id: "recipe_check_v1",
   title: "Recipe fed back through the simulator",
-  predicted: "Riser outlet temperature +3.5 °F with the LCO and heavy-naphtha cut points trimmed: conversion up about 0.4 % (0.12 % per °F)",
+  predicted: "Riser outlet temperature +3.5 °F (scripted): conversion up about 0.4 % (0.12 % per °F); cut points advised separately in D1",
   observed:
-    "Conversion +0.44 % after 1 hour (+0.53 % on average over hours 1–3) against +0.42 % predicted — inside the band. Cut points: with their controllers in manual the riser move pushed both up (LCO at least +19 °F, heavy naphtha +48 °F); once the controllers went back to auto both returned to within 0.2 °F of the run without the recipe. The −1 / +1 °F trims are too small to see against the ±8 °F spread. Once the trim pulled the LCO cut back, the conversion gain settled at +0.11 % — about a quarter of the prediction, at the bottom edge of the band. So the riser-temperature gain is confirmed; the full recipe is not yet proven.",
+    "Conversion +0.44 % after 1 hour (+0.53 % on average over hours 1–3) against +0.42 % predicted — inside the band. Cut points: with their controllers in manual the riser move pushed both up (LCO at least +19 °F, heavy naphtha +48 °F); once the controllers went back to auto both returned to within 0.2 °F of the run without the recipe. The −1 / +1 °F trims are too small to see against the ±8 °F spread. Once the trim pulled the LCO cut back, the conversion gain settled at +0.11 % — about a quarter of the prediction, at the bottom edge of the band. So the riser-temperature gain is confirmed. The cut-point trims tested here are no longer part of the recipe: the cut points stay with D1, so there is one piece of advice per set point.",
   status: "inconclusive",
   how: "Same run (s144) replayed twice from 10:00 — once with the recipe, once without — so any difference is the recipe. Checked 3 Oct 2026: conversion at 13:20 UTC, cut points at 15:40 UTC.",
 };

@@ -51,9 +51,13 @@ SPEC = {
                      "condenser's cooling-water demand. Cooling water itself is not adjusted (fixed duty)",
                goal="Chance the condenser is back inside its fixed cooling duty"),
     "D3": dict(lever="SP_T_riser_ROT_F", target="conversion_pct", gain=0.12, step=0.5, step_max=5.0, sigma_min=0.1,
-               sop="SOP-RX-001: riser outlet T at most 5 °F per step, 30 min between steps; cut points follow 1 : 1.",
+               sop="SOP-RX-001: riser outlet T at most 5 °F per step, 30 min between steps. Cut points are advised "
+                   "separately (D1, aimed at the target T98), never here.",
                model="Crude-specific response model: conversion +0.12 % per °F of riser outlet T",
-               dev=-0.4, extra=(("SP_LCO_T98", -1.0), ("SP_HN_T98", 1.0))),
+               # No cut-point legs: fixed ±1 °F trims here contradicted the D1 target-aim advice on the same set point
+               # (s144 10:00: D1 LCO +2.0 vs recipe LCO −1.0). One lever, one piece of advice.
+               dev=-0.4, head_prefix="Recipe for this crude: ",
+               head_suffix="; cut points advised separately (D1)"),
 }
 _UNIT = {"MV_cw_flow": "lb/s", "conversion_pct": "%"}
 _SHORT = {"T2_preheat_F": "preheat outlet", "dT_cyc_reg_F": "cyclone ΔT", "MV_cw_flow": "condenser cooling demand",
@@ -133,6 +137,8 @@ def _script(d: dict, row: dict) -> dict:
     head = f"{verb} {l_label[0].lower() + l_label[1:]} {sign(delta)} {l_unit} ({cur:.{nd}f} → {to:.{nd}f})"
     if len(moves) > 1:
         head = "Recipe for this crude: " + "; ".join(f"{m['label']} {sign(m['delta'])} {m['unit']}" for m in moves)
+    elif spec.get("head_prefix"):
+        head = spec["head_prefix"] + head[0].lower() + head[1:] + spec.get("head_suffix", "")
     goal = spec.get("goal") or f"Chance {_SHORT.get(target, t_label.lower())} is back in its band"
     w90 = 2 * 1.645 * sigma
     gates = [

@@ -64,7 +64,7 @@ TYPES: dict[str, dict[str, Any]] = {
     "D4": {"name": "Has the FCC feed changed after the crude switch; is the change finished?", "problem": ["P2"], "uc": ["UC-11", "UC-01"],
            "today": "Declared crude from the schedule → detected crude from unit behaviour, with a probability"},
     "D3": {"name": "Coordinated recipe for the new crude", "problem": ["P2", "P3"], "uc": ["UC-01", "UC-06"],
-           "today": "One loop at a time by experience → several set points searched together inside limits"},
+           "today": "One loop at a time by experience → riser move for the new crude inside limits, cut points left to D1"},
     "D5": {"name": "Regenerator air versus severity", "problem": ["P3"], "uc": ["UC-04"],
            "today": "Afterburn noticed on the board → drift flagged against expected with the downstream effect"},
     "D6": {"name": "Furnace preheat", "problem": ["P2", "P3"], "uc": ["UC-05", "UC-10"],
