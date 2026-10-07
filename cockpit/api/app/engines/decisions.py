@@ -859,6 +859,15 @@ def build(run_id: str, time_min: int) -> dict:
     df = st.catalog.load(run_id)
     row = _row_at(df, t)[0] if not df.empty else {}
     decisions = scripted.apply(decisions, row)
+    for d in decisions:
+        # Furnace CO pattern: the preheat gain IS measured (D6 on s107), but the CO lever (excess O₂ / burner trim) is not
+        # in the simulator, so "no designed moves" would contradict the "gain measured" claim on the Overview.
+        if (d["type"] == "D6" and d["status"] == "withheld"
+                and (d.get("observed") or {}).get("tag") in ("fluegas_CO_ppm", "fluegas_O2_pct")):
+            d["withheld_text"] = ("no preheat move at this minute: the flue-gas CO pattern is under watch, and its lever "
+                                  "(excess O₂ / burner trim) is not in the simulator. The preheat gain itself is measured "
+                                  "(52 simulator step tests); a preheat move appears when the preheat outlet drifts "
+                                  "(e.g. run s107 at 10:00)")
     acts = _actions(run_id)
     decisions = [_overlay(d, acts, t) for d in decisions]
     reg = regime_at(run_id, t) or {}

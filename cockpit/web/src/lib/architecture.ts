@@ -66,7 +66,7 @@ export const AGENTS: Agent[] = [
     decisions: "D1 move the cut point now or wait for the lab · D2 can the estimate be trusted · D9 pull an extra sample",
     status: "today", note: "Interactive" },
   { name: "Furnace agent", useCases: "#5 Fired-heater combustion · #10 Crude-furnace coke & hydraulics",
-    decisions: "D6 preheat for this feed", status: "preview", note: "Gain measured, outcome scripted" },
+    decisions: "D6 preheat for this feed", status: "preview", note: "Gain measured, outcome scripted (move shown on run s107 at 10:00)" },
   { name: "Regenerator agent", useCases: "#4 Regeneration-cycle tracking",
     decisions: "D5 regenerator air against afterburn", status: "preview", note: "Scripted" },
   { name: "Light-ends agent", useCases: "#2 Stabiliser C5 recovery · #3 LPG / naphtha split · #7 Exchanger fouling",
