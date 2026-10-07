@@ -12,7 +12,7 @@ Owner, 7 Oct 2026, 04:17–05:40: the FCC sees heavy gas oil, so a crude-name cl
 
 - [x] R-1a `DECISIONS.md` S-8 (feed quality drives every decision; property estimate first, class derived; crude family = context; catalyst flow is a result, never advised).
 - [x] R-1b `demoflow.md`, `features.md`, `SDD.md`, `BDD.md` updated in authority order.
-- [ ] R-1c API: feed-API estimate with held-out error; change detection replaces the 12-min scripted lag; novelty cap removed; derived class; `feed` block; `feed_used` + hold on D1/D3/D5/D6/D7; D4 wording.
+- [x] R-1c API: feed-API estimate with held-out error; change detection replaces the 12-min scripted lag; novelty cap removed; derived class; `feed` block; `feed_used` + hold on D1/D3/D5/D6/D7; D4 wording.
 - [ ] R-1d Web: "Feed arriving" panel; "For this feed …" line on each decision; catalyst-to-oil as a result on U2/U3.
 - [ ] R-1e Gemini guide and guardrails (no crude identification as purpose; no catalyst-flow advice).
 - [ ] R-1f Pitch docs (DEMO_SCRIPT Scene B, PRESENTER_PACK stop 1, PROBING_QUESTIONS incl. two new questions, STORY_v2, API_CONTRACT).

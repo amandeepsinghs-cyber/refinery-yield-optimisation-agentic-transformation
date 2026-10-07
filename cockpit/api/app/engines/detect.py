@@ -229,17 +229,22 @@ def _regime_events(run_id: str, df: pd.DataFrame) -> list[dict]:
     out = []
     from app.engines import scripted  # local: avoid an import cycle
     if scripted.enabled():
-        # Scripted classifier: a switch is confirmed DETECT_LAG_MIN after the declared switch completes — the same
-        # time the crude block reports — so the shift list and the classifier never disagree.
+        # DECISIONS S-8 (R-1c): a switch is confirmed when the feed-change detector says the new feed has settled
+        # (engines/feed.py) — the same time the feed block reports — so the shift list and the feed panel agree.
+        from app.engines.feed import run_feed
+        rf = run_feed(run_id) or {}
+        eps = rf.get("episodes") or []
         segs = reg["segs"].reset_index(drop=True)
         pairs = []
         for j in range(1, len(segs)):
             a, b = segs.loc[j - 1, "regime_id"], segs.loc[j, "regime_id"]
             end = segs.loc[j].get("transition_end_min")
             end = segs.loc[j, "t_start_min"] if end is None or pd.isna(end) else end
-            ts = int(end) + scripted.DETECT_LAG_MIN
-            if a != b and len(t) and ts <= int(t[-1]):
-                pairs.append((ts, a, b))
+            start = segs.loc[j].get("transition_start_min")
+            start = end if start is None or pd.isna(start) else start
+            m = [e for e in eps if int(start) - 60 <= e["flagged_at_min"] <= int(end) + 60 and e.get("settled_at_min")]
+            if a != b and m and len(t) and m[0]["settled_at_min"] <= int(t[-1]):
+                pairs.append((int(m[0]["settled_at_min"]), a, b))
         det, t = [], []
         for ts, a, b in pairs:
             det += [a, b]
@@ -250,7 +255,7 @@ def _regime_events(run_id: str, df: pd.DataFrame) -> list[dict]:
     for i in rng:
         if det[i] != det[i - 1]:
             out.append(_event(run_id, t[i], None, None, "regime", "regime_change", "info",
-                              {"label": f"Crude switch detected ({det[i - 1]}→{det[i]})", "from": det[i - 1], "to": det[i],
+                              {"label": f"New feed settled (crude slate {det[i - 1]}→{det[i]})", "from": det[i - 1], "to": det[i],
                                "briefing": {"en": f"Crude regime {det[i - 1]}→{det[i]} detected at t={int(t[i])} min; "
                                                   f"adaptive baselines and surrogate switched to {det[i]}.",
                                             "hinglish": f"Crude regime {det[i - 1]}→{det[i]} t={int(t[i])} min par detect hua; "

@@ -33,6 +33,13 @@ lab:
   timestamp_error_rate: 0.05
   seed: 42
 regimes: {heavy: [0, 22], medium: [22, 26], light: [26, 99]}
+feed_model:                          # DECISIONS S-8 / SDD-FEED-01..04 (engines/feed.py); feed class bands = regimes above
+  smooth_min: 20                     # feed-API estimate smoothed over this window
+  threshold_api: 0.7                 # change flagged when the smoothed estimate leaves its baseline by more than this
+  baseline_tau_min: 480              # slow baseline while settled
+  settle_api: 0.3                    # settled once it moves less than this per smooth_min ...
+  dwell_min: 15                      # ... for this many minutes
+  novel_at: 0.5                      # novelty at or above this holds advice
 features:
   exclude: [LCO_T98_F, HN_T98_F, dist_condenser_eff, lab_sample, crude_id, event_code, cutpoint_auto, time_min,
             reactor_MB, mass_balance_err_pct]   # 6 Oct: simulator mass-balance diagnostics; no plant instrument

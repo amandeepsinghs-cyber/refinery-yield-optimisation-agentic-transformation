@@ -5,7 +5,8 @@ produce into first-class ``Decision`` objects:
 
 * soft-sensor estimate + spread gate + recommendation (``state.recommendations``)  → D1 cut point now or wait, D2 trust,
   D9 extra lab sample
-* crude-regime posterior (``regime_at``)                                           → D4 has the FCC feed changed after the crude switch
+* feed model (``regime_at``["feed"], engines/feed.py; DECISIONS S-8)               → D4 is the feed changing, what are its
+  properties, is it novel; holds D1/D3/D5/D6/D7 while the feed is changing or novel
 * multi-lever recipe search (``recipe_for``)                                       → D3 coordinated recipe
 * sentinels + consequence rules (``events_for_run`` / ``needs_attention``)        → D5 regenerator air, D6 furnace,
   D7 overhead / stabiliser, D8 cross-unit watch items
@@ -61,10 +62,10 @@ TYPES: dict[str, dict[str, Any]] = {
            "today": "A number is always shown → the cockpit says when it does not know and why"},
     "D9": {"name": "Pull an extra lab sample", "problem": ["P1", "P4"], "uc": ["UC-11"],
            "today": "Fixed 8-h sampling → sample when the estimate is least certain"},
-    "D4": {"name": "Has the FCC feed changed after the crude switch; is the change finished?", "problem": ["P2"], "uc": ["UC-11", "UC-01"],
-           "today": "Declared crude from the schedule → detected crude from unit behaviour, with a probability"},
-    "D3": {"name": "Coordinated recipe for the new crude", "problem": ["P2", "P3"], "uc": ["UC-01", "UC-06"],
-           "today": "One loop at a time by experience → riser move for the new crude inside limits, cut points left to D1"},
+    "D4": {"name": "Is the feed changing, and what are its properties?", "problem": ["P2"], "uc": ["UC-11", "UC-01"],
+           "today": "Declared crude from the schedule → feed change, feed API and novelty estimated from the unit's own response"},
+    "D3": {"name": "Coordinated recipe for the new feed", "problem": ["P2", "P3"], "uc": ["UC-01", "UC-06"],
+           "today": "One loop at a time by experience → riser move for the new feed inside limits, cut points left to D1"},
     "D5": {"name": "Regenerator air versus severity", "problem": ["P3"], "uc": ["UC-04"],
            "today": "Afterburn noticed on the board → drift flagged against expected with the downstream effect"},
     "D6": {"name": "Furnace preheat", "problem": ["P2", "P3"], "uc": ["UC-05", "UC-10"],
@@ -90,6 +91,8 @@ GATE_TEXT = {"wide": "the estimate is too uncertain (spread W90 above the 14 °F
              "no_gain": "no move improves on holding",
              "implausible": "the model extrapolates beyond physical range",
              "transition": "the crude transition is not finished",
+             "feed_changing": "the feed is still changing — advice waits until the new feed has settled",
+             "feed_novel": "the feed is outside anything the models were trained on — advice is held, not extrapolated",
              "trust_red": "redundant sensors or the lab disagree with the estimate"}
 # Trust signals S1–S7 (app/pipeline.py SIGNAL_WORDS), phrased as the check that passes; op = direction of the limit.
 SIGNAL_NAMES = {"S1": ("models agree", "≤"), "S2": ("inputs inside training range", "≤"),
@@ -472,37 +475,90 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
 
 
 def _crude(run_id: str, t: int) -> list[dict]:
+    """D4 (DECISIONS S-8): is the feed changing, what are its properties, is it novel. Shown only when it matters —
+    feed changing, feed novel, or the estimated API far from the declared one. The crude family is context only."""
     reg = regime_at(run_id, t) or {}
-    if not reg:
+    feed = reg.get("feed") or {}
+    if not reg or not feed:
         return []
-    p = reg.get("p_regime") or {}
-    pmax = max(p.values()) if p else 0.0
-    dvd, trans, nov = reg.get("declared_vs_detected"), reg.get("transition_pct"), reg.get("novelty") or 0.0
-    if dvd == "match" and (trans is None or trans >= 100) and nov < 0.5:
+    nov = float(feed.get("novelty") or 0.0)
+    est, dec, band = feed.get("api_est"), feed.get("api_declared"), float(feed.get("api_band") or 0.5)
+    changing, novel = feed.get("state") == "changing", bool(feed.get("novel"))
+    off = est is not None and dec is not None and abs(est - dec) > max(1.0, 2 * band)
+    if not (changing or novel or off):
         return []
-    onset = int(reg.get("detected_at_min") or t)
+    onset = int(feed.get("flagged_at_min") or t)
     d = _base("D4", "unit_2_riser", "crude", run_id, t, onset)
-    det, dec = reg.get("regime_id"), reg.get("declared_regime_id")
-    d["question"] = f"Is the unit on {det} as detected, or {dec} as declared?" if dvd != "match" else \
-        "Is the crude transition finished?"
-    d["headline"] = (f"Confirm crude: detected {det} {pmax * 100:.0f} % vs declared {dec}" if dvd != "match"
-                     else f"Crude transition {trans} % — hold recipe changes until settled")
-    d["observed"] = {"regime_id": det, "regime_label": reg.get("regime_label"), "p_regime": p,
-                     "declared_regime_id": dec, "transition_pct": trans, "novelty": nov}
-    d["diagnosed"] = {"text": "Posterior from unit behaviour (coke/feed, riser ΔT, fuel/feed, regenerator T, "
-                              "conversion, tray ΔT) with a 15-min dwell before a switch is declared."}
-    d["proposed"] = {"moves": [], "confirm": det, "alternative": "Keep the declared crude and its models"}
+    cls = feed.get("feed_class_label") or "class n/a"
+    ctx = feed.get("crude_family_context")
+    pct, fin = feed.get("pct_through"), feed.get("expected_finish_min")
+    if changing:
+        d["question"] = "Is the new feed fully in yet?"
+        d["headline"] = (f"Feed change detected at {clock(onset)} — about {pct} % through" if pct is not None
+                         else f"Feed change detected at {clock(onset)}") + \
+                        (f", new feed fully in around {clock(fin)}" if fin else "") + \
+                        f" (estimated API {est:.1f}); cut-point, riser, preheat, air and overhead advice held until it settles"
+    else:
+        d["question"] = "Is the feed what the schedule says?"
+        d["headline"] = (f"Feed estimate API {est:.1f} ± {band:.1f} vs declared {dec:.1f} — confirm the feed "
+                         "(sample the FCC feed)")
+    d["observed"] = {"feed_state": feed.get("state"), "api_est": est, "api_band": band, "api_declared": dec,
+                     "pct_through": pct, "expected_finish_min": fin, "novelty": nov, "feed_class": feed.get("feed_class"),
+                     "crude_family_context": ctx, "transition_pct": pct,
+                     "line": f"Estimated feed API {est:.1f} ± {band:.1f} ({cls}); novelty {nov:.2f}"
+                             + (f"; context: {ctx} slate" if ctx else "")}
+    ho = ((feed.get("model") or {}).get("heldout") or {})
+    d["diagnosed"] = {"text": "Feed API estimated every minute from the unit's response (coke per feed, riser ΔT, fuel "
+                              "per feed, regenerator temperature, conversion, tray ΔT)"
+                              + (f"; held-out error {ho.get('mae_api')} API (90 % within ± {ho.get('p90_abs_err_api')})"
+                                 if ho else "")
+                              + ". A change is flagged when the estimate leaves its baseline and confirmed once it has "
+                                "settled. The crude family is shown as context only."}
+    d["proposed"] = {"moves": [], "confirm": "feed", "alternative": "Keep the declared feed and its models"}
     d["urgency"] = {"rank": None, "time_to_consequence_min": 60,
-                    "consequence": "Models for the wrong crude bias every estimate and recipe", "decide_by_label": None}
-    d["evidence"] = {"tags": ["conversion_pct", "Treg_F", "F_coke"], "labs": [], "docs": [],
+                    "consequence": "Settings sized for the previous feed — riser, preheat, air and cut points — drift "
+                                   "off target", "decide_by_label": None}
+    d["evidence"] = {"tags": ["conversion_pct", "Treg_F", "F_coke", "dist_feed_API"], "labs": [], "docs": [],
                      "lakehouse": "fcc_gold.v_crude_switches"}
-    if nov >= 0.5:
-        d["status"], d["withheld_reason"], d["withheld_text"] = "withheld", "novelty", GATE_TEXT["novelty"]
-        d["question"] = "Is this a crude the models know?"
-        d["headline"] = (f"Crude unlike any trained regime (novelty {nov:.2f}; nearest {det} {pmax * 100:.0f} %, "
-                         f"declared {dec}) — recipes withheld; request the crude assay")
-        d["proposed"] = {"moves": [], "alternative": "Hold recipe changes; run on the declared crude's limits"}
+    if novel:
+        d["status"], d["withheld_reason"], d["withheld_text"] = "withheld", "novelty", GATE_TEXT["feed_novel"]
+        d["question"] = "Is this a feed the models know?"
+        d["headline"] = (f"Feed outside training (novelty {nov:.2f}; estimated API {est:.1f}) — advice held; "
+                         "sample the FCC feed")
+        d["proposed"] = {"moves": [], "alternative": "Hold set-point changes; run on the current limits"}
     return [d]
+
+
+_FEED_HOLDS = ("D1", "D3", "D5", "D6", "D7")
+
+
+def _apply_feed(decisions: list[dict], reg: dict) -> list[dict]:
+    """DECISIONS S-8 (c): each downstream decision says which feed it was sized for, and is held while the feed is
+    changing or novel. D1 keeps its estimate (observed) and loses only the move."""
+    feed = (reg or {}).get("feed") or {}
+    line = None
+    if feed:
+        from app.engines.feed import feed_used_line
+        line = feed_used_line(feed)
+    for d in decisions:
+        if d.get("type") not in _FEED_HOLDS or not feed:
+            continue
+        d["feed_used"] = {"api_est": feed.get("api_est"), "feed_class": feed.get("feed_class"),
+                          "feed_class_label": feed.get("feed_class_label"), "state": feed.get("state"), "line": line}
+        for s in d.get("enabled_by") or []:
+            if s.get("name") == "Feed model":
+                ho = ((feed.get("model") or {}).get("heldout") or {})
+                s["did"] = (f"Estimates the feed's API from the unit's response: {feed.get('api_est'):.1f} "
+                            f"({feed.get('feed_class_label')})" + (f", held-out error {ho['mae_api']} API" if ho.get("mae_api") else "")
+                            + "; the move below is sized for this feed (the response gain is scripted)")
+        reason = feed.get("hold_reason")
+        if reason and d.get("status") == "open" and not d.get("action"):
+            d["status"], d["withheld_reason"], d["withheld_text"] = "withheld", reason, GATE_TEXT[reason]
+            d["proposed"] = {**(d.get("proposed") or {}), "moves": []}
+            why = "the feed is still changing" if reason == "feed_changing" else "the feed is outside training"
+            tail = "no move until the new feed has settled" if reason == "feed_changing" else "sample the FCC feed first"
+            d["headline"] = f"Not yet — {why}; {tail}"
+    return decisions
 
 
 def _plausible(r: dict) -> str | None:
@@ -520,11 +576,13 @@ def _recipe(run_id: str, t: int) -> list[dict]:
         return []
     r = recipe_for(run_id, t, "unit_4_fractionator")
     d = _base("D3", "unit_4_fractionator", "recipe", run_id, t, int(sw))
-    d["question"] = f"Which set points for {reg.get('regime_id')} {reg.get('regime_label') or ''}".strip() + "?"
+    fd = reg.get("feed") or {}
+    d["question"] = (f"Which set points for this feed (API ≈ {fd['api_est']:.1f})?" if fd.get("api_est") is not None
+                     else "Which set points for the new feed?")
     d["evidence"] = {"tags": [m["sp_tag"] for m in r.get("moves", [])] or (r.get("data_support") or {}).get("searched", []),
                      "labs": [], "docs": _cites(r), "lakehouse": "fcc_gold.model_registry"}
     d["urgency"] = {"rank": None, "time_to_consequence_min": None,
-                    "consequence": "Running the new crude on the old crude's set points", "decide_by_label": None}
+                    "consequence": "Running the new feed on the previous feed's set points", "decide_by_label": None}
     d["diagnosed"] = {"text": r.get("explanation"), "data_support": r.get("data_support")}
     why_not = _plausible(r)
     cap = float((get_state().s["recommend"] or {}).get("max_move_F", 5.0))
@@ -718,13 +776,11 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
                            f"Estimates the lab value every minute: {o['estimate']:.1f} ± {(o.get('sigma') or 0):.1f} °F"
                            + ("; the linear model is shown for reference only" if mem and n_mix < len(mem) else "")
                            if o.get("estimate") is not None else f"Estimates LCO and HN every minute: {o.get('line')}"))
-        if reg and reg.get("scripted"):
-            steps.append(_step("ml", "Crude family (scripted in the demo)",
-                               f"Follows the lab assay: {reg.get('regime_id')} {reg.get('regime_label') or ''}; feeds the "
-                               "'labels for this crude' check"))
-        else:
-            steps.append(_step("ml", "Crude-regime model", f"Recognises the crude from unit behaviour: {regime}; feeds "
-                                                           "the 'labels for this crude' check"))
+        fd = (reg or {}).get("feed") or {}
+        if fd.get("api_est") is not None:
+            steps.append(_step("ml", "Feed model", f"Estimates the feed's API from the unit's response: "
+                                                   f"{fd['api_est']:.1f} ({fd.get('feed_class_label')}), feed "
+                                                   f"{fd.get('state')}; the bias resets when the new feed has settled"))
         names = ", ".join(g.get("name") or g.get("id") for g in d["gates"])
         steps.append(_step("check", "Trust checks", f"{g_pass} of {len(d['gates'])} pass ({names})"))
     if t == "D1":
@@ -749,13 +805,20 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
         steps.append(_step("agent", "Sample trigger", f"Next lab {o.get('next_lab_label')}; a sample now re-anchors the "
                                                             f"estimate {o.get('next_lab_in_min')} min earlier"))
     if t == "D4":
-        steps.append(_step("ml", "Crude family (scripted in the demo)" if reg and reg.get("scripted") else "Crude-regime model",
-                           (f"Follows the lab assay: {regime}" if reg and reg.get("scripted")
-                            else f"Posterior over four crude families: {regime}") + f"; novelty {(o.get('novelty') or 0):.2f}"))
-        steps.append(_step("agent", "Feed-change check", "Compares detected with the declared schedule; 15-min dwell "
-                                                          "before declaring a switch"))
+        fd = (reg or {}).get("feed") or {}
+        ho = ((fd.get("model") or {}).get("heldout") or {})
+        dh = ((fd.get("model") or {}).get("detector_heldout") or {})
+        steps.append(_step("ml", "Feed-property soft sensor",
+                           f"Estimates feed API every minute from the unit's response: {o.get('api_est')} ± "
+                           f"{o.get('api_band')}" + (f"; held-out error {ho.get('mae_api')} API" if ho else "")))
+        steps.append(_step("agent", "Feed-change detection",
+                           "Flags when the estimate leaves its baseline and confirms when it has settled"
+                           + (f"; on held-out runs {dh.get('caught')} of {dh.get('switches')} feed changes caught, "
+                              f"{dh.get('false_alarms')} false alarms" if dh else "")))
+        steps.append(_step("check", "Novelty check", f"Novelty {(o.get('novelty') or 0):.2f}; at 0.5 or above advice "
+                                                     "is held rather than extrapolated"))
     if t == "D3":
-        steps.append(_step("ml", "Crude-specific response models", f"Fitted per crude regime ({regime})"))
+        steps.append(_step("ml", "Response models", f"Fitted per feed regime ({regime}, context)"))
         steps.append(_step("optimiser", "Multi-set-point search", "Searches several set points together inside IOW, "
                                                                   "step and training limits"))
     if t in ("D5", "D6", "D7", "D8"):
@@ -803,6 +866,9 @@ NEVER_RECOMMENDED = [
     {"setting": "Condenser cooling-water flow", "why": "kept at fixed duty; watched only as a limit"},
     {"setting": "Feed rate", "why": "set by the planning department; treated as a limit"},
     {"setting": "Catalyst addition", "why": "a real handle, but not in the simulator"},
+    {"setting": "Catalyst circulation / catalyst-to-oil", "why": "a result of the heat balance: the slide valve moves "
+                                                                 "catalyst to hold riser outlet temperature; the levers "
+                                                                 "are riser outlet temperature, preheat and air"},
 ]
 
 
@@ -880,6 +946,7 @@ def build(run_id: str, time_min: int) -> dict:
         if not d.get("scripted"):
             d["enabled_by"] = _enabled_by(d, reg)
         d["levers"] = _levers(d, row)
+    decisions = _apply_feed(decisions, reg)   # S-8: "For this feed …" and holds while changing / novel
     big = 10 ** 6
     decisions.sort(key=lambda d: (_ORDER.get(d["status"], 9), d["urgency"].get("time_to_consequence_min") or big))
     for i, d in enumerate(decisions, 1):

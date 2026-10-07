@@ -36,10 +36,10 @@ SPEC = {
                      "catalyst-to-oil) in every test. In a real unit this also lifts conversion and cools the "
                      "regenerator — the simulator's regenerator controller holds its temperature, so that part is "
                      "plant practice, not a model result",
-               goal="Chance the preheat sits at this crude's target (catalyst-to-oil and regenerator temperature)"),
+               goal="Chance the preheat sits at this feed's target (catalyst-to-oil and regenerator temperature follow)"),
     "D5": dict(lever="Fair", target="dT_cyc_reg_F", gain=40.0, step=0.01, step_max=0.08, sigma_min=0.3,
                sop="SOP-REG-004: air rate at most 3 % per step, 15 min between steps; flue-gas O₂ stays in its window.",
-               model="Regenerator response model for this crude: cyclone ΔT (afterburn) moves 0.4 °F per 0.01 air "
+               model="Regenerator response model for this feed: cyclone ΔT (afterburn) moves 0.4 °F per 0.01 air "
                      "step; excess O₂ follows the air rate"),
     # Cooling-water flow is the symptom (a fouled condenser needs more water for the same load) and a limit — the
     # condenser runs at fixed cooling duty, so the cockpit never recommends changing it. The lever is the overhead
@@ -56,10 +56,10 @@ SPEC = {
     "D3": dict(lever="SP_T_riser_ROT_F", target="conversion_pct", gain=0.12, step=0.5, step_max=5.0, sigma_min=0.1,
                sop="SOP-RX-001: riser outlet T at most 5 °F per step, 30 min between steps. Cut points are advised "
                    "separately (D1, aimed at the target T98), never here.",
-               model="Crude-specific response model: conversion +0.12 % per °F of riser outlet T",
+               model="Response model for this feed: conversion +0.12 % per °F of riser outlet T",
                # No cut-point legs: fixed ±1 °F trims here contradicted the D1 target-aim advice on the same set point
                # (s144 10:00: D1 LCO +2.0 vs recipe LCO −1.0). One lever, one piece of advice.
-               dev=-0.4, head_prefix="Recipe for this crude: ",
+               dev=-0.4, head_prefix="Recipe for this feed: ",
                head_suffix="; cut points advised separately (D1)"),
 }
 _UNIT = {"MV_cw_flow": "lb/s", "conversion_pct": "%"}
@@ -141,7 +141,7 @@ def _script(d: dict, row: dict) -> dict:
     verb = "Raise" if delta > 0 else "Lower"
     head = f"{verb} {l_label[0].lower() + l_label[1:]} {sign(delta)} {l_unit} ({cur:.{nd}f} → {to:.{nd}f})"
     if len(moves) > 1:
-        head = "Recipe for this crude: " + "; ".join(f"{m['label']} {sign(m['delta'])} {m['unit']}" for m in moves)
+        head = "Recipe for this feed: " + "; ".join(f"{m['label']} {sign(m['delta'])} {m['unit']}" for m in moves)
     elif spec.get("head_prefix"):
         head = spec["head_prefix"] + head[0].lower() + head[1:] + spec.get("head_suffix", "")
     goal = spec.get("goal") or f"Chance {_SHORT.get(target, t_label.lower())} is back in its band"
@@ -157,8 +157,8 @@ def _script(d: dict, row: dict) -> dict:
         "status": "open", "scripted": True, "withheld_reason": None, "withheld_text": None, "headline": head,
         "urgency": {**d["urgency"], "decide_by_label": d["urgency"].get("decide_by_label")},
         "observed": {**(d.get("observed") or {}), "tag": target, "label": t_label,
-                     "line": (d.get("observed") or {}).get("line") or f"{t_label} {sign(dev)} {t_unit} away from the crude target"},
-        "diagnosed": {"text": f"Scripted outcome for the demo. {t_label} is {sign(dev)} {t_unit} from expected for this crude. {spec['model']}. "
+                     "line": (d.get("observed") or {}).get("line") or f"{t_label} {sign(dev)} {t_unit} away from the target for this feed"},
+        "diagnosed": {"text": f"Scripted outcome for the demo. {t_label} is {sign(dev)} {t_unit} from expected for this feed. {spec['model']}. "
                               f"{l_label} {sign(delta)} {l_unit} brings it back: chance in band {prob_text(pb)} → {prob_text(pa)}. "
                               "Advisory only; operator decides.", "trust": "GREEN", "conservative": False},
         "proposed": {"moves": moves, "alternative": f"Hold — {d['urgency'].get('consequence') or 'the drift continues'}",
@@ -175,7 +175,7 @@ def _script(d: dict, row: dict) -> dict:
     since = (d.get("observed") or {}).get("since_label")
     steps = [{"kind": "agent", "name": "Anomaly detection", "did": f"Flagged {t_label} moving away from expected at {since}"}] if since else []
     steps += [
-        {"kind": "ml", "name": "Crude family (scripted in the demo)", "did": "Follows the lab assay and picks the response gain for that crude"},
+        {"kind": "ml", "name": "Feed model", "did": "Estimates the feed's API from the unit's response; the move below is sized for this feed (the response gain is scripted)"},
         {"kind": "ml", "name": "Response model (" + ("gain measured · chance scripted" if spec.get("gain_source") == "measured" else "scripted") + ")",
          "did": spec["model"]},
         {"kind": "check", "name": "Checks", "did": f"{len(gates)} of {len(gates)} pass (scripted spread band, lever window); no model-agreement or training-range check for scripted items"},
@@ -203,13 +203,15 @@ def apply(decisions: list[dict], row: dict) -> list[dict]:
     return out
 
 
-# ------------------------------------------------------------------------------------------------ crude classifier
-DETECT_LAG_MIN = 12  # scripted: the unit's behaviour confirms the new crude 12 min after the switch completes
+# ------------------------------------------------------------------------------------------------ crude family (context)
+# DECISIONS S-8 (7 Oct, R-1c): the FCC sees heavy gas oil, so the crude family is context only. The scripted 12-min
+# detection lag and the 0.4 novelty cap are gone: timing comes from the real feed-change detector (engines/feed.py)
+# and novelty is reported as computed. The family label still follows the declared schedule (traceability only).
 
 
 def regime(reg: dict) -> dict:
-    """Scripted crude classification (VN10/VN11 step 1): the classifier names the crude the lab assay declares, with
-    high confidence once the switch is complete, and ramps from the old crude to the new one during the transition."""
+    """Crude-family context line for the demo: follows the declared crude; the switch is confirmed when the feed model
+    says the feed has settled (not after a fixed lag). Novelty is passed through uncapped."""
     if not enabled() or not reg or not reg.get("declared_regime_id"):
         return reg
     from app.engines.regime import REGIME_IDS, regime_by_id  # local: avoid an import cycle
@@ -220,10 +222,15 @@ def regime(reg: dict) -> dict:
     prev = segs[-2]["regime_id"] if len(segs) > 1 else None
     end = (cur or {}).get("transition_end_min") or (cur or {}).get("t_start_min")
     start = (cur or {}).get("transition_start_min")
+    feed = reg.get("feed") or {}
+    last = feed.get("last_change") or {}
+    # the feed change that belongs to this crude switch: flagged after the switch began (60-min grace)
+    s0 = start if start is not None else end
+    this_change = bool(last) and s0 is not None and last.get("flagged_at_min", -1) >= s0 - 60
     hi = 0.93
-    if prev and prev != new and end is not None and t < end + DETECT_LAG_MIN:
-        s0 = start if start is not None else end
-        frac = min(1.0, max(0.0, (t - s0) / max(1, end + DETECT_LAG_MIN - s0)))
+    if prev and prev != new and (feed.get("state") == "changing" or not this_change) and end is not None \
+            and t < end + 240:
+        frac = (feed.get("pct_through") or 0) / 100 if feed.get("state") == "changing" else 0.0
         p_new = 0.08 + (hi - 0.08) * frac
         p = {r: 0.0 for r in REGIME_IDS}
         p[new], p[prev] = p_new, (1 - p_new) * 0.9
@@ -236,10 +243,10 @@ def regime(reg: dict) -> dict:
     else:
         p = {r: (hi if r == new else (1 - hi) / (len(REGIME_IDS) - 1)) for r in REGIME_IDS}
         det, dvd = new, "match"
-        det_at = int(end + DETECT_LAG_MIN) if prev and end is not None else None
-        delay = DETECT_LAG_MIN if det_at is not None else None
+        det_at = last.get("settled_at_min") if (prev and this_change) else None
+        delay = int(det_at - end) if (det_at is not None and end is not None) else None
     out = dict(reg)
     out.update({"regime_id": det, "regime_label": regime_by_id(det).label, "p_regime": {k: round(v, 3) for k, v in p.items()},
                 "declared_vs_detected": dvd, "detected_at_min": det_at, "detection_delay_min": delay,
-                "novelty": min(float(reg.get("novelty") or 0), 0.4), "scripted": True})
+                "crude_family_is_context": True, "scripted": True})
     return out

@@ -298,7 +298,7 @@ def regime_at(run_id: str, time_min: int | None) -> dict:
     feats = res["features"].iloc[idx]
     
     from app.engines import scripted  # local: scripted imports regime lazily
-    return scripted.regime({
+    reg = {
         "run_id": run_id,
         "time_min": t,
         "regime_id": det_reg_id,
@@ -329,7 +329,16 @@ def regime_at(run_id: str, time_min: int | None) -> dict:
         ],
         "detected_at_min": detected_at_min,
         "detection_delay_min": detection_delay_min
-    })
+    }
+    # DECISIONS S-8 (R-1c): the feed model — feed change, feed-API estimate, uncapped novelty, derived class. The crude
+    # family above is context only.
+    try:
+        from app.engines.feed import feed_at
+        reg["feed"] = feed_at(run_id, t, reg)
+    except Exception:  # noqa: BLE001 - the regime payload must not fail because the feed model did
+        logger.exception("feed model failed for %s @ %s", run_id, t)
+        reg["feed"] = {}
+    return scripted.regime(reg)
 
 def regime_timeseries(run_id: str, step: int = 5) -> dict:
     res = get_run_regimes(run_id)

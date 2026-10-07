@@ -2020,7 +2020,11 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "transition_pct": reg_info.get("transition_pct"),
             "declared_vs_detected": reg_info.get("declared_vs_detected"),
             "last_switch_min": reg_info.get("detected_at_min"),
-            "settled_min": reg_info.get("detection_delay_min")
+            "settled_min": reg_info.get("detection_delay_min"),
+            # DECISIONS S-8: feed change, feed-API estimate, novelty, derived class (crude family = context)
+            "feed": {k: (reg_info.get("feed") or {}).get(k) for k in (
+                "state", "pct_through", "expected_finish_min", "flagged_at_min", "settled_at_min", "api_est", "api_band",
+                "api_declared", "novelty", "novel", "feed_class", "feed_class_label", "crude_family_context", "hold")},
         }
     else:
         crude_slate = {}

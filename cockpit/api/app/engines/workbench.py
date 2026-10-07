@@ -330,6 +330,9 @@ def scope_snapshot(run_id: str, time_min: int, unit_id: str | None) -> dict:
     twin = evaluate_twin_state(run_id, time_min)
     reg = regime_at(run_id, time_min)
     reg_small = {k: reg.get(k) for k in ("regime_id", "regime_label", "novelty", "transition_pct", "declared_vs_detected")}
+    reg_small["crude_family_is_context"] = True   # S-8: never present crude identification as the purpose
+    reg_small["feed"] = {k: (reg.get("feed") or {}).get(k) for k in (
+        "state", "pct_through", "api_est", "api_band", "api_declared", "novelty", "novel", "feed_class_label", "hold_reason")}
     if unit_id:
         rcp = recipe_for(run_id, time_min, unit_id)
         unit = next((u for u in twin["units"] if u["unit_id"] == unit_id), {})
