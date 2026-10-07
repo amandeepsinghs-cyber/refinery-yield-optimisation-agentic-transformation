@@ -165,7 +165,7 @@ In fractional distillation, cut-point changes only transfer molecules between **
 * **Adjacent Streams:** Heavy Naphtha (above) and LCO (below).
 * **If HN Cut Point is set too low (too cold):** Heavy gasoline molecules condense too early and fall into the **LCO (Diesel)** draw.
 * **Does it go to slurry? No.** It becomes diesel.
-* **The Economic Impact:** It shifts volume between the **Gasoline pool** and the **Diesel pool**. Refiners optimize this boundary based on seasonal market crack spreads ($2–$5/bbl spread difference).
+* **The Economic Impact:** It shifts volume between the **Gasoline pool** and the **Diesel pool**. Refiners set this boundary by seasonal gasoline and diesel demand.
 
 #### Boundary B: The LCO Cut Point (Diesel vs. Slurry — The Value Destroyer)
 * **Adjacent Streams:** LCO (above) and **Clarified Slurry Oil** (below).
@@ -174,7 +174,7 @@ In fractional distillation, cut-point changes only transfer molecules between **
   * To guarantee diesel does not exceed the ASTM T98 spec, operators run the tray colder or reduce draw rate.
   * Diesel molecules that could have been legally sold drop into the column bottoms.
   * **Where do they go? Straight into the Slurry Oil.**
-  * **The Economic Impact:** Slurry oil sells at a severe discount as heavy industrial fuel oil or carbon black feedstock (typically trading **$20 to $40 per barrel below diesel**). Every barrel of diesel that slips into slurry is irreversible destruction of margin.
+  * **The Economic Impact:** Slurry oil sells at a severe discount as heavy industrial fuel oil or carbon black feedstock (at a large discount to diesel). Every barrel of diesel that slips into slurry is irreversible destruction of margin.
 
 ---
 
