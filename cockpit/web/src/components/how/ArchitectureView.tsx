@@ -252,7 +252,7 @@ export default function ArchitectureView() {
         </table>
         <p className="pf-note">
           The <b>soft-sensor agent</b> is interactive in the demo: four models estimate product quality every minute and
-          say “Not yet” when they disagree. When the feed changes after a crude switch, the soft sensor resets its lab bias and checks it has lab results for this crude, and the recipe and preheat target follow the new crude.
+          say “Not yet” when they disagree. When the feed changes after a crude switch, the soft sensor resets its lab bias and checks it has lab results for this feed, and the recipe and preheat target follow the new feed estimate.
         </p>
       </details>
 

@@ -261,6 +261,39 @@ export interface TwinRegime {
   holdout?: { correct: number; total: number; rate: number; what?: string } | null;
   /** true when the crude name follows the lab assay (scripted mode), not the live classifier */
   scripted?: boolean;
+  /** DECISIONS S-8: the crude family is context only */
+  crude_family_is_context?: boolean;
+  /** DECISIONS S-8 / SDD-FEED-06: feed change, feed-API estimate, novelty, derived class */
+  feed?: TwinFeed;
+}
+
+/** DECISIONS S-8 / SDD-FEED-06 — what the FCC feed is doing, from the unit's own response. */
+export interface TwinFeed {
+  time_min: number;
+  state: "changing" | "settled";
+  flagged_at_min: number | null;
+  settled_at_min: number | null;
+  last_change?: { flagged_at_min: number; from_api: number; settled_at_min: number | null; to_api?: number } | null;
+  pct_through: number | null;
+  expected_finish_min: number | null;
+  api_est: number;
+  api_band: number;
+  api_declared: number | null;
+  novelty: number | null;
+  novel: boolean;
+  feed_class: string | null;
+  feed_class_label: string | null;
+  crude_family_context: string | null;
+  hold: boolean;
+  hold_reason: "feed_changing" | "feed_novel" | null;
+  model?: {
+    what?: string;
+    train?: { rows: number; runs: string; api_range: [number, number] } | null;
+    heldout?: { rows: number; runs: string; mae_api: number; p90_abs_err_api: number; r2: number } | null;
+    detector_heldout?: { switches: number; caught: number; false_alarms: number; runs: number;
+      median_flag_after_ramp_start_min: number | null; median_settled_after_ramp_end_min: number | null } | null;
+    on_site?: string;
+  };
 }
 
 export interface TwinCitation {
@@ -431,6 +464,7 @@ export interface TwinOverview {
     declared_vs_detected: string;
     last_switch_min: number;
     settled_min: number;
+    feed?: Partial<TwinFeed>;
   };
   plant: TwinPlantStrip;
   needs_attention: TwinAttention[];

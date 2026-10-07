@@ -83,23 +83,27 @@ export function ProofLoop({ d, nextLab }: { d: Decision; nextLab?: string | null
 }
 
 export function CrudeSwitchStory({ r }: { r: TwinRegime }) {
+  // DECISIONS S-8 (R-1d): the walkthrough follows the FCC feed, not the crude name. Times come from the feed-change
+  // detector (engines/feed.py), not a fixed lag.
   const t = r.time_min;
   const segs = (r.segments ?? []).filter((s) => s.t_start_min <= t);
   if (segs.length < 2) return null;
   const cur = segs[segs.length - 1], prev = segs[segs.length - 2];
   const tEnd = cur.transition_end_min ?? cur.t_start_min;
+  const lc = r.feed?.last_change;
+  const mine = lc && lc.flagged_at_min >= (cur.transition_start_min ?? cur.t_start_min) - 60 ? lc : null;
   const steps: [string, string][] = [
-    [clock(cur.t_start_min), `A new crude starts arriving. The lab assay says ${cur.regime_id} (API ${r.declared_api?.toFixed(1) ?? "—"}); the unit was on ${prev.regime_id}.`],
+    [clock(cur.t_start_min), `The crude slate changes on the schedule (${prev.regime_id} → ${cur.regime_id}, declared API ${r.declared_api?.toFixed(1) ?? "—"}). The heavy gas oil feeding the FCC starts to change with it.`],
     [`${clock(cur.transition_start_min ?? cur.t_start_min)}–${clock(tEnd)}`, "The unit's behaviour shifts: riser temperature rise, conversion, coke and regenerator temperature move to a new pattern."],
-    [r.detected_at_min != null ? clock(r.detected_at_min) : "—", `The crude is named${r.detection_delay_min != null ? `, ${r.detection_delay_min} min after the blend settles` : ""}. It must hold for 15 min before the label changes, so noise does not flip it.`],
-    ["then", `The trust checks confirm the soft sensor has lab labels for this crude before it advises; the set-point search looks for this crude's settings.`],
-    ["then", "The set-point search uses this crude's response models, so the advice changes with the crude."],
+    [mine ? clock(mine.flagged_at_min) : "—", mine ? `Feed change detected: the estimated feed API leaves ${mine.from_api.toFixed(1)}. Riser, preheat, air, cut-point and overhead advice is held.` : "Feed change not yet detected."],
+    [mine?.settled_at_min != null ? clock(mine.settled_at_min) : "—", mine?.settled_at_min != null ? `New feed settled at API ${(mine.to_api ?? r.feed?.api_est ?? 0).toFixed(1)}. The soft sensor's lab bias resets and advice resumes.` : "Waiting for the new feed to settle."],
+    ["then", "Every decision says which feed it was sized for (\"For this feed …\"); catalyst circulation follows from the heat balance and is not advised."],
   ];
   return (
     <div className="pl-crude" data-testid="crude-story">
-      <h3>How a crude switch plays out on this run <em className="us-scripted">scripted walkthrough</em></h3>
+      <h3>How a feed change plays out on this run</h3>
       <ol className="pl-crude-steps">{steps.map(([when, what], i) => <li key={i}><span className="num">{when}</span>{what}</li>)}</ol>
-      {r.scripted ? <p className="us-note subtle">Scripted: the crude name shown follows the lab assay. The live classifier needs more crude switches in the training data before it is shown as the source.</p> : null}
+      <p className="us-note subtle">The feed timing and the API estimate come from the feed model. The crude name is shown only as context.</p>
     </div>
   );
 }

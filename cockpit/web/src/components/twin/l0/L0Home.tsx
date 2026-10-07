@@ -43,7 +43,7 @@ function WrongRibbon({ data, onUnit }: { data: TwinOverview; onUnit: (id: string
       <span className="wr-h">What went wrong</span>
       <span className="wr-lead"><b className="num">{ok}</b>/<span className="num">{data.units.length}</span> units on plan</span>
       {recent ? (
-        <span className="wr-item ev-crude"><span className="num">{clock(c.last_switch_min as number)}</span> Crude switched to <b>{c.regime_id} {c.regime_label}</b></span>
+        <span className="wr-item ev-crude"><span className="num">{clock(c.last_switch_min as number)}</span> New feed settled{c.feed?.api_est != null ? <> at <b>API {c.feed.api_est.toFixed(1)}</b></> : null} <span className="subtle">(crude slate {c.regime_id})</span></span>
       ) : null}
       {items.map((n) => (
         <button key={n.event_id} type="button" className={`wr-item ev-${n.severity}`} onClick={() => onUnit(n.unit_id)}>
@@ -146,7 +146,7 @@ export default function L0Home() {
           <li><b>Simulation</b><span>FCC simulator, every tag each minute</span></li>
           <li><b>BigQuery</b><span>raw tags and lab results land here (fcc_bronze)</span></li>
           <li><b>Lakehouse</b><span>cleaned, lab-aligned tables (fcc_silver); the cockpit reads every run from here</span></li>
-          <li><b>Models</b><span>crude classifier · soft sensor · response models</span></li>
+          <li><b>Models</b><span>feed model · soft sensor · response models</span></li>
           <li><b>Decision</b><span>the move, its checks and Accept / Hold / Decline</span></li>
         </ol>
         <DataStore />

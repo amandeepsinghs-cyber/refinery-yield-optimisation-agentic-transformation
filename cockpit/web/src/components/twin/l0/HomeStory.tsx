@@ -39,7 +39,7 @@ export function WhatWentWrong({ data }: { data: TwinOverview }) {
       <ol className="hs-events">
         {recentSwitch ? (
           <li className="ev-crude"><span className="hs-time num">{clock(c.last_switch_min)}</span>
-            <span><b>Crude switched</b> to {c.regime_id} {c.regime_label} <span className="subtle">({Math.round((c.p_max ?? 0) * 100)}% sure{c.declared_vs_detected === "match" ? ", matches schedule" : ", differs from schedule"})</span></span></li>
+            <span><b>New feed settled</b>{c.feed?.api_est != null ? <> at API {c.feed.api_est.toFixed(1)} ({c.feed.feed_class_label})</> : null} <span className="subtle">(crude slate {c.regime_id} {c.regime_label})</span></span></li>
         ) : null}
         {items.map((n) => (
           <li key={n.event_id} className={`ev-${n.severity}`}><span className="hs-time num">{n.time_label}</span>
@@ -83,6 +83,7 @@ export function DecisionFocus({ d, total, index, onStep, runId, timeMin, onActed
       </div>
       <p className="hs-q">{UNIT[d.unit_id] ?? d.unit_label} · {d.question}</p>
       <p className="hs-headline">{d.status === "withheld" ? `No move proposed — ${d.withheld_text}` : d.headline}</p>
+      {d.feed_used?.line ? <p className="hs-q subtle" data-testid="feed-used">{d.feed_used.line}</p> : null}
       {members.length ? (
         <div className="hs-curve">
           <div className="hs-p">

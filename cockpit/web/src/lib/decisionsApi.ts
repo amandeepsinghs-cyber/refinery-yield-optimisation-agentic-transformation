@@ -59,6 +59,8 @@ export interface Decision {
   evidence: { tags: string[]; labs: string[]; docs: string[]; lakehouse: string | null; event_id?: string };
   withheld_reason: string | null;
   withheld_text: string | null;
+  /** DECISIONS S-8: the feed this decision was sized for ("For this feed (API ≈ x, class)"). D1/D3/D5/D6/D7. */
+  feed_used?: { api_est: number | null; feed_class: string | null; feed_class_label: string | null; state: string | null; line: string | null };
   levers?: { tag: string; label: string; unit: string; current: number | null; lo: number | null; hi: number | null; source?: string; role?: string | null }[];
   outcome: null | Record<string, unknown>;
   action: null | { action: "accept" | "hold" | "decline"; time_min: number; time_label: string; user: string; note: string; reopened?: boolean };

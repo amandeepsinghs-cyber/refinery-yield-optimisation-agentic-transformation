@@ -72,7 +72,7 @@ export const AGENTS: Agent[] = [
   { name: "Light-ends agent", useCases: "#2 Stabiliser C5 recovery · #3 LPG / naphtha split · #7 Exchanger fouling",
     decisions: "D7 overhead temperature target", status: "preview", note: "Scripted" },
   { name: "Systems agent", useCases: "#6 Multi-unit energy · #8 Filter breakthrough · #9 Rotating equipment",
-    decisions: "D8 riser drift and its downstream consequence (watch) · D3 riser move for the new crude (scripted; cut points stay with D1)",
+    decisions: "D8 riser drift and its downstream consequence (watch) · D3 riser move for the new feed (scripted; cut points stay with D1)",
     status: "preview", note: "Watch only / scripted" },
   { name: "Coker, CDU / VDU, alkylation, utilities & flare agents", useCases: "The rest of IOCL's list",
     decisions: "Same pattern on other units", status: "next", note: "After the data foundation" },

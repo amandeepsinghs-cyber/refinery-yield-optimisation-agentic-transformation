@@ -46,61 +46,68 @@ const fx = (v: number | null | undefined, d?: number) => (v == null || !Number.i
 const pct = (p?: number | null) => probPct(p);
 const STATUS: Record<string, string> = { open: "Decide", watch: "Watch", withheld: "Not yet", held: "Held", accepted: "Accepted", declined: "Declined", expired: "Expired" };
 const TAGN: Record<string, string> = { LCO_T98_F: "LCO T98", HN_T98_F: "HN T98" };
-const EVK: Record<string, string> = { cusum: "drifting (sustained)", breach: "outside its normal band", change_point: "step change", recipe_ready: "move ready", regime_change: "crude switch", sigma3: "outside ±3σ", combustion: "combustion pattern", flooding_pattern: "flooding pattern", drift: "drifting" };
+const EVK: Record<string, string> = { cusum: "drifting (sustained)", breach: "outside its normal band", change_point: "step change", recipe_ready: "move ready", regime_change: "new feed settled", sigma3: "outside ±3σ", combustion: "combustion pattern", flooding_pattern: "flooding pattern", drift: "drifting" };
 const KIND: Record<string, string> = { agent: "Rule-based", ml: "ML", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
 
 
-/* Voice note 10 (owner): crude changes → first classify which crude it is (and how sure) → then the right settings for it. */
-const CRUDES: [string, string, string][] = [
-  ["R1", "Heavy", "Basrah Heavy type"],
-  ["R2", "Medium-heavy", "Urals type"],
-  ["R3", "Medium", "Arab Light type"],
-  ["R4", "Light", "Bonny Light type"],
-];
+/* DECISIONS S-8 (7 Oct, R-1): the FCC is fed heavy gas oil, not crude. The panel answers what the feed is doing —
+   ① is it changing, ② what are its properties, ③ has the model seen it, ④ its class — not which crude it came from.
+   The crude family is one context line. Every decision in step ③ says which feed it was sized for. */
 const FP: [string, string, string, number][] = [
   ["riser_dT_F", "Riser ΔT", "°F", 0], ["conversion_pct", "Conversion", "%", 1], ["coke_per_feed", "Coke / feed", "", 2],
   ["Treg_F", "Regenerator T", "°F", 0], ["tray_dT_F", "Column ΔT", "°F", 0],
 ];
-function CrudeBlock({ r }: { r: import("@/lib/twinTypes").TwinRegime }) {
-  const now = CRUDES.find((c) => c[0] === r.regime_id);
-  const match = r.declared_vs_detected === "match";
+function FeedBlock({ r }: { r: import("@/lib/twinTypes").TwinRegime }) {
+  const f = r.feed;
+  if (!f) return null;
+  const ho = f.model?.heldout, dh = f.model?.detector_heldout, tr = f.model?.train;
+  const lo = tr?.api_range?.[0] ?? 20, hi = tr?.api_range?.[1] ?? 29;
+  const apiPos = Math.min(100, Math.max(1, ((f.api_est - lo) / Math.max(0.1, hi - lo)) * 100));
+  const changing = f.state === "changing";
+  const nov = f.novelty ?? 0;
+  const rows: [string, string, number | null, string][] = [
+    ["① Is the feed changing?",
+      changing ? `Changing since ${clock(f.flagged_at_min)}${f.pct_through != null ? ` · about ${f.pct_through} % through` : ""}${f.expected_finish_min != null ? ` · fully in around ${clock(f.expected_finish_min)}` : ""}`
+        : f.settled_at_min != null ? `Settled since ${clock(f.settled_at_min)}` : "Settled",
+      changing ? (f.pct_through ?? 0) : 100, changing ? "warn" : "good"],
+    ["② Feed properties — estimated API",
+      `${fx(f.api_est, 1)} ± ${fx(f.api_band, 1)}${f.api_declared != null ? ` (schedule says ${fx(f.api_declared, 1)})` : ""}`, apiPos, ""],
+    ["③ Has the model seen a feed like this?",
+      f.novel ? `No — novelty ${fx(nov, 2)}; advice held, not extrapolated` : `Yes — novelty ${fx(nov, 2)} (held at 0.5)`, Math.max(1, nov * 100), f.novel ? "bad" : "good"],
+    ["④ Feed class (from the estimate)", f.feed_class_label ?? "—", null, ""],
+  ];
   return (
-    <div className="us-crude">
+    <div className="us-crude" data-testid="feed-block">
       <div>
-        <h3>Which feed is arriving — crude-family classifier{r.scripted ? <em className="us-scripted">scripted</em> : null}</h3>
-        <ul className="us-crude-bars">
-          {CRUDES.map(([id, name, type]) => {
-            const v = r.p_regime?.[id] ?? 0;
-            return (
-              <li key={id} className={id === r.regime_id ? "on" : ""}>
-                <span><b>{id}</b> {name} <em>{type}</em></span>
-                <i><s style={{ width: `${Math.max(1, v * 100)}%` }} /></i>
-                <b className="num">{Math.round(v * 100)} %</b>
-              </li>
-            );
-          })}
+        <h3>Feed arriving — what the FCC is being fed</h3>
+        <ul className="us-crude-bars us-feed-rows">
+          {rows.map(([q, v, bar, tone]) => (
+            <li key={q}>
+              <span>{q}</span>
+              <i>{bar != null ? <s style={{ width: `${bar}%` }} /> : null}</i>
+              <b className={tone || undefined}>{v}</b>
+            </li>
+          ))}
         </ul>
+        {f.crude_family_context ? (
+          <p className="us-note subtle">Context: crude slate {f.crude_family_context}. The FCC sees its heavy gas oil, not the crude — so the advice follows the feed&apos;s properties, not the crude&apos;s name.</p>
+        ) : null}
       </div>
       <div className="us-crude-side">
         <h3>How it knows</h3>
         <p className="us-note">
-          The lab assay says <b>{r.declared_regime_id}</b> (API {fx(r.declared_api, 1)}); the unit&apos;s behaviour says <b>{r.regime_id}</b>
-          {" "}<span className={match ? "good" : "bad"}>{match ? "· they agree" : "· they disagree"}</span>.
-          {r.detected_at_min != null ? <> Switch picked up at <b className="num">{clock(r.detected_at_min)}</b>{r.detection_delay_min != null ? `, ${r.detection_delay_min} min after the blend settled` : ""}.</> : null}
+          Feed API is estimated every minute from the unit&apos;s own response.
+          {ho ? <> On {ho.runs.replace("seed ≥", "held-out runs from seed")} it was off by <b className="num">{fx(ho.mae_api, 2)} API</b> on average (90 % within ± {fx(ho.p90_abs_err_api, 2)}).</> : null}
+          {dh ? <> Feed changes caught on held-out runs: <b className="num">{dh.caught} of {dh.switches}</b>, {dh.false_alarms} false alarm{dh.false_alarms === 1 ? "" : "s"}.</> : null}
         </p>
         {r.fingerprint ? (
           <p className="us-fp">{FP.filter(([k]) => r.fingerprint?.[k] != null).map(([k, l, u, d]) => <span key={k}>{l} <b className="num">{r.fingerprint![k].toFixed(d)}{u ? ` ${u}` : ""}</b></span>)}</p>
         ) : null}
-        {r.holdout && r.holdout.total > 0 ? (
-          <p className="us-note">
-            Accuracy: names the right crude in <b className="num">{r.holdout.correct} of {r.holdout.total}</b> held-out crude switches
-            ({Math.round(r.holdout.rate * 100)} %). The lab assay confirms each switch, so a wrong call is caught.
-          </p>
-        ) : null}
-        <h3>What changes for {now ? `${now[1].toLowerCase()} crude` : "this crude"}</h3>
+        <h3>What changes for this feed</h3>
         <p className="us-note">
-          The trust checks confirm the soft sensor has lab labels for {r.regime_id} before it advises, and the set-point search in step ③ looks for the right settings for this crude.
+          Every decision in step ③ says which feed it was sized for — riser outlet temperature, preheat, air, cut points, overhead — and is held while the feed is changing or unfamiliar. Catalyst circulation follows from the heat balance; it is shown as a result, never advised.
         </p>
+        {f.model?.on_site ? <p className="us-note subtle">On your plant: {f.model.on_site}.</p> : null}
       </div>
     </div>
   );
@@ -109,7 +116,7 @@ function CrudeBlock({ r }: { r: import("@/lib/twinTypes").TwinRegime }) {
 /* ---------------------------------------------------------------------------------------------------------------- */
 type LeverRow = NonNullable<import("@/lib/decisionsApi").Decision["levers"]>[number];
 // Real-world check (owner, 3 Oct): the cockpit recommends only settings operators actually move on that unit.
-const NEVER_RECOMMENDED = "Settings the cockpit never recommends: condenser cooling-water flow (fixed duty), feed rate (set by planning), catalyst addition (not in the simulator).";
+const NEVER_RECOMMENDED = "Settings the cockpit never recommends: condenser cooling-water flow (fixed duty), feed rate (set by planning), catalyst addition (not in the simulator), catalyst circulation / catalyst-to-oil (a result of riser outlet temperature, preheat and air).";
 function LeverRanges({ levers, bare }: { levers?: LeverRow[]; bare?: boolean }) {
   if (!levers?.length) return null;
   return (
@@ -405,7 +412,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                   {lastLab.status === "REJECT" ? <span className="us-warn"> — rejected: {lastLab.status_reason}</span> : null}</li>
               ) : <li><span className="dot" /><b>Lab</b> none on this unit</li>}
               {lastLab ? <li><span className="dot" /><b>Next lab</b> {clock(data.time.next_lab_min)} · in {Math.max(0, data.time.next_lab_min - t)} min</li> : null}
-              {lastLab ? <li><span className="dot ml" /><b>Soft sensor</b> fills the gap: an estimate every minute</li> : <li><span className="dot ml" /><b>Crude model</b> gives the expected value every minute</li>}
+              {lastLab ? <li><span className="dot ml" /><b>Soft sensor</b> fills the gap: an estimate every minute</li> : <li><span className="dot ml" /><b>Response model</b> gives the expected value every minute</li>}
             </ul>
             <h3>Levers on this unit</h3>
             <ul className="us-levers">{io?.levers.map(([tag, name, un]) => <li key={tag}><span>{name}</span><b className="num">{fx(at(tag))} <small>{un}</small></b></li>)}</ul>
@@ -418,7 +425,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
       </Step>
 
       {/* ② OBSERVE */}
-      <Step n={2} k="observe" id="s-observe" title="What we observe" who={<><Who k="agent">anomaly detection</Who><Who k="ml">soft sensor</Who><Who k="ml">crude-regime model</Who></>}>
+      <Step n={2} k="observe" id="s-observe" title="What we observe" who={<><Who k="agent">anomaly detection</Who><Who k="ml">soft sensor</Who><Who k="ml">feed model</Who></>}>
         <div className="us-facts">
           {d?.observed?.estimate != null ? (
             <div className="us-fact big"><span>Estimate now</span><b className="num">{fx(d.observed.estimate, 1)} <small>± {fx(d.observed.sigma, 1)} {d.observed.unit}</small></b><em>chance on spec {pct(p?.p_on_spec_before)}</em></div>
@@ -430,14 +437,21 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             const rc = a.root_cause[0];
             return <div className="us-fact"><span>Likely driver</span><b>{calm || !rc ? "—" : `${rc.label ?? rc.tag} ${rc.direction === "up" ? "↑" : "↓"}`}</b><em>{calm ? "nothing unusual" : "largest contribution"}</em></div>;
           })()}
-          {data.regime ? <div className="us-fact"><span>Crude</span><b>{data.regime.regime_id} {data.regime.regime_label.split(" ")[0]}</b><em>{Math.round((data.regime.p_regime?.[data.regime.regime_id] ?? 0) * 100)} % sure · since {clock(data.regime.detected_at_min)}</em></div> : null}
+          {data.regime?.feed ? <div className="us-fact"><span>Feed</span><b>API {fx(data.regime.feed.api_est, 1)}</b><em>{data.regime.feed.feed_class_label} · {data.regime.feed.state === "changing" ? `changing, ${data.regime.feed.pct_through ?? "—"} % through` : data.regime.feed.settled_at_min != null ? `settled since ${clock(data.regime.feed.settled_at_min)}` : "settled"}</em></div> : null}
+          {(() => {
+            // F-CTO: catalyst-to-oil is a result of the heat balance, never a lever or advice (DECISIONS S-8).
+            if (unitId !== "unit_2_riser" && unitId !== "unit_3_regenerator") return null;
+            const cat = at("F_regen_cat"), feed = at("feed_flow_lb_s");
+            if (cat == null || feed == null || feed <= 0) return null;
+            return <div className="us-fact" data-testid="cto-fact"><span>Catalyst-to-oil (result)</span><b className="num">{fx(cat / feed, 1)} <small>sim. units</small></b><em>follows riser outlet temperature, preheat and air · not advised</em></div>;
+          })()}
         </div>
-        {data.regime ? <CrudeBlock r={data.regime} /> : null}
+        {data.regime ? <FeedBlock r={data.regime} /> : null}
         {data.regime ? <CrudeSwitchStory r={data.regime} /> : null}
         <div className="us-grid observe">
           <div className="us-chart"><ChartStack data={data} panels={obsPanels} hoverMin={null} onHover={() => undefined} /></div>
           <div className="us-side">
-            <h3>{isU4 ? "What the 4 models believe now" : d?.scripted ? "What the response model expects now (scripted)" : "What the crude model expects now"}</h3>
+            <h3>{isU4 ? "What the 4 models believe now" : d?.scripted ? "What the response model expects now (scripted)" : "What the response model expects now"}</h3>
             {members.length ? <GaussianPdf members={members} spec={spec} target={d?.predicted?.target != null ? { value: d.predicted.target, label: "target" } : k ? { value: k.plan, label: k.plan_source === "set point" ? "set point" : "expected" } : null} measured={null} unit={k?.unit ?? ""} height={150} compact showP={false} ariaLabel="soft-sensor bell curves" /> : <p className="subtle">No estimate for this unit.</p>}
             {isU4 && d?.models?.members?.length ? (
               <>
@@ -469,6 +483,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             <div>
               <p className="us-q">{d.question}</p>
               <h3 className="us-headline">{d.headline}</h3>
+              {d.feed_used?.line ? <p className="us-feedused subtle" data-testid="feed-used">{d.feed_used.line}{d.status === "withheld" && d.withheld_reason?.startsWith("feed_") ? " — held until the feed settles" : ""}</p> : null}
               {d.urgency.consequence ? <p className="us-cons"><b>If nothing is done:</b> {d.urgency.consequence}{d.urgency.decide_by_label ? <> · decide by <b className="num">{d.urgency.decide_by_label}</b></> : null}</p> : null}
               {move && p?.p_on_spec_before != null ? (
                 <ul className="us-whyl">

@@ -144,6 +144,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
           {d ? (
             <>
               <p className="uf-q">{d.question}</p>
+              {d.feed_used?.line ? <p className="uf-alt" data-testid="feed-used">{d.feed_used.line}</p> : null}
               {d.proposed.moves.length ? d.proposed.moves.map((m) => (
                 <div key={m.tag} className="uf-lever">
                   <span className="uf-lever-name">{m.label}{scriptTag ? <em className="us-scripted">{scriptTag}</em> : null}</span>
@@ -208,7 +209,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
   );
 }// short, whole-word labels for the decision picker (first-three-words cut mid-phrase, e.g. "Coordinated recipe for")
 const SHORT: Record<string, string> = {
-  D1: "Cut point", D2: "Trust the estimate", D3: "Recipe for new crude", D4: "Crude switch", D5: "Regenerator air",
+  D1: "Cut point", D2: "Trust the estimate", D3: "Recipe for this feed", D4: "Feed change", D5: "Regenerator air",
   D6: "Furnace preheat", D7: "Condenser and stabiliser", D8: "What breaks downstream", D9: "Extra lab sample",
 };
 

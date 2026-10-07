@@ -33,7 +33,7 @@ export default function FullExplanation({ d, regime }: { d: Decision; regime?: T
   const blended = m?.members.filter((x) => x.role === "blended") ?? [];
   const wsum = blended.reduce((a, x) => a + (x.weight ?? 0), 0);
   const blend = wsum > 0 ? blended.reduce((a, x) => a + (x.weight ?? 0) * (x.estimate ?? 0), 0) / wsum : null;
-  const regimes = regime?.p_regime ? Object.entries(regime.p_regime).sort((a, b) => b[1] - a[1]) : [];
+  const feed = regime?.feed;   // DECISIONS S-8: feed properties, not the crude name
   const nPass = d.gates?.filter((g) => g.pass).length ?? 0;
   const at = d.created_label ?? "this minute";
   const nDiag = m?.inputs.filter((x) => x.label.includes("simulator diagnostic")).length ?? 0;
@@ -52,7 +52,7 @@ export default function FullExplanation({ d, regime }: { d: Decision; regime?: T
           <li><b>{mv ? `${mv.delta >= 0 ? "+" : "−"}${Math.abs(mv.delta).toFixed(1)} ${mv.unit}` : d.status === "withheld" ? "Not yet" : "no move"}</b></li>
         </ol>
 
-        <Sec n={1} title="Data in" gist={`last lab ${o.last_lab ? `${fx(o.last_lab.value)} ${unit} (${o.last_lab.drawn_label})` : "none yet"} · next lab ${o.next_lab_label ?? "none scheduled"}${regime ? ` · crude ${regime.regime_id}` : ""}`}>
+        <Sec n={1} title="Data in" gist={`last lab ${o.last_lab ? `${fx(o.last_lab.value)} ${unit} (${o.last_lab.drawn_label})` : "none yet"} · next lab ${o.next_lab_label ?? "none scheduled"}${feed ? ` · feed API ${fx(feed.api_est, 1)}` : ""}`}>
           <ul className="fx-list">
             {o.last_lab ? (
               <li><span>Last lab result</span>
@@ -60,7 +60,7 @@ export default function FullExplanation({ d, regime }: { d: Decision; regime?: T
               </li>
             ) : <li><span>Last lab result</span><em>none yet in this run</em></li>}
             <li><span>Next lab</span><em>{o.next_lab_label ? `${o.next_lab_label} (in ${o.next_lab_in_min} min)` : "none scheduled"}</em></li>
-            {regime ? <li><span>Crude</span><em>detected {regime.regime_id} {regime.regime_label} · declared on the schedule {regime.declared_regime_id}</em></li> : null}
+            {feed ? <li><span>Feed</span><em>estimated API {fx(feed.api_est, 1)} ± {fx(feed.api_band, 1)} ({feed.feed_class_label}), {feed.state}{feed.api_declared != null ? ` · schedule says ${fx(feed.api_declared, 1)}` : ""}{feed.crude_family_context ? ` · context: crude slate ${feed.crude_family_context}` : ""}</em></li> : null}
             {d.evidence?.docs?.length ? <li><span>Operating procedure</span><em>{d.evidence.docs.join(" · ")}</em></li> : null}
             {d.evidence?.lakehouse ? <li><span>Stored in</span><em><code>{d.evidence.lakehouse}</code></em></li> : null}
             {m?.n_train_labels ? (
@@ -121,9 +121,9 @@ export default function FullExplanation({ d, regime }: { d: Decision; regime?: T
               {m.sigma_scale != null ? (
                 <li><span>Band check</span><em>Bands scaled ×{fx(m.sigma_scale, 2)} so that the 90 % band held the true value about 90 % of the time on runs the models never saw.</em></li>
               ) : null}
-              {regimes.length ? (
-                <li><span>Crude model</span>
-                  <em>{regimes.map(([r, v]) => `${r} ${probPct(v)}`).join(" · ")} — from coke/feed, riser ΔT, fuel/feed, regenerator temperature, conversion and tray ΔT. Used for the &quot;labels for this crude&quot; check.</em>
+              {feed ? (
+                <li><span>Feed model</span>
+                  <em>Feed API {fx(feed.api_est, 1)} ± {fx(feed.api_band, 1)}, novelty {fx(feed.novelty, 2)} — estimated from coke/feed, riser ΔT, fuel/feed, regenerator temperature, conversion and tray ΔT{feed.model?.heldout ? `; held-out error ${fx(feed.model.heldout.mae_api, 2)} API` : ""}. The bias resets when a new feed settles; advice is held while it changes.</em>
                 </li>
               ) : null}
             </ul>
