@@ -320,17 +320,58 @@ class ToolBox:
                 docs += st.knowledge.search(q, dt, 3)
         return {"events": evs[:25], "n_events": len(evs), "documents": docs}
 
+    @staticmethod
+    def _screen_decisions(run_id, time_min) -> list[dict]:
+        """The decisions exactly as the screen shows them (decisions engine), compact."""
+        from ..engines import decisions as dec
+        out = []
+        for d in dec.build(run_id, int(time_min))["decisions"]:
+            out.append({"id": d["id"], "type": d["type"], "unit_id": d["unit_id"], "status": d["status"],
+                        "headline": d["headline"], "scripted": bool(d.get("scripted")),
+                        "gain_source": d.get("gain_source"), "withheld_text": d.get("withheld_text"),
+                        "moves": [{k: m.get(k) for k in ("label", "from", "to", "delta", "unit")}
+                                  for m in (d.get("proposed") or {}).get("moves") or []]})
+        return out
+
+    @staticmethod
+    def _drop_legacy_cards(obj):
+        """twin.py still builds its own per-unit 'recommendation' cards with invented move sizes (e.g. air −0.8,
+        PA4 +20). The screen never shows them; Gemini must not quote them either. Replace with a pointer."""
+        note = "see 'screen_decisions' (the decisions engine, same as the screen)"
+        for u in obj.get("units") or []:
+            if "recommendation" in u:
+                u["recommendation"] = note
+            if "decisions_needed" in u:
+                u["decisions_needed"] = note
+        for uc in obj.get("use_cases") or []:
+            if "recommendation" in uc:
+                uc["recommendation"] = note
+        if isinstance(obj.get("use_case"), dict) and "recommendation" in obj["use_case"]:
+            obj["use_case"]["recommendation"] = note
+        if "recommendation" in obj:
+            obj["recommendation"] = note
+        return obj
+
     def t_get_systems_twin_state(self, run_id=None, time_min=None):
+        import copy
         from ..twin import evaluate_twin_state
         r = run_id if run_id in get_state().catalog.runs else self.run_id
         tm = int(time_min) if time_min is not None else self.time_min
-        return evaluate_twin_state(run_id=r, time_min=tm)
+        out = self._drop_legacy_cards(copy.deepcopy(evaluate_twin_state(run_id=r, time_min=tm)))
+        out["screen_decisions"] = self._screen_decisions(r, tm)
+        return out
 
     def t_get_use_case_detail(self, use_case_id, run_id=None, time_min=None):
+        import copy
         from ..twin import get_use_case_detail
         r = run_id if run_id in get_state().catalog.runs else self.run_id
         tm = int(time_min) if time_min is not None else self.time_min
-        return get_use_case_detail(use_case_id=str(use_case_id), run_id=r, time_min=tm)
+        out = get_use_case_detail(use_case_id=str(use_case_id), run_id=r, time_min=tm)
+        if not isinstance(out, dict):
+            return out
+        out = self._drop_legacy_cards(copy.deepcopy(out))
+        out["screen_decisions"] = self._screen_decisions(r, tm)
+        return out
 
     # ---- Epic J (SDD-GEM-03): screen scope, regime, recipe
     def _rt(self, run_id, time_min):
