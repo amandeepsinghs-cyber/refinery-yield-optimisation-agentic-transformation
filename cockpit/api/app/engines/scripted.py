@@ -49,7 +49,10 @@ SPEC = {
                    "the gasoline end point. Cooling water stays at its fixed duty.",
                model="Condenser response model: each 1 °F on the overhead temperature target takes 2.6 lb/s off the "
                      "condenser's cooling-water demand. Cooling water itself is not adjusted (fixed duty)",
-               goal="Chance the condenser is back inside its fixed cooling duty"),
+               goal="Chance the condenser is back inside its fixed cooling duty",
+               # Only demand ABOVE expected is the fouling trigger. A condenser using less water than expected is
+               # running cold (reflux sub-cooled); the rule must not tell it to run colder, so it stays on watch.
+               only_if="above"),
     "D3": dict(lever="SP_T_riser_ROT_F", target="conversion_pct", gain=0.12, step=0.5, step_max=5.0, sigma_min=0.1,
                sop="SOP-RX-001: riser outlet T at most 5 °F per step, 30 min between steps. Cut points are advised "
                    "separately (D1, aimed at the target T98), never here.",
@@ -104,6 +107,8 @@ def _script(d: dict, row: dict) -> dict:
     cur, mu = _num(row, lever), _num(row, target)
     dev = _dev(d, spec)
     if cur is None or mu is None or not dev:
+        return d
+    if spec.get("only_if") == "above" and dev <= 0:
         return d
     iow = get_state().s.get("iow", {}) or {}
     w = iow.get(lever)
