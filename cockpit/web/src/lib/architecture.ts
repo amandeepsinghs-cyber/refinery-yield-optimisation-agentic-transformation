@@ -47,7 +47,8 @@ export const SERVICES = {
   iap: svc("identity-aware-proxy", "Identity-Aware Proxy", "Every screen and API call checks who and which role"),
   kms: svc("key-management-service", "Cloud KMS", "Customer-managed keys held by IOCL, India regions"),
   vpcsc: svc("vpc-service-controls", "VPC Service Controls", "Perimeter around the lakehouse: no data leaves it"),
-  logging: svc("logging", "Cloud Audit Logs", "Who did what, on every layer"),
+  registry: svc("registry", "Vertex AI (agent and model registry)", "Lists every agent and model version, who may call it, and its release status", undefined, "vertex-ai"),
+  logging: svc("logging", "Cloud Logging & Monitoring", "Who did what on every layer; agent health and drift alerts"),
 } as const;
 
 export type ServiceId = keyof typeof SERVICES;
@@ -128,6 +129,7 @@ export const ACCESS: { title: string; service: ServiceId; lines: string[] }[] = 
   { title: "Gemini has its own identity", service: "iam", lines: [
     "May call the agents and read their answers",
     "Cannot change a set point, a model or the data",
+    "Acts with the asking person's permissions: sees only what they may see",
   ] },
   { title: "People sign in with IOCL's own login", service: "iap", lines: [
     "Single sign-on with IOCL's identity provider",
@@ -135,15 +137,23 @@ export const ACCESS: { title: string; service: ServiceId; lines: string[] }[] = 
   ] },
   { title: "Keys stay with IOCL", service: "kms", lines: ["Customer-managed encryption keys, India regions"] },
   { title: "One perimeter round the data", service: "vpcsc", lines: ["Lakehouse and agents inside; data cannot be copied out"] },
-  { title: "Every action is logged", service: "logging", lines: ["Agent calls, data reads and decisions, kept for review"] },
+  { title: "Agent registry", service: "registry", lines: [
+    "Every agent listed with owner, version and unit",
+    "Which roles may call it and which data it may read",
+    "Released, paused or retired only with sign-off",
+  ] },
+  { title: "Every action logged and monitored", service: "logging", lines: [
+    "Agent calls, Gemini answers, data reads and decisions, kept for review",
+    "Agent health and model drift against the lab, with alerts",
+  ] },
 ];
 
 /** Role-based access: who may do what on the operator screen. */
 export const ROLES: [string, string][] = [
-  ["Board operator", "Accept / Hold / Decline on their own unit"],
-  ["Shift / process engineer", "All units; reviews the decision record"],
-  ["Management", "Read-only view"],
-  ["Platform admin", "Users, roles, model and agent releases"],
+  ["Board operator", "Asks their own unit's agents; Accept / Hold / Decline on their own unit"],
+  ["Shift / process engineer", "Asks all agents for their units; reviews the decision record"],
+  ["Management", "Summaries and outcomes only; read-only"],
+  ["Platform admin", "Registers and retires agents and models; assigns roles; takes no plant decisions"],
 ];
 
 /**
@@ -189,5 +199,5 @@ export const OPEN_PARTS: { name: string; mark: string; role: string }[] = [
 /** Glossary under the diagram: every service on the page, top layer to bottom, then identity & access. */
 export const GLOSSARY: ServiceId[] = [
   "run", "gemini", "vertex", "pubsub", "dataflow", "bigtable", "composer", "docai", "embed", "storage", "bigquery", "dataplex",
-  "iam", "iap", "kms", "vpcsc", "logging",
+  "iam", "iap", "kms", "vpcsc", "registry", "logging",
 ];

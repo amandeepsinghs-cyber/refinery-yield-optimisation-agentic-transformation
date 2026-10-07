@@ -159,7 +159,7 @@ function Glossary() {
 function AccessColumn() {
   return (
     <aside className="ar-rail" aria-labelledby="ar-access-h">
-      <h2 id="ar-access-h" className="ar-rail-h">Identity &amp; access <small>on every layer</small></h2>
+      <h2 id="ar-access-h" className="ar-rail-h">Identity, access &amp; governance <small>on every layer</small></h2>
       {ACCESS.map((a) => {
         const s = SERVICES[a.service];
         return (
@@ -175,7 +175,7 @@ function AccessColumn() {
         );
       })}
       <section className="ar-acc ar-roles">
-        <header><b>Role-based access for people</b></header>
+        <header><b>Role-based access to agents</b></header>
         <dl>
           {ROLES.map(([r, d]) => (
             <div key={r}><dt>{r}</dt><dd>{d}</dd></div>
