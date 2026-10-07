@@ -32,7 +32,7 @@ No value figures. No claim about IOCL's plant.
 |:-:|---|---|---|
 | B1 | How do you know which crude is running? | "Two sources: your lab assay, and the unit's behaviour, a pattern in riser temperature rise, conversion, coke and regenerator temperature. A crude is named only after it has held for 15 minutes, so noise doesn't flip it. When the two sources disagree, the cockpit flags it." | **Scripted** in the demo: the crude name follows the assay with a ~12 min lag, labelled |
 | B2 | Does the classifier work on its own? | *(Only if pressed.)* "On the simulated data it names the right crude in 8 of 15 held-out crude switches. There aren't enough switches in the data yet, so we don't show it as the source. On site it confirms the assay rather than replacing it." | Honest: **8 / 15 (53 %)**, 45 min after each held-out switch |
-| B3 | What happens on a crude you've never seen? | "A novelty check flags it. The physics-based models get more weight, the spread widens, and if it crosses the limit the cockpit says 'Not yet' and asks for a lab sample instead of advising a move." | **Shown** |
+| B3 | What happens on a crude you've never seen? | "A novelty check flags inputs outside the training range, the spread widens, and if it crosses the limit the cockpit says 'Not yet' and asks for a lab sample instead of advising a move." | **Shown** |
 
 ## C. Trust and safety
 

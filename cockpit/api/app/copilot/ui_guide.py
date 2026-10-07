@@ -68,7 +68,7 @@ PAGE_GUIDES: dict[str, str] = {
         "Cloud Audit Logs. MeitY-compliant boundary: the data stays in India under keys IOCL holds; control and "
         "safety systems stay on site and nothing is written to them. Do not go into Category A / B on this page.\n"
         "- Agents: soft-sensor agent (IOCL #1, #11; In the demo, interactive); furnace, regenerator, light-ends and systems agents (Preview); coker, CDU/VDU, alkylation, "
-        "utilities & flare agents (Next). Feedstock evaluation is not on IOCL's use-case list: do not present it as a use case; when the FCC feed changes after a crude switch, every agent adjusts. Vertex AI for training and serving each agent's models is Next.\n"
+        "utilities & flare agents (Next). Feedstock evaluation is not on IOCL's use-case list: do not present it as a use case; when the FCC feed changes after a crude switch, the soft sensor resets its lab bias and checks it has lab results for this crude, and the recipe and preheat target follow the new crude. The soft-sensor model weights come from each model's accuracy on recent lab results (else held-out runs), never from the crude; Bayesian ridge has weight 0 (reference only). Vertex AI for training and serving each agent's models is Next.\n"
         "- If asked what is built: the demo runs these as separate modules inside one service on simulated data; "
         "Gemini 2.5 Flash calls the platform's tools. Never say an agent is 'live' or 'working': nothing is deployed on a plant. Below: a collapsed agent ↔ use case table."
     ),

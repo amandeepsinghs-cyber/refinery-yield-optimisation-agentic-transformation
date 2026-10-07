@@ -430,46 +430,60 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         "valve_health_matrix": valve_health_matrix,
     }
 
-    # Determine primary LCO cut-point envelope & active recommendation
+    # Primary LCO cut-point state. Same live recommendation and target as the D1 card
+    # (engines/decisions.py _cut_point): the agent aims at target_F, never below 95 % chance on spec.
     lco_spec = 765.0
-    lco_sweet_min = 762.5
-    lco_sweet_max = 764.0
+    _rc = st.s.raw.get("recommend") or {}
+    lco_target = float((_rc.get("target_F") or {}).get("LCO_T98_F", sp_lco))
+    hn_target = float((_rc.get("target_F") or {}).get("HN_T98_F", sp_hn))
+    _band = float(_rc.get("target_deadband_F", 1.0))
+    lco_sweet_min = round(lco_target - _band, 2)   # "on target" band (kept under the old field names)
+    lco_sweet_max = round(lco_target + _band, 2)
     lco_margin = round(lco_spec - lco_q95, 2)
-    if lco_gate == "WITHHELD":
+
+    def _live_rec(prop: str) -> dict | None:
+        recs = st.recommendations(rid, prop, time_min=t_val)
+        return next((r for r in reversed(recs) if int(r["time_min"]) <= t_val
+                     and int(r.get("valid_until_min", t_val)) >= t_val), None)
+
+    _lco_live = _live_rec("LCO_T98_F")
+    _hn_live = _live_rec("HN_T98_F")
+    open_lco_rec = _lco_live if (_lco_live and _lco_live.get("status") == "OPEN"
+                                 and _lco_live.get("action") in ("RAISE", "LOWER")) else None
+    open_hn_rec = _hn_live if (_hn_live and _hn_live.get("status") == "OPEN"
+                               and _hn_live.get("action") in ("RAISE", "LOWER")) else None
+    _hn_note = (f" · HN {'RAISE' if open_hn_rec['action'] == 'RAISE' else 'LOWER'} ADVISED"
+                if open_hn_rec else "")
+    if lco_gate == "WITHHELD" or (_lco_live or {}).get("status") == "WITHHELD":
         lco_zone = "TRANSITION_LOCK"
-        lco_zone_label = "TRANSITION LOCK · HOLD SET POINT"
+        lco_zone_label = "LCO ADVICE WITHHELD · HOLD" + _hn_note
         lco_unit_status = "AMBER"
-    elif lco_margin < 1.0 or lco_p_spec < 0.95:
+    elif lco_p_spec < 0.95 or (open_lco_rec and open_lco_rec["action"] == "LOWER" and lco_q50 <= lco_target):
         lco_zone = "UNDER_TREATING"
-        lco_zone_label = "UNDER-TREATING RISK · LOWER SET POINT"
+        lco_zone_label = "LCO ON-SPEC RISK · LOWER SET POINT" + _hn_note
         lco_unit_status = "RED"
-    elif lco_margin > 2.5:
+    elif open_lco_rec and open_lco_rec["action"] == "RAISE":
         lco_zone = "OVER_TREATING"
-        lco_zone_label = "OVER-TREATING (QUALITY GIVEAWAY) · RAISE SET POINT"
+        lco_zone_label = f"LCO BELOW {lco_target:.1f} °F TARGET · RAISE SET POINT" + _hn_note
         lco_unit_status = "GREEN"
+    elif open_lco_rec and open_lco_rec["action"] == "LOWER":
+        lco_zone = "UNDER_TREATING"
+        lco_zone_label = f"LCO ABOVE {lco_target:.1f} °F TARGET · LOWER SET POINT" + _hn_note
+        lco_unit_status = "AMBER"
     else:
         lco_zone = "SWEET_SPOT"
-        lco_zone_label = "OPTIMAL SWEET SPOT · HOLD SET POINT"
-        lco_unit_status = "GREEN"
-
-    lco_recs = st.recommendations(rid, "LCO_T98_F")
-    active_recs = [rec for rec in lco_recs if abs(int(rec.get("time_min", 0)) - t_val) <= 30]
-    open_lco_rec = next((rec for rec in active_recs if rec.get("status") == "OPEN"), None)
-    if open_lco_rec is None:
-        open_lco_rec = next((rec for rec in lco_recs if rec.get("status") == "OPEN"), None)
+        lco_zone_label = "LCO ON TARGET · HOLD" + _hn_note
+        lco_unit_status = "AMBER" if open_hn_rec else "GREEN"
 
     sp_delta_F = (
         float(open_lco_rec["delta_F"])
         if open_lco_rec and open_lco_rec.get("delta_F") is not None
-        else (2.0 if lco_zone == "OVER_TREATING" else (-2.0 if lco_zone == "UNDER_TREATING" else 0.0))
+        else 0.0
     )
     if lco_gate == "WITHHELD":
         sp_delta_F = 0.0
 
     sp_lco_after = round(sp_lco + sp_delta_F, 2)
-    yield_shift_pct = round(0.45 * sp_delta_F, 2)
-    lco_flow_after = round(prod_lco * (1.0 + yield_shift_pct / 100.0), 2)
-    slurry_flow_after = round(max(5.0, prod_slurry - (lco_flow_after - prod_lco)), 2)
 
     pa_heat_recovery_F = round(max(0.0, min(6.5, (620.0 - t2_preheat) * 0.6 + 2.2)), 2)
     o2_excess_delta = round(max(0.0, flue_o2 - 2.0), 2)
@@ -494,16 +508,19 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         },
         "domains": {
             "yield": {
-                "title": "1. Distillate & Light-Ends Yield Shift",
+                "title": "1. Cut point vs target",
                 "summary": (
-                    f"Cut-point move ({sp_delta_F:+.1f} °F) shifts {yield_shift_pct:+.2f}% of feed from bottom slurry into higher-grade LCO distillate while holding P(LCO T98 <= 765 °F) >= 95%."
-                    if lco_gate == "PASS"
-                    else "Spread Gate WITHHELD: cut-point move suppressed during transient to prevent off-spec distillate excursion."
+                    f"Cut-point move ({sp_delta_F:+.1f} °F) brings LCO T98 toward its {lco_target:.1f} °F target, never below "
+                    f"95 % chance on spec (spec 765 °F), at most 5 °F per SOP step. The T98 response is assumed 1 : 1 with the "
+                    f"set point (default; no designed set-point moves in the data). Yield change is not quantified."
+                    if lco_gate == "PASS" and sp_delta_F != 0
+                    else ("Spread gate WITHHELD: no cut-point move while the estimators disagree." if lco_gate == "WITHHELD"
+                          else f"No LCO cut-point move at this minute (target {lco_target:.1f} °F).")
                 ),
                 "metrics": [
-                    {"label": "LCO Distillate Draw (prod_LCO)", "before": round(prod_lco, 2), "after": lco_flow_after, "delta": round(lco_flow_after - prod_lco, 2), "unit": "lb/min", "direction": "up"},
-                    {"label": "Bottom Slurry Draw (prod_slurry)", "before": round(prod_slurry, 2), "after": slurry_flow_after, "delta": round(slurry_flow_after - prod_slurry, 2), "unit": "lb/min", "direction": "down"},
-                    {"label": "C5 Recovery in Light Naphtha", "before": c5_recovery_pct, "after": round(min(92.0, c5_recovery_pct + 3.2), 2), "delta": 3.2, "unit": "%", "direction": "up"},
+                    {"label": "LCO T98 set point (SP_LCO_T98)", "before": round(sp_lco, 2), "after": sp_lco_after, "delta": round(sp_delta_F, 2), "unit": "°F", "direction": "up" if sp_delta_F > 0 else ("down" if sp_delta_F < 0 else "flat")},
+                    {"label": "LCO T98 estimate (1 : 1 default response)", "before": round(lco_q50, 2), "after": round(lco_q50 + sp_delta_F, 2), "delta": round(sp_delta_F, 2), "unit": "°F", "direction": "up" if sp_delta_F > 0 else ("down" if sp_delta_F < 0 else "flat")},
+                    {"label": "Gap to LCO target", "before": round(lco_target - lco_q50, 2), "after": round(lco_target - lco_q50 - sp_delta_F, 2), "delta": round(-sp_delta_F, 2), "unit": "°F", "direction": "down" if sp_delta_F > 0 else ("up" if sp_delta_F < 0 else "flat")},
                 ],
             },
             "energy": {
@@ -697,10 +714,11 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         lco_gate, lco_trust,
         open_lco_rec["rationale"] if open_lco_rec else f"4-model committee P95 = {lco_q95:.1f} °F with W90 = {lco_w90:.1f} °F (limit 14.0 °F).",
         {
-            "yield_impact": f"Shifts {yield_shift_pct:+.2f}% of feed ({lco_flow_after - prod_lco:+.2f} lb/min) from bottom slurry into LCO distillate.",
-            "energy_impact": f"Modulates Tray 13/17 liquid traffic and lifts PA4 preheat recovery by +{pa_heat_recovery_F:.1f} °F.",
-            "regeneration_impact": "Slurry bottoms adjustment modifies recycle coking tendency.",
-            "reliability_impact": f"Maintains LCO-HN boiling separation at {cutpoint_gap_F:.1f} °F (>= 50 °F PINN floor).",
+            "yield_impact": (f"Brings LCO T98 toward its {lco_target:.1f} °F target (estimate {lco_q50:.1f} °F), never below "
+                             f"95 % chance on spec, at most 5 °F per SOP step. Yield change is not quantified by the advisor."),
+            "energy_impact": "Changes Tray 13/17 liquid traffic and pumparound duties; not quantified by the advisor.",
+            "regeneration_impact": "No direct effect on the regenerator carbon balance.",
+            "reliability_impact": f"Keeps LCO-HN boiling separation at {cutpoint_gap_F:.1f} °F (>= 50 °F floor).",
         },
         [
             _cite("SOP-frac-014", "4.2", "SOP — Main Fractionator LCO & HN Cut-Point Control"),
@@ -708,19 +726,21 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         ],
     )
 
+    hn_delta_F = float(open_hn_rec["delta_F"]) if (open_hn_rec and hn_gate != "WITHHELD") else 0.0
     dec_u4_hn = _make_decision_card(
-        rec_map, f"TWIN-{rid}-U4-HN-{t_val}", rid, t_val, "HN_T98_F", "unit_4_fractionator", "UC-03",
-        "RAISE" if (hn_gate == "PASS" and hn_q95 < 537.5) else "HOLD",
+        rec_map, open_hn_rec["rec_id"] if open_hn_rec else f"TWIN-{rid}-U4-HN-{t_val}", rid, t_val, "HN_T98_F",
+        "unit_4_fractionator", "UC-03",
+        "RAISE" if hn_delta_F > 0 else ("LOWER" if hn_delta_F < 0 else "HOLD"),
         "SP_HN_T98 (MV_HN_draw / V10)",
-        sp_hn, round(sp_hn + (1.5 if hn_gate == "PASS" and hn_q95 < 537.5 else 0.0), 2),
-        1.5 if (hn_gate == "PASS" and hn_q95 < 537.5) else 0.0, "°F",
+        sp_hn, round(sp_hn + hn_delta_F, 2), hn_delta_F, "°F",
         hn_gate, hn_trust,
-        f"Coordinate Tray 6 HN draw valve V10 ({v10_pos*100:.1f}% open) and PA2 pumparound ({mv_pa2:.1f}) to maximize naphtha yield while preserving >= 50 °F separation from LCO.",
+        open_hn_rec["rationale"] if open_hn_rec else f"4-model committee P95 = {hn_q95:.1f} °F with W90 = {hn_w90:.1f} °F (limit 14.0 °F).",
         {
-            "yield_impact": f"Balances LN ({prod_ln:.1f} lb/min), HN ({prod_hn:.1f} lb/min), and LCO ({prod_lco:.1f} lb/min) side draws.",
-            "energy_impact": f"Modulates intermediate pumparound PA2 ({mv_pa2:.1f} klb/h) heat removal.",
-            "regeneration_impact": "Neutral to regenerator carbon balance.",
-            "reliability_impact": f"Enforces PINN boiling gap constraint (actual gap {cutpoint_gap_F:.1f} °F >= 50 °F).",
+            "yield_impact": (f"Brings HN T98 toward its {hn_target:.1f} °F target (estimate {hn_q50:.1f} °F), never below "
+                             f"95 % chance on spec, at most 5 °F per SOP step. Yield change is not quantified by the advisor."),
+            "energy_impact": f"Changes intermediate pumparound PA2 ({mv_pa2:.1f}) heat removal; not quantified by the advisor.",
+            "regeneration_impact": "No direct effect on the regenerator carbon balance.",
+            "reliability_impact": f"Keeps the boiling gap to LCO (actual {cutpoint_gap_F:.1f} °F >= 50 °F).",
         },
         [_cite("SOP-frac-014", "4.1", "SOP — Heavy Naphtha Side-Cut Control")],
     )
@@ -1181,7 +1201,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "label": "LCO T98 P95",
                 "value": round(lco_q95, 1),
                 "unit": "°F",
-                "target": "Sweet Spot 762.5-764 °F (Spec <= 765 °F)",
+                "target": f"Target {lco_target:.1f} °F (spec <= 765 °F)",
             },
             "tags": {
                 "LCO_T98_F": round(lco_truth, 2),
@@ -1233,7 +1253,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "advice": (
                     f"4-model committee P95 is {lco_q95:.1f} °F (margin {lco_margin:+.1f} °F to 765 °F spec, W90 = {lco_w90:.1f} °F, Gate {lco_gate}). "
                     + (
-                        f"Safe to adjust SP_LCO_T98 by {sp_delta_F:+.1f} °F ({sp_lco:.1f} -> {sp_lco_after:.1f} °F), shifting {yield_shift_pct:+.2f}% of feed into LCO distillate."
+                        f"Advise SP_LCO_T98 {sp_delta_F:+.1f} °F ({sp_lco:.1f} -> {sp_lco_after:.1f} °F) toward the {lco_target:.1f} °F target, never below 95 % chance on spec."
                         if lco_gate == "PASS" and sp_delta_F != 0
                         else "Spread Gate holds set point steady to protect product quality."
                     )
@@ -1406,7 +1426,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 {"label": "LCO T98 P50 / P95", "tag": "LCO_T98_F", "value": f"{lco_q50:.1f} / {lco_q95:.1f}", "unit": "°F", "target": "<= 765.0 °F"},
                 {"label": "Margin to Spec (765 °F)", "tag": "margin_F", "value": lco_margin, "unit": "°F", "target": "1.0–2.5 °F sweet spot"},
                 {"label": "Committee Spread W90", "tag": "w90", "value": round(lco_w90, 2), "unit": "°F", "target": "<= 14.0 °F (2R)"},
-                {"label": "LCO Distillate Draw", "tag": "prod_LCO", "value": round(prod_lco, 1), "unit": "lb/min", "target": f"Yield shift {yield_shift_pct:+.2f}%"},
+                {"label": "LCO Distillate Draw", "tag": "prod_LCO", "value": round(prod_lco, 1), "unit": "lb/min", "target": "Not quantified by the advisor"},
             ],
             "envelope": units[3]["envelope"],
             "recommendation": dec_u4_lco,
@@ -1836,26 +1856,38 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "proactive_alert": (
                 f"PROACTIVE BRIEFING (t={t_val}): Spread Gate is {lco_gate} (W90={lco_w90:.1f} °F). "
                 + (
-                    f"Unit 4 LCO T98 P95 ({lco_q95:.1f} °F) has {lco_margin:.1f} °F giveaway margin below 765 °F spec — recommend {dec_u4_lco['action']} SP_LCO_T98 by {sp_delta_F:+.1f} °F."
-                    if lco_gate == "PASS"
-                    else f"4-model committee spread W90 ({lco_w90:.1f} °F) exceeds 14.0 °F limit — holding set points across all units."
+                    f"Unit 4 LCO T98 estimate {lco_q50:.1f} °F vs its {lco_target:.1f} °F target (spec 765 °F) — "
+                    f"advise {dec_u4_lco['action']} SP_LCO_T98 by {sp_delta_F:+.1f} °F, never below 95 % chance on spec."
+                    if lco_gate == "PASS" and sp_delta_F != 0
+                    else (f"Unit 4 LCO T98 estimate {lco_q50:.1f} °F is within reach of its {lco_target:.1f} °F target — hold."
+                          if lco_gate == "PASS"
+                          else f"4-model committee spread W90 ({lco_w90:.1f} °F) exceeds the 14.0 °F limit — LCO set point held.")
                 )
             ),
             "briefings": {
                 "en": (
-                    f"Shift Supervisor report at minute {t_val}: All 6 units are online with PINN mass closure at {mb_err_pct:+.2f}%. "
-                    f"On Unit 4 Main Fractionator, LCO T98 P95 is {lco_q95:.1f} °F ({lco_margin:.1f} °F below the 765 °F spec limit) with Gate {lco_gate} (W90 = {lco_w90:.1f} °F). "
-                    f"Recommended move: {dec_u4_lco['action']} SP_LCO_T98 from {sp_lco:.1f} to {sp_lco_after:.1f} °F ({yield_shift_pct:+.2f}% LCO yield shift) while trimming Unit 1 furnace O2 from {flue_o2:.2f}% to reduce fuel gas F5 by {abs(fuel_delta_lb_s):.2f} lb/s."
+                    f"Shift Supervisor report at minute {t_val}: "
+                    f"on Unit 4 Main Fractionator, LCO T98 is estimated at {lco_q50:.1f} °F against its {lco_target:.1f} °F target "
+                    f"(spec 765 °F, upper estimate {lco_q95:.1f} °F), Gate {lco_gate} (W90 = {lco_w90:.1f} °F). "
+                    + (f"Advised move: {dec_u4_lco['action']} SP_LCO_T98 from {sp_lco:.1f} to {sp_lco_after:.1f} °F, "
+                       f"never below 95 % chance on spec, within the 5 °F SOP step. Advisory only; nothing is written to the DCS."
+                       if sp_delta_F != 0 else "No LCO move advised at this minute.")
                 ),
                 "hinglish": (
-                    f"Namaste Sir, minute {t_val} par Shift Supervisor Orchestrator update: poore 6 units connected hain aur PINN mass balance error sirf {mb_err_pct:+.2f}% hai. "
-                    f"Abhi Unit 4 Main Fractionator mein LCO_T98_F P95 {lco_q95:.1f} °F chal raha hai, jo 765 °F spec limit se {lco_margin:.1f} °F niche hai — yaani quality giveaway ho raha hai. "
-                    f"4-model committee ka W90 spread {lco_w90:.1f} °F hai aur Gate {lco_gate} hai. Mera proactive recommendation hai ki SP_LCO_T98 ko {sp_lco:.1f} se {sp_lco_after:.1f} °F ({sp_delta_F:+.1f} °F) {dec_u4_lco['action']} karein, jisse LCO distillate yield {yield_shift_pct:+.2f}% badhega, aur saath hi Unit 1 Furnace O2 trim karke {abs(fuel_delta_lb_s):.2f} lb/s fuel gas bachayein."
+                    f"Namaste Sir, minute {t_val} par Shift Supervisor update: "
+                    f"Unit 4 Main Fractionator mein LCO T98 ka estimate {lco_q50:.1f} °F hai, target {lco_target:.1f} °F hai "
+                    f"(spec 765 °F, upper estimate {lco_q95:.1f} °F). 4-model committee ka W90 spread {lco_w90:.1f} °F hai aur Gate {lco_gate} hai. "
+                    + (f"Salah hai ki SP_LCO_T98 ko {sp_lco:.1f} se {sp_lco_after:.1f} °F ({sp_delta_F:+.1f} °F) {dec_u4_lco['action']} karein — "
+                       f"on-spec chance 95 % se neeche nahi jayega, aur move 5 °F SOP step ke andar hai. Sirf salah hai; DCS mein kuch nahi likha jata."
+                       if sp_delta_F != 0 else "Abhi LCO set point mein koi move ki salah nahi hai.")
                 ),
                 "hi": (
-                    f"नमस्ते सर, मिनट {t_val} पर शिफ्ट सुपरवाइज़र एजेंट की प्रोएक्टिव रिपोर्ट: सभी 6 यूनिट्स सामान्य रूप से जुड़ी हैं और PINN द्रव्यमान संतुलन त्रुटि केवल {mb_err_pct:+.2f}% है। "
-                    f"यूनिट 4 मुख्य फ्रैक्शनेटर में LCO_T98_F का P95 अभी {lco_q95:.1f} °F है, जो 765 °F सीमा से {lco_margin:.1f} °F नीचे है। "
-                    f"स्प्रेड गेट {lco_gate} (W90 = {lco_w90:.1f} °F) है। सुझाव है कि SP_LCO_T98 को {sp_lco:.1f} से {sp_lco_after:.1f} °F ({sp_delta_F:+.1f} °F) {dec_u4_lco['action']} करें, जिससे LCO उत्पादन में {yield_shift_pct:+.2f}% सुधार होगा और यूनिट 1 फर्नेस में {abs(fuel_delta_lb_s):.2f} lb/s ईंधन गैस की कमी आएगी।"
+                    f"नमस्ते सर, मिनट {t_val} पर शिफ्ट सुपरवाइज़र की रिपोर्ट: "
+                    f"यूनिट 4 मुख्य फ्रैक्शनेटर में LCO T98 का अनुमान {lco_q50:.1f} °F है, लक्ष्य {lco_target:.1f} °F है "
+                    f"(स्पेक 765 °F, ऊपरी अनुमान {lco_q95:.1f} °F)। स्प्रेड गेट {lco_gate} (W90 = {lco_w90:.1f} °F) है। "
+                    + (f"सुझाव है कि SP_LCO_T98 को {sp_lco:.1f} से {sp_lco_after:.1f} °F ({sp_delta_F:+.1f} °F) {dec_u4_lco['action']} करें — "
+                       f"स्पेक पर रहने की संभावना 95 % से कम नहीं होगी और बदलाव 5 °F SOP सीमा के अंदर है। यह केवल सलाह है; DCS में कुछ नहीं लिखा जाता।"
+                       if sp_delta_F != 0 else "अभी LCO सेट पॉइंट में बदलाव का सुझाव नहीं है।")
                 ),
             },
         },

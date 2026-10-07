@@ -1,13 +1,12 @@
 "use client";
 
-/** Rail card 3 — Model evidence (SDD-L1-03): committee members & regime-adapted weights, PINN checks, spread gate, surrogate. */
+/** Rail card 3 — Model evidence (SDD-L1-03): committee members & the weights the estimate uses, PINN checks, spread gate, surrogate. */
 
 import { num } from "@/lib/format";
 import type { TwinModels } from "@/lib/twinTypes";
 
 export default function ModelEvidenceCard({ models }: { models: TwinModels }) {
   const c = models.committee;
-  const regime = c?.regime_id ?? models.surrogate?.regime_id;
   const weights = c?.weights ?? (c?.members ?? []).map((m) => ({ member: m.name, label: m.name, weight: m.weight }));
   const gate = models.gate;
   const gatePass = gate.status === "ISSUED" || gate.status === "PASS";
@@ -19,15 +18,14 @@ export default function ModelEvidenceCard({ models }: { models: TwinModels }) {
       {weights.length > 0 && (
         <table className="l1-table">
           <thead>
-            <tr><th>member</th><th>weight</th><th>{regime ? `w(${regime})` : "w(regime)"}</th><th>admitted</th></tr>
+            <tr><th>member</th><th>weight</th><th>role</th></tr>
           </thead>
           <tbody>
             {weights.map((w) => (
               <tr key={w.member}>
                 <td>{w.label}</td>
                 <td className="mono">{num(w.weight, 2)}</td>
-                <td className="mono muted">{regime && "by_regime" in w && w.by_regime ? num((w.by_regime as Record<string, number>)[regime], 2) : "—"}</td>
-                <td className={w.weight > 0 ? "ok" : "muted"}>{w.weight > 0 ? "✓" : "–"}</td>
+                <td className={w.weight > 0 ? "ok" : "muted"}>{w.weight > 0 ? "blended" : "reference only"}</td>
               </tr>
             ))}
           </tbody>

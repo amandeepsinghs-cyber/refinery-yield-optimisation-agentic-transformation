@@ -18,11 +18,11 @@ import ProductLadder from "./ProductLadder";
 /** Models → agent → Gemini → person (the layering agreed for architecture/02_agents.md). */
 const CHAIN: { n: number; name: string; job: string; here: string }[] = [
   { n: 1, name: "Models produce the numbers",
-    job: "Statistical, hybrid, physics-informed (PINN) and Gaussian-process models, response models and a constrained optimiser give the estimate, its spread and the smallest safe move.",
+    job: "Statistical, hybrid, physics-informed (PINN) and Gaussian-process models, response models and a constrained optimiser give the estimate, its spread and the move that reaches the target safely.",
     here: "Deterministic and auditable; trained on the unit's own history." },
   { n: 2, name: "The agent checks and recommends",
     job: "Checks those numbers against SOP limits, recent history and past decisions on its unit, then gives one recommendation with its evidence, or says “Not yet”.",
-    here: "One agent per use case, reading only its own unit's data. When the feed changes, every agent adjusts." },
+    here: "One agent per use case, reading only its own unit's data. When the feed changes, the soft sensor resets its lab bias and checks it has lab results for this crude, and the recipe and preheat target follow the new crude." },
   { n: 3, name: "Gemini orchestrates",
     job: "Calls the right agents, combines their advice, explains it in plain words and cites the SOP.",
     here: "Read-only. The numbers never come from the language model." },

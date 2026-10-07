@@ -1,6 +1,6 @@
 "use client";
 
-/** Rail card 1 — Regime & adaptation (E1 + E2, SDD-L1-03). */
+/** Rail card 1 — Crude family & bias reset (E1 + E2, SDD-L1-03). Weights are not regime-based (7 Oct). */
 
 import { clock, num } from "@/lib/format";
 import type { TwinModels, TwinRegime } from "@/lib/twinTypes";
@@ -13,7 +13,7 @@ export default function RegimeCard({ regime, committee }: { regime: TwinRegime |
   const match = regime.declared_vs_detected === "match";
   return (
     <section className="l1-card" data-testid="rail-regime">
-      <h3 className="l1-card-title">Regime &amp; adaptation</h3>
+      <h3 className="l1-card-title">Crude family &amp; bias reset</h3>
       <div className="l1-regime-head">
         <span className="l1-regime-id" style={{ background: REGIME_COLOR[regime.regime_id] ?? "#4338ca" }}>{regime.regime_id}</span>
         <span className="l1-regime-label">{regime.regime_label}</span>
@@ -36,10 +36,12 @@ export default function RegimeCard({ regime, committee }: { regime: TwinRegime |
         <dd className="mono">{regime.detected_at_min != null ? clock(regime.detected_at_min) : "—"}{regime.detection_delay_min != null ? ` (${regime.detection_delay_min >= 0 ? "+" : ""}${regime.detection_delay_min} min)` : ""}</dd>
         <dt>Novelty</dt>
         <dd className="mono">{num(regime.novelty, 2)} · transition {regime.transition_pct}%</dd>
-        {committee?.physics_weight != null && (
+        {committee && (
           <>
-            <dt>Physics weight</dt>
-            <dd className="mono">{num(committee.physics_weight, 2)}{committee.bias_reset_at_min != null ? ` · bias reset ${clock(committee.bias_reset_at_min)}` : ""}</dd>
+            <dt>Bias reset</dt>
+            <dd className="mono">{committee.bias_reset_at_min != null ? clock(committee.bias_reset_at_min) : "—"}{committee.bias_F != null ? ` · offset ${num(committee.bias_F, 2)} °F` : ""}</dd>
+            <dt>Model weights</dt>
+            <dd>{committee.weight_source === "recent_labs" ? "from recent lab accuracy" : "from held-out accuracy"} · not set by the crude</dd>
           </>
         )}
       </dl>

@@ -38,7 +38,7 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
 | # | Existing problem (today) | How the tech solves it | Action in the cockpit | How it is supported | Result |
 |:-:|---|---|---|---|---|
 | **P1** | Product quality is known only every 8 h from the lab, so the unit runs blind in between | A soft sensor, a committee of 4 models (Bayesian ridge, Gaussian process, hybrid physics, PINN), estimates LCO and heavy-naphtha T98 every minute, with a spread | **D1** move the cut point now or wait for the lab; **D9** pull an extra sample | Estimate ± spread, chance on spec, 7–8 trust checks, held-out runs, lab points on the chart | Quality is known every minute, not every 8 h; the cut point moves before the lab result |
-| **P2** | Crude changes every 12–48 h; yesterday's models drift and the right set points for the new crude are unknown | Crude classifier names the crude (lab assay + the unit's behaviour); models re-weight for that crude; set-point search uses that crude's response models | **D4** which crude, is the switch done; **D3** recipe for the new crude; **D6** feed preheat for the crude | Crude bars, "how it knows", switch walkthrough, physics weight | Settings follow the crude, not yesterday's crude *(crude name and D3/D6 outcomes scripted, labelled)* |
+| **P2** | Crude changes every 12–48 h; yesterday's models drift and the right set points for the new crude are unknown | Crude classifier names the crude (lab assay + the unit's behaviour); the soft sensor resets its lab bias and checks it has labels for that crude; recipe and preheat target follow that crude | **D4** which crude, is the switch done; **D3** recipe for the new crude; **D6** feed preheat for the crude | Crude bars, "how it knows", switch walkthrough, bias reset | Settings follow the crude, not yesterday's crude *(crude name and D3/D6 outcomes scripted, labelled)* |
 | **P3** | A move in one unit shows up hours later in another; unit-by-unit optimisation misses it | Consequence check: 19 rules over the catalyst, heat and hydrocarbon loops; every move shows what it does to the next units | **D5** regenerator air, **D7** overhead temperature target, **D8** what first / what breaks downstream | "If nothing is done" line with time to consequence; "Next units" line under each move | The knock-on effect is on the card before the move is made |
 | **P4** | An AI that always answers is dangerous | Trust checks before any advice; when the models disagree beyond 14 °F the cockpit says **"Not yet"** and asks for a lab sample | **D2** can the estimate be trusted now | Each check with value, limit, pass / fail; the decision record keeps every time advice was held back | It refuses rather than guesses; operators see why |
 
@@ -108,7 +108,7 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
   - **06:25** the new crude starts arriving;
   - **06:25–07:25** the unit's behaviour shifts;
   - **07:37** the crude is named, after a 15-min hold;
-  - then the soft sensor re-weights (physics-based models carry 81 %);
+  - then the soft sensor resets its lab bias (model weights stay accuracy-based; they are not set by the crude);
   - then the advice changes for this crude.
 - **Action:** open the Fractionator → scroll to ②.
 - **How it is supported:** "they agree" (assay R4 = behaviour R4); the fingerprint values; the **scripted** chip on the classifier and on the walkthrough.
@@ -121,12 +121,12 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
 
 ### Scene C — Move now or wait for the lab? (P1 · D1, live) · Fractionator step ③ · `random_s107` · 10:00
 - **Problem:** heavy-naphtha T98 is drifting toward spec. The next lab is at 14:00, 4 h away.
-- **How the tech solves it:** the soft sensor estimates **535.1 ± 3.8 °F** against a **540 °F** spec. The set-point search finds the smallest move: **Lower heavy-naphtha cut point −1.0 °F (530.3 → 529.3)**.
+- **How the tech solves it:** the soft sensor estimates **536.4 ± 2.8 °F** against a **540 °F** spec and a **530.3 °F** target. The set-point search aims at the target, never below 95 % chance on spec, at most 5 °F per SOP step: **Lower heavy-naphtha cut point −5.0 °F (530.3 → 525.3)**. The 5 °F step stops it about 1 °F short of the target, so a second step follows.
 - **Action:** select the D1 tab. Drag **Try another move** left and right; the chance on spec updates. Put it back. Click **Accept**.
 - **How it is supported:**
   - "If nothing is done: HN T98 could go over spec: the upper end of the estimate is above the limit".
-  - Chance on spec **91 % → 95 %**.
-  - **7 of 8** trust checks pass (the failed one is not a stop rule).
+  - Chance on spec **90 % → >99 %**; estimate after the move **531.4 °F** (response assumed 1 : 1, a default).
+  - **8 of 8** trust checks pass.
   - Lever ranges, and each lever's role: "one of the main settings operators adjust".
   - The "never recommends" line.
 - **Result:** the cut point moves 4 h before the lab would have shown the drift. The Accept is recorded only: *"recorded in audit, nothing sent to the plant"*.
@@ -138,20 +138,19 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
   - ☐ The footer "Actions taken on this unit" lists it.
 - **Say:** *"Four models, one answer, inside the 14-degree spread, so we're allowed to advise. A person decides. Nothing goes to the control system."*
 
-### Scene D — A run the models never saw: take back margin (P1 · D1, live) · Fractionator · `random_s144` · 10:00
-- **Problem:** the LCO cut is lighter than it needs to be (6.7 °F inside spec), so product goes to the heavier stream every hour.
-- **How the tech solves it:** on a held-out run, the cockpit advises **Raise LCO cut point +2.5 °F (752.8 → 755.2)**, and the same for heavy naphtha (532.8 → 535.3). The chance on spec stays at 95 % or above.
+### Scene D — A run the models never saw: bring the cut to its target (P1 · D1, live) · Fractionator · `random_s144` · 10:00
+- **Problem:** the LCO cut is running **2.2 °F below its 755.3 °F target** (HN 1.9 °F below its 530.3 °F target), so the cut stays lighter than planned until it is raised.
+- **How the tech solves it:** on a held-out run, the cockpit advises **Raise LCO cut point +2.0 °F (752.8 → 754.8)** and **Raise heavy-naphtha cut point +2.0 °F (532.8 → 534.8)**. Each brings the estimate to its target; the chance on spec stays at 95 % or above.
 - **Action:** Scenario ▾ → `random_s144`, 10:00. Read step ④: **"What sets the size of the move"**.
 - **How it is supported:**
-  - Estimate **751.5 ± 4.0 °F** against a **765 °F** spec.
-  - Chance on spec **99 % → 98.5 %**.
-  - Margin after the move **4.2 °F**.
-  - The search reads "take back margin … while chance on spec stays ≥ 95 %".
-- **Result:** more product kept in the LCO stream, still on spec. The size of the move is set by a visible limit.
+  - LCO estimate **753.1 ± 3.2 °F** against a **765 °F** spec and a **755.3 °F** target; **755.1 °F** after the move (within 1 °F of target, green tick).
+  - Chance on spec **>99 % → >99 %**; margin to spec after the move **4.8 °F**.
+  - The search reads "bring the estimate to the 755.3 °F target … never below 95 % chance on spec"; "What sets the move" names the target as limiting.
+- **Result:** the cut is back at its planned point hours before the next lab, still on spec. The size of the move is set by a visible limit (the target).
 - **Test:**
-  - ☐ Two D1 cards (LCO and HN).
+  - ☐ Two D1 cards (LCO and HN); header reads "LCO BELOW 755.3 °F TARGET · RAISE SET POINT · HN RAISE ADVISED".
   - ☐ Step ④ shows the goal, the limits, the model, "Trained on 40 runs, checked on 14 held-out runs" and the result.
-- **Say:** *"This run was never used for training. Smallest move that recovers product while the chance on spec stays above ninety-five percent, and you can see which limit set it."*
+- **Say:** *"This run was never used for training. It moves the cut to its target, never below ninety-five percent chance on spec and never more than five degrees in one step, and you can see which limit set it."*
 
 ### Scene E — Recipe for the new crude, and how we know it works (P2 + P3 · D3, scripted) · Fractionator steps ③–④ · `random_s144` · 10:00
 - **Problem:** a new crude needs several set points moved together. One at a time misses the interaction.
@@ -172,15 +171,16 @@ IOCL's own value figures may now be quoted **as IOCL's** in the opening and clos
 
 ### Scene F — "Not yet": it knows when not to answer (P4 · D2, D9, live) · Fractionator · `random_s144` · 12:00
 - **Problem:** two hours later the models disagree. A system that always answers would still give a set point.
-- **How the tech solves it:** spread **17.3 °F** is above the **14 °F** limit, so:
-  - **D2:** "Not yet — hold the LCO cut point", and the same for heavy naphtha;
+- **How the tech solves it:** the LCO spread **24.5 °F** is above the **14 °F** limit (4 of 8 checks fail: spread, models agree, GPR outside its range, spread ratio), so:
+  - **D2:** "Not yet — hold the LCO cut point";
   - **D3:** "No coordinated recipe yet";
-  - **D9:** "Pull an extra LCO and HN T98 sample now — next lab in 120 min".
+  - **D9:** "Pull an extra LCO T98 sample now — spread 24.5 °F, next lab in 120 min".
+  - Heavy naphtha is still trusted (spread 7.2 °F), so its D1 stays open: **Raise heavy-naphtha cut point +2.5 °F (532.8 → 535.3)**. Point this out: the hold is per estimate, not for the whole unit.
 - **Action:** Scenario ▾ → 12:00. Open the D2 tab → step ④ shows the failed checks and "what data is missing". Click **Pull sample** on D9. Then **Ask Gemini**: *"Why is the recipe withheld right now?"*
 - **How it is supported:** each check with value, limit and pass / fail; no proof loop on withheld decisions; Gemini quotes the check and refuses to give a set point.
 - **Result:** the cockpit asks for a lab instead of averaging four guesses. Every hold-back is in the decision record.
 - **Test:**
-  - ☐ Two D2 "Not yet" cards.
+  - ☐ One D2 "Not yet" card (LCO); HN D1 still open; header reads "LCO ADVICE WITHHELD · HOLD · HN RAISE ADVISED".
   - ☐ D3 withheld.
   - ☐ D9 open with "Pull sample".
   - ☐ No Accept button on D2.

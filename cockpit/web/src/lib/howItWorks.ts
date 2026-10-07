@@ -48,13 +48,13 @@ export const PARTS: Part[] = [
     id: "crude", n: 2, name: "Crude classifier", question: "Which crude family is the FCC feed coming from, and has the change finished?",
     kind: "A classification model. It reads the unit’s behaviour (riser ΔT, conversion, coke per feed, regenerator temperature, column ΔT) and names the crude family the FCC feed comes from, with a confidence.",
     input: "Those behaviour signals, plus the crude the schedule declares.",
-    output: "Crude R1–R4 with a % confidence and the time the switch was confirmed. Every model below uses this to pick its weights.",
+    output: "Crude R1–R4 with a % confidence and the time the switch was confirmed. The soft sensor uses it to reset its lab bias and to check it has lab results for this crude; the recipe and preheat target follow it. It does not set the model weights.",
     where: "Unit page step ② · “Which feed is arriving” block.",
     status: "scripted", statusNote: "Agrees with the lab assay at 93 %, confirmed 12 min after the switch ends.",
   },
   {
     id: "estimators", n: 3, name: "Quality estimators (soft sensor)", question: "What is the product quality right now, between lab samples?",
-    kind: "Four models of different kinds, weighted for the crude now running. Where they agree the estimate is trusted; where they split, it is not.",
+    kind: "Four models of different kinds; three are blended, weighted by their accuracy against recent lab results (or held-out runs), and Bayesian ridge is kept as a reference. Where they agree the estimate is trusted; where they split, it is not.",
     input: "Tray temperatures, flows, pumparounds and the crude.",
     output: "The quality now ± its spread, and the chance it is on spec.",
     where: "Unit page step ② · the four bell curves and “estimate between lab samples”.",
@@ -84,7 +84,7 @@ export const PARTS: Part[] = [
   },
   {
     id: "optimiser", n: 6, name: "Optimiser (set-point search)", question: "How far should we move?",
-    kind: "A search for the smallest move that lifts the chance of being on spec to 95 % or more, inside the SOP step and the lever’s allowed range.",
+    kind: "A search for the set-point move that brings the quality to its target (LCO T98 755.3 °F, HN T98 530.3 °F), never below 95 % chance on spec, in 0.5 °F steps of at most 5 °F per SOP step.",
     input: "The estimate, the response model and the limits.",
     output: "The move (from → to), the chance on spec before and after, and which limit set the size of the move.",
     where: "Unit page step ③ (the decision) and step ④ (“What sets the size of the move”).",
@@ -118,7 +118,7 @@ export interface DecisionInfo {
 const U = (id: string) => `/twin/unit/${id}`;
 
 export const DECISIONS: DecisionInfo[] = [
-  { id: "D1", unit: "Main fractionator", unitHref: U("unit_4_fractionator"), question: "Lower the LCO cut point now, or wait for the lab?",
+  { id: "D1", unit: "Main fractionator", unitHref: U("unit_4_fractionator"), question: "Move the LCO cut point to its target now, or wait for the lab?",
     lever: "LCO T98 set point (SP_LCO_T98)", parts: ["watch", "crude", "estimators", "response", "checks", "optimiser", "gemini"],
     ucs: ["UC-01", "UC-11"], problem: ["P1"], status: "real", note: "The full chain, end to end." },
   { id: "D2", unit: "Main fractionator", unitHref: U("unit_4_fractionator"), question: "Can the estimate be trusted right now?",
@@ -228,7 +228,7 @@ export const USE_CASES: UseCase[] = [
 ];
 
 export const GLOSSARY: [string, string][] = [
-  ["Crude / regime", "The crude type now in the unit (R1 Heavy … R4 Light). Models are weighted for it."],
+  ["Crude / regime", "The crude type now in the unit (R1 Heavy … R4 Light). Used for the bias reset, the labels-for-this-crude check, the recipe and the preheat target."],
   ["Expected", "What a tag should read for this crude and these settings, from the models."],
   ["σ (sigma)", "The usual noise of a tag. 3σ away from expected is unusual."],
   ["CUSUM", "A running sum of small gaps. It catches a slow drift before any single reading looks bad."],
@@ -371,7 +371,7 @@ export const DECISION_CARD: Record<DecisionId, DecisionCard> = {
     pain: "Quality is known only from the lab every 8 h; the column runs blind after a crude change, so product is given away or goes off spec",
     solve: "A cut-point estimate every minute with the chance of being on spec, and the move now — or \"wait for the lab\"",
     dataIn: "Tray and draw temperatures, pumparound duties, feed rate — every minute; lab LCO T98 every 8 h, matched to the minute it was drawn; the crude (D4)",
-    algorithms: "Four quality estimators (Bayesian ridge · hybrid physics + data · physics-informed neural nets · Gaussian process) → combined estimate ± spread and chance on spec → response model (cut point moves 1 : 1 with its set point) → optimiser: smallest move to ≥ 95 % chance on spec",
+    algorithms: "Three blended estimators (hybrid physics + data · physics-informed neural nets ×5 · Gaussian process; Bayesian ridge shown as a reference only) → combined estimate ± spread and chance on spec → response model (cut point assumed to move 1 : 1 with its set point — a default, as the history has no designed set-point moves) → optimiser: move toward the target T98 (LCO 755.3, HN 530.3 °F) in 0.5 °F steps, never below 95 % chance on spec, ≤ 5 °F per SOP step",
     checks: "Spread ≤ 14 °F, estimators agree, inputs inside the training range, move ≤ 5 °F SOP step; else \"Not yet\" or \"pull a sample\" (D2, D9)",
     operatorGets: "Move from → to, chance on spec before → after; Accept / Hold / Decline to the decision record; nothing written to the control system",
     onYourPlant: "Models retrain on your historian and LIMS history; each new lab re-anchors the estimate",

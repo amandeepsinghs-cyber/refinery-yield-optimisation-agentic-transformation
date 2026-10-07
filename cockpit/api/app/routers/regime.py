@@ -24,6 +24,6 @@ def get_regime_timeseries(run_id: str | None = None, step: int = 5):
 
 @router.get("/adaptation")
 def get_adaptation(time_min: int, run_id: str | None = None, property: str | None = None):
-    """Committee weights for one property at `time_min`: per-regime weights, physics weight, bias reset, reason."""
+    """Committee weights the estimate uses at `time_min` (lab-accuracy based, ridge reference only), crude family, bias reset, reason."""
     from ..engines.adapt import adaptation_at
     return adaptation_at(check_run(run_id), time_min, check_prop(property))

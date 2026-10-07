@@ -29,7 +29,7 @@ Written 3 Oct 2026; revised to v2 on 6 Oct 2026 to incorporate process engineeri
 
 Refinery executives care about **margin giveaway, off-spec product, crude switch transition lag, and plant safety**. 
 
-Today, FCC operators fly blind for 4–9 hours between laboratory distillation assays (ASTM D86). When a crude slate shifts, units run on yesterday’s set points, leading to conservative cut points (giving away high-value heavy naphtha and diesel into lower-value streams) or off-spec violations. This system bridges this gap without risking unit stability: it provides **minute-by-minute virtual quality tracking, recommends the smallest possible moves that keep production on spec (>95% confidence), and acts purely in an advisory capacity with zero write-access to the DCS**.
+Today, FCC operators fly blind for 4–9 hours between laboratory distillation assays (ASTM D86). When a crude slate shifts, units run on yesterday’s set points, leading to conservative cut points (giving away high-value heavy naphtha and diesel into lower-value streams) or off-spec violations. This system bridges this gap without risking unit stability: it provides **minute-by-minute virtual quality tracking, recommends the set-point move that brings each cut point to its target, never below 95 % chance on spec and at most 5 °F per SOP step, and acts purely in an advisory capacity with zero write-access to the DCS**.
 
 ### Key Pillars: What Was Built & How It Works
 
@@ -57,7 +57,7 @@ Today, FCC operators fly blind for 4–9 hours between laboratory distillation a
 |---|---|---|---|
 | **1. Overview (60 sec)** | `/platform` | Six-layer architecture and use-case alignment cards. | *"Behind this screen: AI and physics — a crude classifier, a four-model soft sensor including a PINN, anomaly detection on every unit and an optimiser — shared across your use cases, on one source of truth. They advise; your operators decide. Zero control system actuation."* |
 | **2. Refinery Top View** | `/twin` (`random_s107`, $t=600$) | 6 units on the flowsheet; one glowing yellow with **"Decide"**; the riser on **"Watch"**. | *"A crude switch occurred at 07:25. The plant responded hours before the lab assay arrived. The fractionator is off plan, while the riser needs no intervention. Each unit sees only what matters to it."* |
-| **3. Unit Deep Dive** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=600$) | Live column drawing $\to$ Model ensemble bell curves $\to$ Decision D1 (*Raise LCO cut point $+2.5^\circ\text{F}$*). | *"Here is a run the model never saw. The 4 models agree within $14^\circ\text{F}$, giving $95\%$ probability on-spec. It advises the smallest SOP-compliant move to recover giveaway."* |
+| **3. Unit Deep Dive** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=600$) | Live column drawing $\to$ Model ensemble bell curves $\to$ Decision D1 (*Raise LCO cut point $+2.0^\circ\text{F}$, 752.8 → 754.8, toward the 755.3 °F target*). | *"Here is a run the model never saw. The 4 models agree within $14^\circ\text{F}$, giving $95\%$ probability on-spec. It advises the move that brings the cut to its target, inside the 5-degree SOP step."* |
 | **4. The Honesty Moment** | `/twin/unit/unit_4_fractionator` (`random_s144`, $t=720$) | Decision status changes to **"Not yet"** with an amber alert. | *"Two hours later, process uncertainty widens. Rather than averaging 4 divergent guesses, the system withholds advice and prompts the board operator to request a physical lab draw."* |
 | **5. Audit & Governance** | `/audit` | Timestamped log of accepted moves and model withholdings. | *"Full accountability: every recommendation, operator override, and safety withhold is logged for engineering audit."* |
 
@@ -86,7 +86,7 @@ Today, FCC operators fly blind for 4–9 hours between laboratory distillation a
 3. **The method: three questions, three kinds of model.**
    - **Q1: What is the quality now?** A soft sensor, trained on past lab results lined up with the process readings at the minute each sample was drawn.
    - **Q2: If I move a setting, what changes?** A response model, from physics, from moves operators already made, and from small planned step tests.
-   - **Q3: Which move is best?** A search that uses Q1 and Q2 to pick the smallest move that improves yield, inside every limit.
+   - **Q3: Which move is best?** A search that uses Q1 and Q2 to pick the move that brings the quality to its target (LCO 755.3, HN 530.3 °F), never below 95 % chance on spec, inside every limit.
 4. **New crude.** It starts from its nearest crude family, leans on physics, moves smaller (or says "Not yet"), and learns that crude within a few lab cycles.
 5. **Proof.** Every move goes round **predict, decide, measure, learn**. On IOCL's plant, a pilot proves each lever before its advice goes live.
 6. **On IOCL's plant (§11).** Trained on their history before day one; shadow mode; advise on proven levers first; step tests for the rest; benefit measured in plant terms from about week 6.
@@ -287,7 +287,7 @@ flowchart LR
     L["Lab results every 8 h, lined up by draw time"] --> Q1
     P["Physics"] --> Q2["Q2 Response model: what a move does"]
     M["Past operator moves + small step tests"] --> Q2
-    Q1 --> Q3["Q3 Search: smallest safe move that improves yield"]
+    Q1 --> Q3["Q3 Search: move to target, never below 95 % on spec"]
     Q2 --> Q3
     Q3 --> C["Trust checks: pass, or Not yet"]
     C --> D["Decision card: operator accepts / holds / declines"]
@@ -340,7 +340,7 @@ The search explores candidate moves of operator-controlled settings, scoring eac
 * **Worse:** Increased furnace fuel, compressor power, or coke make.
 * **Forbidden:** $P(\text{off-spec}) > 5\%$, move greater than SOP step limit ($2.5^\circ\text{F}$), or setting outside equipment constraints.
 
-It selects the **smallest move** that satisfies the target. Small moves minimize process disruption and are easy to measure and verify.
+It moves toward the **target** in 0.5 °F steps, never below 95 % chance on spec and at most 5 °F per SOP step; a move that would be cut short by the step limit is finished by a second step. Small, capped moves minimise process disruption and are easy to measure and verify.
 
 ---
 
@@ -349,7 +349,7 @@ It selects the **smallest move** that satisfies the target. Small moves minimize
 How the cockpit advises when a crude has never been processed before:
 
 1. **Crude Families, Not Names:** Crudes are mapped by physical properties (API gravity, sulfur, CCR) into 4 families: R1 Heavy, R2 Medium-Heavy, R3 Medium, R4 Light. An unknown crude maps to its nearest family.
-2. **Physics Up-Weighting:** When entering an unfamiliar regime, the model committee automatically shifts weight away from purely data-driven models to physics models (e.g. Hybrid Delta and PINN carry $81\%$ of weight).
+2. **Accuracy-based weights and bias reset:** the three blended models (hybrid, PINN ×5, GP) are weighted by their accuracy on the most recent accepted lab results (held-out runs until enough labs arrive); Bayesian ridge is a reference only. After a crude switch the lab bias is reset and the novelty check flags inputs outside the training range. The weights are not set by the crude.
 3. **Wider Spread $\to$ Caution or "Not Yet":** Higher uncertainty naturally widens the 4-model spread ($W_{90}$). If it exceeds $14^\circ\text{F}$, advice is withheld.
 4. **Rapid Adaptation:** Every 8-hour lab sample on the new crude acts as a new calibration point, tuning the models within 24–48 hours.
 
@@ -443,7 +443,7 @@ To master this build in ~3 hours:
 1. **Read §0–§5 & §11 of this document (60 min):** Grasp the core story, distillation physics, and the pilot plan.
 2. **Open `/platform` (15 min):** Review the 6 layers, use-case cards, and MeitY data governance bands.
 3. **Explore Run `random_s107` at $t=600$ (30 min):** See the crude switch, fractionator alarm, and D1 setpoint recommendation.
-4. **Explore Run `random_s144` at $t=600$ & $t=720$ (30 min):** Witness the model taking back giveaway at $t=600$, followed by the "Not Yet" safety brake triggering at $t=720$.
+4. **Explore Run `random_s144` at $t=600$ & $t=720$ (30 min):** Witness the model bringing both cut points to their targets at $t=600$, followed by the "Not Yet" safety brake triggering at $t=720$.
 5. **Review Probing Questions (20 min):** Practice answering tough questions on yield, DCS safety, and crude transitions.
 
 ---
@@ -473,7 +473,7 @@ This build maps directly to the refinery use cases in `refinery_optimisation_use
 
 | Status | Use Case ID & Row | Refinery Priority Use Case | Decision & Lever | How it is Implemented in this Build |
 |---|---|---|---|---|
-| **Real** | **UC-01** (Row #1) | **FCC Product-Quality Inferential** (run closer to plan and avoid giveaway) | **D1, D2, D3, D9**<br>`SP_LCO_T98`<br>`SP_HN_T98` | **Full end-to-end ML pipeline.** Estimates LCO and Heavy Naphtha cut points every minute; recommends set-point trims to recover giveaway while staying $>95\%$ on-spec. *(T98 cut point stands in for sulfur as the simulator lacks sulfur).* |
+| **Real** | **UC-01** (Row #1) | **FCC Product-Quality Inferential** (run closer to plan and avoid giveaway) | **D1, D2, D3, D9**<br>`SP_LCO_T98`<br>`SP_HN_T98` | **Full end-to-end ML pipeline.** Estimates LCO and Heavy Naphtha cut points every minute; recommends set-point trims toward the target while staying $>95\%$ on-spec. *(T98 cut point stands in for sulfur as the simulator lacks sulfur).* |
 | **Real** | **UC-11** (Row #11) | **Product Soft Sensors** (online property prediction between lab samples) | **D1, D2, D9**<br>Model Spread Gate | **Full 4-model ensemble.** Evaluates Bayesian Ridge, Hybrid Delta, PINN, and GPR every 60s. Enforces the $14^\circ\text{F}$ spread check ($W_{90}$) and triggers extra lab requests (D9) when uncertain. |
 | **Scripted** | **UC-05** (Row #5) | **Fired heaters / furnaces** (CO/O₂ combustion modelling, poor-combustion flagging) | **D6**<br>`SP_T_preheat_F` | Flags CO drift in the flue gas automatically and calculates preheat adjustment for new crudes to balance catalyst-to-oil. |
 | **Scripted** | **UC-04** (Row #4) | **Reactor regeneration** (regeneration-cycle tracking & root-cause analysis) | **D5**<br>`Fair` (Air flow) | Detects cyclone afterburn $\Delta T$ drift; isolates air vs. riser severity causes; proposes air trim before high-temp alarms trip. |

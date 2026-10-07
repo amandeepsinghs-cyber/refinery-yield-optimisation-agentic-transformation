@@ -83,13 +83,13 @@ CONSEQUENCE_RULES: dict[tuple[str, str, str], tuple[str, str, str]] = {
         "hydrocarbon", "unit_4_fractionator", "LCO heavier than spec: PA3 saturates in ~{h} min "
                                               "if the cut point is not pulled back"),
     ("unit_4_fractionator", "LCO_T98_F", "down"): (
-        "hydrocarbon", "unit_4_fractionator", "LCO cut too light: {v} quality giveaway to slurry; recoverable LCO yield "
-                                              "lost every hour it persists"),
+        "hydrocarbon", "unit_4_fractionator", "LCO cut lighter than expected by {v}: it stays below its target "
+                                              "until the cut point is raised"),
     ("unit_4_fractionator", "HN_T98_F", "up"): (
         "hydrocarbon", "unit_6_stabiliser", "Heavy naphtha end point drifting up; stabiliser feed heavier and C5 "
                                             "recovery falls within ~{h} min"),
     ("unit_4_fractionator", "HN_T98_F", "down"): (
-        "hydrocarbon", "unit_4_fractionator", "HN cut too light: naphtha yield given away to LCO; {v} below plan"),
+        "hydrocarbon", "unit_4_fractionator", "HN cut lighter than expected by {v}: it stays below its target until the cut point is raised"),
     ("unit_5_condenser", "MV_cw_flow", "up"): (
         "heat", "unit_5_condenser", "Cooling-water demand above expected for this load: condenser UA degrading; "
                                     "overhead T limit reached in ~{h} min on a warm afternoon"),

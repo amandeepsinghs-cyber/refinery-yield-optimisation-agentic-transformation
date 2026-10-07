@@ -50,15 +50,6 @@ const EVK: Record<string, string> = { cusum: "drifting (sustained)", breach: "ou
 const KIND: Record<string, string> = { agent: "Rule-based", ml: "ML", check: "Check", optimiser: "Optimiser", genai: "Gemini" };
 
 
-/** "Regime R4 (Light (Bonny-Light-type)) detected with novelty 0.15: physics-anchored members carry 66 % …" → plain words. */
-function plainRegime(reason: string): string {
-  const m = reason.match(/Regime (\w+) \((.*)\) detected with novelty [\d.]+: physics-anchored members carry (\d+) %/);
-  if (!m) return reason;
-  const label = m[2].replace(/\s*\((.*?)(-type)?\)\s*$/, (_s: string, g1: string) => ` · ${g1}`).replace(/-/g, " ");
-  return `Crude ${m[1]} (${label}) recognised. The physics-based models carry ${m[3]} % of the weight while the data-driven ones catch up.`;
-}
-
-
 /* Voice note 10 (owner): crude changes → first classify which crude it is (and how sure) → then the right settings for it. */
 const CRUDES: [string, string, string][] = [
   ["R1", "Heavy", "Basrah Heavy type"],
@@ -70,7 +61,7 @@ const FP: [string, string, string, number][] = [
   ["riser_dT_F", "Riser ΔT", "°F", 0], ["conversion_pct", "Conversion", "%", 1], ["coke_per_feed", "Coke / feed", "", 2],
   ["Treg_F", "Regenerator T", "°F", 0], ["tray_dT_F", "Column ΔT", "°F", 0],
 ];
-function CrudeBlock({ r }: { r: import("@/lib/twinTypes").TwinRegime; physicsPct?: string | null }) {
+function CrudeBlock({ r }: { r: import("@/lib/twinTypes").TwinRegime }) {
   const now = CRUDES.find((c) => c[0] === r.regime_id);
   const match = r.declared_vs_detected === "match";
   return (
@@ -441,8 +432,8 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           })()}
           {data.regime ? <div className="us-fact"><span>Crude</span><b>{data.regime.regime_id} {data.regime.regime_label.split(" ")[0]}</b><em>{Math.round((data.regime.p_regime?.[data.regime.regime_id] ?? 0) * 100)} % sure · since {clock(data.regime.detected_at_min)}</em></div> : null}
         </div>
-        {data.regime ? <CrudeBlock r={data.regime} physicsPct={committee?.reason?.match(/carry (\d+) %/)?.[1] ?? null} /> : null}
-        {data.regime ? <CrudeSwitchStory r={data.regime} physicsPct={committee?.reason?.match(/carry (\d+) %/)?.[1] ?? null} /> : null}
+        {data.regime ? <CrudeBlock r={data.regime} /> : null}
+        {data.regime ? <CrudeSwitchStory r={data.regime} /> : null}
         <div className="us-grid observe">
           <div className="us-chart"><ChartStack data={data} panels={obsPanels} hoverMin={null} onHover={() => undefined} /></div>
           <div className="us-side">
@@ -456,7 +447,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             ) : committee && isU4 ? (
               <ul className="us-weights">{(committee.weights ?? []).map((w) => <li key={w.member}><span>{w.label}</span><i style={{ width: `${Math.round(w.weight * 100)}%` }} /><b className="num">{Math.round(w.weight * 100)} %</b></li>)}</ul>
             ) : null}
-            {committee?.reason && !(isU4 && d?.models) ? <p className="us-note">{plainRegime(committee.reason)}</p> : null}
+            {committee?.reason && !(isU4 && d?.models) ? <p className="us-note">{committee.reason}</p> : null}
           </div>
         </div>
         {isU4 ? <EstimateTrack runId={data.run_id ?? runId} prop={prop} t={t} label={TAGN[prop] ?? prop} /> : null}

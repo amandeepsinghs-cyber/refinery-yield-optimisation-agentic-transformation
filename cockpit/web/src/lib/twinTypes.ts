@@ -191,7 +191,8 @@ export interface TwinCommitteeWeight {
   member: string;
   label: string;
   weight: number;
-  by_regime?: Record<string, number>;
+  by_regime?: Record<string, number> | null;
+  role?: string;
 }
 
 export interface TwinModels {
@@ -202,6 +203,9 @@ export interface TwinModels {
     physics_weight?: number;
     weights?: TwinCommitteeWeight[];
     bias_reset_at_min?: number | null;
+    bias_F?: number | null;
+    weight_source?: string | null;
+    weight_source_text?: string | null;
     reason?: string;
     /** Legacy shape kept for older payloads. */
     members?: { name: string; weight: number; p_regimes?: Record<string, number> }[];

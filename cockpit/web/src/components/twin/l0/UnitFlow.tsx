@@ -175,7 +175,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
           {d && d.proposed.moves.length && members.length ? (
             <>
               <ul className="uf-opt">
-                <li><span>Goal</span>keep the product on spec (≥ 95 %) with the smallest move</li>
+                <li><span>Goal</span>{d.type === "D1" && d.predicted?.target != null ? `bring T98 to its ${d.predicted.target.toFixed(1)} °F target, never below 95 % chance on spec, ≤ 5 °F per SOP step` : "bring the reading back into its band, never below 95 % chance, inside the SOP step"}</li>
                 <li><span>Limits</span>SOP step ≤ 5 °F, 30 min between moves, set-point range</li>
                 <li><span>Model</span>{d.predicted?.model ?? `Soft-sensor committee: 4 models, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended`}</li>
                 <li><span>Checks</span>{d.gates.filter((g) => g.pass).length} of {d.gates.length} pass before advising</li>

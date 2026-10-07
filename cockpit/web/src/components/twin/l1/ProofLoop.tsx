@@ -82,7 +82,7 @@ export function ProofLoop({ d, nextLab }: { d: Decision; nextLab?: string | null
   );
 }
 
-export function CrudeSwitchStory({ r }: { r: TwinRegime; physicsPct?: string | null }) {
+export function CrudeSwitchStory({ r }: { r: TwinRegime }) {
   const t = r.time_min;
   const segs = (r.segments ?? []).filter((s) => s.t_start_min <= t);
   if (segs.length < 2) return null;

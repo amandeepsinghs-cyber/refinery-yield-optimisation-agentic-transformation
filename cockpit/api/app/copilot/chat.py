@@ -258,12 +258,12 @@ def suggestions(ctx: dict) -> list[str]:
         unit = UNIT_SHORT[sc["unit_id"]]
         if lang in ("hi", "hindi"):
             return ["इस स्क्रीन पर क्या हो रहा है — हर पैनल समझाइए", f"{unit} अभी प्लान से क्यों हटा है? हमें कैसे पता चला?", "रेसिपी के सेट-पॉइंट बदलाव क्या हैं और उनका असर क्या होगा?",
-                    "कौन सा क्रूड रिजीम चल रहा है और मॉडल कैसे बदले?", "क्या यह पहले हुआ है?"]
+                    "कौन सा क्रूड रिजीम चल रहा है और मॉडल वेट कहाँ से आते हैं?", "क्या यह पहले हुआ है?"]
         if lang == "hinglish":
             return ["Is screen pe kya chal raha hai — har panel samjhao", f"{unit} plan se kyun off hai? Kaise pata chala?", "Recipe ke set-point moves kya hain aur effect kya hoga?",
-                    "Abhi kaunsa crude regime hai aur model weights kaise badle?", "Kya yeh pehle hua hai?"]
+                    "Abhi kaunsa crude regime hai aur model weights kahan se aate hain?", "Kya yeh pehle hua hai?"]
         return ["Explain what is on this screen, panel by panel", f"Why is the {unit.lower()} off plan, and how do we know?", "What does the recipe change and what is the effect?",
-                "Which crude regime is active and how did the models adapt?", "Has this happened before?"]
+                "Which crude regime is active, and where do the model weights come from?", "Has this happened before?"]
     if sc["level"] == "L0":
         if lang in ("hi", "hindi"):
             return ["इस स्क्रीन पर क्या हो रहा है — पूरी तरह समझाइए", "अभी किस यूनिट पर ध्यान देना ज़रूरी है?", "घोषित और पहचाना गया क्रूड रिजीम क्या है?",

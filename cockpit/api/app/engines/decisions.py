@@ -417,7 +417,7 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
         horizon = att.get("horizon_min") if att else int(rec.get("valid_until_min", t + 30)) - t
         d["urgency"] = {"rank": None, "time_to_consequence_min": horizon,
                         "consequence": ((att or {}).get("consequence") if rec["action"] == "LOWER"
-                                        and "too light" not in ((att or {}).get("consequence") or "") else None)
+                                        and "lighter than expected" not in ((att or {}).get("consequence") or "") else None)
                         or (f"{short} T98 could go over spec: the upper end of the estimate is above the limit" if rec["action"] == "LOWER" else
                             (f"{short} T98 is running {abs((rec.get('target_F') or 0) - (e['mu'] or 0)):.1f} °F below its "
                              f"{rec.get('target_F'):.1f} °F target: the cut stays lighter than planned until it is raised"
