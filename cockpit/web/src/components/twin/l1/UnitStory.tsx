@@ -437,7 +437,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
         <div className="us-grid observe">
           <div className="us-chart"><ChartStack data={data} panels={obsPanels} hoverMin={null} onHover={() => undefined} /></div>
           <div className="us-side">
-            <h3>{isU4 ? "What the 4 models believe now" : "What the crude model expects now"}</h3>
+            <h3>{isU4 ? "What the 4 models believe now" : d?.scripted ? "What the response model expects now (scripted)" : "What the crude model expects now"}</h3>
             {members.length ? <GaussianPdf members={members} spec={spec} target={k ? { value: k.plan, label: "plan" } : null} measured={null} unit={k?.unit ?? ""} height={150} compact showP={false} ariaLabel="soft-sensor bell curves" /> : <p className="subtle">No estimate for this unit.</p>}
             {isU4 && d?.models?.members?.length ? (
               <>

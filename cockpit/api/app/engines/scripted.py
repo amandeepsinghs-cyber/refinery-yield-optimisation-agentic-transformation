@@ -17,6 +17,7 @@ import os
 import re
 
 from app.engines.recipe import _label_unit
+from app.recommend import prob_text
 from app.state import get_state
 
 # lever, target, gain (target units per lever unit), lever step, SOP max step, SOP text, model text
@@ -135,10 +136,8 @@ def _script(d: dict, row: dict) -> dict:
     goal = spec.get("goal") or f"Chance {_SHORT.get(target, t_label.lower())} is back in its band"
     w90 = 2 * 1.645 * sigma
     gates = [
-        {"id": "spread", "name": "spread W90", "op": "≤", "pass": True, "value": round(w90, 2),
+        {"id": "spread", "name": "spread W90 (scripted band)", "op": "≤", "pass": True, "value": round(w90, 2),
          "limit": round(max(w90 * 1.6, 1.0), 2), "unit": t_unit},
-        {"id": "S1", "name": "models agree", "op": "≤", "pass": True, "value": 0.31, "limit": 0.5},
-        {"id": "S2", "name": "inputs inside training range", "op": "≤", "pass": True, "value": 0.22, "limit": 1.0},
         {"id": "iow", "name": "lever stays inside its window", "op": "≤", "pass": True,
          "value": round(abs(delta), nd), "limit": round(min(smax, (hi_w - lo_w) / 2) if math.isfinite(hi_w) else smax, nd),
          "unit": l_unit},
@@ -148,8 +147,8 @@ def _script(d: dict, row: dict) -> dict:
         "urgency": {**d["urgency"], "decide_by_label": d["urgency"].get("decide_by_label")},
         "observed": {**(d.get("observed") or {}), "tag": target, "label": t_label,
                      "line": (d.get("observed") or {}).get("line") or f"{t_label} {sign(dev)} {t_unit} away from the crude target"},
-        "diagnosed": {"text": f"{t_label} is {sign(dev)} {t_unit} from expected for this crude. {spec['model']}. "
-                              f"{l_label} {sign(delta)} {l_unit} brings it back: chance in band {pb:.0%} → {pa:.0%}. "
+        "diagnosed": {"text": f"Scripted outcome for the demo. {t_label} is {sign(dev)} {t_unit} from expected for this crude. {spec['model']}. "
+                              f"{l_label} {sign(delta)} {l_unit} brings it back: chance in band {prob_text(pb)} → {prob_text(pa)}. "
                               "Advisory only; operator decides.", "trust": "GREEN", "conservative": False},
         "proposed": {"moves": moves, "alternative": f"Hold — {d['urgency'].get('consequence') or 'the drift continues'}",
                      "sop": spec["sop"]},
@@ -165,10 +164,11 @@ def _script(d: dict, row: dict) -> dict:
     since = (d.get("observed") or {}).get("since_label")
     steps = [{"kind": "agent", "name": "Anomaly detection", "did": f"Flagged {t_label} moving away from expected at {since}"}] if since else []
     steps += [
-        {"kind": "ml", "name": "Crude-regime model", "did": "Recognises the crude now running and picks its response model"},
-        {"kind": "ml", "name": "Response model", "did": spec["model"]},
-        {"kind": "check", "name": "Trust checks", "did": f"{len(gates)} of {len(gates)} pass (spread, models agree, inputs in range, lever window)"},
-        {"kind": "optimiser", "name": "Set-point search", "did": f"Smallest move that lifts the chance in band from {pb:.0%} to {pa:.0%}, inside SOP step limits"},
+        {"kind": "ml", "name": "Crude family (scripted in the demo)", "did": "Follows the lab assay and picks the response gain for that crude"},
+        {"kind": "ml", "name": "Response model (" + ("gain measured · chance scripted" if spec.get("gain_source") == "measured" else "scripted") + ")",
+         "did": spec["model"]},
+        {"kind": "check", "name": "Checks", "did": f"{len(gates)} of {len(gates)} pass (scripted spread band, lever window); no model-agreement or training-range check for scripted items"},
+        {"kind": "optimiser", "name": "Move rule (scripted)", "did": f"Move = drift ÷ response gain, rounded to the {step:g} step and capped at the {smax:g} SOP step; chance in band {prob_text(pb)} → {prob_text(pa)} from a fixed band. Not a model search."},
         {"kind": "genai", "name": "Gemini", "did": "Explains the decision in English, Hinglish or Hindi with the SOP behind it; answers what happens if you hold"},
     ]
     d["enabled_by"] = steps

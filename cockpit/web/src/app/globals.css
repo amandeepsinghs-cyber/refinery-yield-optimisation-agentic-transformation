@@ -4057,3 +4057,7 @@ p.fx-formula { margin: 0; font-size: 12.5px; line-height: 1.5; }
 .fx-cols li.warn { background: color-mix(in srgb, var(--amber) 10%, transparent); }
 .fx-cols li span { color: var(--muted); }
 .fx-cols li em { font-style: normal; }
+
+/* scripted tags inline in the FCC Complex flow and plant pins (Theme 7) */
+.uf-lever-name .us-scripted, .uf-note .us-scripted { margin-left: 6px; vertical-align: 1px; }
+.pc-pin-s { font-style: normal; opacity: .75; font-size: .9em; }

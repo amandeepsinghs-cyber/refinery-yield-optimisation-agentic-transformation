@@ -78,6 +78,9 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
     try { await actOnDecision(d.id, a, runId, timeMin); onActed(); } finally { setBusy(false); }
   };
   const optim = d?.enabled_by?.filter((s) => s.kind === "optimiser" || s.kind === "check") ?? [];
+  // Scripted D3/D5/D6/D7 items: no soft sensor and no lab behind them; the value is the measured tag in its own unit.
+  const scriptTag = d?.scripted ? (d.gain_source === "measured" ? "gain measured · chance scripted" : "scripted outcome") : null;
+  const pUnit = d?.scripted ? (p.unit ?? "") : "°F";
 
   return (
     <section className="uf" data-testid="unit-flow" data-unit={unit.unit_id}>
@@ -87,7 +90,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
         {decisions.length > 1 ? (
           <span className="uf-pick">
             {decisions.map((x) => (
-              <button key={x.id} type="button" className={`uf-pick-b p-${x.status} ${x.id === d?.id ? "on" : ""}`} onClick={() => onPick(x.id)} title={x.question}>
+              <button key={x.id} type="button" className={`uf-pick-b p-${x.status} ${x.id === d?.id ? "on" : ""}`} onClick={() => onPick(x.id)} title={x.scripted ? `${x.question} (scripted outcome)` : x.question}>
                 {x.status === "open" ? "Decide" : x.status === "withheld" ? "Not yet" : "Watch"} · {SHORT[x.id.split("-")[0]] ?? x.type_name.split(":")[0]}
               </button>
             ))}
@@ -110,7 +113,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
 
         {/* 2 OBSERVE */}
         <li className="uf-step">
-          <div className="uf-h"><span className="uf-n">2</span>What we observe <Who k="agent">anomaly detection</Who>{members.length ? <Who k="ml">soft sensor</Who> : null}</div>
+          <div className="uf-h"><span className="uf-n">2</span>What we observe <Who k="agent">anomaly detection</Who>{members.length ? <Who k="ml">{scriptTag ? "response model (scripted)" : "soft sensor"}</Who> : null}</div>
           {k ? <p className="uf-kicker">Measured now</p> : null}
           {k ? (
             <p className="uf-big">
@@ -125,8 +128,12 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
           {members.length ? (
             <>
               <GaussianPdf members={members.slice(0, 1)} spec={spec != null ? { hi: spec, label: "spec" } : null} target={d?.observed?.plan != null ? { value: d.observed.plan, label: "plan" } : null}
-                unit="°F" height={92} compact showMixture={false} showP={false} ariaLabel="estimate now" />
-              <p className="uf-note"><b>Soft-sensor estimate</b> (the lab comes every 8 h): <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} °F</span>, chance on spec <b className="num">{pct(p.p_on_spec_before)}</b></p>
+                unit={pUnit} height={92} compact showMixture={false} showP={false} ariaLabel="estimate now" />
+              {scriptTag ? (
+                <p className="uf-note"><b>Response model</b> <em className="us-scripted">{scriptTag}</em>: measured <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} {pUnit}</span>, chance in band <b className="num">{pct(p.p_on_spec_before)}</b> (no soft sensor or lab on this item)</p>
+              ) : (
+                <p className="uf-note"><b>Soft-sensor estimate</b> (the lab comes every 8 h): <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} °F</span>, chance on spec <b className="num">{pct(p.p_on_spec_before)}</b></p>
+              )}
             </>
           ) : null}
         </li>
@@ -139,7 +146,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
               <p className="uf-q">{d.question}</p>
               {d.proposed.moves.length ? d.proposed.moves.map((m) => (
                 <div key={m.tag} className="uf-lever">
-                  <span className="uf-lever-name">{m.label}</span>
+                  <span className="uf-lever-name">{m.label}{scriptTag ? <em className="us-scripted">{scriptTag}</em> : null}</span>
                   <span className="uf-lever-move num">{n(m.from, 1)} <i>→</i> <b>{n(m.to, 1)}</b> {m.unit}</span>
                   <span className="uf-lever-d num">{m.delta >= 0 ? "+" : "−"}{Math.abs(m.delta).toFixed(1)} {m.unit}</span>
                 </div>
@@ -176,13 +183,13 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
           {d && d.proposed.moves.length && members.length ? (
             <>
               <ul className="uf-opt">
-                <li><span>Goal</span>{d.type === "D1" && d.predicted?.target != null ? `bring T98 to its ${d.predicted.target.toFixed(1)} °F target, never below 95 % chance on spec, ≤ 5 °F per SOP step` : "bring the reading back into its band, never below 95 % chance, inside the SOP step"}</li>
-                <li><span>Limits</span>SOP step ≤ 5 °F, 30 min between moves, set-point range</li>
+                <li><span>Goal</span>{d.type === "D1" && d.predicted?.target != null ? `bring T98 to its ${d.predicted.target.toFixed(1)} °F target, never below 95 % chance on spec, ≤ 5 °F per SOP step` : scriptTag ? `${p.goal_label ?? "bring the reading back into its band"} — move = drift ÷ response gain, capped at the SOP step (scripted rule)` : "bring the reading back into its band, never below 95 % chance, inside the SOP step"}</li>
+                <li><span>Limits</span>{scriptTag && d.proposed.sop ? d.proposed.sop : "SOP step ≤ 5 °F, 30 min between moves, set-point range"}</li>
                 <li><span>Model</span>{d.predicted?.model ?? `Soft-sensor committee: 4 models, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended`}</li>
                 <li><span>Checks</span>{d.gates.filter((g) => g.pass).length} of {d.gates.length} pass before advising</li>
               </ul>
-              <GaussianPdf members={members} spec={spec != null ? { hi: spec, label: "spec" } : null} unit="°F" height={84} compact showMixture={false} showP={false} ariaLabel="before and after" />
-              <p className="uf-note">Result: chance on spec <span className="num">{pct(p.p_on_spec_before)}</span> → <b className="num uf-good">{pct(p.p_on_spec_after)}</b> <span className="subtle">(solid now · dashed after)</span></p>
+              <GaussianPdf members={members} spec={spec != null ? { hi: spec, label: "spec" } : null} unit={pUnit} height={84} compact showMixture={false} showP={false} ariaLabel="before and after" />
+              <p className="uf-note">Result{scriptTag ? ` (${scriptTag})` : ""}: chance {scriptTag ? "in band" : "on spec"} <span className="num">{pct(p.p_on_spec_before)}</span> → <b className="num uf-good">{pct(p.p_on_spec_after)}</b> <span className="subtle">(solid now · dashed after)</span></p>
             </>
           ) : d?.status === "withheld" ? (
             <>

@@ -665,7 +665,8 @@ def act(decision_id: str, action: str, run_id: str, time_min: int, user: str = "
     st = get_state()
     aid = st.audit(user, f"decision {action}", decision_id,
                    {"note": note, "type": d["type"], "unit_id": d["unit_id"], "moves": d["proposed"]["moves"],
-                    "problem": d["problem"], "use_case": d["use_case"]["platform_id"], "control_system_write": False})
+                    "problem": d["problem"], "use_case": d["use_case"]["platform_id"], "control_system_write": False,
+                    "scripted": bool(d.get("scripted")), "gain_source": d.get("gain_source")})
     db = _db()
     db.execute("INSERT INTO decision_actions(decision_id, run_id, time_min, action, user, note, ts, audit_id, snapshot)"
                " VALUES (?,?,?,?,?,?,?,?,?)", (decision_id, run_id, int(time_min), action, user, note, now_iso(), aid,
@@ -712,8 +713,13 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
                            f"Estimates the lab value every minute: {o['estimate']:.1f} ± {(o.get('sigma') or 0):.1f} °F"
                            + ("; the linear model is shown for reference only" if mem and n_mix < len(mem) else "")
                            if o.get("estimate") is not None else f"Estimates LCO and HN every minute: {o.get('line')}"))
-        steps.append(_step("ml", "Crude-regime model", f"Recognises the crude from unit behaviour: {regime}; feeds the "
-                                                       "'labels for this crude' check"))
+        if reg and reg.get("scripted"):
+            steps.append(_step("ml", "Crude family (scripted in the demo)",
+                               f"Follows the lab assay: {reg.get('regime_id')} {reg.get('regime_label') or ''}; feeds the "
+                               "'labels for this crude' check"))
+        else:
+            steps.append(_step("ml", "Crude-regime model", f"Recognises the crude from unit behaviour: {regime}; feeds "
+                                                           "the 'labels for this crude' check"))
         names = ", ".join(g.get("name") or g.get("id") for g in d["gates"])
         steps.append(_step("check", "Trust checks", f"{g_pass} of {len(d['gates'])} pass ({names})"))
     if t == "D1":
@@ -738,8 +744,9 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
         steps.append(_step("agent", "Sample trigger", f"Next lab {o.get('next_lab_label')}; a sample now re-anchors the "
                                                             f"estimate {o.get('next_lab_in_min')} min earlier"))
     if t == "D4":
-        steps.append(_step("ml", "Crude-regime model", f"Posterior over four crude families: {regime}; novelty "
-                                                       f"{(o.get('novelty') or 0):.2f}"))
+        steps.append(_step("ml", "Crude family (scripted in the demo)" if reg and reg.get("scripted") else "Crude-regime model",
+                           (f"Follows the lab assay: {regime}" if reg and reg.get("scripted")
+                            else f"Posterior over four crude families: {regime}") + f"; novelty {(o.get('novelty') or 0):.2f}"))
         steps.append(_step("agent", "Feed-change check", "Compares detected with the declared schedule; 15-min dwell "
                                                           "before declaring a switch"))
     if t == "D3":

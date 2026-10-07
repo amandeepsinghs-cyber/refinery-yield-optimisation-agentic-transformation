@@ -130,8 +130,8 @@ export default function PlantCanvas({ units, decisions, selectedId, onSelect, se
         <div key={uid} className="pc-pins" style={{ left: `${(x[uid] / VB_W) * 100}%` }}>
           {ds.map((d) => (
             <button key={d.id} type="button" className={`pc-pin p-${d.status} ${d.id === selectedId ? "sel" : ""}`} onClick={() => onSelect(d.id)}
-              title={d.question} data-testid="plant-pin" data-status={d.status}>
-              {d.status === "open" ? <><b className="num">{d.urgency.rank}</b> Decide</> : d.status === "withheld" ? "Not yet" : d.status === "watch" ? "Watch" : d.status}
+              title={d.scripted ? `${d.question} (scripted outcome)` : d.question} data-testid="plant-pin" data-status={d.status}>
+              {d.status === "open" ? <><b className="num">{d.urgency.rank}</b> Decide{d.scripted ? <i className="pc-pin-s"> · scripted</i> : null}</> : d.status === "withheld" ? "Not yet" : d.status === "watch" ? "Watch" : d.status}
             </button>
           ))}
         </div>

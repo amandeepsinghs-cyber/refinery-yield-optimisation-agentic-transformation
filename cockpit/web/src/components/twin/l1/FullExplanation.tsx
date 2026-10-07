@@ -151,6 +151,8 @@ export default function FullExplanation({ d, regime }: { d: Decision; regime?: T
               <li><span>How it was chosen</span>
                 <em>Tried every move from −5 to +5 °F in 0.5 °F steps (5 °F = SOP step). For each, shifted the estimate by the move (assumes T98 follows its set point 1 : 1 — a default, because the training runs have no set-point step tests) and recomputed the chance on spec. Kept the moves with at least 95 % chance; picked the one that lands closest to the {fx(p.target)} °F target.</em>
               </li>
+            ) : mv && d.scripted ? (
+              <li><span>How it was chosen</span><em>Scripted outcome for the demo: move = drift ÷ a fixed response gain{p.gain != null ? ` (${p.gain} ${p.unit ?? ""} per ${mv.unit})` : ""}, rounded to the step and capped at the SOP step{d.gain_source === "measured" ? "; the gain is measured from simulator step tests, the chance band is scripted" : ""}. Not a model search.</em></li>
             ) : mv ? (
               <li><span>How it was chosen</span><em>Smallest move inside the SOP step that brings the chance back to at least 95 %.</em></li>
             ) : null}

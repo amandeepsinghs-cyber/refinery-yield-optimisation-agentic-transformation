@@ -99,6 +99,7 @@ function toEntry(r: AuditRow): Entry {
   if (uc) tags.push(uc);
   if (Array.isArray(d.problem)) tags.push(...(d.problem as string[]));
   if (typeof d.type === "string") tags.push(`Decision ${d.type}`);
+  if (d.scripted === true) tags.push(d.gain_source === "measured" ? "gain measured · chance scripted" : "scripted outcome");
 
   let subject = r.target;
   let why: string | null = null;
