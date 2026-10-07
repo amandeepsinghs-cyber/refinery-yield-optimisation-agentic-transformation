@@ -346,14 +346,11 @@ def _residual_events(run_id: str, df: pd.DataFrame) -> list[dict]:
                             "recipe_id": rcp["recipe_id"], "moves": rcp["moves"], "d_yield_pct_feed": dy,
                             "p_on_spec": rcp["p_on_spec"], "next_lab_min": nxt,
                             "briefing": {
-                                "en": f"Recipe {rcp['recipe_id']} ready ({det[i]}): {moves}; expected LCO {dy.get('LCO', 0):+.2f} / "
-                                      f"HN {dy.get('HN', 0):+.2f} % feed, P(on-spec) LCO {prob_text(rcp['p_on_spec'].get('LCO', 0))} / "
+                                "en": f"Recipe {rcp['recipe_id']} ready ({det[i]}): {moves} (scripted outcome); chance on spec LCO {prob_text(rcp['p_on_spec'].get('LCO', 0))} / "
                                       f"HN {prob_text(rcp['p_on_spec'].get('HN', 0))}. Advisory — accept or decline in the workbench.",
-                                "hinglish": f"Recipe {rcp['recipe_id']} taiyaar ({det[i]}): {moves}; expected LCO {dy.get('LCO', 0):+.2f} / "
-                                            f"HN {dy.get('HN', 0):+.2f} % feed, P(on-spec) LCO {prob_text(rcp['p_on_spec'].get('LCO', 0))} / "
+                                "hinglish": f"Recipe {rcp['recipe_id']} taiyaar ({det[i]}): {moves} (scripted outcome); on-spec chance LCO {prob_text(rcp['p_on_spec'].get('LCO', 0))} / "
                                             f"HN {prob_text(rcp['p_on_spec'].get('HN', 0))}. Advisory — workbench mein accept ya decline karein.",
-                                "hi": f"रेसिपी {rcp['recipe_id']} तैयार ({det[i]}): {moves}; अपेक्षित LCO {dy.get('LCO', 0):+.2f} / "
-                                      f"HN {dy.get('HN', 0):+.2f} % फ़ीड, P(on-spec) LCO {prob_text(rcp['p_on_spec'].get('LCO', 0))} / "
+                                "hi": f"रेसिपी {rcp['recipe_id']} तैयार ({det[i]}): {moves} (स्क्रिप्टेड परिणाम); स्पेक पर रहने की संभावना LCO {prob_text(rcp['p_on_spec'].get('LCO', 0))} / "
                                       f"HN {prob_text(rcp['p_on_spec'].get('HN', 0))}। सलाह मात्र — वर्कबेंच में स्वीकार या अस्वीकार करें।"}}))
     return out
 

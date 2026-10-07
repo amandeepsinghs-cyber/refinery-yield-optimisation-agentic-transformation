@@ -485,14 +485,6 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
 
     sp_lco_after = round(sp_lco + sp_delta_F, 2)
 
-    pa_heat_recovery_F = round(max(0.0, min(6.5, (620.0 - t2_preheat) * 0.6 + 2.2)), 2)
-    o2_excess_delta = round(max(0.0, flue_o2 - 2.0), 2)
-    fuel_delta_lb_s = round(-0.32 * pa_heat_recovery_F - 0.45 * o2_excess_delta, 2)
-    f5_fuel_after = round(max(20.0, f5_fuel + fuel_delta_lb_s), 2)
-    wgc_delta_mw = round(-0.08 * abs(sp_delta_F) - 0.12 * max(0.0, mv_reflux - 0.72), 2)
-    power_wgc_after = round(max(2.0, power_wgc + wgc_delta_mw), 2)
-    cab_delta_mw = round(-0.15 * o2_excess_delta, 2)
-    power_cab_after = round(max(3.5, power_cab + cab_delta_mw), 2)
 
     systems_ripple = {
         "rec_id": open_lco_rec["rec_id"] if open_lco_rec else f"SYS-{rid}-{t_val}",
@@ -524,36 +516,33 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 ],
             },
             "energy": {
-                "title": "2. Furnace Fuel, Pumparound & Compressor Duty",
-                "summary": (
-                    f"Coordinated PA1-PA4 heat recovery (+{pa_heat_recovery_F:.1f} °F preheat lift) and excess O2 trim reduce fired heater fuel gas by {abs(fuel_delta_lb_s):.2f} lb/s and WGC/CAB shaft power."
-                ),
+                "title": "2. Furnace, pumparound & compressor duty (current values)",
+                "summary": ("Current readings only. The advisor does not model the energy effect of the cut-point move, so no "
+                            "fuel or power change is claimed. Fuel is in simulator units."),
                 "metrics": [
-                    {"label": "Furnace Fuel Gas (F5_fuel)", "before": round(f5_fuel, 2), "after": f5_fuel_after, "delta": fuel_delta_lb_s, "unit": "lb/s", "direction": "down"},
-                    {"label": "Feed Preheat Temp (T2_preheat_F)", "before": round(t2_preheat, 1), "after": round(t2_preheat + pa_heat_recovery_F, 1), "delta": pa_heat_recovery_F, "unit": "°F", "direction": "up"},
-                    {"label": "Wet Gas Compressor Power (power_WGC)", "before": round(power_wgc, 2), "after": power_wgc_after, "delta": wgc_delta_mw, "unit": "MW", "direction": "down"},
+                    {"label": "Furnace fuel (F5_fuel, sim. units)", "before": round(f5_fuel, 2), "after": None, "delta": None, "unit": "", "direction": "not quantified"},
+                    {"label": "Feed preheat temp (T2_preheat_F)", "before": round(t2_preheat, 1), "after": None, "delta": None, "unit": "°F", "direction": "not quantified"},
+                    {"label": "Wet gas compressor power (power_WGC)", "before": round(power_wgc, 2), "after": None, "delta": None, "unit": "MW", "direction": "not quantified"},
                 ],
             },
             "regeneration": {
-                "title": "3. Regenerator Coke Burn & Flue Gas Stoichiometry",
-                "summary": (
-                    f"Balancing main air blower flow (Fair = {f_air:.1f} lb/s) trims flue gas O2 toward 2.0% sweet spot while keeping cyclone afterburn dT ({dt_cyc_reg:.1f} °F) below metallurgical IOW limits."
-                ),
+                "title": "3. Regenerator coke burn & flue gas (current values)",
+                "summary": (f"Current readings only: main air {f_air:.1f}, cyclone afterburn ΔT {dt_cyc_reg:.1f} °F. A cut-point move "
+                            "has no direct effect on the regenerator; no change is claimed."),
                 "metrics": [
-                    {"label": "Flue Gas Excess O2 (fluegas_O2_pct)", "before": round(flue_o2, 2), "after": round(max(1.8, flue_o2 - 0.45), 2), "delta": round(max(1.8, flue_o2 - 0.45) - flue_o2, 2), "unit": "%", "direction": "down"},
-                    {"label": "Cyclone Afterburn dT (dT_cyc_reg_F)", "before": round(dt_cyc_reg, 1), "after": round(max(8.0, dt_cyc_reg - 2.5), 1), "delta": -2.5, "unit": "°F", "direction": "down"},
-                    {"label": "Main Air Blower Power (power_CAB)", "before": round(power_cab, 2), "after": power_cab_after, "delta": cab_delta_mw, "unit": "MW", "direction": "down"},
+                    {"label": "Flue gas excess O2 (fluegas_O2_pct)", "before": round(flue_o2, 2), "after": None, "delta": None, "unit": "%", "direction": "not quantified"},
+                    {"label": "Cyclone afterburn ΔT (dT_cyc_reg_F)", "before": round(dt_cyc_reg, 1), "after": None, "delta": None, "unit": "°F", "direction": "not quantified"},
+                    {"label": "Main air blower power (power_CAB)", "before": round(power_cab, 2), "after": None, "delta": None, "unit": "MW", "direction": "not quantified"},
                 ],
             },
             "reliability": {
-                "title": "4. Mechanical & Hydraulic IOW Integrity",
-                "summary": (
-                    f"PINN conservation confirms mass closure ({mb_err_pct:+.2f}%), tray boiling monotonicity (0 inversions), and hydraulic dP ratio ({hydraulic_dp_norm:.2f}x nominal) inside safe IOW envelope."
-                ),
+                "title": "4. Limits checked",
+                "summary": (f"Furnace tube-skin margin {1620.0 - t3_furnace:.1f} °F to the 1620 °F IOW; LCO-HN boiling gap "
+                            f"{cutpoint_gap_F:.1f} °F (>= 50 °F floor); the gap moves with the LCO cut point."),
                 "metrics": [
-                    {"label": "Riser/Column Hydraulic dP Ratio", "before": hydraulic_dp_norm, "after": round(max(0.92, hydraulic_dp_norm - 0.03), 3), "delta": -0.03, "unit": "x nom", "direction": "down"},
-                    {"label": "Furnace Tube Skin Margin to 1620 °F IOW", "before": round(1620.0 - t3_furnace, 1), "after": round(1620.0 - t3_furnace + 6.5, 1), "delta": 6.5, "unit": "°F", "direction": "up"},
-                    {"label": "LCO-HN Cut-Point Boiling Gap", "before": cutpoint_gap_F, "after": round(cutpoint_gap_F + sp_delta_F, 1), "delta": round(sp_delta_F, 1), "unit": "°F", "direction": "up"},
+                    {"label": "Furnace tube skin margin to 1620 °F IOW", "before": round(1620.0 - t3_furnace, 1), "after": None, "delta": None, "unit": "°F", "direction": "not quantified"},
+                    {"label": "LCO-HN cut-point boiling gap (1 : 1 default response)", "before": cutpoint_gap_F, "after": round(cutpoint_gap_F + sp_delta_F, 1), "delta": round(sp_delta_F, 1), "unit": "°F", "direction": "up" if sp_delta_F > 0 else ("down" if sp_delta_F < 0 else "flat")},
+                    {"label": "Spread W90 (LCO)", "before": round(lco_w90, 2), "after": None, "delta": None, "unit": "°F", "direction": "limit 14 °F"},
                 ],
             },
         },
@@ -665,7 +654,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         f"Shift heat duty from fired fuel (F5 = {f5_fuel:.2f} lb/s) to fractionator bottom pumparound PA4 while maintaining T3_furnace_F ({t3_furnace:.1f} °F) below 1620 °F tube coking IOW.",
         {
             "yield_impact": "Stable feed enthalpy entering riser prevents thermal cracking into C1/C2 dry gas.",
-            "energy_impact": f"Reduces fuel gas firing F5_fuel by {abs(fuel_delta_lb_s):.2f} lb/s via PA4 heat recovery.",
+            "energy_impact": "Fuel effect not quantified by the advisor.",
             "regeneration_impact": "Maintains steady reactor-regenerator heat balance.",
             "reliability_impact": f"Expands margin to 1620 °F furnace tube coking limit (current margin {1620.0 - t3_furnace:.1f} °F).",
         },
@@ -695,10 +684,10 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         "LOWER" if flue_o2 > 2.5 else "HOLD", "Fair (Main Air Blower V4)",
         f_air, max(36.0, round(f_air - 0.8, 2)) if flue_o2 > 2.5 else f_air, -0.8 if flue_o2 > 2.5 else 0.0, "lb/s",
         lco_gate, lco_trust,
-        f"Trim Main Air Blower discharge valve V4 to hold C_regen_cat <= 0.30 wt% ({c_regen*100:.3f} wt% now) while reducing CAB shaft power by {abs(cab_delta_mw):.2f} MW and suppressing cyclone afterburn ({dt_cyc_reg:+.1f} °F).",
+        f"Trim Main Air Blower discharge valve V4 to hold C_regen_cat <= 0.30 wt% ({c_regen*100:.3f} wt% now); cyclone afterburn ΔT now {dt_cyc_reg:+.1f} °F. Blower power effect not quantified.",
         {
             "yield_impact": f"Clean regenerated catalyst ({c_regen*100:.3f} wt% carbon) sustains {conv_pct:.1f}% riser conversion.",
-            "energy_impact": f"Reduces Main Air Blower shaft power (power_CAB = {power_cab:.2f} MW) by {abs(cab_delta_mw):.2f} MW.",
+            "energy_impact": f"Main air blower power now {power_cab:.2f} MW; change not quantified by the advisor.",
             "regeneration_impact": f"Stabilizes dense-bed temperature Treg_F at {treg_f:.1f} °F and cyclone dT at {dt_cyc_reg:+.1f} °F.",
             "reliability_impact": f"Protects cyclone diplegs and plenum metallurgy (Tcyc_F = {tcyc_f:.1f} °F <= 1310 °F IOW).",
         },
@@ -751,10 +740,10 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         "MV_PA4 / Pumparound Pinch Ratio",
         mv_pa4, min(1275.0, round(mv_pa4 + 20.0, 1)), round(min(1275.0, mv_pa4 + 20.0) - mv_pa4, 1), "klb/h",
         lco_gate, lco_trust,
-        f"Shift fractionator heat removal toward high-grade bottom pumparound PA4 ({mv_pa4:.1f} klb/h) to lift feed preheat T2 by +{pa_heat_recovery_F:.1f} °F and trim fired fuel F5.",
+        f"Shift fractionator heat removal toward high-grade bottom pumparound PA4 ({mv_pa4:.1f} klb/h); preheat and fuel effects not quantified by the advisor.",
         {
             "yield_impact": "Sharpens internal reflux between Tray 6 (HN) and Tray 13 (LCO).",
-            "energy_impact": f"Lifts T2_preheat_F by +{pa_heat_recovery_F:.1f} °F, cutting furnace fuel F5_fuel by {abs(fuel_delta_lb_s):.2f} lb/s.",
+            "energy_impact": "Preheat and fuel effects not quantified by the advisor.",
             "regeneration_impact": "Stabilizes bottoms slurry quench temperature.",
             "reliability_impact": "Prevents localized tray dry-out on lower shed decks (Trays 18–20).",
         },
@@ -770,7 +759,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         f"Condenser UA efficiency at {cond_eff*100:.1f}% (residual {condenser_ua_residual:.3f}); coordinate top pumparound PA1 ({mv_pa1:.1f}) and cooling water flow ({mv_cw:.1f} lb/s) to unload Wet Gas Compressor ({power_wgc:.2f} MW).",
         {
             "yield_impact": "Stabilizes overhead drum temperature, preventing C5 flash-off into wet gas.",
-            "energy_impact": f"Unloads Wet Gas Compressor shaft power ({power_wgc:.2f} -> {power_wgc_after:.2f} MW).",
+            "energy_impact": f"Wet gas compressor power now {power_wgc:.2f} MW; change not quantified by the advisor.",
             "regeneration_impact": "Maintains steady P5_frac_psia backpressure on riser reactor.",
             "reliability_impact": f"Flags exchanger bundle cleaning before cooling water valve V9 ({v9_pos*100:.1f}%) saturates.",
         },
@@ -796,12 +785,12 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     dec_uc09 = _make_decision_card(
         rec_map, f"TWIN-{rid}-UC09-{t_val}", rid, t_val, "valve_V11", "unit_3_regenerator", "UC-09",
         "HOLD", "CAB / WGC & Control Valve Authority Envelope",
-        round(power_cab + power_wgc, 2), round(power_cab_after + power_wgc_after, 2), round(cab_delta_mw + wgc_delta_mw, 2), "MW",
+        round(power_cab + power_wgc, 2), round(power_cab + power_wgc, 2), 0.0, "MW",
         lco_gate, lco_trust,
-        f"Coordinated O2 trim and reflux optimization reduces total CAB+WGC compressor load by {abs(cab_delta_mw + wgc_delta_mw):.2f} MW while keeping all 8 control valves inside 15–85% linear travel.",
+        f"Watch only: combined CAB + WGC load {power_cab + power_wgc:.2f} MW; keep all 8 control valves inside 15–85 % travel. No power reduction is claimed.",
         {
             "yield_impact": "Eliminates valve-stiction limit cycles on Tray 6 (HN) and Tray 13 (LCO) draws.",
-            "energy_impact": f"Reduces combined CAB + WGC shaft power by {abs(cab_delta_mw + wgc_delta_mw):.2f} MW.",
+            "energy_impact": "Compressor power effect not quantified by the advisor.",
             "regeneration_impact": "Smooths regenerator pressure P6_regen_psia control via slide valve V6.",
             "reliability_impact": "Prevents control valve seat erosion and compressor surge recycle trips.",
         },
@@ -1058,7 +1047,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "scale_max": 4.5,
                 "zone": "OVER_TREATING" if flue_o2 > 2.5 else ("SWEET_SPOT" if flue_o2 >= 1.8 else "UNDER_TREATING"),
                 "zone_label": "EXCESS AIR HEAT LOSS · TRIM DAMPER" if flue_o2 > 2.5 else "STOICHIOMETRIC SWEET SPOT",
-                "advice": f"Stack O2 is {flue_o2:.2f}% (CO {flue_co:.0f} ppm). Trimming excess O2 toward 2.0–2.3% and recovering PA4 pumparound heat reduces fuel gas F5 by {abs(fuel_delta_lb_s):.2f} lb/s while keeping T3 ({t3_furnace:.1f} °F) below the 1620 °F coking IOW.",
+                "advice": f"Stack O2 is {flue_o2:.2f}% (CO {flue_co:.0f} ppm). Excess O2 above 2.0–2.3 % is a trim opportunity (fuel effect not quantified) while keeping T3 ({t3_furnace:.1f} °F) below the 1620 °F coking IOW.",
             },
             "recommendation": dec_u1,
             "tag_table": u1_tag_table,
@@ -1404,7 +1393,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "name": "Loop 3 · Pumparound & Preheat Thermal Integration Loop",
             "path": ["unit_4_fractionator", "unit_1_furnace"],
             "flow_label": f"PA1-PA4 Duty ({mv_pa1:.0f}/{mv_pa2:.0f}/{mv_pa3:.0f}/{mv_pa4:.0f}) -> Feed Preheat T2 {t2_preheat:.1f} °F -> Furnace Fuel F5 {f5_fuel:.2f} lb/s",
-            "conservation_metric": f"Preheat Lift +{pa_heat_recovery_F:.1f} °F trims Fired Fuel by {abs(fuel_delta_lb_s):.2f} lb/s",
+            "conservation_metric": f"Firebox T3 margin to 1620 °F IOW: {1620.0 - t3_furnace:.1f} °F",
             "status": furnace_status,
         },
     ]
@@ -1540,7 +1529,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "kpis": [
                 {"label": "Feed Preheat Outlet (T2)", "tag": "T2_preheat_F", "value": round(t2_preheat, 1), "unit": "°F", "target": f"SP {sp_t_preheat:.1f} °F"},
                 {"label": "Firebox Temp (T3)", "tag": "T3_furnace_F", "value": round(t3_furnace, 1), "unit": "°F", "target": "<= 1620.0 °F IOW"},
-                {"label": "Fuel Gas Rate (F5)", "tag": "F5_fuel", "value": round(f5_fuel, 2), "unit": "lb/s", "target": f"Delta {fuel_delta_lb_s:+.2f} lb/s"},
+                {"label": "Fuel Gas Rate (F5)", "tag": "F5_fuel", "value": round(f5_fuel, 2), "unit": "lb/s", "target": "sim. units; change not quantified"},
                 {"label": "Tube Coking Residual", "tag": "furnace_coking_residual_F", "value": furnace_coking_residual_F, "unit": "°F", "target": "|res| <= 25 °F"},
             ],
             "envelope": units[0]["envelope"],
@@ -1582,7 +1571,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "scale_max": 1360.0,
                 "zone": "SWEET_SPOT" if 1220.0 <= mv_pa4 <= 1280.0 else "OVER_TREATING",
                 "zone_label": "HIGH-GRADE HEAT RECOVERY ACTIVE",
-                "advice": f"Shifting heat removal from top PA1 ({mv_pa1:.1f}) and overhead condenser toward bottom PA4 ({mv_pa4:.1f}) recovers +{pa_heat_recovery_F:.1f} °F into feed preheat T2.",
+                "advice": f"Shifting heat removal from top PA1 ({mv_pa1:.1f}) and overhead condenser toward bottom PA4 ({mv_pa4:.1f}) would recover heat into feed preheat T2 (not quantified by the advisor).",
             },
             "recommendation": dec_u4_pa,
             "systems_ripple": dec_u4_pa["systems_ripple"],
@@ -1901,9 +1890,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "priority_rank": 2,
             "proactive_alert": f"Unit 1 Furnace: Firebox T3 = {t3_furnace:.1f} °F (margin {1620.0 - t3_furnace:.1f} °F to 1620 °F IOW), Stack O2 = {flue_o2:.2f}%, Fuel F5 = {f5_fuel:.2f} lb/s.",
             "briefings": {
-                "en": f"Unit 1 Furnace Sentinel: Preheat outlet T2 is {t2_preheat:.1f} °F (SP {sp_t_preheat:.1f} °F) and firebox T3 is {t3_furnace:.1f} °F with coking residual {furnace_coking_residual_F:+.1f} °F. Stack O2 is {flue_o2:.2f}% and CO is {flue_co:.0f} ppm. Trimming O2 and recovering PA4 pumparound heat reduces F5_fuel by {abs(fuel_delta_lb_s):.2f} lb/s.",
-                "hinglish": f"Unit 1 Furnace Sentinel alert: Preheat outlet T2 abhi {t2_preheat:.1f} °F hai aur firebox T3 {t3_furnace:.1f} °F hai (1620 °F tube coking IOW se {1620.0 - t3_furnace:.1f} °F safe margin). Stack O2 {flue_o2:.2f}% aur CO {flue_co:.0f} ppm hai. PA4 pumparound heat recovery aur O2 trim se F5_fuel mein {abs(fuel_delta_lb_s):.2f} lb/s ka reduction milega.",
-                "hi": f"यूनिट 1 फर्नेस सेंटिनल: प्रीहीट तापमान T2 अभी {t2_preheat:.1f} °F है और फायरबॉक्स तापमान T3 {t3_furnace:.1f} °F है (1620 °F सीमा से {1620.0 - t3_furnace:.1f} °F सुरक्षित)। फ्लू गैस O2 {flue_o2:.2f}% और CO {flue_co:.0f} ppm है। PA4 हीट रिकवरी से ईंधन गैस F5 में {abs(fuel_delta_lb_s):.2f} lb/s की कमी संभव है।",
+                "en": f"Unit 1 Furnace Sentinel: Preheat outlet T2 is {t2_preheat:.1f} °F (SP {sp_t_preheat:.1f} °F) and firebox T3 is {t3_furnace:.1f} °F with coking residual {furnace_coking_residual_F:+.1f} °F. Stack O2 is {flue_o2:.2f}% and CO is {flue_co:.0f} ppm. O2 trim is a watch item; the fuel effect is not quantified.",
+                "hinglish": f"Unit 1 Furnace Sentinel alert: Preheat outlet T2 abhi {t2_preheat:.1f} °F hai aur firebox T3 {t3_furnace:.1f} °F hai (1620 °F tube coking IOW se {1620.0 - t3_furnace:.1f} °F safe margin). Stack O2 {flue_o2:.2f}% aur CO {flue_co:.0f} ppm hai. O2 trim watch item hai; fuel ka asar quantify nahi kiya gaya.",
+                "hi": f"यूनिट 1 फर्नेस सेंटिनल: प्रीहीट तापमान T2 अभी {t2_preheat:.1f} °F है और फायरबॉक्स तापमान T3 {t3_furnace:.1f} °F है (1620 °F सीमा से {1620.0 - t3_furnace:.1f} °F सुरक्षित)। फ्लू गैस O2 {flue_o2:.2f}% और CO {flue_co:.0f} ppm है। O2 ट्रिम पर नज़र रखें; ईंधन पर असर का अनुमान नहीं लगाया गया है।",
             },
         },
         {

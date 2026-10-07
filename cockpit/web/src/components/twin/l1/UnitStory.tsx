@@ -518,7 +518,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                   ) : null}
                   <p className="us-result">{goal} <span className="num">{pct(p?.p_on_spec_before)}</span> → <b className={`num ${wi.p >= 0.95 ? "good" : wi.p < (p?.p_on_spec_before ?? 0) ? "bad" : ""}`}>{pct(wi.p)}</b>
                     {Math.abs(wi.s - move.to) > 1e-6 ? <span className="subtle"> · advised {fx(move.to, nd)} gives {pct(p?.p_on_spec_after)}</span> : <span className="subtle"> · the advised move</span>}</p>
-                  <p className="us-note subtle">{d.proposed.sop ?? "SOP: one step at most 5 °F, 30 min between moves. The cut-point controller follows its set point 1 : 1."}</p>
+                  <p className="us-note subtle">{d.proposed.sop ?? "SOP: one step at most 5 °F, 30 min between moves. The cut point is assumed to follow its set point 1 : 1 (default; not measured in the data)."}</p>
                   <LeverRanges levers={d.levers} />
                 </>
               ) : d.proposed.sample ? (

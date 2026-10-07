@@ -88,8 +88,15 @@ PAGE_GUIDES: dict[str, str] = {
         "arriving (crude-family classifier: which crude the FCC feed now comes from, with confidence and change time), and on U4 the four-model soft sensor with its bell curves "
         "and the estimate between lab samples.\n"
         "- Step ③ Decision and lever: the move (from → to), chance on spec before → after, and Accept / Hold / Decline. "
-        "'Try another move' shows the response model. When the checks fail it says 'Not yet' with the reason, or asks for an "
+        "'Try another move' is a slider over set-point moves. On the cut-point decisions the chart has one solid bell (the product "
+        "now, or after your move) and one dotted bell at the target (LCO T98 755.3 °F, HN T98 530.3 °F); slide to line them up. A "
+        "small green tick above the curve and the words 'On target' appear when the estimate is within 1 °F of the target. The "
+        "response is assumed 1 : 1 with the set point (a default: the history has no designed set-point moves). Moves above the "
+        "5 °F SOP step are shown as two moves 30 min apart. When the checks fail it says 'Not yet' with the reason, or asks for an "
         "extra lab sample.\n"
+        "- 'Full explanation' (expandable): the data in (columns and their values at this minute), each model's inputs and fitted "
+        "formula, its estimate and weight (ridge reference only; hybrid, PINN ×5 and GP weighted by accuracy), the checks, and how "
+        "the move was chosen (toward the target, never below 95 % chance on spec, ≤ 5 °F per SOP step).\n"
         "- Step ④ How the move is found: the chain of steps (anomaly detection, soft sensor, crude-regime model, trust checks, "
         "optimiser, consequence check, Gemini), the checks before advising, and what set the size of the move.\n"
         "- Status words: Interactive = the models really run, on simulated data (nothing is deployed on a plant); Scripted outcome = the size of the move is scripted on real "
@@ -113,11 +120,11 @@ DEMO FLOW (demoflow.md, 6 Oct — story of a refinery, then follow the oil):
 - Architecture (/architecture): the target — one lakehouse, one agent per use case, Gemini on top, one screen.
 - FCC Complex (/twin), run random_s107 at 10:00: what went wrong; decision pins.
 - Follow the oil at s107 10:00: U4 step ② which crude (D4, scripted) → U1 preheat (D6) → U2 riser watch (D8) →
-  U3 regenerator air (D5, scripted) → U4 step ③ D1 live cut-point move, Accept → U5/U6 overhead target (D7, scripted) →
+  U3 regenerator air (D5, scripted) → U4 step ③ D1 interactive cut-point move, Accept → U5/U6 overhead target (D7, scripted) →
   back to FCC Complex for the whole-unit effect.
 - Stress tests on U4: run random_s144 at 10:00 (held-out run), then 12:00 'Not yet' (spread above 14 °F) → pull a sample,
   Ask Gemini. Then the Decision record (/audit).
-- Close on /platform: what is live, what is scripted, what is not built; the pilot ask.
+- Close on /platform: what is interactive, what is scripted, what is not built; the pilot ask.
 Only these pages exist: /platform, /architecture, /twin, /twin/unit/<unit_id>, /audit, /knowledge.
 """
 
