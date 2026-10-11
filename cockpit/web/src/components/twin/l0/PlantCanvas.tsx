@@ -135,7 +135,7 @@ export default function PlantCanvas({ units, decisions, selectedId, onSelect, se
               title={d.question} data-testid="plant-pin" data-status={d.status}>
               {/* 11 Oct: no priority number on the pins (it read as a random order on a left-to-right drawing); the most urgent
                   open decision says "act first". The full order is explained on /explainer. */}
-              {d.status === "open" ? <>Decide{d.id === firstId ? <b className="pc-pin-first"> · act first</b> : null}</> : d.status === "withheld" ? "Not yet" : d.status === "watch" ? "Watch" : d.status}
+              {d.status === "open" ? <>Decide{d.id === firstId ? <b className="pc-pin-first"> · act first</b> : null}</> : d.status === "withheld" ? "Not yet" : d.status === "watch" ? "Watch" : d.status === "accepted" ? "Accepted ✓" : d.status === "held" ? "Held" : d.status === "declined" ? "Declined" : d.status}
             </button>
           ))}
         </div>

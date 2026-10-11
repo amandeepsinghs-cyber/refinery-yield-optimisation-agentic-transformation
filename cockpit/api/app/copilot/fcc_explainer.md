@@ -101,6 +101,8 @@ Pins sit on the section where the lever is. **Click a pin or a section** to open
 4. **The move:** the smallest set-point step (≤ 5 °F, at most every 30 min) that brings the cut point to target with **at least 95 % chance on spec**. Less confident: half a move. Not confident: none.
 5. **Advisory only:** Accept / Hold / Decline are recorded; nothing reaches the control system.
 
+**What to say about the models, in one breath:** "These are four standard machine-learning and statistical models, trained on historical data to estimate quality every minute. We combine them and only advise when they agree." Plain-English detail: [the fractionator guide](/explainer/fractionator) (section 2) and [the models guide](/explainer/models).
+
 ---
 
 ## 7. Glossary

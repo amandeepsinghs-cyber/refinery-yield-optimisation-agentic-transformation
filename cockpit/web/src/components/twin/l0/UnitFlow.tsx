@@ -92,7 +92,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
           <span className="uf-pick">
             {decisions.map((x) => (
               <button key={x.id} type="button" className={`uf-pick-b p-${x.status} ${x.id === d?.id ? "on" : ""}`} onClick={() => onPick(x.id)} title={x.question}>
-                {x.status === "open" ? "Decide" : x.status === "withheld" ? "Not yet" : "Watch"} · {SHORT[x.id.split("-")[0]] ?? x.type_name.split(":")[0]}
+                {STATUS_WORD[x.status] ?? x.status} · {SHORT[x.id.split("-")[0]] ?? x.type_name.split(":")[0]}{x.type === "D1" ? (x.id.includes("-hn-") ? " HN" : " LCO") : ""}
               </button>
             ))}
           </span>
@@ -191,7 +191,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
                 <li><span>Checks</span>{d.gates.filter((g) => g.pass).length} of {d.gates.length} pass before advising</li>
               </ul>
               <GaussianPdf members={members} spec={spec != null ? { hi: spec, label: "spec" } : null} unit={pUnit} height={84} compact showMixture={false} showP={false} ariaLabel="before and after" />
-              <p className="uf-note">Result{scriptTag ? ` (${scriptTag})` : ""}: chance {scriptTag ? "in band" : "on spec"} <span className="num">{pct(p.p_on_spec_before)}</span> → <b className="num uf-good">{pct(p.p_on_spec_after)}</b> <span className="subtle">(solid now · dashed after)</span></p>
+              <p className="uf-note">Result: chance {scriptTag ? "in band" : "on spec"} <span className="num">{pct(p.p_on_spec_before)}</span> → <b className="num uf-good">{pct(p.p_on_spec_after)}</b> <span className="subtle">(solid now · dashed after)</span></p>
             </>
           ) : d?.status === "withheld" ? (
             <>
@@ -209,6 +209,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
     </section>
   );
 }// short, whole-word labels for the decision picker (first-three-words cut mid-phrase, e.g. "Coordinated recipe for")
+const STATUS_WORD: Record<string, string> = { open: "Decide", withheld: "Not yet", watch: "Watch", accepted: "Accepted", held: "Held", declined: "Declined", expired: "Expired" };
 const SHORT: Record<string, string> = {
   D1: "Cut point", D2: "Trust the estimate", D3: "Recipe for this feed", D4: "Feed change", D5: "Regenerator air",
   D6: "Furnace preheat", D7: "Condenser and stabiliser", D8: "What breaks downstream", D9: "Extra lab sample",

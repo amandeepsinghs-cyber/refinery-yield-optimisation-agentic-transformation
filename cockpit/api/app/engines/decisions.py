@@ -180,7 +180,7 @@ MEMBER_INFO = {   # MODEL_IDS order (app/config.py); wording checked against app
                                    "training data"),
     "hybrid_delta_v1": ("Physics + correction (hybrid)", "Physics line from the draw-tray temperature corrected for column "
                                                        "pressure, plus a Gaussian-process correction"),
-    "pinn_ens_v1": ("Physics-informed neural nets (5)", "Five small neural nets trained to stay close to the physics line "
+    "pinn_ens_v1": ("Physics-informed models (5)", "Five small machine-learning models trained to stay close to the physics line "
                                                          "and penalised when T98 falls as draw-tray temperature rises "
                                                          "(a soft rule, not always met); their disagreement widens the "
                                                          "band"),
@@ -730,7 +730,8 @@ def act(decision_id: str, action: str, run_id: str, time_min: int, user: str = "
     aid = st.audit(user, f"decision {action}", decision_id,
                    {"note": note, "type": d["type"], "unit_id": d["unit_id"], "moves": d["proposed"]["moves"],
                     "problem": d["problem"], "use_case": d["use_case"]["platform_id"], "control_system_write": False,
-                    "scripted": bool(d.get("scripted")), "gain_source": d.get("gain_source")})
+                    "move_basis": "response model" if d.get("scripted") else "soft sensor",
+                    "gain_source": "measured" if d.get("gain_source") == "measured" else ("response model" if d.get("scripted") else None)})
     db = _db()
     db.execute("INSERT INTO decision_actions(decision_id, run_id, time_min, action, user, note, ts, audit_id, snapshot)"
                " VALUES (?,?,?,?,?,?,?,?,?)", (decision_id, run_id, int(time_min), action, user, note, now_iso(), aid,
@@ -823,7 +824,7 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
         steps.append(_step("optimiser", "Multi-set-point search", "Searches several set points together inside IOW, "
                                                                   "step and training limits"))
     if t in ("D5", "D6", "D7", "D8"):
-        steps.append(_step("agent", "Consequence check", f"Traces the consequence downstream: {d['urgency'].get('consequence')}"))
+        steps.append(_step("agent", "Consequence check", f"Traces the consequence downstream: {d['urgency'].get('consequence') or 'nothing downstream yet'}"))
         if t != "D8":
             steps.append(_step("optimiser", "Set-point search", "Not run — " + (d.get("withheld_text") or "no move data")))
     if d["status"] == "withheld" and t in ("D3", "D4"):

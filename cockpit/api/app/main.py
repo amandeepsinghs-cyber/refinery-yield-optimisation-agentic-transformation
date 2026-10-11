@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .copilot import guide_docs
 from .copilot.chat import EXPLAINER_PATH, chat_stream
 from .copilot.live import live_ws, probe_all
 from .routers import agents, decision, decisions, knowledge, meta, modelling, recipe, regime, timeseries, twin
@@ -74,6 +75,21 @@ async def copilot_chat(body: ChatBody):
 async def explainer():
     """The FCC explainer (markdown): shown on the web /explainer page and given to Gemini as context (one source)."""
     return PlainTextResponse(EXPLAINER_PATH.read_text(encoding="utf-8"), media_type="text/markdown; charset=utf-8")
+
+
+@app.get("/api/explainer-index")
+async def explainer_index():
+    """The beginner guides that exist (hub listing for /explainer)."""
+    return {"guides": guide_docs.index()}
+
+
+@app.get("/api/explainer/{slug}", response_class=PlainTextResponse)
+async def explainer_guide(slug: str):
+    """One beginner guide (markdown) for /explainer/<slug>."""
+    md = guide_docs.guide_md(slug)
+    if md is None:
+        raise StarletteHTTPException(status_code=404, detail=f"no guide '{slug}'")
+    return PlainTextResponse(md, media_type="text/markdown; charset=utf-8")
 
 
 @app.post("/api/admin/probe")

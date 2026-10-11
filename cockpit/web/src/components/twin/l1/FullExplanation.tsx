@@ -65,7 +65,7 @@ export default function FullExplanation({ d, regime }: { d: Decision; regime?: T
             {d.evidence?.lakehouse ? <li><span>Stored in</span><em><code>{d.evidence.lakehouse}</code></em></li> : null}
             {m?.n_train_labels ? (
               <li><span>Training data</span>
-                <em>{m.n_train_runs ? `${m.n_train_runs} simulated runs; ` : ""}{m.n_train_labels.toLocaleString("en-IN")} labelled minutes (simulator T98 every 5 min){m.n_pinned_excluded ? `; ${m.n_pinned_excluded.toLocaleString("en-IN")} minutes left out where the simulator caps T98` : ""}</em>
+                <em>{m.n_train_runs ? `${m.n_train_runs} simulated runs in total (training + held-out); ` : ""}{m.n_train_labels.toLocaleString("en-IN")} labelled minutes (simulator T98 every 5 min){m.n_pinned_excluded ? `; ${m.n_pinned_excluded.toLocaleString("en-IN")} minutes left out where the simulator caps T98` : ""}</em>
               </li>
             ) : null}
           </ul>
@@ -86,7 +86,7 @@ export default function FullExplanation({ d, regime }: { d: Decision; regime?: T
                 ))}
               </tbody>
             </table>
-            <p className="fx-note">L linear · G Gaussian process · H physics + correction · N neural nets. Each model picked its own columns at training: the draw-tray temperature always, then the columns most correlated with T98 (at most 12–15), skipping any more than 0.88 correlated with one already picked. Amber rows are simulator diagnostics with no plant equivalent.</p>
+            <p className="fx-note">L linear · G Gaussian process · H physics + correction · N physics-informed models. Each model picked its own columns at training: the draw-tray temperature always, then the columns most correlated with T98 (at most 12–15), skipping any more than 0.88 correlated with one already picked. Amber rows are simulator diagnostics with no plant equivalent.</p>
           </Sec>
         ) : null}
 

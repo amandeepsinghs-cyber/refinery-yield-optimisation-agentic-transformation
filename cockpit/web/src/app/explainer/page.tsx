@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import ExplainerView from "@/components/how/ExplainerView";
+import ExplainerHub from "@/components/how/ExplainerHub";
 
 export const metadata: Metadata = { title: "Explainer" };
 
 export default function Page() {
-  return <ExplainerView />;
+  return <ExplainerHub />;
 }

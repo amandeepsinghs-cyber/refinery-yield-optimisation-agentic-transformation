@@ -13,6 +13,7 @@
 *.md
 # ...except the FCC explainer: served by GET /api/explainer and read by Gemini at runtime (11 Oct 2026)
 !cockpit/api/app/copilot/fcc_explainer.md
+!cockpit/api/app/copilot/guides/*.md
 /docs/
 /meity_compliance/
 /knowledge/

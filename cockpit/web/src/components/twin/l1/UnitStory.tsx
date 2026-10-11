@@ -274,7 +274,8 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
         if (!on) return;
         if (!d?.unit) { setError(`unknown unit '${unitId}'`); return; }
         setData(d); setError(null);
-        if (runId == null || timeMin == null) setRun(d.run_id ?? d.regime?.run_id ?? runId, d.time.time_min);
+        // 11 Oct: no setRun here: the shell picks the default run at its demo minute (10:00); this used to store the
+        // run's last minute when a unit page was opened in a fresh browser.
       })
       .catch((e: unknown) => { if (on) setError(e instanceof Error ? e.message : "unit data unavailable"); });
     return () => { on = false; };
@@ -369,7 +370,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
   // With a target (6 Oct): the slider starts at "no move" and the engineer slides the curve onto the green target.
   const hasTarget = p?.target != null && p?.mu_before != null;
   const wi = move && p?.mu_before != null && p.sigma ? (() => {
-    const s = sp ?? (hasTarget ? move.from : move.to);
+    const s = sp ?? move.to;   // 11 Oct: start on the advised move (it read "752.8 → 752.8 +0.0" next to a +2.0 headline)
     const dl = s - move.from;
     return { s, mu: p.mu_before! + gain * dl, p: Math.abs(s - move.to) < 1e-6 && p.p_on_spec_after != null ? p.p_on_spec_after : pAt(dl), d: dl };
   })() : null;
@@ -617,7 +618,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
               <>
                 <h3>The search, in plain words</h3>
                 <ul className="uf-opt">
-                  <li><span>Goal</span>{d?.type === "D1" && p.target != null ? `bring the estimate to the ${fx(p.target, 1)} ${p.unit ?? move.unit} target with ${move.label.charAt(0).toLowerCase() + move.label.slice(1)}, never below 95 % chance on spec` : d && isGiveBack(d) ? `take back margin with ${move.label.charAt(0).toLowerCase() + move.label.slice(1)} while ${goal.charAt(0).toLowerCase() + goal.slice(1)} stays ≥ 95 %` : `${goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of ${move.label.charAt(0).toLowerCase() + move.label.slice(1)}`}</li>
+                  <li><span>Goal</span>{d?.type === "D1" && p.target != null ? `bring the estimate to the ${fx(p.target, 1)} ${p.unit ?? move.unit} target with ${move.label.startsWith("LCO") || move.label.startsWith("HN") ? move.label.charAt(0) : move.label.charAt(0).toLowerCase() + move.label.slice(1)}, never below 95 % chance on spec` : d && isGiveBack(d) ? `take back margin with ${move.label.startsWith("LCO") || move.label.startsWith("HN") ? move.label.charAt(0) : move.label.charAt(0).toLowerCase() + move.label.slice(1)} while ${goal.charAt(0).toLowerCase() + goal.slice(1)} stays ≥ 95 %` : `${goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of ${move.label.startsWith("LCO") || move.label.startsWith("HN") ? move.label.charAt(0) : move.label.charAt(0).toLowerCase() + move.label.slice(1)}`}</li>
                   <li><span>Limits</span>SOP step ≤ {fx(stepMax, nd)} {move.unit} · time between moves · lever window</li>
                   <li><span>Model</span>{p.model ?? `Soft-sensor committee: 4 models, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended`}</li>
                   <TrainedOn />

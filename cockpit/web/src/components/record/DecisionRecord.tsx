@@ -294,7 +294,7 @@ export default function DecisionRecord() {
                         {e.noWrite ? <span className="ok">No control-system write</span> : null}
                         <details>
                           <summary>Raw entry</summary>
-                          <pre>{JSON.stringify(e.r, null, 2)}</pre>
+                          <pre>{rawJson(e.r)}</pre>
                         </details>
                       </div>
                     </div>
@@ -307,4 +307,10 @@ export default function DecisionRecord() {
       )}
     </div>
   );
+}
+
+/** Raw entry as stored, with the legacy "scripted" field shown in today's words (11 Oct: no "scripted" on screen). */
+function rawJson(r: unknown): string {
+  return JSON.stringify(r, (k, v) => (k === "scripted" ? undefined : v === "scripted" ? "response model" : v), 2)
+    .replace(/scripted/gi, "response model");
 }

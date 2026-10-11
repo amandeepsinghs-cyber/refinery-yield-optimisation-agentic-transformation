@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from "react";
 import { useConfig, useHealth, useRuns } from "@/lib/api";
 import { clock, propLabel } from "@/lib/format";
 import { SHARED_PAGES, dashboardFor, isRailActive } from "@/lib/nav";
+import { guideHref } from "@/lib/guides";
 import { useCockpit } from "@/lib/store";
 import type { PropertyId } from "@/lib/types";
 import type { ThemeName } from "@/lib/theme";
@@ -178,7 +179,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             ))}
           </div>
           {/* 11 Oct: one self-contained explainer of the process, the screen and the decisions (also Gemini's context). */}
-          <Link href="/explainer" className="strip-link strip-explain" aria-current={pathname === "/explainer" ? "page" : undefined}>Explainer</Link>
+          <Link href={guideHref(pathname)} className="strip-link strip-explain" title="How to read this page (all guides: /explainer)" aria-current={pathname.startsWith("/explainer") ? "page" : undefined}>Explainer</Link>
           {SHARED_PAGES.filter((p) => !p.planned).map((p) => (
             <Link key={p.href} href={p.href} className="strip-link subtle-link" aria-current={pathname === p.href ? "page" : undefined}>{p.label}</Link>
           ))}

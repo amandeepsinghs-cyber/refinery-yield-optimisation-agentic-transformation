@@ -13,6 +13,7 @@ from ..config import get_settings
 from ..knowledge.index import CITE_RE
 from ..state import get_state
 from .tools import ToolBox, declarations, model_labels
+from .guide_docs import gemini_context
 from .ui_guide import page_guide_for
 
 # The FCC explainer (11 Oct 2026): the same markdown the web /explainer page shows, so Gemini explains the process, the
@@ -222,9 +223,13 @@ R = {s.R:.0f} °F; W90 limit = {s.w90_max:.0f} °F.
 APPLICATION UI, GRAPHS, CURVES, BUTTONS & DEMO FLOW REFERENCE:
 {ui_context}
 
-FCC EXPLAINER (the in-app "Explainer" page; use it to explain the process, the screen, the pins and the decisions in plain words,
+FCC EXPLAINER (the in-app "Explainer" quick tour; use it to explain the process, the screen, the pins and the decisions in plain words,
 and point the operator to the Explainer page for more; live numbers still come only from tools and the screen blocks):
 {EXPLAINER_MD}
+
+BEGINNER GUIDES FOR THIS PAGE (the in-app guide for the screen the operator is on, plus 'The models, from zero'; the operator may have
+no technical background: explain terms simply, with an everyday analogy when it helps, and suggest the guide at /explainer/<slug>):
+{gemini_context(ctx.get('page'))}
 
 GUARDRAILS (mandatory):
 1. Read-only advisor (DECISIONS S3). You have no write tools. Accept/Decline is a human action in the UI. Refuse any request to write to,

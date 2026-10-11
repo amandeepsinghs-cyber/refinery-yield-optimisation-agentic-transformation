@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * /explainer (owner, 11 Oct 2026): one self-contained document that explains the FCC process (follow the oil), how to read
+ * /explainer/<slug> (owner, 11 Oct 2026; the original single explainer is now the "tour" guide): one self-contained document that explains the FCC process (follow the oil), how to read
  * the Whole-unit screen, the pins, the nine decisions, the soft sensor, a glossary and what the demo is, so the demo
  * stands on its own. Single source: GET /api/explainer serves cockpit/api/app/copilot/fcc_explainer.md, which is also
  * given to Gemini as context, so the page and Gemini explain things in the same words. Presentation: a hero band with
@@ -51,25 +51,26 @@ function parse(md: string): { title: string; lede: string; sections: Section[] }
   return { title, lede, sections };
 }
 
-export default function ExplainerView() {
+export default function ExplainerView({ slug = "tour" }: { slug?: string }) {
   const [md, setMd] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     let on = true;
-    fetch("/api/explainer")
+    fetch(`/api/explainer/${encodeURIComponent(slug)}`)
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((t) => { if (on) setMd(t); })
       .catch((e: unknown) => { if (on) setErr(e instanceof Error ? e.message : "unavailable"); });
     return () => { on = false; };
-  }, []);
+  }, [slug]);
 
   const doc = useMemo(() => (md ? parse(md) : null), [md]);
 
   if (!doc) {
     return (
       <main id="main" className="pf xp">
-        <p className="subtle">{err ? `The explainer could not be loaded (${err}). Is the API running?` : "Loading the explainer…"}</p>
+        <p className="subtle">{err ? `This guide could not be loaded (${err}). It may not be written yet: see all guides.` : "Loading the guide…"}</p>
+        <p><Link href="/explainer" className="btn">← All guides</Link></p>
       </main>
     );
   }
@@ -77,9 +78,10 @@ export default function ExplainerView() {
   return (
     <main id="main" className="pf xp">
       <header className="xp-hero">
-        <p className="pf-kicker">Explainer</p>
+        <p className="pf-kicker"><Link href="/explainer" className="xp-back">← All guides</Link> · Explainer</p>
         <h1>{doc.title}</h1>
         <div className="xp-lede"><MD>{doc.lede}</MD></div>
+        {slug === "tour" || slug === "basics" ? <>
         <ol className="xp-oil" aria-label="Follow the oil through the six sections">
           {OIL.map((u, i) => (
             <li key={u.n}>
@@ -91,6 +93,7 @@ export default function ExplainerView() {
           ))}
         </ol>
         <p className="xp-oil-note">Catalyst loop: riser ⇄ regenerator, continuously. A move in one section reaches the next 1–3 hours later.</p>
+        </> : null}
       </header>
 
       <div className="xp-body">
@@ -101,7 +104,7 @@ export default function ExplainerView() {
               <li key={s.id}><a href={`#${s.id}`}><span className="xp-toc-n">{s.num}</span>{s.title}</a></li>
             ))}
           </ol>
-          <Link href="/twin" className="btn primary xp-toc-go">Open the FCC →</Link>
+          <Link href="/explainer" className="btn xp-toc-go">← All guides</Link>
           <p className="xp-toc-note">Gemini reads this same page: ask it about anything here.</p>
         </aside>
 

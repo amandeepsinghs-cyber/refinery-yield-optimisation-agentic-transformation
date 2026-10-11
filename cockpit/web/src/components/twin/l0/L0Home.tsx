@@ -124,7 +124,7 @@ export default function L0Home() {
           {queue?.counts.withheld ? <span className="subtle"> · {queue.counts.withheld} waiting for data</span> : null}
           {queue?.counts.watch ? <span className="subtle"> · {queue.counts.watch} watching</span> : null}
         </p>
-        <Link href="/explainer" className="home-explain">How to read this screen →</Link>
+        <Link href="/explainer/whole-unit" className="home-explain">How to read this screen →</Link>
         <LangToggle />
       </header>
       <p className="home-scope" data-testid="scope-note">{SCOPE_NOTE}</p>

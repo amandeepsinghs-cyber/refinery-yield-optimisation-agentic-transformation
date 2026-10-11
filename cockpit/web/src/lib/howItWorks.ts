@@ -62,7 +62,7 @@ export const PARTS: Part[] = [
     members: [
       ["Bayesian ridge", "statistical regression; simple and stable"],
       ["Hybrid delta", "physics model plus a data-driven correction"],
-      ["PINN ensemble", "neural networks held to the column's boiling-point physics"],
+      ["PINN ensemble", "machine-learning models held to the column's boiling-point physics"],
       ["GPR", "Gaussian process; says how unsure it is"],
     ],
   },
@@ -371,7 +371,7 @@ export const DECISION_CARD: Record<DecisionId, DecisionCard> = {
     pain: "Quality is known only from the lab every 8 h; the column runs blind after a crude change, so product is given away or goes off spec",
     solve: "A cut-point estimate every minute with the chance of being on spec, and the move now — or \"wait for the lab\"",
     dataIn: "Tray and draw temperatures, pumparound duties, feed rate — every minute; lab LCO T98 every 8 h, matched to the minute it was drawn; the feed (D4)",
-    algorithms: "Three blended estimators (hybrid physics + data · physics-informed neural nets ×5 · Gaussian process; Bayesian ridge shown as a reference only) → combined estimate ± spread and chance on spec → response model (cut point assumed to move 1 : 1 with its set point — a default, as the history has no designed set-point moves) → optimiser: move toward the target T98 (LCO 755.3, HN 530.3 °F) in 0.5 °F steps, never below 95 % chance on spec, ≤ 5 °F per SOP step",
+    algorithms: "Three blended estimators (hybrid physics + data · physics-informed models ×5 · Gaussian process; Bayesian ridge shown as a reference only) → combined estimate ± spread and chance on spec → response model (cut point assumed to move 1 : 1 with its set point — a default, as the history has no designed set-point moves) → optimiser: move toward the target T98 (LCO 755.3, HN 530.3 °F) in 0.5 °F steps, never below 95 % chance on spec, ≤ 5 °F per SOP step",
     checks: "Spread ≤ 14 °F, estimators agree, inputs inside the training range, move ≤ 5 °F SOP step; else \"Not yet\" or \"pull a sample\" (D2, D9)",
     operatorGets: "Move from → to, chance on spec before → after; Accept / Hold / Decline to the decision record; nothing written to the control system",
     onYourPlant: "Models retrain on your historian and LIMS history; each new lab re-anchors the estimate",
