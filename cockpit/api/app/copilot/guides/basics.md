@@ -61,7 +61,7 @@ The drawing on **FCC → Whole unit** shows the six sections left to right. Soli
 | 5 | **Gas plant** | Overhead vapour from the fractionator | Cools the vapour with cooling water so most of it turns liquid; the **wet-gas compressor** squeezes the remaining gas so it can be recovered | Liquids and gas to the stabiliser | **CW flow** (cooling-water flow) |
 | 6 | **Stabiliser** | Liquids from the gas plant | A smaller column that splits the lightest liquids from the rest | **LPG** out the top, **light naphtha** (petrol) out the bottom | **C5 recovery** (how much of the petrol-range material stays in the petrol) |
 
-Under each section on the drawing the main number is followed by a small signed number, for example **LCO T98 750.9 −1.8**. The second number is the gap from what is expected for this feed. Exact values change with the scenario and the minute.
+Under each section on the drawing the main number is followed by a small signed number, for example **LCO T98 est. 753.1 +0.4**. The second number is the gap from what is expected for this feed (for T98, from its set point). T98 is marked **est.** because a real plant measures it only in the lab every 8 hours; between lab results the number is a model estimate. Exact values change with the scenario and the minute.
 
 ---
 
@@ -154,7 +154,7 @@ The six sections are connected in series and in a loop. A change at the front ta
 
 | Gap | What the app does |
 |---|---|
-| Quality known only every 8 h | A **soft sensor** (a set of models that estimates a lab number from live sensor data) gives T98 **every minute**, with how sure it is |
+| Quality known only every 8 h | A **model estimate** (machine-learning models that estimate a lab number from live sensor data; the industry calls this a soft sensor) gives T98 **every minute**, with how sure it is (± band) |
 | Feed changes every 1–2 days | The **feed model** spots the change and every piece of advice says which feed it was sized for ("For this feed, API ≈ 23.2") |
 | Effects arrive hours later | One ranked list across all six sections. The most urgent decision is marked **act first** |
 | A tool that always answers is dangerous | When the models disagree or lack data, the app says **Not yet**. That is a deliberate safety answer, not a failure |

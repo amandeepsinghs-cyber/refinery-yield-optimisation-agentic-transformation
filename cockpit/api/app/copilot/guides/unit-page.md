@@ -22,22 +22,22 @@ A **lever** is a setting an operator may change, such as a temperature target. T
 ### Part A: the header
 
 - **Breadcrumb** **FCC complex › Main fractionator**: click **FCC complex** to go back to the whole-unit page.
-- **Headline number**: the unit's most important reading. On the fractionator: **LCO T98 750.9 °F −1.8 vs set point 752.8 · target 755.3**. The reading is 1.8 below the **set point** (the value the controller holds, like a thermostat setting). The **target** is where the advice wants it. Other units say **vs expected**: versus what the model expects right now.
+- **Headline number**: the unit's most important reading. On the fractionator: **LCO T98 est. 753.1 ± 3.2 °F +0.4 vs set point 752.8 · target 755.3**. T98 is measured only by the lab every 8 h, so the headline is the **model estimate** (**est.**) with its ± spread; it is 0.4 above the **set point** (the value the controller holds, like a thermostat setting). The **target** is where the advice wants it. Other units say **vs expected**: versus what the model expects right now.
 - **under review**: a tag next to a simulated value that looks unrealistic for a real plant. Hover it for the reason.
 - **10:00 · next lab 14:00**: the minute you are viewing, and when the next lab sample is due.
 - **EN / Hinglish / हिंदी**: the language of the text.
 - **Role line**: what the unit does, then **Operators move:** and its levers.
 - **Step bar** **1 Data · 2 Observe · 3 Decide · 4 Optimise · ? What it solves**: jumps down the page. A number on **Decide** counts decisions waiting for a person.
-- **Engineer view (all panels)**: the older, denser screen. Not needed in a demo.
+- **Engineer view (all panels)**: the older, denser screen. Not needed in a demo. On the fractionator its target-distribution card shows **Last lab** (value and time) for T98, and its model card reads **labels: reference values from the simulator (on site: lab results)**.
 
 Each step title carries chips saying who does the work (for example **HISTORIAN · EVERY MINUTE**), an italic question, and **How this step works ▾**, which opens **Answered by**, **In → out** and **How to read it**.
 
 ### Part B: step 1, **Data in and out**
 
 - **The drawing**: a sketch of the unit with live values where they are measured. Blue **lever:** text marks a setting operators can change. A dotted underline with **?** or **under review** flags a doubtful simulated value.
-- **How fresh the data is**: **Sensors** (readings per minute), **Lab** (last result, or **none on this unit**), **Next lab**, and **Soft sensor** or **Response model**. A **soft sensor** estimates a lab value every minute from ordinary readings. A **response model** gives the value a reading *should* have right now.
+- **How fresh the data is**: **Sensors** (readings per minute), **Lab** (last result, or **none on this unit**), **Next lab**, and either **Model estimate fills the gap: an estimate every minute** or **Response model**. A **model estimate** is the output of machine-learning models that estimate a lab value every minute from ordinary readings (the industry calls such a model a soft sensor). A **response model** gives the value a reading *should* have right now.
 - **Levers on this unit** and **What comes in**: current settings and main inputs.
-- **All N tags on this unit**: a table of every reading (a **tag** is one sensor's name) with **Now**, **Shift min** and **Shift max**.
+- **All N tags on this unit**: a table of every reading (a **tag** is one sensor's name) with **Now**, **Shift min** and **Shift max**. On the fractionator the T98 row is labelled **LCO T98 model estimate (lab every 8 h)**: it is not a sensor.
 - Fractionator only: **What the FCC makes — by molecule size and boiling range**.
 
 ### Part C: step 2, **What we observe**
@@ -47,7 +47,7 @@ Each step title carries chips saying who does the work (for example **HISTORIAN 
 | Card | Plain meaning |
 |---|---|
 | **Estimate now** (or **… now** with a **plan**) | Best value now, its ± spread, and the **chance on spec** (chance the product meets its quality limit) |
-| **Away from expected** | Measured minus expected, in **σ** (sigma: the normal size of the wobble). Under 1 σ is noise |
+| **Away from expected** | Measured minus expected (for T98: estimate minus expected), in **σ** (sigma: the normal size of the wobble). Under 1 σ is noise |
 | **Sustained drift (CUSUM)** | A running total of small misses, so a slow creep is caught early. **no breach open** = no alarm |
 | **Likely driver** | The input contributing most to the miss, or **nothing unusual** |
 | **Feed** | Feed quality as **API** (a density scale: higher = lighter oil) |
@@ -59,14 +59,14 @@ Each step title carries chips saying who does the work (for example **HISTORIAN 
 **The charts** share one time axis:
 
 - The **horizontal axis** is clock time over the shift (up to 12 hours), ending at the current minute. Clicking a chart moves the page back to that minute.
-- **Measured vs expected**: the measured line (from the simulator), the models' expected line, and a shaded **band** for the normal range (5–95 %, or ±2σ). Inside the band means "as expected".
+- **Measured vs expected**: the measured line, the models' expected line, and a shaded **band** for the normal range (5–95 %, or ±2σ). Inside the band means "as expected". On the fractionator the T98 chart is **LCO T98 — model estimate (90 % band) vs expected · lab every 8 h** (legend: **Model estimate**, **90 % band of the estimate**, **Expected (set point + recent offset)**, **Lab result (measured)**): there is no minute-by-minute T98 measurement, so the estimate takes the place of the measured line, and **expected** is the set point plus the estimate's recent offset from it (a slow 45-minute average).
 - Dashed **Plan (…)** = the set point. Red dotted **Spec max** = the quality limit.
 - Dotted vertical lines with **◆** are events: **Change-point** (red, a sudden step), **Crude switch detected** (purple).
-- **Residual** chart: measured minus expected, dashed **±3σ** alarm lines, and an orange **CUSUM** line on the right-hand scale.
+- **Residual** chart: measured minus expected (on the fractionator: **LCO T98 estimate − expected with ±3σ and CUSUM**), dashed **±3σ** alarm lines, and an orange **CUSUM** line on the right-hand scale.
 
 **The bell curves**: **What the 4 models believe now** (fractionator) or **What the response model expects now**. A **bell curve** shows a best guess (the peak) and how unsure it is (the width). Narrow means confident. Bars below show each model's weight. See [the models guide](/explainer/models).
 
-Fractionator only: the estimate between lab samples, with **lab sample** dots for real lab results.
+Fractionator only: **LCO T98 — model estimate between lab results**, the estimate line with its 90 % band, the red spec line, and the lab points labelled **Lab result (measured)**.
 
 **Show levers, feed and products over the shift** opens three more charts.
 
@@ -120,7 +120,7 @@ Below: **Evidence so far (simulated data)**, a simulator test with a status such
 ### Part G: the bottom
 
 - **What this screen solves** (**Open ▾**): the client use cases this page answers.
-- **This shift on the unit**: the last six events, newest first.
+- **This shift on the unit**: the last six events, newest first. T98 events are about the estimate, e.g. **LCO T98 est. drifting (sustained)**.
 - **Actions taken on this unit**: earlier clicks, with **Full decision record →**.
 - **Simulated data · run random_s144 · advisory only — nothing here writes to a control system**.
 
@@ -145,7 +145,7 @@ Below: **Evidence so far (simulated data)**, a simulator test with a status such
 
 **Why does the slider start where it does?** It starts on the advised move (**advised 754.8**), the same as the headline. Drag it to see what a smaller or larger move would do to the chance on spec.
 
-**Why does the header say 750.9 but Estimate now 753.1?** The header shows the measured value from the simulator. **Estimate now** is the soft-sensor value, the number a real plant would have between lab samples. The gap sits inside the estimate's ± spread.
+**Why does every T98 number say est.?** A real plant measures T98 only in the lab, every 8 hours. Between lab results the header, the drawing and **Estimate now** all show the same model estimate (753.1 ± 3.2 °F at 10:00), with its ± spread. The measured T98 values are the lab results (the last one: 749.5 °F at 06:00).
 
 **Why do the tabs already say Accepted?** Someone pressed Accept for this run and minute before. The decision record keeps every click.
 

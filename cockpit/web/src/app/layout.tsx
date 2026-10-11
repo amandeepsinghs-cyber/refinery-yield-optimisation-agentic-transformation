@@ -11,7 +11,7 @@ const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"], displ
 export const metadata: Metadata = {
   title: { default: "FCC Decision Cockpit", template: "%s · FCC Decision Cockpit" },
   description:
-    "FCC soft-sensor Decision Cockpit: probabilistic LCO/HN T98 estimates, spread gate, recommendations and model health on simulated data.",
+    "FCC Decision Cockpit: probabilistic LCO/HN T98 model estimates, spread gate, recommendations and model health on simulated data.",
 };
 
 export const viewport: Viewport = {

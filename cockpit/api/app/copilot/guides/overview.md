@@ -67,7 +67,7 @@ Two terms first:
 - **Cut point**: the boiling temperature where one product ends and the next begins.
 - **T98**: the temperature at which 98 % of a product has boiled off, its "heavy end"; the specification limits it.
 
-The columns are **Product**, **Carbon atoms**, **Typical boiling range**, **Goes to**, **What we estimate**. The rows run light to heavy: **LPG**, **Light naphtha**, **Heavy naphtha (HN)**, **Light cycle oil (LCO)**, **Slurry (decant oil)**. Two rows are highlighted. Their last column reads **HN T98 · soft sensor** and **LCO T98 · soft sensor**. A **soft sensor** is a model that estimates a lab value every minute from ordinary plant readings, so you do not wait 8 hours for the lab.
+The columns are **Product**, **Carbon atoms**, **Typical boiling range**, **Goes to**, **What we estimate**. The rows run light to heavy: **LPG**, **Light naphtha**, **Heavy naphtha (HN)**, **Light cycle oil (LCO)**, **Slurry (decant oil)**. Two rows are highlighted. Their last column reads **HN T98 · model estimate** and **LCO T98 · model estimate**. A **model estimate** is the output of machine-learning models that estimate a lab value every minute from ordinary plant readings, with a band showing how sure they are, so you do not wait 8 hours for the lab (the industry calls such a model a soft sensor).
 
 The note under the table says this simulated FCC cuts heavier than typical: LCO T98 about 755 °F, heavy naphtha T98 about 530 °F.
 
@@ -79,7 +79,7 @@ There are 12 cards: #1 to #11, then a grey last card. Each card shows **IOCL #n*
 
 | Card | Agent | Status | Decision | Opens |
 |---|---|---|---|---|
-| #1 Product-quality inferential | Soft-sensor agent | Interactive | D1 | Fractionator |
+| #1 Product-quality inferential | Quality-estimation agent | Interactive | D1 | Fractionator |
 | #2 Stabiliser overhead, C5 recovery | Light-ends agent | Demonstrated | D7 | Stabiliser |
 | #3 LPG balance, C4/C5 split | Light-ends agent | Demonstrated | D7 | Stabiliser |
 | #4 Regeneration-cycle tracking | Regenerator agent | Demonstrated | D5 | Regenerator |
@@ -89,7 +89,7 @@ There are 12 cards: #1 to #11, then a grey last card. Each card shows **IOCL #n*
 | #8 Filter / coalescer breakthrough | Systems agent | Watch only | D8 | Riser |
 | #9 Asset-health monitoring | Systems agent | Watch only | D8 | Whole unit |
 | #10 Coke build-up | Furnace agent | Partly | D6 | Furnace |
-| #11 Online property prediction | Soft-sensor agent | Interactive | D1 | Fractionator |
+| #11 Online property prediction | Quality-estimation agent | Interactive | D1 | Fractionator |
 
 The last card, **Rest of the list** / **Not claimed**, names "Coker, alkylation, gas turbines, flare, pipelines" with "Next agents, same pattern". It is not clickable.
 
@@ -128,7 +128,7 @@ Then **HOW IT LEARNS AND PROVES ITSELF — PREDICT, DECIDE, MEASURE, LEARN**, fo
 | **Predict** | Models give the expected effect of a move and how sure they are. |
 | **Decide** | A person accepts, holds or declines. Recorded; nothing sent to the plant. |
 | **Measure** | The next lab sample or the unit's instruments show what really happened. Inside the predicted band = confirmed. |
-| **Learn** | Each lab result re-anchors the soft sensor; response models learn from real moves and small step tests. |
+| **Learn** | Each lab result re-anchors the model estimate; response models learn from real moves and small step tests. |
 
 The note under it: in the demo, one recipe was fed back through the simulator to test its prediction. **On your plant:** a short pilot proves each lever with small step tests measured by your lab.
 

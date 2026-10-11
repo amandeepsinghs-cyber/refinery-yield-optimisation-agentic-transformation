@@ -4,10 +4,12 @@
 
 | | |
 |---|---|
-| Version | v0.5.9 (commit `6b1252f`, model release v0.5.6) |
-| Cloud Run | service `fcc-cockpit`, revision `fcc-cockpit-00015-69x`, project `fcc-soft-sensor`, region `us-central1` |
+| Version | v0.5.11 (model release v0.5.6) |
+| Cloud Run | service `fcc-cockpit`, revision: see `gcloud run services describe fcc-cockpit`, project `fcc-soft-sensor`, region `us-central1` |
 | Access | Behind Identity-Aware Proxy: sign in with an allowed Google account |
 | Deployed | 11 Oct 2026 (decision record reset to its seed on deploy) |
+| New in v0.5.11 | Measured vs Estimate everywhere: T98 shows the model estimate (± band), lab results are the only measured T98; per-minute T98 removed; T98 anomaly detection runs on the estimate |
+| New in v0.5.10 | Voice: session end returns to idle (press mic to restart); LIVE badge green |
 | New in v0.5.9 | Gemini voice fixed (compact voice instructions) |
 | New in v0.5.8 | Explainer hub with one beginner guide per page + technical models reference (`/explainer`); header "Explainer" opens the guide for the current page |
 | New in v0.5.7 | Architecture → "How your data comes in" (Cortex Framework), "act first" pin, D3 on the riser |

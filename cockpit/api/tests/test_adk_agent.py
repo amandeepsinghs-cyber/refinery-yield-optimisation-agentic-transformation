@@ -98,8 +98,9 @@ def test_system_prompt_guardrails():
     # Guardrail 3: Grounding / no invented numbers
     assert "Never estimate, guess, or invent numbers" in instr
 
-    # Guardrail 4: Simulator truth label
-    assert "simulator truth" in instr
+    # Guardrail 4: T98 measured only by the lab; per-minute columns are reference values
+    assert "reference values used only to" in instr
+    assert "simulator truth" not in instr
 
     # Guardrail 5: Document citations
     assert "[DOC-ID rN §x.y]" in instr

@@ -8,8 +8,8 @@
 const ROWS: { name: string; carbon: string; bpF: string; bpC: string; goesTo: string; ours?: string }[] = [
   { name: "LPG", carbon: "C3–C4", bpF: "below ~90 °F", bpC: "below ~30 °C", goesTo: "LPG (propane, butane) and alkylation feed" },
   { name: "Light naphtha", carbon: "C5–C7", bpF: "~90–300 °F", bpC: "~30–150 °C", goesTo: "Petrol pool" },
-  { name: "Heavy naphtha (HN)", carbon: "C7–C12", bpF: "~300–430 °F", bpC: "~150–220 °C", goesTo: "Petrol pool or reformer feed", ours: "HN T98 · soft sensor" },
-  { name: "Light cycle oil (LCO)", carbon: "C12–C20", bpF: "~430–650 °F", bpC: "~220–345 °C", goesTo: "Diesel pool, after hydrotreating", ours: "LCO T98 · soft sensor" },
+  { name: "Heavy naphtha (HN)", carbon: "C7–C12", bpF: "~300–430 °F", bpC: "~150–220 °C", goesTo: "Petrol pool or reformer feed", ours: "HN T98 · model estimate" },
+  { name: "Light cycle oil (LCO)", carbon: "C12–C20", bpF: "~430–650 °F", bpC: "~220–345 °C", goesTo: "Diesel pool, after hydrotreating", ours: "LCO T98 · model estimate" },
   { name: "Slurry (decant oil)", carbon: "C20+", bpF: "above ~650 °F", bpC: "above ~345 °C", goesTo: "Fuel oil or carbon-black feed" },
 ];
 
@@ -21,7 +21,7 @@ export default function ProductLadder({ compact = false }: { compact?: boolean }
         The FCC cracks long, heavy molecules into shorter ones; the main fractionator then separates them by boiling point.
         A <b>cut point</b> is the boiling temperature where one product ends and the next begins. <b>T98</b> is the
         temperature at which 98 % of a product has boiled off: its heavy end, and what the specification limits. Set the cut
-        too light and valuable product slips into the cheaper stream below; too heavy and the product goes off spec.
+        too light and some of the product slips into the heavier stream below; too heavy and the product goes off spec.
       </p>
       <table className="pl-table">
         <thead>

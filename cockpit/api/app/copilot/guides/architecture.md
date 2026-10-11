@@ -62,11 +62,11 @@ The grey line at the bottom is the honest status: today every source is loaded i
 
 ### L2 · Specialist agents — one per use case
 
-Badge: **Soft-sensor agent interactive in the demo**.
+Badge: **Quality-estimation agent interactive in the demo**.
 
 An **agent** is a small program that owns one problem on one part of the unit, with its own models, checks and one decision for the operator. Six cards show the agent, its IOCL use-case numbers and a chip:
 
-- **Soft-sensor agent** (#1, #11): **In the demo · Interactive**. Estimates product quality every minute between lab results.
+- **Quality-estimation agent** (#1, #11): **In the demo · Interactive**. Estimates product quality (LCO and HN T98) every minute between lab results, with its band; the lab measures T98 every 8 h.
 - **Furnace**, **Regenerator**, **Light-ends** and **Systems** agents: **In the demo**. Their advice comes from a response model (a model of how the plant answers a change in a setting).
 - **Coker, CDU / VDU, alkylation, utilities & flare agents**: **Next**.
 
@@ -128,7 +128,7 @@ Below: **Manufacturing Connect** (optional), sending settings to the edge boxes 
 
 ### The two path lines
 
-- **Real-time stream**: historian & DCS tags → Edge → VPN → Pub/Sub → 1-minute windows → **BigTable + Pub/Sub** → soft-sensor agent → operator screen.
+- **Real-time stream**: historian & DCS tags → Edge → VPN → Pub/Sub → 1-minute windows → **BigTable + Pub/Sub** → quality-estimation agent → operator screen.
 - **Batch**: LIMS, assays, ERP, history back-fills → batch importer → transformation → **Cloud Storage + BigQuery** → model training, lab reconciliation, reports.
 
 ### Factory shop floor, in detail
@@ -154,7 +154,7 @@ A wider panel repeats the five levels with full systems, how often data changes 
 ## 6. What to say in the demo
 
 1. "All your data lands once, in one lakehouse inside India, under keys you hold."
-2. "On top sits one specialist agent per use case. The soft-sensor agent is the one you can try today."
+2. "On top sits one specialist agent per use case. The quality-estimation agent is the one you can try today."
 3. "Gemini is the single voice. It calls the agents and cites your SOPs. It is read-only."
 4. "Data leaves the plant one way only. We never write to the DCS. A person always decides."
 

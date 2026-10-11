@@ -32,6 +32,9 @@ export interface TwinUnit {
     state?: "OK" | "WATCH" | "ACT";
     /** "set point" when the reference is the controller set point; otherwise an expected value. */
     plan_source?: string | null;
+    /** "estimate" for the lab-only qualities (T98): value is the model estimate, sigma its ± σ. */
+    basis?: "estimate" | "measured";
+    sigma?: number | null;
   };
   io: {
     inputs: TwinUnitIO[];
@@ -413,6 +416,9 @@ export interface TwinKpiVsPlan {
   deviation: number;
   unit: string;
   state: KpiState;
+  /** "estimate" for the lab-only qualities (T98): value is the model estimate, sigma its ± σ. */
+  basis?: "estimate" | "measured";
+  sigma?: number | null;
 }
 
 export interface TwinAttention {

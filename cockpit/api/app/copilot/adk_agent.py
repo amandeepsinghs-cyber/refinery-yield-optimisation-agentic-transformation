@@ -1,4 +1,4 @@
-"""ADK Agent packaging for FCC Soft-Sensor Decision Cockpit Copilot (Epic E5).
+"""ADK Agent packaging for FCC Decision Cockpit Copilot (Epic E5).
 
 Provides a standard Google Agent Development Kit (ADK) `Agent` definition (`root_agent`)
 binding the copilot tools and system instructions with guardrails.
@@ -97,7 +97,8 @@ def get_run_snapshot(
     """Latest estimate state message for a property at the specified or current minute.
     
     Returns member model estimates, mixture quantiles, W90 spread, Kalman bias,
-    Distribution Spread Gate status, trust level, and simulator truth.
+    Distribution Spread Gate status, trust level, and the reference value (used only to score
+    the model; T98 is measured by the lab every 8 h, never quote the reference value as a measurement).
     """
     ctx: dict[str, Any] = {}
     if property:
@@ -253,7 +254,7 @@ def get_lab_history(
     n: int = 10,
     run_id: str | None = None,
 ) -> dict:
-    """Synthetic lab results with status for the run."""
+    """Lab results (simulated: reference value + lab error) with status for the run; T98 is measured only by the lab, every 8 h."""
     ctx: dict[str, Any] = {}
     if property:
         ctx["property"] = property
@@ -406,7 +407,7 @@ def create_fcc_agent(
         model=model_name,
         instruction=instr,
         description=(
-            "FCC soft-sensor Decision Cockpit advisory copilot for technical demo on simulated data. "
+            "FCC Decision Cockpit advisory copilot for technical demo on simulated data. "
             "Explains quality estimates, distributions, Spread Gate withholds, recommendations, "
             "and cites operational documents."
         ),

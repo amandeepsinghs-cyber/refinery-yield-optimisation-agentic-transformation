@@ -17,7 +17,8 @@ DEVANAGARI = re.compile(r"[\u0900-\u097F]")
 
 def test_detection_series_shapes_and_statistics():
     d = detection_series(RUN, "unit_4_fractionator", "LCO_T98_F")
-    assert d is not None and d["expected_source"] == "committee"
+    # 11 Oct: T98 is measured only by the lab, so the sentinel runs on the model estimate (expected = set point + offset)
+    assert d is not None and d["expected_source"] == "set point" and d["basis"] == "estimate"
     n = len(d["time_min"])
     for k in ("measured", "expected", "band_lo", "band_hi", "residual", "sigma", "cusum", "breach", "cusum_mask"):
         assert len(d[k]) == n, k

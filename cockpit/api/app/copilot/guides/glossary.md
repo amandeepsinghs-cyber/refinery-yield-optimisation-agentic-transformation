@@ -69,7 +69,7 @@ For the full story, read [Start here: the FCC from zero](/explainer/basics) and 
 | **Spec** | Specification: the written limits a product must meet. Here LCO T98 ≤ 765 °F and HN T98 ≤ 540 °F | Dashed red **Spec max** line on bell curves and charts |
 | **Stabiliser** | A smaller column that splits LPG from light naphtha | Section 6; **Stabiliser** tab |
 | **T98** | The temperature at which 98 % of a product has boiled off: the temperature of its "last drops". Too high means too much heavy material: off spec. The app uses it as the quality number | **LCO T98** on the drawing; every fractionator chart |
-| **Tray** | One of about 20 horizontal plates inside the fractionator where vapour and liquid meet. Tray temperatures are the soft sensor's main clues | Fractionator drawing ("Tray 6 358 °F"); tag list |
+| **Tray** | One of about 20 horizontal plates inside the fractionator where vapour and liquid meet. Tray temperatures are the estimation models' main clues | Fractionator drawing ("Tray 6 358 °F"); tag list |
 | **Wet-gas compressor (WGC)** | A large machine that squeezes the gas left after condensing so it can be recovered. Its load rises when the riser over-cracks | Gas plant "OUT: Wet gas → compressor"; "Compressor power"; D8 consequences |
 
 ---
@@ -79,12 +79,13 @@ For the full story, read [Start here: the FCC from zero](/explainer/basics) and 
 | Term | Plain meaning | Where you see it in the app |
 |---|---|---|
 | **DCS** | Distributed control system: the computers that actually run the plant's valves. The app has no connection to write to it | Architecture page; footer "nothing here writes to a control system" |
-| **Expected** | What a sensor should read for this feed and these settings, according to the models | Step 2 "expected 298.6"; charts "measured vs expected" |
+| **Expected** | What a sensor should read for this feed and these settings, according to the models. For T98 it is the set point plus the recent offset of the estimate from it (a slow 45-minute average) | Step 2 "expected 298.6"; charts "measured vs expected"; "LCO T98 — model estimate (90 % band) vs expected" |
 | **Historian** | The plant's database of sensor readings, stored every minute | Step 1 badge **HISTORIAN · EVERY MINUTE**; Data path |
 | **IOW** | Integrity operating window: a limit that protects equipment rather than product quality, for example the furnace tube-skin limit of 1620 °F | Furnace tag list ("≤ 1620.0 °F IOW"); knowledge documents |
 | **Lever** | A setting an operator can move: a *set point* | Step 1 **LEVERS ON THIS UNIT**; step 3 "Levers here" |
 | **LIMS** | Laboratory information management system: where lab results are stored | Architecture data-in view; decision cards ("LIMS T98 history") |
-| **Lab sample** | A sample drawn at 06:00, 14:00 and 22:00, with the result about one hour later | Step 1 badge **LAB · EVERY 8 H**; green dots on the estimate chart; "How fresh the data is" |
+| **Lab sample** | A sample drawn at 06:00, 14:00 and 22:00, with the result about one hour later. The lab result is the only measured T98 | Step 1 badge **LAB · EVERY 8 H**; points **Lab result (measured)** on the estimate chart; "How fresh the data is"; **Last lab** |
+| **Measured** | A value the plant records: sensor readings every minute (temperatures, flows, pressures, conversion…) and lab results every 8 h. T98 is measured only by the lab | Charts "measured vs expected"; **MEASURED NOW**; **Lab result (measured)** |
 | **Plan** | The value the unit is meant to run at | Ribbon "6/6 units on plan"; gold dashed line on bell curves |
 | **Set point (SP)** | The target value the control system holds. Operators move it; the app only suggests a new one | Step 3 "752.8 → 754.8 °F"; "vs set point 752.8" |
 | **SOP** | Standard operating procedure: the plant's written rules. The **SOP step** is the largest move allowed in one go (5 °F on the cut points) | Step 4 "Checks before advising"; "What sets the size of the move" |
@@ -103,10 +104,10 @@ For the full story, read [Start here: the FCC from zero](/explainer/basics) and 
 | **Bell curve (Gaussian, normal distribution)** | A hill-shaped picture of a belief: the peak is the most likely value, the width shows how unsure the model is | Step 2 "What the 4 models believe now"; step 3 and step 4 curves |
 | **Bias correction (Kalman update)** | Each new lab result nudges the estimate so it stays anchored to the lab, like resetting a watch against a reliable clock. It resets when a new feed settles | "lab correction" in the blend line; step 2 "The bias resets when a new feed settles" |
 | **Chance on spec (P(on-spec))** | The probability, from the bell curve, that the product is inside its spec. Advice needs at least 95 % after the move | Step 2 "chance on spec 61 %"; step 4 before/after curves |
-| **Committee** | The four soft-sensor models working together, like a panel of judges. Where they agree, trust rises | "Expected (committee)" on charts; step 4 "Model" line |
+| **Committee** | The four estimation models working together, like a panel of judges. Where they agree, trust rises | "Expected (committee)" on charts; step 4 "Model" line |
 | **CUSUM** | Cumulative sum: a running total of small gaps from expected. It catches a slow drift before any single reading looks bad, like noticing a scale creeping up a little every day | Step 2 **SUSTAINED DRIFT (CUSUM)**; orange line on the residual chart |
 | **Ensemble** | Several copies of one model trained slightly differently, averaged. Their disagreement shows uncertainty | "Physics-informed models (5)": the PINN is an ensemble of five |
-| **Estimate** | The model's best guess of a value nobody is measuring right now | Step 2 **ESTIMATE NOW** (e.g. "539.0 ± 3.4 °F") |
+| **Estimate (model estimate)** | The output of an input-to-output machine-learning model: its best guess of a value nobody is measuring right now, always with its band (± σ or 90 % band). Every T98 number between lab results is an estimate | Step 2 **ESTIMATE NOW** (e.g. "539.0 ± 3.4 °F"); **est.** after T98; chip **ML ESTIMATE**; **Estimation models (4, 3 blended)** |
 | **Feed model** | The model that estimates the feed's API every minute from how the unit behaves, detects feed changes and scores novelty | Step 2 badge **FEED MODEL**; "Feed arriving" panel; "How it knows" |
 | **Gaussian process (GPR)** | A flexible model that also says how unsure it is: confident near data it has seen, less so far away | "Gaussian process" row in "What the 4 models believe now" |
 | **Held-out run** | A simulated run kept aside and never used for training, so it can test the models fairly (runs from seed 140 on) | Step 2 "On held-out runs from seed 140 it was off by 0.20 API" |
@@ -118,14 +119,14 @@ For the full story, read [Start here: the FCC from zero](/explainer/basics) and 
 | **Optimiser** | A search for the smallest set-point move that reaches the target with at least 95 % chance on spec, in 0.5 °F steps, within the SOP step | Step 4 badge **OPTIMISER**; "How the move is found" |
 | **PINN** | Physics-informed machine-learning network: a learned model penalised whenever it breaks the column's boiling-point physics. Five copies form an ensemble | "Physics-informed models (5)" row; it carried 77 % weight in the screenshot scenario |
 | **R²** | A 0-to-1 score of how well a model explains the data; 1 is perfect | **Engineer view (all panels)** link on a unit page: "Held-out error 0.20 API (R² …)" |
-| **Residual** | Measured minus expected: the gap the anomaly detection watches | Step 2 "residual (measured − expected)" chart; **AWAY FROM EXPECTED** |
+| **Reference value** | The per-minute T98 the simulator computes. Used only to train and score the models; a real plant never has it, so it is never shown as a measurement. On site the models train on lab results | Model card "labels: reference values from the simulator (on site: lab results)" |
+| **Residual** | Measured minus expected (for T98: estimate minus expected): the gap the anomaly detection watches | Step 2 "residual (measured − expected)" chart; "LCO T98 estimate − expected with ±3σ and CUSUM"; **AWAY FROM EXPECTED** |
 | **Response model / gain** | A model of "if I move this lever by 1, how much does the result move?" The gain is that ratio, e.g. preheat outlet moves 1.007 °F per °F of set point; the cut point is assumed to move 1 : 1 | Step 3 **Try another move** slider; step 4 "Model" line |
-| **Simulator truth** | The exact value the simulator knows, which a real plant never has. Used only to check the models | Chart legend "Measured (simulator truth)" |
-| **Soft sensor** | A set of models that estimates a lab measurement every minute from live sensor data. "Soft" because it is software, not a physical instrument | Step 2 badge **SOFT SENSOR**; "Soft sensor fills the gap: an estimate every minute" |
+| **Soft sensor** | The industry term for a model estimate: models that estimate a lab measurement every minute from live sensor data. "Soft" because it is software, not a physical instrument. The app's screens say **Model estimate** or **Estimate** instead | Chip **ML ESTIMATE**; "Model estimate fills the gap: an estimate every minute" |
 | **Standard deviation (sigma, σ)** | The usual size of random wiggle around the average. Small σ = narrow bell curve | "± 3.4 °F"; "0.8 σ" under **AWAY FROM EXPECTED** |
 | **Sustained shift** | A gap from expected that lasts long enough to matter, caught by CUSUM | Timeline labels "(sustained shift)"; ribbon items |
 | **Uncertainty** | How unsure an estimate is; shown as the width of the bell curve or band | "±" numbers; **90 % band** shading |
-| **90 % band / W90** | The range that holds the true value 9 times out of 10. **W90** is its width. Narrow = confident | Chart legend **90 % band**; "W90 … / 14" in the **Engineer view (all panels)** |
+| **90 % band / W90** | The range that holds the actual value 9 times out of 10. **W90** is its width. Narrow = confident | Chart legend **90 % band**; "W90 … / 14" in the **Engineer view (all panels)** |
 
 ---
 

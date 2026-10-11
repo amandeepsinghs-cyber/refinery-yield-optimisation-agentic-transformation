@@ -82,7 +82,7 @@ def estimates_timeseries(run_id: str | None = None, property: str | None = None,
     members = {mid: {"mu": _clean(P("mu")[idx, j]), "sigma": _clean(P("sigma")[idx, j]), "weight": _clean(P("weight")[idx, j]),
                      "admitted": bool(P("admitted")[j])} for j, mid in enumerate(MODEL_IDS)}
     lo, hi = (int(t[m].min()), int(t[m].max())) if len(m) else (0, -1)
-    return {**base, "time_min": [int(x) for x in t[idx]], "truth": _clean(P("truth")[idx]), "truth_label": "simulator truth",
+    return {**base, "time_min": [int(x) for x in t[idx]], "truth": _clean(P("truth")[idx]), "truth_label": "reference value (model scoring only; not a measurement)",
             "members": members,
             "mixture": {k: _clean(P(k)[idx]) for k in ("mean", "q05", "q25", "q50", "q75", "q95")},
             "w90": _clean(P("w90")[idx]), "bimodality_d": _clean(P("bimodality_d")[idx]),
@@ -153,7 +153,7 @@ def distribution(run_id: str | None = None, property: str | None = None, time_mi
             "gate": {"status": str(P("gate")[i]), "reason": str(P("gate_reason")[i]) or None, "message": gm},
             "trust": {"level": str(P("trust")[i]), "reason": str(P("trust_reason")[i])},
             "spec_max": spec, "w90_limit": st.s.w90_max,
-            "truth": None if not np.isfinite(truth) else round(truth, 2), "truth_label": "simulator truth",
+            "truth": None if not np.isfinite(truth) else round(truth, 2), "truth_label": "reference value (model scoring only; not a measurement)",
             "note": "member pdfs include the Kalman bias b and its variance P (SDD §5.7)"}
 
 

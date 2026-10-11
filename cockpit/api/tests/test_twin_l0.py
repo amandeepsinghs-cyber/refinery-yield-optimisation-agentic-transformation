@@ -104,7 +104,8 @@ def test_consequence_rules_cover_every_primary_tag_both_directions():
     c = consequence_for(ev)
     assert c["loop"] == "hydrocarbon" and "PA3" in c["text"] and f"~{c['horizon_min']} min" in c["text"]
     assert _horizon_min(3 * 1.6, 1.6) == 180 and _horizon_min(7 * 1.6, 1.6) == 45 and _horizon_min(20, 1.6) == 45
-    assert short_line(ev).startswith("LCO T98 +4.8 °F above expected (sustained shift) since ")
+    # 11 Oct: T98 is measured only by the lab; its events are on the model estimate and say "est."
+    assert short_line(ev).startswith("LCO T98 est. +4.8 °F above expected (sustained shift) since ")
     assert "since" not in short_line(ev, with_time=False)
     assert consequence_for({"unit_id": "unit_9", "tag": "x", "residual": 1}) is None
 

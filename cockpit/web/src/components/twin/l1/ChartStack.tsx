@@ -184,6 +184,11 @@ function buildPanel(panel: TwinPanel, data: TwinWorkbench, x: string[], feedLbMi
     const idx = tr.role === "mv" ? mvIdx++ : tr.role === "disturbance" ? distIdx++ : tr.role === "yield" ? yieldIdx++ : tr.role === "tray_profile" ? trayIdx++ : 0;
     const color = traceColor(tr.role, tr.key, idx, tr.color, theme);
 
+    if (tr.role === "lab") {
+      // Lab results: the only T98 measurements (every 8 h), drawn as points on the estimate chart.
+      traces.push({ x, y, type: "scatter", mode: "markers", marker: { size: 9, color, line: { width: 1.5, color: t.card } }, name: tr.label ?? "Lab result", hovertemplate: `%{y:.1f}<extra>${tr.label ?? "Lab result"}</extra>` });
+      return;
+    }
     if (tr.role === "sigma3") {
       traces.push({ x, y, type: "scatter", mode: "lines", line: { color, width: 1, dash: "dash" }, name: tr.label ?? "±3σ", hoverinfo: "skip" });
       traces.push({ x, y: y.map((v) => (v == null ? null : -v)), type: "scatter", mode: "lines", line: { color, width: 1, dash: "dash" }, showlegend: false, hoverinfo: "skip" });

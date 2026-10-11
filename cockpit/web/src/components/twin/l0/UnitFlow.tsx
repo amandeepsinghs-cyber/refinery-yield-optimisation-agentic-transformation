@@ -4,8 +4,9 @@
  * The flow for one unit (owner, 2 Oct: "when one clicks — I/O data, what we observe, what is the decision or the lever,
  * how we are optimising"). Four steps left → right, each saying which AI piece does the work:
  *
- *   1 DATA        what goes in and out of the unit, and what is measured (live values)
- *   2 OBSERVE     measured vs set point / expected, since when; the soft-sensor estimate N(μ,σ) between labs
+ *   1 DATA        what goes in and out of the unit, and what is measured (live values; T98 = the last lab result)
+ *   2 OBSERVE     measured (or, for T98, the model estimate) vs set point / expected, since when; the model estimate
+ *                 N(μ,σ) between lab results
  *   3 DECIDE      the decision and the lever (set point from → to), Accept / Hold
  *   4 OPTIMISE    how the move was found: objective, limits, checks, result — or why no move is proposed yet
  */
@@ -34,7 +35,7 @@ export const FLOW: Record<string, Io> = {
     measured: [["Treg_F", "Bed temperature", "°F"], ["dT_cyc_reg_F", "Afterburn ΔT", "°F"], ["C_regen_cat", "Carbon on catalyst", "wt %"]],
     levers: [["Fair", "Regenerator air (excess O₂ / afterburn)", "lb/s"]] },
   unit_4_fractionator: { in: ["Cracked vapour"], out: ["Heavy naphtha", "LCO (diesel)", "Slurry", "Overhead vapour → gas plant"],
-    measured: [["T_tray13_F", "LCO draw tray", "°F"], ["T_tray06_F", "HN draw tray", "°F"], ["MV_PA3", "Pumparound 3", "klb/h"], ["LCO_T98_F", "LCO T98 (lab every 8 h)", "°F"]],
+    measured: [["T_tray13_F", "LCO draw tray", "°F"], ["T_tray06_F", "HN draw tray", "°F"], ["MV_PA3", "Pumparound 3", "klb/h"], ["LCO_T98_F", "LCO T98, last lab", "°F"]],
     levers: [["SP_LCO_T98", "LCO cut-point target (via LCO draw)", "°F"], ["SP_HN_T98", "HN cut-point target (via HN draw)", "°F"], ["MV_PA2", "Pumparound 2 duty", "klb/h"]] },
   unit_5_condenser: { in: ["Overhead vapour"], out: ["Wet gas → compressor", "Reflux", "Unstabilised naphtha"],
     measured: [["dist_condenser_eff", "Condenser efficiency", "frac"], ["MV_cw_flow", "Cooling-water flow (watched; not advised)", "lb/s"], ["power_WGC", "Compressor power", "sim. units"]],
@@ -47,6 +48,8 @@ export const FLOW: Record<string, Io> = {
 };
 export const NAME: Record<string, string> = Object.fromEntries(Object.entries(UNIT_INFO).map(([id, u]) => [id, u.name]));
 const pct = (p?: number | null) => probPct(p, "");
+/** Product qualities measured only by the lab (every 8 h); on screen: last lab result or the model estimate. */
+const LAB_ONLY = new Set(["LCO_T98_F", "HN_T98_F"]);
 const n = (v?: number | null, d?: number) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d ?? (Math.abs(v) >= 100 ? 1 : 2)));
 
 function Who({ k, children }: { k: "agent" | "ml" | "optimiser" | "check" | "data"; children: React.ReactNode }) {
@@ -62,7 +65,10 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
   const [busy, setBusy] = useState(false);
   const io = FLOW[unit.unit_id];
   const val = (tag: string) => unit.tag_table?.find((t) => t.tag === tag)?.current ?? null;
+  // T98 is measured only by the lab (every 8 h): the data table shows the last lab result, never a per-minute value.
+  const lastLab = (tag: string) => decisions.find((x) => x.observed?.tag === tag && x.observed?.last_lab)?.observed?.last_lab ?? null;
   const k = unit.kpi_vs_plan;
+  const kEst = k?.basis === "estimate";
   const att = attention.filter((a) => a.unit_id === unit.unit_id);
   const d = decision;
   const p = d?.predicted ?? {};
@@ -78,7 +84,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
     try { await actOnDecision(d.id, a, runId, timeMin); onActed(); } finally { setBusy(false); }
   };
   const optim = d?.enabled_by?.filter((s) => s.kind === "optimiser" || s.kind === "check") ?? [];
-  // Scripted D3/D5/D6/D7 items: no soft sensor and no lab behind them; the value is the measured tag in its own unit.
+  // Scripted D3/D5/D6/D7 items: no model estimate and no lab behind them; the value is the measured tag in its own unit.
   // 11 Oct (owner): no "scripted" wording on screen; scriptTag only switches the response-model texts on.
   const scriptTag = d?.scripted ? " " : null;
   const pUnit = d?.scripted ? (p.unit ?? "") : "°F";
@@ -107,18 +113,25 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
             <div><span className="uf-l">Out</span>{io.out.map((s) => <span key={s} className="uf-stream">{s}</span>)}</div>
           </div>
           <table className="uf-tags"><tbody>
-            {io.measured.map(([tag, name, u]) => <tr key={tag}><td>{name}</td><td className="num">{n(tag === "C_regen_cat" && val(tag) != null ? (val(tag) as number) * 100 : val(tag))}</td><td className="subtle">{u}{SUSPECT[tag] ? <span className="us-suspect" title={SUSPECT[tag]}> · under review</span> : null}</td></tr>)}
+            {io.measured.map(([tag, name, u]) => {
+              if (LAB_ONLY.has(tag)) {
+                const lab = lastLab(tag);
+                return lab ? <tr key={tag}><td>{name}</td><td className="num">{n(lab.value, 1)}</td><td className="subtle">{u} · {lab.drawn_label}</td></tr>
+                  : <tr key={tag}><td>{name.replace(", last lab", " est.")}</td><td className="num">{n(val(tag))}</td><td className="subtle">{u} · model estimate</td></tr>;
+              }
+              return <tr key={tag}><td>{name}</td><td className="num">{n(tag === "C_regen_cat" && val(tag) != null ? (val(tag) as number) * 100 : val(tag))}</td><td className="subtle">{u}{SUSPECT[tag] ? <span className="us-suspect" title={SUSPECT[tag]}> · under review</span> : null}</td></tr>;
+            })}
           </tbody></table>
           <Link href={`/twin/unit/${unit.unit_id}`} className="uf-link">All {unit.tag_table?.length ?? ""} tags and curves →</Link>
         </li>
 
         {/* 2 OBSERVE */}
         <li className="uf-step">
-          <div className="uf-h"><span className="uf-n">2</span>What we observe <Who k="agent">anomaly detection</Who>{members.length ? <Who k="ml">{scriptTag ? "response model" : "soft sensor"}</Who> : null}</div>
-          {k ? <p className="uf-kicker">Measured now</p> : null}
+          <div className="uf-h"><span className="uf-n">2</span>What we observe <Who k="agent">anomaly detection</Who>{members.length ? <Who k="ml">{scriptTag ? "response model" : "ML estimate"}</Who> : null}</div>
+          {k ? <p className="uf-kicker">{kEst ? "Estimate now" : "Measured now"}</p> : null}
           {k ? (
             <p className="uf-big">
-              <span className="num">{n(k.value)}</span> <span className="uf-u">{k.unit}</span>
+              <span className="num">{n(k.value, kEst ? 1 : undefined)}</span>{kEst && k.sigma != null ? <span className="uf-u"> ± {n(k.sigma, 1)}</span> : null} <span className="uf-u">{k.unit}</span>
               <span className={`uf-dev s-${k.state} num`}>{k.deviation >= 0 ? "+" : "−"}{Math.abs(k.deviation).toFixed(1)}</span>
               <span className="uf-vs">{k.label} · {k.plan_source === "set point" ? "set point" : "expected"} {n(k.plan)}{p.target != null ? ` · target ${n(p.target, 1)}` : ""}</span>
             </p>
@@ -131,9 +144,9 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
               <GaussianPdf members={members.slice(0, 1)} spec={spec != null ? { hi: spec, label: "spec" } : null} target={p.target != null ? { value: p.target, label: "target" } : d?.observed?.plan != null ? { value: d.observed.plan, label: d.scripted ? "expected" : "set point" } : null}
                 unit={pUnit} height={92} compact showMixture={false} showP={false} ariaLabel="estimate now" />
               {scriptTag ? (
-                <p className="uf-note"><b>Response model</b>: measured <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} {pUnit}</span>, chance in band <b className="num">{pct(p.p_on_spec_before)}</b> (no soft sensor or lab on this item)</p>
+                <p className="uf-note"><b>Response model</b>: measured <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} {pUnit}</span>, chance in band <b className="num">{pct(p.p_on_spec_before)}</b> (no lab and no model estimate on this item)</p>
               ) : (
-                <p className="uf-note"><b>Soft-sensor estimate</b> (the lab comes every 8 h): <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} °F</span>, chance on spec <b className="num">{pct(p.p_on_spec_before)}</b></p>
+                <p className="uf-note"><b>Model estimate</b> (the lab comes every 8 h): <span className="num">{n(p.mu_before, 1)} ± {n(p.sigma, 1)} °F</span>, chance on spec <b className="num">{pct(p.p_on_spec_before)}</b></p>
               )}
             </>
           ) : null}
@@ -187,7 +200,7 @@ export default function UnitFlow({ unit, attention, decision, decisions, onPick,
               <ul className="uf-opt">
                 <li><span>Goal</span>{d.type === "D1" && d.predicted?.target != null ? `bring T98 to its ${d.predicted.target.toFixed(1)} °F target, never below 95 % chance on spec, ≤ 5 °F per SOP step` : scriptTag ? `${p.goal_label ?? "bring the reading back into its band"} — move = drift ÷ response gain, capped at the SOP step` : "bring the reading back into its band, never below 95 % chance, inside the SOP step"}</li>
                 <li><span>Limits</span>{scriptTag && d.proposed.sop ? d.proposed.sop : "SOP step ≤ 5 °F, 30 min between moves, set-point range"}</li>
-                <li><span>Model</span>{d.predicted?.model ?? `Soft-sensor committee: 4 models, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended`}</li>
+                <li><span>Model</span>{d.predicted?.model ?? `Estimation models (4, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended)`}</li>
                 <li><span>Checks</span>{d.gates.filter((g) => g.pass).length} of {d.gates.length} pass before advising</li>
               </ul>
               <GaussianPdf members={members} spec={spec != null ? { hi: spec, label: "spec" } : null} unit={pUnit} height={84} compact showMixture={false} showP={false} ariaLabel="before and after" />

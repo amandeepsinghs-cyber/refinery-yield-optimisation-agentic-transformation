@@ -117,6 +117,23 @@ def _build_tag_row(
     }
 
 
+def _est_tag_row(run_id: str, df_win: pd.DataFrame, tag: str, label: str, current: float, limit_or_sp: str,
+                 status: str = "GREEN") -> dict[str, Any]:
+    """Tag-table row for a lab-only quality (T98): current and window stats of the MODEL ESTIMATE, role 'EST'."""
+    from app.engines.detect import estimate_series
+
+    e = estimate_series(run_id, tag)
+    w_min = w_mean = w_max = round(current, 3)
+    if e is not None and len(df_win) and "time_min" in df_win.columns:
+        t_lo, t_hi = float(df_win["time_min"].iloc[0]), float(df_win["time_min"].iloc[-1])
+        m = (e["time_min"] >= t_lo) & (e["time_min"] <= t_hi)
+        fin = e["mean"][m][np.isfinite(e["mean"][m])]
+        if len(fin):
+            w_min, w_mean, w_max = round(float(fin.min()), 3), round(float(fin.mean()), 3), round(float(fin.max()), 3)
+    return {"tag": tag, "label": label, "role": "EST", "unit": "°F", "current": round(current, 3), "window_min": w_min,
+            "window_mean": w_mean, "window_max": w_max, "limit_or_sp": limit_or_sp, "status": status, "basis": "estimate"}
+
+
 def _make_decision_card(
     rec_map: dict[str, str],
     rec_id: str,
@@ -266,8 +283,10 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     v7_pos = _frac_open(_val(row, "V7", default=0.50))
 
     # Unit 4: 20-Tray Main Fractionator, 4 Pumparounds & Control Valves
-    lco_truth = _val(row, "LCO_T98_F", default=lco_q50)
-    hn_truth = _val(row, "HN_T98_F", default=hn_q50)
+    # T98 is measured only by the lab (every 8 h): the twin shows the model estimate (committee mixture mean), never
+    # the per-minute LCO_T98_F / HN_T98_F reference value (used only to score the models).
+    lco_est = float(lco_msg["mixture"].get("mean", lco_q50))
+    hn_est = float(hn_msg["mixture"].get("mean", hn_q50))
     sp_lco = _val(row, "SP_LCO_T98", "MV_T17_sp", default=755.33)
     sp_hn = _val(row, "SP_HN_T98", "MV_HN_draw", default=530.33)
     p5_frac = _val(row, "P5_frac_psia", default=24.9)
@@ -604,9 +623,9 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
     ]
 
     u4_tag_table = [
-        _build_tag_row(df_win, row, "LCO_T98_F", "LCO Diesel T98 Distillation Cut-Point (Truth)", "CV", "°F", "<= 765.0 °F Spec", lco_unit_status),
+        _est_tag_row(rid, df_win, "LCO_T98_F", "LCO Diesel T98 Cut-Point — model estimate (lab every 8 h)", lco_est, "<= 765.0 °F Spec", lco_unit_status),
         _build_tag_row(df_win, row, "SP_LCO_T98", "LCO T98 Controller Set Point (MV_T17_sp)", "SP", "°F", "752–764 °F"),
-        _build_tag_row(df_win, row, "HN_T98_F", "Heavy Naphtha T98 Cut-Point (Truth)", "CV", "°F", "<= 540.0 °F Spec", hn_trust),
+        _est_tag_row(rid, df_win, "HN_T98_F", "Heavy Naphtha T98 Cut-Point — model estimate (lab every 8 h)", hn_est, "<= 540.0 °F Spec", hn_trust),
         _build_tag_row(df_win, row, "SP_HN_T98", "Heavy Naphtha T98 Set Point (MV_HN_draw)", "SP", "°F", "528–539 °F"),
         _build_tag_row(df_win, row, "T_tray01_F", "Tray 1 Top Overhead Vapor Temperature", "CV", "°F", "300–325 °F"),
         _build_tag_row(df_win, row, "T_tray06_F", "Tray 6 Heavy Naphtha Side-Draw Temp", "CV", "°F", "445–470 °F"),
@@ -923,9 +942,8 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "subtitle": "20-tray distillation column thermal profile and product cut-point tracking",
             "unit": "°F",
             "traces": [
-                {"tag": "LCO_T98_F", "label": "LCO T98 Truth (°F)", "color": "#38bdf8"},
                 {"tag": "SP_LCO_T98", "label": "SP_LCO_T98 (°F)", "color": "#94a3b8", "dash": "dash"},
-                {"tag": "HN_T98_F", "label": "HN T98 Truth (°F)", "color": "#10b981"},
+                {"tag": "SP_HN_T98", "label": "SP_HN_T98 (°F)", "color": "#10b981", "dash": "dash"},
                 {"tag": "T_tray20_F", "label": "Tray 20 Bottoms (°F)", "color": "#f43f5e"},
                 {"tag": "T_tray13_F", "label": "Tray 13 LCO Draw (°F)", "color": "#f59e0b"},
                 {"tag": "T_tray06_F", "label": "Tray 6 HN Draw (°F)", "color": "#a78bfa"},
@@ -1187,7 +1205,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "seq": 4,
             "name": "Unit 4 · 20-Tray Main Fractionator, 4 Pumparounds & Control Valves",
             "short_name": "4. Main Fractionator (20 Trays)",
-            "subtitle": "LCO T98 & HN T98 cut-point soft-sensor control, PA1-PA4 heat integration & valve stiction",
+            "subtitle": "LCO T98 & HN T98 cut-point model estimates, PA1-PA4 heat integration & valve stiction",
             "use_case_ids": ["UC-01", "UC-03", "UC-06", "UC-09", "UC-11"],
             "use_case_numbers": [1, 3, 6, 9, 11],
             "status": lco_unit_status,
@@ -1199,8 +1217,8 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
                 "target": f"Target {lco_target:.1f} °F (spec <= 765 °F)",
             },
             "tags": {
-                "LCO_T98_F": round(lco_truth, 2),
-                "HN_T98_F": round(hn_truth, 2),
+                "LCO_T98_F": round(lco_est, 2),
+                "HN_T98_F": round(hn_est, 2),
                 "SP_LCO_T98": round(sp_lco, 2),
                 "MV_T17_sp": round(sp_lco, 2),
                 "SP_HN_T98": round(sp_hn, 2),
@@ -1763,12 +1781,12 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
             "id": "UC-11",
             "number": 11,
             "title": "Dual-Sensor Drift Detection, Trust Scoring & Lab Bias Fusion",
-            "category": "Instrumentation & Soft-Sensor Governance",
+            "category": "Instrumentation & Model-Estimate Governance",
             "unit_id": "unit_4_fractionator",
             "unit_name": "Plant-Wide · 5 Redundant Sensor Channels & Lab Fusion",
             "status": lco_trust,
             "badge_text": f"TRUST {lco_trust} · GATE {lco_gate} · 5 DUP CHANNELS",
-            "problem_statement": "Thermocouple or pressure transmitter drift (T2, Tr, Treg, P5, P6) corrupts data-driven soft sensors, causing uncalibrated ML models to issue dangerous set-point moves during instrument faults or unmeasured crude switches.",
+            "problem_statement": "Thermocouple or pressure transmitter drift (T2, Tr, Treg, P5, P6) corrupts data-driven estimation models, causing uncalibrated ML models to issue dangerous set-point moves during instrument faults or unmeasured crude switches.",
             "solution_summary": f"Supervises 7 orthogonal Trust Signals (S1–S7), 5 hardware-redundant sensor pairs (T2_dup, Tr_dup, Treg_dup, P5_dup, P6_dup), scalar Kalman filter lab bias fusion (b = {float(lco_msg.get('bias', {}).get('b', 0.0)):+.2f} °F), and the Distribution Spread Gate.",
             "kpis": [
                 {"label": "Overall Trust Level", "tag": "trust", "value": lco_trust, "unit": "", "target": "7 signals S1–S7"},
@@ -1934,7 +1952,7 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         {
             "agent_id": "agent_fractionator",
             "name": "Unit 4 Distillation Committee & Pinch Agent",
-            "role": "4-Model Soft-Sensor & Pumparound Agent",
+            "role": "4-Model Quality-Estimation & Pumparound Agent",
             "unit_id": "unit_4_fractionator",
             "use_case_ids": ["UC-01", "UC-03", "UC-06", "UC-11"],
             "status": units[3]["status"],
@@ -1986,12 +2004,12 @@ def evaluate_twin_state(run_id: str | None = None, time_min: int | None = None) 
         {"number": 20, "title": "Gasoline Blending RVP & Octane Give-Away Control", "tier": "BOUNDARY_LINKED", "boundary_tag": "prod_LN / c5_recovery_pct", "boundary_value": f"{prod_ln:.1f} lb/min (C5 Rec {c5_recovery_pct:.1f}%)", "integration_note": "Stabilised Light Naphtha C5 retention directly controls blendstock Reid Vapor Pressure."},
         {"number": 23, "title": "Refinery Fuel Gas Header & Wobbe Index Balancing", "tier": "BOUNDARY_LINKED", "boundary_tag": "eff_C1_C2 / F5_fuel", "boundary_value": f"C1+C2 {eff_c1+eff_c2:.2f} sim. units · Fuel {f5_fuel:.2f} (sim. units)", "integration_note": "FCC dry gas make and furnace firing rate close the plant fuel gas balance."},
         {"number": 24, "title": "Heavy Fuel Oil / Slurry Clarified Oil Blending & Viscosity", "tier": "BOUNDARY_LINKED", "boundary_tag": "prod_slurry / eff_VGO", "boundary_value": f"{prod_slurry:.1f} lb/min", "integration_note": "Main fractionator bottoms slurry draw and catalyst fines govern fuel oil viscosity."},
-        {"number": 12, "title": "Crude Distillation Unit (CDU) Atmospheric Cut-Point Soft Sensors", "tier": "ARCHITECTURE_READY", "boundary_tag": "feed_flow_lb_s / dist_feed_API", "boundary_value": f"{feed_flow:.1f} lb/s @ {feed_api:.1f} °API", "integration_note": "Identical 4-model committee + Spread Gate architecture applied to CDU kerosene/diesel/AGO draws."},
+        {"number": 12, "title": "Crude Distillation Unit (CDU) Atmospheric Cut-Point Model Estimates", "tier": "ARCHITECTURE_READY", "boundary_tag": "feed_flow_lb_s / dist_feed_API", "boundary_value": f"{feed_flow:.1f} lb/s @ {feed_api:.1f} °API", "integration_note": "Identical 4-model committee + Spread Gate architecture applied to CDU kerosene/diesel/AGO draws."},
         {"number": 13, "title": "Vacuum Distillation Unit (VDU) HVGO/LVGO Flash-Zone Optimization", "tier": "ARCHITECTURE_READY", "boundary_tag": "dist_T_feed_in_F", "boundary_value": f"VGO Feed {t_feed_in:.1f} °F", "integration_note": "Supplies VGO feed to Unit 1; uses same PINN tray enthalpy and cut-point committee."},
         {"number": 14, "title": "Delayed Coker / Visbreaker Thermal Severity & Drum Switch Control", "tier": "ARCHITECTURE_READY", "boundary_tag": "T3_furnace_F coking model", "boundary_value": f"Tube Coking Res {furnace_coking_residual_F:+.1f} °F", "integration_note": "Reuses Unit 1 furnace tube-coking PINN residual and Bayesian survival horizon."},
-        {"number": 15, "title": "Hydrocracker (HCU) Second-Stage Conversion & Recycle Cut-Point", "tier": "ARCHITECTURE_READY", "boundary_tag": "conversion_pct / LCO_T98_F", "boundary_value": f"Conv {conv_pct:.1f}%", "integration_note": "Clones reactor severity + fractionator T98 soft-sensor committee with bed-quench constraints."},
-        {"number": 18, "title": "Isomerization / Naphtha Hydrotreater (NHT) Sulfur Breakthrough", "tier": "ARCHITECTURE_READY", "boundary_tag": "prod_LN", "boundary_value": f"{prod_ln:.1f} lb/min", "integration_note": "Uses Kalman lab fusion + GPR soft sensor on NHT reactor outlet sulfur/moisture."},
-        {"number": 21, "title": "Jet Fuel / Kerosene Freeze Point & Flash Point Soft Sensor", "tier": "ARCHITECTURE_READY", "boundary_tag": "HN_T98_F", "boundary_value": f"{hn_q50:.1f} °F", "integration_note": "Direct extension of ASTM D2887 4-model probabilistic committee to freeze/flash specs."},
+        {"number": 15, "title": "Hydrocracker (HCU) Second-Stage Conversion & Recycle Cut-Point", "tier": "ARCHITECTURE_READY", "boundary_tag": "conversion_pct / LCO_T98_F", "boundary_value": f"Conv {conv_pct:.1f}%", "integration_note": "Clones reactor severity + fractionator T98 estimation committee with bed-quench constraints."},
+        {"number": 18, "title": "Isomerization / Naphtha Hydrotreater (NHT) Sulfur Breakthrough", "tier": "ARCHITECTURE_READY", "boundary_tag": "prod_LN", "boundary_value": f"{prod_ln:.1f} lb/min", "integration_note": "Uses Kalman lab fusion + GPR estimation model on NHT reactor outlet sulfur/moisture."},
+        {"number": 21, "title": "Jet Fuel / Kerosene Freeze Point & Flash Point Model Estimate", "tier": "ARCHITECTURE_READY", "boundary_tag": "HN_T98_F", "boundary_value": f"{hn_q50:.1f} °F", "integration_note": "Direct extension of ASTM D2887 4-model probabilistic committee to freeze/flash specs."},
         {"number": 22, "title": "Hydrogen Network Purity & PSA/Compressor Allocation", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "Plant Utility Grid", "boundary_value": "Phase 2 Integration", "integration_note": "Couples CCR H2 generation with DHT/HCU hydrotreating demand."},
         {"number": 25, "title": "Sulfur Recovery Unit (SRU) Claus Stoichiometry & Tail-Gas Air Demand", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "Acid Gas Header", "boundary_value": "Phase 2 Integration", "integration_note": "Mirrors Unit 3 regenerator O2/CO combustion stoichiometry control."},
         {"number": 26, "title": "Amine Treating / Sour Water Stripper (SWS) Reboiler Steam Optimization", "tier": "PLANT_WIDE_ROADMAP", "boundary_tag": "LP Steam Header", "boundary_value": "Phase 2 Integration", "integration_note": "Reboiler duty vs H2S/NH3 stripping efficiency envelope."},

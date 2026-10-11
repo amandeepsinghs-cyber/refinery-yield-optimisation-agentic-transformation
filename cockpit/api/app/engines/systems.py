@@ -22,7 +22,7 @@ from typing import Any
 
 import numpy as np
 
-from app.engines.detect import E3_KINDS, TAG_LABEL, _unit_of, detection_series, open_breach
+from app.engines.detect import E3_KINDS, EST_TAGS, TAG_LABEL, _unit_of, detection_series, est_label, estimate_at, open_breach
 from app.engines.surrogates import UNIT_PRIMARY_TAGS
 from app.state import get_state
 
@@ -153,7 +153,7 @@ def _u(tag: str | None) -> str:
 def short_line(ev: dict, with_time: bool = True) -> str:
     """One-line human form of an event: 'LCO T98 +4.8 °F above expected since 08:23'."""
     kind, tag = ev.get("kind"), ev.get("tag")
-    label = TAG_LABEL.get(tag, tag or "")
+    label = est_label(tag) if tag in EST_TAGS else TAG_LABEL.get(tag, tag or "")
     t = ev.get("time_min")
     since = f" since {clock(t)}" if (with_time and t is not None) else ""
     res = ev.get("residual")
@@ -181,7 +181,16 @@ def kpi_vs_plan(run_id: str, unit_id: str, time_min: int, row: dict, tolerances:
         return None
     tag = tags[0]
     tol = float((tolerances or {}).get(tag, DEFAULT_TOL.get(tag, 1.0)))
-    value = row.get(tag)
+    sigma = None
+    if tag in EST_TAGS:
+        # T98 is measured only by the lab (every 8 h): the KPI is the model estimate with its σ, never the per-minute
+        # reference value. No estimate (run not scored) → no KPI.
+        est = estimate_at(run_id, tag, time_min)
+        if est is None:
+            return None
+        value, sigma = est["mean"], est["sd"]
+    else:
+        value = row.get(tag)
     if value is None or not np.isfinite(float(value)):
         return None
     value = float(value)
@@ -201,8 +210,12 @@ def kpi_vs_plan(run_id: str, unit_id: str, time_min: int, row: dict, tolerances:
         return None
     dev = value - plan
     state = "OK" if abs(dev) <= tol else "WATCH" if abs(dev) <= 2 * tol else "ACT"
-    return {"tag": tag, "label": TAG_LABEL.get(tag, tag), "value": round(value, 2), "plan": round(plan, 2),
-            "plan_source": plan_source, "tol": tol, "deviation": round(dev, 2), "unit": _u(tag), "state": state}
+    out = {"tag": tag, "label": est_label(tag), "value": round(value, 2), "plan": round(plan, 2),
+           "plan_source": plan_source, "tol": tol, "deviation": round(dev, 2), "unit": _u(tag), "state": state,
+           "basis": "estimate" if tag in EST_TAGS else "measured"}
+    if sigma is not None and np.isfinite(sigma):
+        out["sigma"] = round(float(sigma), 2)
+    return out
 
 
 def unit_counts(unit: dict, open_events: list[dict]) -> dict:
@@ -290,8 +303,11 @@ def unit_spark(run_id: str, unit_id: str, time_min: int, kpi: dict | None, windo
 
     e_now, lo_now, hi_now = float(d["expected"][i1]), float(d["band_lo"][i1]), float(d["band_hi"][i1])
     sigma = (hi_now - lo_now) / 4 if np.isfinite(lo_now) and np.isfinite(hi_now) else float(d["sigma"][i1])
+    if d.get("basis") == "estimate":   # T98: the belief at the cursor is the model estimate N(mean, sd)
+        e_now, sigma = float(d["measured"][i1]), float(d["est_sd"][i1])
     specs = (get_state().s.get("specs", {}) or {}).get(tag, {}) or {}
     return {"tag": tag, "label": kpi["label"], "unit": kpi["unit"], "source": d["expected_source"],
+            "basis": d.get("basis", "measured"),
             "time_min": [int(x) for x in t[idx]], "measured": _ser(d["measured"]), "expected": _ser(d["expected"]),
             "band_lo": _ser(d["band_lo"]), "band_hi": _ser(d["band_hi"]),
             "mu": None if not np.isfinite(e_now) else round(e_now, 3), "sigma": None if not np.isfinite(sigma) else round(max(sigma, 1e-6), 4),

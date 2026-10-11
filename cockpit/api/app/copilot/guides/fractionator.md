@@ -25,7 +25,7 @@ A **cut point** is the temperature where one product ends and the next begins. *
 
 Each product has a **spec**, a quality limit it must not exceed. In this demo **LCO T98 must stay at or below 765 °F** and **HN T98 at or below 540 °F**. These are placeholder values; each refinery sets its own. The operator does not set T98 directly. They set a **set point** (the value the controller holds, like a thermostat), and the column follows it.
 
-The catch: T98 is only measured by a **lab sample every 8 hours** (06:00, 14:00, 22:00 in this run). In between, operators are half-blind. That gap is what this page fills.
+The catch: T98 is only measured by a **lab sample every 8 hours** (06:00, 14:00, 22:00 in this run). In between, operators are half-blind. That gap is what this page fills: every T98 number on this page is a **model estimate** with its ± spread (marked **est.** or **Estimate**), except the lab results themselves, which are **Measured**. All the other readings (tray temperatures, flows, pressures) are measured every minute.
 
 ## 2. The four models on this page, in plain words
 
@@ -53,31 +53,32 @@ This page uses the shared layout described in [how a unit page works](/explainer
 
 ### Part A: header
 
-**Main fractionator** · **LCO T98 750.9 °F −1.8 vs set point 752.8 · target 755.3**. So the measured LCO T98 is 750.9 °F, 1.8 °F under its set point, and the advice wants it at 755.3 °F. On the right: **10:00 · next lab 14:00**. The role line ends **Operators move: LCO and heavy-naphtha cut points**.
+**Main fractionator** · **LCO T98 est. 753.1 ± 3.2 °F +0.4 vs set point 752.8 · target 755.3**. So the model estimate of LCO T98 is 753.1 °F (give or take 3.2 °F), 0.4 °F above its set point, and the advice wants it at 755.3 °F. On the right: **10:00 · next lab 14:00**. The role line ends **Operators move: LCO and heavy-naphtha cut points**.
 
 ### Part B: step 1, **Data in and out**
 
 **The drawing** shows the column, its 20 trays and live values:
 
+- The tag table lists T98 as **LCO Diesel T98 Cut-Point — model estimate (lab every 8 h)** 753.1.
 - Left: tray temperatures. **Tray 1** has a dotted underline and **?**: the simulator's top tray reads unrealistically cold, so it is flagged for review.
-- Right: **PA1**–**PA4** loops, the **Heavy naphtha** draw with **lever: set point 532.8 °F**, and the **LCO (diesel)** draw with **T98 751.0 °F · lever: set point 752.7 °F**.
+- Right: **PA1**–**PA4** loops, the **Heavy naphtha** draw with **lever: set point 532.8 °F**, and the **LCO (diesel)** draw with **T98 est. 753.1 ± 3.2 °F · lever: set point 752.7 °F**.
 - Top: **Overhead → gas plant · LN 3889 · LPG 3071 lb/min** (LN is light naphtha). Bottom: **Cracked vapour from riser** in, **Slurry** out.
 
-**How fresh the data is** shows **Lab last 06:00 · 749.5 °F** and **Next lab 14:00 · in 240 min**. Below, the table **What the FCC makes — by molecule size and boiling range** marks the two qualities this page estimates: **HN T98 · soft sensor** and **LCO T98 · soft sensor**.
+**How fresh the data is** shows **Lab last 06:00 · 749.5 °F** and **Next lab 14:00 · in 240 min**. Below, the table **What the FCC makes — by molecule size and boiling range** marks the two qualities this page estimates: **HN T98 · model estimate** and **LCO T98 · model estimate**. The panel also says **Model estimate fills the gap: an estimate every minute**.
 
 ### Part C: step 2, **What we observe**
 
 **The fact row** at 10:00:
 
-- **Estimate now 753.1 ± 3.2 °F**, **chance on spec > 99 %**: the **soft sensor** (a model that estimates the lab value every minute from ordinary readings) puts LCO T98 far under the 765 °F spec.
-- **Away from expected −2.2 °F**, **1.0 σ**: about one normal wobble. Ordinary.
-- **Sustained drift (CUSUM) −7.6**, **no breach open**: a small creep, no alarm.
+- **Estimate now 753.1 ± 3.2 °F**, **chance on spec > 99 %**: the **model estimate** (machine-learning models that estimate the lab value every minute from ordinary readings; the industry calls such a model a soft sensor) puts LCO T98 far under the 765 °F spec.
+- **Away from expected +1.2 °F**, **0.7 σ**: less than one normal wobble. Ordinary. (For T98 this compares the model estimate with expected.)
+- **Sustained drift (CUSUM) 4.9**, **no breach open**: a small upward creep, no alarm. The decision's observed line reads **LCO T98 est. +1.3 °F above expected (sustained shift) since 09:06**; on the heavy-naphtha tab, **HN T98 est. +5.1 °F above expected (sustained shift) since 07:32**.
 - **Likely driver —** **nothing unusual**.
 - **Feed API 23.2**, **intermediate · settled since 08:45** (API is an oil density scale).
 
 **How a feed change plays out on this run** tells the morning's story: at 07:07 the crude schedule changed, at 07:49 the change was detected and advice held, at 08:45 the new feed settled and advice resumed.
 
-**Charts**: **LCO T98 — measured vs expected (committee)** and **LCO T98 residual (measured − expected) with ±3σ and CUSUM**. Read the first one like this: the measured line should stay inside the shaded **5–95 % band** around the expected line. The dashed **Plan (SP_LCO_T98)** line is the set point. The red dotted **Spec max** line at 765 °F is the limit.
+**Charts**: **LCO T98 — model estimate (90 % band) vs expected · lab every 8 h** (legend: **Model estimate**, **90 % band of the estimate**, **Expected (set point + recent offset)**, **Lab result (measured)**) and **LCO T98 estimate − expected with ±3σ and CUSUM**. For T98, **expected** is the set point plus the recent offset of the estimate from it (a slow 45-minute average), so anomaly detection on T98 runs on the model estimate; there is no minute-by-minute T98 measurement on a real plant. Read the first chart like this: the estimate line should stay close to the expected line. The dashed **Plan (SP_LCO_T98)** line is the set point. The red dotted **Spec max** line at 765 °F is the limit.
 
 **What the 4 models believe now**: four bell curves, one per model. A **bell curve** shows a best guess (the peak) and how unsure it is (the width). The weights under them are **Linear model (Bayesian ridge) ref.**, **Gaussian process 38 %**, **Physics + correction (hybrid) 32 %**, and the physics-informed network ensemble **30 %**. In three lines:
 
@@ -87,7 +88,7 @@ This page uses the shared layout described in [how a unit page works](/explainer
 
 The full story is in [the models guide](/explainer/models).
 
-**LCO T98 — soft-sensor estimate between lab samples**: the estimate line, its **90 % band**, the **measured (simulator truth)** dashed line, a red **spec 765** line and **lab sample** dots. The green dot at 06:00 is the accepted lab result, 749.5 °F. The caption says it plainly: **Between samples the estimate is the only reading of product quality.**
+**LCO T98 — model estimate between lab results**: the estimate line, its **90 % band**, a red **spec 765** line and the lab points, labelled **Lab result (measured)**. The green dot at 06:00 is the accepted lab result, 749.5 °F. The caption says it plainly: **Between samples the estimate is the only reading of product quality.**
 
 ### Part D: step 3, **Decision and lever** at 10:00
 
@@ -108,7 +109,7 @@ The **heavy-naphtha** tab works the same way: **Raise heavy-naphtha cut point +2
 
 ### Part E: step 4, **How the move is found**
 
-**The chain**, left to right: **Anomaly detection** flagged LCO T98 drifting at 08:28. The **Soft-sensor committee (4 models, 3 blended)** gave 753.1 ± 3.2 °F. The **Feed model** estimated API 23.2. **Trust checks**: 8 of 8 pass. **Set-point search** found 753.1 → 755.1 °F. **Gemini** explains it in words.
+**The chain**, left to right: **Anomaly detection**: **Flagged LCO T98 est. moving away from expected at 09:06 — 4.9 h before the next lab (14:00)**. The **Estimation models (4, 3 blended)** gave 753.1 ± 3.2 °F. The **Feed model** estimated API 23.2. **Trust checks**: 8 of 8 pass. **Set-point search** found 753.1 → 755.1 °F. **Gemini** explains it in words.
 
 **Checks before advising — 8 of 8 pass**:
 
@@ -125,7 +126,7 @@ The **heavy-naphtha** tab works the same way: **Raise heavy-naphtha cut point +2
 
 **The search, in plain words**: the goal is to bring the estimate to the 755.3 °F target, never below 95 % chance on spec. The **Result** line reads **752.8 → 754.8 °F**. **What sets the size of the move** says the target set the size, the SOP step was **Not limiting** (2.0 of 5.0 °F used), and there is **Room** of 4.8 °F to the spec.
 
-**How do we know the move works?** **Predict** (**Built**) restates the move. **Decide** (**Built**) records the click. **Measure** (**Shown, not run in the replay**) says the 14:00 lab would confirm it. **Learn** (**Built**) says each lab result re-anchors the soft sensor.
+**How do we know the move works?** **Predict** (**Built**) restates the move. **Decide** (**Built**) records the click. **Measure** (**Shown, not run in the replay**) says the 14:00 lab would confirm it. **Learn** (**Built**) says each lab result re-anchors the model estimate.
 
 ### Part F: the same page at 12:00, when the models are unsure
 

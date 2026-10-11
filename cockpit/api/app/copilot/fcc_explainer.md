@@ -37,7 +37,7 @@ The drawing on **FCC → Whole unit** is the process, left to right. Solid lines
 2. **The feed gap.** The feed changes every 12–48 hours. Yesterday's settings are wrong for today's feed.
 3. **The time-lag gap.** A move at the reaction side shows up hours later at the separation side. Each console sees only its own unit.
 
-The cockpit answers each gap: a **soft sensor** estimates quality every minute; a **feed model** detects the feed change and estimates the new feed's quality; **one ranked list** of decisions shows the consequence across units.
+The cockpit answers each gap: a **model estimate** (machine-learning models; the industry calls this a soft sensor) gives quality every minute, with its band; a **feed model** detects the feed change and estimates the new feed's quality; **one ranked list** of decisions shows the consequence across units.
 
 ---
 
@@ -49,7 +49,7 @@ The cockpit answers each gap: a **soft sensor** estimates quality every minute; 
 - *New feed settled at API 23.2 (crude slate R2)*: the feed changed and the feed model now knows its quality (API gravity; higher = lighter).
 - *Riser · conversion +2.0 % above expected*, *Regenerator · afterburn ΔT −1.6 °F below expected*: anomaly detection compares each section with what it should be doing for this feed and flags sustained shifts. Click an item to open that section.
 
-**The drawing.** Each section shows its main number and the deviation from expected (e.g. *LCO T98 750.9 −1.8*). A section **glows amber** when it drifts and **red** when it needs action, and gets a **blue halo** when it carries an open decision. A **?** next to a number means the reading is under review.
+**The drawing.** Each section shows its main number and the deviation from expected (e.g. *LCO T98 est. 753.1 +0.4*: T98 is measured only by the lab every 8 h, so between lab results it is the model estimate, compared with its set point). A section **glows amber** when it drifts and **red** when it needs action, and gets a **blue halo** when it carries an open decision. A **?** next to a number means the reading is under review.
 
 **Pins above the sections.**
 | Pin | Meaning |
@@ -62,10 +62,10 @@ The cockpit answers each gap: a **soft sensor** estimates quality every minute; 
 Pins sit on the section where the lever is. **Click a pin or a section** to open its card below.
 
 **The section card: four steps, left to right.**
-1. **Data in and out:** the streams and the live tags (1-minute historian data), plus the lab value every 8 h.
-2. **What we observe:** the **soft-sensor estimate** (big number) against its set point and target, with the anomaly events. The **bell curve** is the estimate's uncertainty; the dashed red line is the spec limit. The further the curve sits from the line, the safer.
+1. **Data in and out:** the streams and the live tags (1-minute historian data), plus the lab value every 8 h (e.g. *LCO T98, last lab 749.5 °F*).
+2. **What we observe:** the **model estimate** (big number, *Estimate now 753.1 ± 3.2 °F*) against its set point and target, with the anomaly events (for T98 they run on the estimate, e.g. *LCO T98 est. +1.3 °F above expected (sustained shift) since 09:06*). The **bell curve** is the estimate's uncertainty; the dashed red line is the spec limit. The further the curve sits from the line, the safer.
 3. **Decision and lever:** the question (e.g. *"Raise the LCO cut point now, or wait for the lab?"*), the feed it assumes (*"For this feed (API ≈ 23.2)"*), the proposed set-point move (*752.8 → 754.8 °F*), and the alternative (*wait for the lab at 14:00*). Buttons: **Accept**, **Hold 30 min**, **Ask Gemini**. Accept and Hold are written only to the **Decision record**, never to the plant.
-4. **How the move is found:** the **goal** (bring T98 to target, never below 95 % chance on spec), the **limits** (SOP step ≤ 5 °F, 30 min between moves, set-point range), the **model** (soft-sensor committee: 4 models, 3 blended), the **checks** that must pass before advising (e.g. 8 of 8), and the **result**: chance on spec before (solid curve) and after (dashed).
+4. **How the move is found:** the **goal** (bring T98 to target, never below 95 % chance on spec), the **limits** (SOP step ≤ 5 °F, 30 min between moves, set-point range), the **model** (*Estimation models (4, 3 blended)*), the **checks** that must pass before advising (e.g. 8 of 8), and the **result**: chance on spec before (solid curve) and after (dashed).
 
 **Below the card.** *What this screen solves* and *IOCL use cases this shift* tie each decision to the client's own list. *Data path* shows where the numbers come from. The **timeline** at the bottom marks every event in the shift: drag to scrub through time, ▶ to replay.
 
@@ -77,12 +77,12 @@ Pins sit on the section where the lever is. **Click a pin or a section** to open
 
 | Where | Decision | Question for the operator | Lever | How it is worked out |
 |---|---|---|---|---|
-| Feed arriving | **D4** Feed | Is the feed changing, how far through is it, and what is its quality? | none (it sets the context for every other decision) | Feed-change detector + feed-quality (API) soft sensor |
+| Feed arriving | **D4** Feed | Is the feed changing, how far through is it, and what is its quality? | none (it sets the context for every other decision) | Feed-change detector + feed-API model |
 | Furnace | **D6** Preheat | Trim the feed preheat for the new feed? | Feed preheat set point | Response model, gain measured from step tests |
 | Riser | **D3** Recipe for this feed | Which riser outlet temperature for this feed? | Riser outlet temperature | Response model for this feed |
 | Riser | **D8** What first | Act on the riser drift now, before it reaches the regenerator? | none (watch) | Drift watch with the downstream consequence |
 | Regenerator | **D5** Regenerator air | Rebalance air against riser severity (afterburn)? | Regenerator air | Response model |
-| Fractionator | **D1** Cut point | Move the LCO / heavy-naphtha cut point now, or wait for the lab? | LCO / HN T98 set point | Soft-sensor committee + optimiser |
+| Fractionator | **D1** Cut point | Move the LCO / heavy-naphtha cut point now, or wait for the lab? | LCO / HN T98 set point | Estimation models (4, 3 blended) + optimiser |
 | Fractionator | **D2** Trust | Can the estimate be trusted right now? If not: **Not yet** | none | Spread gate across the four models |
 | Fractionator | **D9** Extra lab sample | Pull an extra sample now instead of waiting for the next scheduled one? | Lab request | Uncertainty vs time to the next lab |
 | Gas plant & stabiliser | **D7** Overhead | Move the overhead temperature target to stay inside the condenser's cooling duty? | Overhead temperature set point | Response model |
@@ -93,7 +93,7 @@ Pins sit on the section where the lever is. **Click a pin or a section** to open
 
 ---
 
-## 6. How the soft sensor decides: "move now" or "Not yet"
+## 6. How the model estimate decides: "move now" or "Not yet"
 
 1. **Four models estimate the cut point every minute** from tray temperatures, flows and pressures: a Bayesian ridge regression (reference), a Gaussian process, a hybrid (physics plus a learned correction) and a physics-informed machine-learning (PINN) ensemble. They are blended by their accuracy.
 2. **Each lab result corrects the estimate's bias** (a Kalman update), so the estimate stays anchored to the lab.
@@ -119,7 +119,8 @@ Pins sit on the section where the lever is. **Click a pin or a section** to open
 | **Afterburn** | Coke burning above the regenerator bed instead of in it; a warning sign |
 | **Conversion** | The share of the feed cracked into lighter products |
 | **C5 recovery** | How much of the pentane (C5) ends up in the right product at the stabiliser |
-| **Soft sensor** | A model that estimates a lab measurement every minute from live plant data |
+| **Measured** | A value the plant records: sensor readings every minute, lab results every 8 h. T98 is measured only by the lab |
+| **Estimate (model estimate, est.)** | The output of a machine-learning model that estimates a lab value every minute from live plant data, always with its band (± σ or 90 % band) |
 | **Chance on spec** | The model's probability that the product is within its specification |
 | **Not yet** | The cockpit withholds advice because the models disagree or lack data |
 | **Anomaly / sustained shift** | A section behaving differently from what it should for this feed, for long enough to matter |

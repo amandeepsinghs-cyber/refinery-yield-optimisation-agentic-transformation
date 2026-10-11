@@ -101,7 +101,7 @@ Example: "**Operator** accepted **a move** on **Main fractionator**".
 | **What** | The details | **a move** or **2 moves** for people; for trust checks, the product, **LCO T98** or **HN T98** |
 | **Unit** | The details | A link such as **Main fractionator**. Click it to open that unit page. |
 
-**LCO T98** and **HN T98** are the two product qualities the soft sensor estimates. T98 is the temperature at which 98 % of a product has boiled off: its "heavy end". LCO is light cycle oil (goes to diesel); HN is heavy naphtha (goes to petrol).
+**LCO T98** and **HN T98** are the two product qualities the models estimate every minute (the lab measures them every 8 h). T98 is the temperature at which 98 % of a product has boiled off: its "heavy end". LCO is light cycle oil (goes to diesel); HN is heavy naphtha (goes to petrol).
 
 The reason words for trust checks are translated too:
 

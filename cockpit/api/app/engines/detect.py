@@ -28,14 +28,18 @@ from app.data.bq_source import staged_table
 from app.data.catalog import tag_meta
 from app.recommend import prob_text
 from app.engines.regime import get_run_regimes
-from app.engines.surrogates import (OUTPUTS, SURROGATE_VERSION, UNIT_PRIMARY_TAGS, expected_series, get_surrogate_card,
-                                    sensitivity, supported_inputs)
+from app.engines.surrogates import (BIAS_HALFLIFE_MIN, OUTPUTS, SURROGATE_VERSION, UNIT_PRIMARY_TAGS, expected_series,
+                                    get_surrogate_card, sensitivity, supported_inputs)
 from app.state import get_state
 from app.store import event_write, events_read
 
 logger = logging.getLogger(__name__)
 
-DETECT_VERSION = 3  # v3: briefing numbers rounded identically to payload fields
+DETECT_VERSION = 4  # v4: T98 detection runs on the model estimate (lab every 8 h), not on the per-minute reference value
+# Product T98 is measured only by the lab (every 8 h) on a real plant. The per-minute LCO_T98_F / HN_T98_F columns are
+# reference values used only to score the models, so the sentinel watches the MODEL ESTIMATE (committee mean) instead:
+# expected = set point + the estimate's recent offset from it (lagged EWMA, same half-life as the surrogate bias).
+EST_TAGS = {"LCO_T98_F": "SP_LCO_T98", "HN_T98_F": "SP_HN_T98"}
 E3_KINDS = ("breach", "cusum", "drift", "combustion", "flooding_pattern", "regime_change", "recipe_ready")
 
 SIGMA_WINDOW_MIN, SIGMA_MIN_PERIODS = 240, 30
@@ -72,6 +76,49 @@ def _unit_of(tag: str) -> str:
 
 def _label(tag: str) -> str:
     return TAG_LABEL.get(tag) or (tag_meta(tag) or {}).get("label", tag)
+
+
+def est_label(tag: str | None) -> str:
+    """Screen label: 'LCO T98 est.' for the lab-only qualities (shown as the model estimate), else the tag label."""
+    if not tag:
+        return ""
+    return f"{_label(tag)} est." if tag in EST_TAGS else _label(tag)
+
+
+def estimate_series(run_id: str, tag: str) -> dict | None:
+    """Per-minute model estimate of a lab-only quality (committee mixture mean / sd / q05 / q95), aligned to the run's
+    `time_min` (NaN where the run was not scored at that minute). None when the run is not scored."""
+    if tag not in EST_TAGS:
+        return None
+    st = get_state()
+    v = st.run(run_id)
+    df = st.catalog.load(run_id)
+    if v is None or df.empty:
+        return None
+    arrs, _ = v
+    if f"{tag}|mean" not in arrs:
+        return None
+    t_df = df["time_min"].to_numpy()
+    t_est = np.asarray(arrs["time_min"])
+    idx = np.clip(np.searchsorted(t_est, t_df), 0, len(t_est) - 1)
+    valid = t_est[idx] == t_df
+    out = {"time_min": t_df}
+    for k in ("mean", "sd", "q05", "q95"):
+        a = np.asarray(arrs[f"{tag}|{k}"], float)[idx].copy()
+        a[~valid] = np.nan
+        out[k] = a
+    return out
+
+
+def estimate_at(run_id: str, tag: str, time_min: int) -> dict | None:
+    """{mean, sd, q05, q95} of the model estimate at the minute (None when unavailable)."""
+    e = estimate_series(run_id, tag)
+    if e is None:
+        return None
+    t = e["time_min"]
+    i = int(np.clip(np.searchsorted(t, time_min, side="right") - 1, 0, len(t) - 1))
+    vals = {k: float(e[k][i]) for k in ("mean", "sd", "q05", "q95")}
+    return vals if np.isfinite(vals["mean"]) else None
 
 
 @lru_cache(maxsize=1)
@@ -121,19 +168,40 @@ def _cusum(res: np.ndarray, sigma: np.ndarray) -> np.ndarray:
 
 @lru_cache(maxsize=256)
 def detection_series(run_id: str, unit_id: str, tag: str) -> dict | None:
-    """Minute-aligned measured / expected / band / residual / sigma / cusum arrays + masks for one primary tag."""
+    """Minute-aligned measured / expected / band / residual / sigma / cusum arrays + masks for one primary tag.
+
+    Lab-only qualities (EST_TAGS): `measured` holds the MODEL ESTIMATE (basis "estimate"), the band is the estimate's
+    90 % band (q05–q95) and `expected` = set point + the estimate's lagged recent offset from it. Without a scored run
+    there is no estimate, so no T98 detection (the per-minute reference value is never used as a measurement)."""
     st = get_state()
     df = st.catalog.load(run_id)
     if df.empty or tag not in df.columns:
         return None
-    exp = expected_series(run_id, unit_id)
-    if f"expected:{tag}" not in exp:
-        return None
     t = df["time_min"].to_numpy()
-    meas = pd.to_numeric(df[tag], errors="coerce").to_numpy(float)
-    e = np.asarray(exp[f"expected:{tag}"], float)
+    est = None
+    if tag in EST_TAGS:
+        est = estimate_series(run_id, tag)
+        if est is None:
+            return None
+        meas = est["mean"]
+        sp_col = EST_TAGS[tag]
+        if sp_col in df.columns:
+            spv = pd.to_numeric(df[sp_col], errors="coerce").ffill().bfill().to_numpy(float)
+        else:
+            spv = pd.Series(meas).rolling(SIGMA_WINDOW_MIN, min_periods=1).median().to_numpy(float)
+        off = (pd.Series(meas - spv).ewm(halflife=BIAS_HALFLIFE_MIN, min_periods=1).mean().shift(1)
+               .bfill().fillna(0.0).to_numpy(float))
+        e = spv + off
+        source = "set point"
+        exp = {f"band_lo:{tag}": est["q05"], f"band_hi:{tag}": est["q95"]}
+    else:
+        exp = expected_series(run_id, unit_id)
+        if f"expected:{tag}" not in exp:
+            return None
+        meas = pd.to_numeric(df[tag], errors="coerce").to_numpy(float)
+        e = np.asarray(exp[f"expected:{tag}"], float)
+        source = "committee" if unit_id == "unit_4_fractionator" and st.run(run_id) is not None else "regime surrogate"
     res = meas - e
-    source = "committee" if unit_id == "unit_4_fractionator" and st.run(run_id) is not None else "regime surrogate"
     reg = get_run_regimes(run_id)
     regime_now = reg["detected_regime"][-1] if reg else "R3"
     rsd = float(get_surrogate_card(regime_now).get("resid_sd", {}).get(tag, 1.0) or 1.0)
@@ -142,11 +210,14 @@ def detection_series(run_id: str, unit_id: str, tag: str) -> dict | None:
     cus = _cusum(res, sigma)
     breach = np.abs(res) > BREACH_SIGMAS * sigma
     cusum_mask = np.abs(cus) > CUSUM_H * sigma
-    return {"time_min": t, "measured": meas, "expected": e,
-            "band_lo": np.asarray(exp.get(f"band_lo:{tag}", e - 2 * sigma), float),
-            "band_hi": np.asarray(exp.get(f"band_hi:{tag}", e + 2 * sigma), float),
-            "residual": res, "sigma": sigma, "cusum": cus, "breach": breach, "cusum_mask": cusum_mask,
-            "expected_source": source}
+    out = {"time_min": t, "measured": meas, "expected": e,
+           "band_lo": np.asarray(exp.get(f"band_lo:{tag}", e - 2 * sigma), float),
+           "band_hi": np.asarray(exp.get(f"band_hi:{tag}", e + 2 * sigma), float),
+           "residual": res, "sigma": sigma, "cusum": cus, "breach": breach, "cusum_mask": cusum_mask,
+           "expected_source": source, "basis": "estimate" if est is not None else "measured"}
+    if est is not None:
+        out["est_sd"] = est["sd"]
+    return out
 
 
 def root_cause(run_id: str, tag: str, i: int, regime_id: str, sigma_i: float) -> list[dict]:
@@ -177,7 +248,9 @@ def briefing(tag: str, kind: str, res: float, sigma: float, cus: float, meas: fl
              nxt: int | None, rc: list[dict], recipe_gate: str) -> dict:
     """Same numbers and tag ids in all three languages; no financial vocabulary."""
     u = _unit_of(tag)
-    lab, lab_hi = _label(tag), LABEL_HI.get(tag, _label(tag))
+    is_est = tag in EST_TAGS     # lab-only quality: the value is the model estimate, not a measurement
+    lab, lab_hi = est_label(tag), LABEL_HI.get(tag, _label(tag)) + (" अनुमान" if is_est else "")
+    w_en, w_hi = ("estimate", "अनुमान") if is_est else ("measured", "मापा")
     n_sig = abs(res) / max(sigma, 1e-6)
     what = {"breach": "outside the ±3σ band", "cusum": "a sustained shift (CUSUM)"}.get(kind, kind)
     what_hing = {"breach": "±3σ band ke bahar", "cusum": "sustained shift (CUSUM)"}.get(kind, kind)
@@ -192,7 +265,7 @@ def briefing(tag: str, kind: str, res: float, sigma: float, cus: float, meas: fl
               f"{drv['contrib']:+.2f} {u})" if drv else "; कोई इनपुट बदलाव इसे नहीं समझाता (प्रोसेस ड्रिफ्ट)")
     lab_en = f"next lab draw at t={nxt} min (in {nxt - t} min)" if nxt else "no further lab scheduled"
     lab_hing = f"agla lab t={nxt} min par ({nxt - t} min mein)" if nxt else "aage koi lab scheduled nahi"
-    lab_hi = f"अगला लैब t={nxt} मिनट पर ({nxt - t} मिनट में)" if nxt else "आगे कोई लैब निर्धारित नहीं"
+    sched_hi = f"अगला लैब t={nxt} मिनट पर ({nxt - t} मिनट में)" if nxt else "आगे कोई लैब निर्धारित नहीं"
     gate_en = {"ISSUED": "recipe ready for review", "WITHHELD": "recipe withheld"}.get(recipe_gate.split(":")[0], "")
     reason = recipe_gate.split(":")[1] if ":" in recipe_gate else ""
     gate_en = f"; {gate_en}" + (f" ({reason})" if reason else "") if gate_en else ""
@@ -201,13 +274,13 @@ def briefing(tag: str, kind: str, res: float, sigma: float, cus: float, meas: fl
     gate_hi = {"ISSUED": "; रेसिपी समीक्षा के लिए तैयार", "WITHHELD": f"; रेसिपी रोकी गई ({reason})"}.get(
         recipe_gate.split(":")[0], "")
     return {
-        "en": (f"{lab} ({tag}) is {what}: measured {meas:.1f} {u} vs expected {exp:.1f} {u}, residual {res:+.1f} {u} "
+        "en": (f"{lab} ({tag}) is {what}: {w_en} {meas:.1f} {u} vs expected {exp:.1f} {u}, residual {res:+.1f} {u} "
                f"({n_sig:.1f}σ, σ={sigma:.2f}), CUSUM {cus:+.1f} at t={t} min{drv_en}; {lab_en}{gate_en}."),
-        "hinglish": (f"{lab} ({tag}) {what_hing} hai: measured {meas:.1f} {u}, expected {exp:.1f} {u}, residual "
+        "hinglish": (f"{lab} ({tag}) {what_hing} hai: {w_en} {meas:.1f} {u}, expected {exp:.1f} {u}, residual "
                      f"{res:+.1f} {u} ({n_sig:.1f}σ, σ={sigma:.2f}), CUSUM {cus:+.1f}, t={t} min{drv_hing}; "
                      f"{lab_hing}{gate_hing}."),
-        "hi": (f"{lab_hi} ({tag}) {what_hi} है: मापा {meas:.1f} {u}, अपेक्षित {exp:.1f} {u}, अंतर {res:+.1f} {u} "
-               f"({n_sig:.1f}σ, σ={sigma:.2f}), CUSUM {cus:+.1f}, t={t} मिनट{drv_hi}; {lab_hi}{gate_hi}।"),
+        "hi": (f"{lab_hi} ({tag}) {what_hi} है: {w_hi} {meas:.1f} {u}, अपेक्षित {exp:.1f} {u}, अंतर {res:+.1f} {u} "
+               f"({n_sig:.1f}σ, σ={sigma:.2f}), CUSUM {cus:+.1f}, t={t} मिनट{drv_hi}; {sched_hi}{gate_hi}।"),
     }
 
 
@@ -337,8 +410,10 @@ def _residual_events(run_id: str, df: pd.DataFrame) -> list[dict]:
                     # Round once so the numbers quoted in the briefing text match the payload fields exactly.
                     res_r, sig_r, cus_r = round(res, 2), round(sig, 2), round(cus, 2)
                     meas_r, exp_r = round(float(d["measured"][i]), 2), round(float(d["expected"][i]), 2)
+                    is_est = d.get("basis") == "estimate"
                     payload = {"residual": res_r, "sigma": sig_r, "cusum": cus_r,
-                               "expected": exp_r, "measured": meas_r,
+                               "expected": exp_r, "measured": None if is_est else meas_r,
+                               "estimate": meas_r if is_est else None, "basis": d.get("basis", "measured"),
                                "expected_source": d["expected_source"], "regime_id": det[i], "root_cause": rc,
                                "next_lab_min": nxt, "recipe_gate": gate,
                                "recipe_id": rcp["recipe_id"] if rcp["gate"] == "ISSUED" else None,

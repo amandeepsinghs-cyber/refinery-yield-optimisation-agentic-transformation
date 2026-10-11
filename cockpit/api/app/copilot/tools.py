@@ -83,7 +83,7 @@ def _jsonable(o):
 ALLOWED_TRACES = {"scatter", "scattergl", "bar", "histogram", "box", "heatmap", "indicator"}
 
 DECLS = [
-    ("get_current_state", "Latest estimate message (SDD §6.2) for a property at the current page minute: members, mixture quantiles, W90, bias, gate, trust, simulator truth.",
+    ("get_current_state", "Latest estimate message (SDD §6.2) for a property at the current page minute: members, mixture quantiles, W90, bias, gate, trust, and the reference value (used only to score the model; T98 is measured by the lab every 8 h).",
      {"property": ("STRING", "LCO_T98_F or HN_T98_F")}, []),
     ("get_distribution", "Member and mixture summary at a minute: mu, sigma, weight, admitted/shadow, q05/q50/q95, W90, bimodality D, P(on-spec).",
      {"property": ("STRING", "LCO_T98_F or HN_T98_F"), "time_min": ("INTEGER", "simulated minute; default = page minute")}, []),
@@ -95,7 +95,7 @@ DECLS = [
      {"status": ("STRING", "comma-separated statuses, optional"), "property": ("STRING", "optional"), "n": ("INTEGER", "max cards, default 8")}, []),
     ("run_whatif", "What-if: re-evaluate all members with tag overrides at the current minute (read-only).",
      {"overrides_json": ("STRING", "JSON object of tag -> value, e.g. {\"MV_PA2\": 1.1}"), "property": ("STRING", "optional")}, ["overrides_json"]),
-    ("get_lab_history", "Synthetic lab results (SDD §4.3) with status for the current run.",
+    ("get_lab_history", "Lab results (SDD §4.3; simulated: reference value + lab error) with status for the current run. T98 is measured only by the lab, every 8 h.",
      {"property": ("STRING", "LCO_T98_F or HN_T98_F"), "n": ("INTEGER", "max rows, default 10")}, []),
     ("query_sim_data", "SELECT-only SQL over table fcc_sim_minute (columns: run_id, batch_id, time_min and all simulator tags). Max 1000 rows.",
      {"sql": ("STRING", "a single SELECT statement")}, ["sql"]),
@@ -174,7 +174,7 @@ class ToolBox:
         m = get_state().estimate_message(self.run_id, self._p(property), time_min if time_min is not None else self.time_min)
         if not m:
             return {"error": "run not scored"}
-        return {k: m[k] for k in ("provenance", "property", "members", "mixture", "bias", "gate", "truth", "truth_label", "spec_max", "w90_limit")}
+        return {k: m[k] for k in ("provenance", "property", "members", "mixture", "bias", "gate", "spec_max", "w90_limit")}
 
     def t_explain_estimate(self, property=None, time_min=None):
         st = get_state()
@@ -220,7 +220,7 @@ class ToolBox:
         v = get_state().run(self.run_id)
         labs = [l for l in (v[1]["labs"] if v else []) if l["property"] == self._p(property)]
         return {"run_id": self.run_id, "labs": labs[-int(n or 10):],
-                "note": "synthetic labs derived from simulator truth + seeded noise (SDD §4.3)" if labs else
+                "note": "lab results (simulated: reference value + lab error, SDD §4.3)" if labs else
                         "no lab samples in this run (legacy scenario files carry no lab_sample flags)"}
 
     def t_query_sim_data(self, sql):
@@ -265,7 +265,7 @@ class ToolBox:
             return {"error": f"no known columns in {cols}"}
         idx = lttb_indices(t[m], df[want[0]].to_numpy()[m], 200)
         return {"run_id": r, "time_min": t[m][idx].tolist(), "series": {c: df[c].to_numpy()[m][idx].tolist() for c in want},
-                "note": "simulated data; LCO_T98_F / HN_T98_F columns are simulator truth"}
+                "note": "simulated data; LCO_T98_F / HN_T98_F columns are reference values used only to score the models; T98 is measured by the lab every 8 h"}
 
     def t_draft_handover(self, period_min=480):
         st = get_state()

@@ -58,7 +58,7 @@ export function ProofLoop({ d, nextLab }: { d: Decision; nextLab?: string | null
     { k: "1", title: "Predict", text: predict, state: d.scripted ? (measured ? "measured" : "scripted") : "built" },
     { k: "2", title: "Decide", text: d.action ? `${d.action.action} at ${d.action.time_label}, recorded; nothing sent to the plant.` : "The operator accepts, holds or declines. Every action is recorded; nothing is sent to the plant.", state: "built" },
     { k: "3", title: "Measure", text: `Checked by ${MEASURED_BY[d.type] ?? "the unit's own instruments"}${lab && nextLab ? ` (next due ${nextLab})` : ""}. Inside the predicted band = confirmed; outside = flagged.`, state: "shown" },
-    { k: "4", title: "Learn", text: lab ? "Each lab result re-anchors the soft sensor (rate-limited bias update, built). Accepted moves and their results refit the lever models (on site)." : "Accepted moves and their measured results refit this lever's model for each crude.", state: lab ? "built" : "pilot" },
+    { k: "4", title: "Learn", text: lab ? "Each lab result re-anchors the model estimate (rate-limited bias update, built). Accepted moves and their results refit the lever models (on site)." : "Accepted moves and their measured results refit this lever's model for each crude.", state: lab ? "built" : "pilot" },
   ];
   const evidence = d.type === "D3" || move?.tag === "SP_T_riser_ROT_F" ? [RECIPE_CHECK, LEVER_FIT] : ["D5", "D6", "D7"].includes(d.type) ? [LEVER_FIT, RECIPE_CHECK] : [RECIPE_CHECK];
   return (
@@ -96,7 +96,7 @@ export function CrudeSwitchStory({ r }: { r: TwinRegime }) {
     [clock(cur.t_start_min), `The crude slate changes on the schedule (${prev.regime_id} → ${cur.regime_id}, declared API ${r.declared_api?.toFixed(1) ?? "—"}). The heavy gas oil feeding the FCC starts to change with it.`],
     [`${clock(cur.transition_start_min ?? cur.t_start_min)}–${clock(tEnd)}`, "The unit's behaviour shifts: riser temperature rise, conversion, coke and regenerator temperature move to a new pattern."],
     [mine ? clock(mine.flagged_at_min) : "—", mine ? `Feed change detected: the estimated feed API leaves ${mine.from_api.toFixed(1)}. Riser, preheat, air, cut-point and overhead advice is held.` : "Feed change not yet detected."],
-    [mine?.settled_at_min != null ? clock(mine.settled_at_min) : "—", mine?.settled_at_min != null ? `New feed settled at API ${(mine.to_api ?? r.feed?.api_est ?? 0).toFixed(1)}. The soft sensor's lab bias resets and advice resumes.` : "Waiting for the new feed to settle."],
+    [mine?.settled_at_min != null ? clock(mine.settled_at_min) : "—", mine?.settled_at_min != null ? `New feed settled at API ${(mine.to_api ?? r.feed?.api_est ?? 0).toFixed(1)}. The model estimate's lab bias resets and advice resumes.` : "Waiting for the new feed to settle."],
     ["then", "Every decision says which feed it was sized for (\"For this feed …\"); catalyst circulation follows from the heat balance and is not advised."],
   ];
   return (

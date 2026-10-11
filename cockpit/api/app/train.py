@@ -414,19 +414,19 @@ def main(argv=None):
         lab_note = (f" (synthetic labs, SDD §4.3; {n_clean_labs} clean train labs/property; transient labs excluded by the "
                     f"A5 steady-state flag: {ex}; used: {used})")
     else:
-        lab_note = (" (simulator truth at every minute; too few clean synthetic labs on train runs "
+        lab_note = (" (simulator reference values at every minute; too few clean synthetic labs on train runs "
                     f"({n_clean_labs}/property < {T['min_labs']}) — demo fallback; A5 transient filter applies to lab labels only)")
     noise_on = bool((s.get("noise") or {}).get("enabled", False))
     if lag_table.get("enabled"):
         nz = {p: sum(1 for r in rows.values() if r["lag_min"] > 0) for p, rows in lag_table["targets"].items()}
         lag_note = (f" Lags (A6): prewhitened CCF (AR({lag_table['ar_order']}), 0..{lag_table['max_lag_min']} min) of each "
-                    f"key tag vs simulator-truth target, identified on the training runs of each fit only; non-zero "
+                    f"key tag vs simulator reference target, identified on the training runs of each fit only; non-zero "
                     f"lags per target {nz}; lagged value + mean over the lag window as candidate features.")
     else:
         lag_note = " Lags (A6): disabled (lags.enabled: false); features are current value + EWMA."
     note = (f"Split: {mode}. Labels: {source}" + lab_note
             + (". Inputs: measured (process-measurement noise on, DECISIONS L6)" if noise_on else ". Inputs: noise-free simulator values")
-            + ". Metrics vs simulator truth on every held-out minute." + lag_note
+            + ". Metrics vs simulator reference values on every held-out minute." + lag_note
             + (f" In-sample runs (no out-of-fold estimate): {in_sample}." if in_sample else ""))
     if pin_targets:
         note += (f" Pinned truth (training.pinned_truth): minutes where {pin_targets} sit exactly at the simulator T98 "

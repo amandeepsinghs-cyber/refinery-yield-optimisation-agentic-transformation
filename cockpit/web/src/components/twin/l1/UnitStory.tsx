@@ -6,7 +6,8 @@
  *
  * Same four steps as the home-page flow, each one opened up in full, top to bottom:
  *   ① Data      the process drawing with live values where they are measured; how fresh each reading is
- *   ② Observe   measured vs expected over the shift, the residual / CUSUM, the soft-sensor bell curves, the crude
+ *   ② Observe   measured vs expected over the shift (T98: the model estimate and the lab results — T98 is measured
+ *               only by the lab), the residual / CUSUM, the model-estimate bell curves, the crude
  *   ③ Decide    every decision on this unit; the lever with a what-if slider; Accept / Hold / Decline (audit only)
  *   ④ Optimise  who did what (agent → ML → checks → optimiser → Gemini); each check with its value and limit;
  *               for a withheld decision, what the search found and why it is not shown as advice
@@ -204,7 +205,7 @@ function FracDrawing({ at }: { at: (k: string) => number | null }) {
       {/* LCO draw */}
       <path d={`M${x0 + w} ${ty(13) + 6} H${560}`} className="us-line prod hot" markerEnd="url(#us-ar)" />
       <text x={566} y={ty(13) + 1} className="us-v" textAnchor="end"><tspan className="us-k">LCO (diesel) </tspan>{fx(at("prod_LCO"), 0)} lb/min</text>
-      <text x={566} y={ty(13) + 22} className="us-v lever" textAnchor="end">T98 {fx(at("LCO_T98_F"), 1)} °F · lever: set point {fx(at("SP_LCO_T98"), 1)} °F</text>
+      <text x={566} y={ty(13) + 22} className="us-v lever" textAnchor="end">T98 est. {fx(at("LCO_T98_F"), 1)}{at("est_sd:LCO_T98_F") != null ? ` ± ${fx(at("est_sd:LCO_T98_F"), 1)}` : ""} °F · lever: set point {fx(at("SP_LCO_T98"), 1)} °F</text>
       {/* feed and slurry */}
       <path d={`M${40} ${ty(20) + 22} H${x0 - 4}`} className="us-line" markerEnd="url(#us-ar)" />
       <text x={40} y={ty(20) + 40} className="us-v"><tspan className="us-k">Cracked vapour from riser</tspan></text>
@@ -338,6 +339,8 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
   const labels: Record<string, readonly [string, string]> = Object.fromEntries([
     ...[...u.io.inputs, ...u.io.outputs].map((x) => [x.tag, [x.label, x.unit] as [string, string]] as const),
     ...[...(io?.measured ?? []), ...(io?.levers ?? [])].map(([tg, n, un]) => [tg, [n, un] as [string, string]] as const),
+    // T98 is measured only by the lab: the per-minute value in the tag list is the model estimate.
+    ...Object.entries(TAGN).map(([tg, n]) => [tg, [`${n} model estimate (lab every 8 h)`, "°F"] as [string, string]] as const),
   ]);
 
   // Bell curves: committee members (fractionator) or the regime surrogate ŷ ± σ (other units).
@@ -400,7 +403,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
         <div className="us-title">
           <h1>{NAME[unitId] ?? u.short_name}</h1>
           {k ? (
-            <p className="us-kpi">{k.label} <b className="num">{fx(k.value)}</b> {k.unit}{isSuspect(data.analysis.primary_tag) ? <span className="suspect-mark" title={SUSPECT[data.analysis.primary_tag]}>under review</span> : null}
+            <p className="us-kpi">{k.label} <b className="num">{fx(k.value, k.basis === "estimate" ? 1 : undefined)}</b>{k.basis === "estimate" && k.sigma != null ? <small className="num"> ± {fx(k.sigma, 1)}</small> : null} {k.unit}{isSuspect(data.analysis.primary_tag) ? <span className="suspect-mark" title={SUSPECT[data.analysis.primary_tag]}>under review</span> : null}
               <span className={`us-dev s-${k.state} num`}> {k.value - k.plan >= 0 ? "+" : "−"}{Math.abs(k.value - k.plan).toFixed(1)}</span>
               <span className="subtle"> vs {k.plan_source === "set point" ? "set point" : "expected"} {fx(k.plan)}{d?.predicted?.target != null ? ` · target ${fx(d.predicted.target)}` : ""}</span></p>
           ) : null}
@@ -433,7 +436,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                   {lastLab.status === "REJECT" ? <span className="us-warn"> — rejected: {lastLab.status_reason}</span> : null}</li>
               ) : <li><span className="dot" /><b>Lab</b> none on this unit</li>}
               {lastLab ? <li><span className="dot" /><b>Next lab</b> {clock(data.time.next_lab_min)} · in {Math.max(0, data.time.next_lab_min - t)} min</li> : null}
-              {lastLab ? <li><span className="dot ml" /><b>Soft sensor</b> fills the gap: an estimate every minute</li> : <li><span className="dot ml" /><b>Response model</b> gives the expected value every minute</li>}
+              {lastLab ? <li><span className="dot ml" /><b>Model estimate</b> fills the gap: an estimate every minute</li> : <li><span className="dot ml" /><b>Response model</b> gives the expected value every minute</li>}
             </ul>
             <h3>Levers on this unit</h3>
             <ul className="us-levers">{io?.levers.map(([tag, name, un]) => <li key={tag}><span>{name}</span><b className="num">{fx(at(tag))} <small>{un}</small></b></li>)}</ul>
@@ -446,7 +449,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
       </Step>
 
       {/* ② OBSERVE */}
-      <Step n={2} k="observe" id="s-observe" title="What we observe" who={<><Who k="agent">anomaly detection</Who><Who k="ml">soft sensor</Who><Who k="ml">feed model</Who></>}>
+      <Step n={2} k="observe" id="s-observe" title="What we observe" who={<><Who k="agent">anomaly detection</Who><Who k="ml">ML estimate</Who><Who k="ml">feed model</Who></>}>
         <div className="us-facts">
           {d?.observed?.estimate != null ? (
             <div className="us-fact big"><span>Estimate now</span><b className="num">{fx(d.observed.estimate, 1)} <small>± {fx(d.observed.sigma, 1)} {d.observed.unit}</small></b><em>chance on spec {pct(p?.p_on_spec_before)}</em></div>
@@ -473,7 +476,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
           <div className="us-chart"><ChartStack data={data} panels={obsPanels} hoverMin={null} onHover={() => undefined} /></div>
           <div className="us-side">
             <h3>{isU4 ? "What the 4 models believe now" : "What the response model expects now"}</h3>
-            {members.length ? <GaussianPdf members={members} spec={spec} target={d?.predicted?.target != null ? { value: d.predicted.target, label: "target" } : k ? { value: k.plan, label: k.plan_source === "set point" ? "set point" : "expected" } : null} measured={null} unit={k?.unit ?? ""} height={150} compact showP={false} ariaLabel="soft-sensor bell curves" /> : <p className="subtle">No estimate for this unit.</p>}
+            {members.length ? <GaussianPdf members={members} spec={spec} target={d?.predicted?.target != null ? { value: d.predicted.target, label: "target" } : k ? { value: k.plan, label: k.plan_source === "set point" ? "set point" : "expected" } : null} measured={null} unit={k?.unit ?? ""} height={150} compact showP={false} ariaLabel="model-estimate bell curves" /> : <p className="subtle">No estimate for this unit.</p>}
             {isU4 && d?.models?.members?.length ? (
               <>
                 <ul className="us-weights">{d.models.members.map((w) => <li key={w.id}><span>{w.name}</span><i style={{ width: `${Math.round((w.weight ?? 0) * 100)}%` }} /><b className="num">{w.role === "reference" ? "ref." : `${Math.round((w.weight ?? 0) * 100)} %`}</b></li>)}</ul>
@@ -620,7 +623,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
                 <ul className="uf-opt">
                   <li><span>Goal</span>{d?.type === "D1" && p.target != null ? `bring the estimate to the ${fx(p.target, 1)} ${p.unit ?? move.unit} target with ${move.label.startsWith("LCO") || move.label.startsWith("HN") ? move.label.charAt(0) : move.label.charAt(0).toLowerCase() + move.label.slice(1)}, never below 95 % chance on spec` : d && isGiveBack(d) ? `take back margin with ${move.label.startsWith("LCO") || move.label.startsWith("HN") ? move.label.charAt(0) : move.label.charAt(0).toLowerCase() + move.label.slice(1)} while ${goal.charAt(0).toLowerCase() + goal.slice(1)} stays ≥ 95 %` : `${goal.charAt(0).toLowerCase() + goal.slice(1)} ≥ 95 % with the smallest move of ${move.label.startsWith("LCO") || move.label.startsWith("HN") ? move.label.charAt(0) : move.label.charAt(0).toLowerCase() + move.label.slice(1)}`}</li>
                   <li><span>Limits</span>SOP step ≤ {fx(stepMax, nd)} {move.unit} · time between moves · lever window</li>
-                  <li><span>Model</span>{p.model ?? `Soft-sensor committee: 4 models, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended`}</li>
+                  <li><span>Model</span>{p.model ?? `Estimation models (4, ${d.models?.members.filter((x) => x.role === "blended").length ?? 3} blended)`}</li>
                   <TrainedOn />
                   <li><span>Result</span>{fx(move.from, nd)} → {fx(move.to, nd)} {move.unit}: {pct(p.p_on_spec_before)} → {pct(p.p_on_spec_after)}, margin {fx(p.margin_after, 1)} {p.unit ?? move.unit}</li>
                 </ul>
@@ -648,7 +651,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
         <div>
           <h3>This shift on the unit</h3>
           <ol className="us-events">{a.events.slice(-6).reverse().map((e) => (
-            <li key={e.event_id} className={`ev-${e.severity}`}><span className="num">{clock(e.time_min)}</span>{(e as { label?: string }).label ?? `${TAGN[e.tag] ?? (e as { tag_label?: string | null }).tag_label ?? labels[e.tag]?.[0] ?? e.tag} ${EVK[e.kind] ?? e.kind.replace(/_/g, " ")}`}</li>
+            <li key={e.event_id} className={`ev-${e.severity}`}><span className="num">{clock(e.time_min)}</span>{(e as { label?: string }).label ?? `${TAGN[e.tag] ? `${TAGN[e.tag]} est.` : ((e as { tag_label?: string | null }).tag_label ?? labels[e.tag]?.[0] ?? e.tag)} ${EVK[e.kind] ?? e.kind.replace(/_/g, " ")}`}</li>
           ))}</ol>
         </div>
         <div>
@@ -673,6 +676,6 @@ function TrainedOn() {
   const te = h.split?.match(/test[^(]*\((\d+) runs\)/)?.[1];
   const at = h.trained_at ? new Date(h.trained_at).toISOString().slice(0, 16).replace("T", " ") + " UTC" : null;
   return (
-    <li><span>Trained on</span>{tr ? `${tr} simulated runs` : `${h.runs} simulated runs`}{te ? `, checked on ${te} held-out runs it never saw` : ""} · labels: simulator truth (on site: lab samples){at ? ` · last trained ${at}` : ""}</li>
+    <li><span>Trained on</span>{tr ? `${tr} simulated runs` : `${h.runs} simulated runs`}{te ? `, checked on ${te} held-out runs it never saw` : ""} · labels: reference values from the simulator (on site: lab results){at ? ` · last trained ${at}` : ""}</li>
   );
 }

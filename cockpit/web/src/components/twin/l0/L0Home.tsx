@@ -148,7 +148,7 @@ export default function L0Home() {
           <li><b>Simulation</b><span>FCC simulator, every tag each minute</span></li>
           <li><b>BigQuery</b><span>raw tags and lab results land here (fcc_bronze)</span></li>
           <li><b>Lakehouse</b><span>cleaned, lab-aligned tables (fcc_silver); the cockpit reads every run from here</span></li>
-          <li><b>Models</b><span>feed model · soft sensor · response models</span></li>
+          <li><b>Models</b><span>feed model · model estimates · response models</span></li>
           <li><b>Decision</b><span>the move, its checks and Accept / Hold / Decline</span></li>
         </ol>
         <DataStore />

@@ -28,9 +28,9 @@ PAGE_GUIDES: dict[str, str] = {
         "- 'What the FCC makes — by molecule size and boiling range': LPG C3–C4 (below ~90 °F), light naphtha C5–C7 "
         "(~90–300 °F), heavy naphtha C7–C12 (~300–430 °F), LCO C12–C20 (~430–650 °F), slurry C20+ (above ~650 °F), in °F and °C; "
         "a cut point is where one product ends and the next begins; T98 is the temperature at which 98 % has boiled (the heavy "
-        "end, what the spec limits). The soft sensor estimates HN and LCO T98. Ranges are typical; the simulated FCC cuts "
+        "end, what the spec limits). The 'What we estimate' column reads 'HN T98 · model estimate' and 'LCO T98 · model estimate': ML models estimate HN and LCO T98 every minute between lab results (the lab measures T98 every 8 h). Ranges are typical; the simulated FCC cuts "
         "heavier (LCO T98 ~755 °F, HN T98 ~530 °F). The same table sits in step ① of the Fractionator page.\n"
-        "- Below that: use-case cards — IOCL use case → its agent (Soft-sensor, Furnace, Regenerator, "
+        "- Below that: use-case cards — IOCL use case → its agent (Quality-estimation, Furnace, Regenerator, "
         "Light-ends, Systems; same names as the Architecture tab) → the models under it in small print → the decision on screen.\n"
         "- 'How an agent works': 1 models produce the numbers (statistical, hybrid, PINN, Gaussian process, response models, "
         "constrained optimiser; deterministic); 2 the agent checks them against SOP limits, history and past decisions and "
@@ -39,7 +39,7 @@ PAGE_GUIDES: dict[str, str] = {
         "- Then the decisions panel, 'A person decides — every time' (advisory only), the MeitY-compliant boundary (data "
         "stays in India under keys IOCL holds; control and safety systems stay on site and nothing is written to them; do "
         "not go into Category A / B), and 'How it learns and proves itself' (predict, decide, measure, learn).\n"
-        "- What is used in this build: a feed-quality model (feed-change detection, feed API soft sensor, novelty check, feed class), a four-model soft sensor "
+        "- What is used in this build: a feed-quality model (feed-change detection, feed-API model, novelty check, feed class), four estimation models for T98 "
         "(Bayesian ridge, hybrid physics + ML, PINN ensemble, Gaussian process), anomaly detection on every unit (±3σ, "
         "CUSUM; statistical), response models, a constrained optimiser, a rule-based consequence check, and Gemini."
     ),
@@ -67,8 +67,8 @@ PAGE_GUIDES: dict[str, str] = {
         "record; management: summaries, read-only; platform admin: registers and retires agents and models, assigns roles); customer-managed keys (Cloud KMS); a VPC Service Controls perimeter; "
         "Cloud Logging & Monitoring (every agent call, Gemini answer and decision logged; agent health and model drift alerts). MeitY-compliant boundary: the data stays in India under keys IOCL holds; control and "
         "safety systems stay on site and nothing is written to them. Do not go into Category A / B on this page.\n"
-        "- Agents: soft-sensor agent (IOCL #1, #11; In the demo, interactive); furnace, regenerator, light-ends and systems agents (Preview); coker, CDU/VDU, alkylation, "
-        "utilities & flare agents (Next). Feedstock evaluation is not on IOCL's use-case list: do not present it as a use case; when the FCC feed changes after a crude switch, the feed model detects the change and estimates the new feed's API gravity; the soft sensor resets its lab bias and checks it has lab results for this feed, and the recipe and preheat target follow the new feed estimate. The crude family is context only. The soft-sensor model weights come from each model's accuracy on recent lab results (else held-out runs), never from the crude; Bayesian ridge has weight 0 (reference only). Vertex AI for training and serving each agent's models is Next.\n"
+        "- Agents: quality-estimation agent (IOCL #1, #11; In the demo, interactive); furnace, regenerator, light-ends and systems agents (Preview); coker, CDU/VDU, alkylation, "
+        "utilities & flare agents (Next). Feedstock evaluation is not on IOCL's use-case list: do not present it as a use case; when the FCC feed changes after a crude switch, the feed model detects the change and estimates the new feed's API gravity; the T98 estimate resets its lab bias and checks it has lab results for this feed, and the recipe and preheat target follow the new feed estimate. The crude family is context only. The estimation-model weights come from each model's accuracy on recent lab results (else held-out runs), never from the crude; Bayesian ridge has weight 0 (reference only). Vertex AI for training and serving each agent's models is Next.\n"
         "- If asked what is built: the demo runs these as separate modules inside one service on simulated data; "
         "Gemini 2.5 Flash calls the platform's tools. Never say an agent is 'live' or 'working': nothing is deployed on a plant. Below: a collapsed agent ↔ use case table."
     ),
@@ -84,9 +84,11 @@ PAGE_GUIDES: dict[str, str] = {
         "CURRENT PAGE: a unit page (/twin/unit/<unit_id>): U1 Furnace, U2 Riser, U3 Regenerator, U4 Fractionator, "
         "U5 Gas plant, U6 Stabiliser.\n"
         "- Step ① Data in / out: the tags this unit reads and the products it sends on.\n"
-        "- Step ② What we observe: anomaly detection (measured vs expected for this feed, ±3σ band, CUSUM), the feed model "
-        "(the Feed arriving panel: a headline with the feed now — class, estimated API ± band, schedule API, steady since when, and whether advice for this feed is active — or, during a change, how far through and that advice is paused; then the chance of each feed class (heavy / intermediate / light) from the API estimate and its band; then a familiarity gauge from familiar to unfamiliar with a pause-advice line, familiar meaning the estimated API is inside the trained range; the crude family is a context line only), on U2/U3 catalyst-to-oil shown as a result (never advised), and on U4 the four-model soft sensor with its bell curves "
-        "and the estimate between lab samples.\n"
+        "- Step ② What we observe: anomaly detection (measured vs expected for this feed, ±3σ band, CUSUM; for T98 it runs on the model estimate vs expected), the feed model "
+        "(the Feed arriving panel: a headline with the feed now — class, estimated API ± band, schedule API, steady since when, and whether advice for this feed is active — or, during a change, how far through and that advice is paused; then the chance of each feed class (heavy / intermediate / light) from the API estimate and its band; then a familiarity gauge from familiar to unfamiliar with a pause-advice line, familiar meaning the estimated API is inside the trained range; the crude family is a context line only), on U2/U3 catalyst-to-oil shown as a result (never advised), and on U4 the four estimation models (4, 3 blended) with their bell curves "
+        "and the chart 'LCO T98 — model estimate between lab results' (estimate line, its 90 % band, the red spec line and the "
+        "lab points 'Lab result (measured)'). T98 is measured only by the lab every 8 h, so every T98 number on screen is the "
+        "model estimate with ± σ ('est.'); all other tags are measured.\n"
         "- Step ③ Decision and lever: the move (from → to), chance on spec before → after, and Accept / Hold / Decline. "
         "'Try another move' is a slider over set-point moves. On the cut-point decisions the chart has one solid bell (the product "
         "now, or after your move) and one dotted bell at the target (LCO T98 755.3 °F, HN T98 530.3 °F); slide to line them up. A "
@@ -97,7 +99,7 @@ PAGE_GUIDES: dict[str, str] = {
         "- 'Full explanation' (expandable): the data in (columns and their values at this minute), each model's inputs and fitted "
         "formula, its estimate and weight (ridge reference only; hybrid, PINN ×5 and GP weighted by accuracy), the checks, and how "
         "the move was chosen (toward the target, never below 95 % chance on spec, ≤ 5 °F per SOP step).\n"
-        "- Step ④ How the move is found: the chain of steps (anomaly detection, soft sensor, feed model, trust checks, "
+        "- Step ④ How the move is found: the chain of steps (anomaly detection, estimation models, feed model, trust checks, "
         "optimiser, consequence check, Gemini), the checks before advising, and what set the size of the move.\n"
         "- Status words: Interactive = the models really run, on simulated data (nothing is deployed on a plant); Demonstrated = shown end to end on the simulated FCC with its response model; "
         "simulator inputs; Watch only = no move is proposed."
@@ -120,11 +122,11 @@ DEMO FLOW (demoflow.md, 6 Oct — story of a refinery, then follow the oil):
 - Architecture (/architecture): the target — one lakehouse, one agent per use case, Gemini on top, one screen.
 - FCC Complex (/twin), run random_s107 at 10:00: what went wrong; decision pins.
 - Follow the oil at s107 10:00: U4 step ② feed model (the new feed settled; D4 appears only while the feed is changing, e.g. s107 07:20) → U1 preheat (D6) → U2 riser watch (D8) →
-  U3 regenerator air (D5, scripted) → U4 step ③ D1 interactive cut-point move, Accept → U5/U6 overhead target (D7, scripted) →
+  U3 regenerator air (D5, demonstrated) → U4 step ③ D1 interactive cut-point move, Accept → U5/U6 overhead target (D7, demonstrated) →
   back to FCC Complex for the whole-unit effect.
 - Stress tests on U4: run random_s144 at 10:00 (held-out run), then 12:00 'Not yet' (spread above 14 °F) → pull a sample,
   Ask Gemini. Then the Decision record (/audit).
-- Close on /platform: what is interactive, what is scripted, what is not built; the pilot ask.
+- Close on /platform: what is interactive, what is demonstrated, what is not built; the pilot ask.
 Only these pages exist: /platform, /architecture, /twin, /twin/unit/<unit_id>, /audit, /knowledge.
 """
 

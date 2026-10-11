@@ -490,9 +490,9 @@ def tag_meta(col: str) -> dict | None:
     if col in ("SP_HN_T98", "SP_LCO_T98", "SP_T_overhead"):
         unit = "°F"
     label = col.replace("_F", "").replace("_", " ") if col not in ("LCO_T98_F", "HN_T98_F") else \
-        ("LCO T98 (simulator truth)" if col == "LCO_T98_F" else "HN T98 (simulator truth)")
+        ("LCO T98 (reference value, model scoring only)" if col == "LCO_T98_F" else "HN T98 (reference value, model scoring only)")
     if col == "dist_condenser_eff":
-        label += " (hidden truth)"
+        label += " (simulator reference)"
     return {"tag": col, "label": label, "unit": unit, "group": group}
 
 

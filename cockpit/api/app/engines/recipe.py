@@ -311,7 +311,7 @@ def recipe_for(run_id: str, time_min: int, unit_id: str) -> dict:
     if any(t in CUTPOINT_SP for t in supported):
         gates = [c["gate"] for c in ev.committee.values()]
         if gates and any(g == "WITHHELD" for g in gates):
-            return _withheld(p, "spread_gate", "The soft-sensor committee is WITHHELD at this minute (distribution "
+            return _withheld(p, "spread_gate", "The estimation committee is WITHHELD at this minute (distribution "
                                                "spread too wide), so P(on-spec) cannot be certified for a cut-point move.")
     env_in = ev.card.get("envelope", {}).get("inputs", {})
     boxes, dropped = {}, []

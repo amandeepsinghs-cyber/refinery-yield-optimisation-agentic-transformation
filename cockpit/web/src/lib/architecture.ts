@@ -63,7 +63,7 @@ export interface Agent {
 
 /** Layer 2 — one specialist agent per IOCL use case (target). */
 export const AGENTS: Agent[] = [
-  { name: "Soft-sensor agent", useCases: "#1 Product-quality inferential · #11 Product soft sensors",
+  { name: "Quality-estimation agent", useCases: "#1 Product-quality inferential · #11 Online property prediction",
     decisions: "D1 move the cut point now or wait for the lab · D2 can the estimate be trusted · D9 pull an extra sample",
     status: "today", note: "Interactive" },
   { name: "Furnace agent", useCases: "#5 Fired-heater combustion · #10 Crude-furnace coke & hydraulics",
@@ -101,7 +101,7 @@ export const LAYERS: Layer[] = [
   { n: 2, name: "Specialist agents — one per use case",
     job: "Each agent: its own models, checks and decision; runs as its own service.",
     today: "Today the demo runs them as separate modules inside one service.", status: "today",
-    badge: "Soft-sensor agent interactive in the demo", services: ["vertex", "run"] },
+    badge: "Quality-estimation agent interactive in the demo", services: ["vertex", "run"] },
   { n: 1, name: "One refinery data lakehouse",
     job: "Each kind of data comes in by the route that suits it: historian readings stream, lab, assay and schedule data load on a schedule, documents are turned into text and indexed for search, and decisions are written straight in by the screen. A live store beside it serves the agents; BigQuery keeps the history for training.",
     today: "Today: every source is loaded in batches from a physics simulator; the 46 simulated documents are embedded and searched live. No live store yet: the app reads BigQuery once and caches it. Streaming, scheduled loads and Bigtable are next.",
@@ -383,7 +383,7 @@ export const APPS: DataBox[] = [
     does: "Ready-made semantic models, KPI dashboards and partner solutions on the same contextualised data.",
     refinery: "Unit KPIs and data-quality views for engineers and management.",
     status: "next", demo: "Not in the demo." },
-  { id: "vertex-app", flow: "both", name: "Vertex AI, App Layer", sub: "live: soft-sensor insight every minute · batch: model training", logo: GCP("vertex-ai"),
+  { id: "vertex-app", flow: "both", name: "Vertex AI, App Layer", sub: "live: model estimate every minute · batch: model training", logo: GCP("vertex-ai"),
     does: "Where the models are trained and served and where the applications run.",
     refinery: "One specialist agent per use case; Gemini answers the operator; one screen where a person decides.",
     status: "today", demo: "FCC agent, Gemini and this cockpit." },

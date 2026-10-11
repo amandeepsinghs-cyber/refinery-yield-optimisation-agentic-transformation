@@ -39,7 +39,8 @@ def test_workbench_four_zones_every_unit():
         assert not GREY.search(json.dumps(w["panels"]))
         # Analysis
         a = w["analysis"]
-        assert a["expected_source"] in ("committee", "regime surrogate")
+        # 11 Oct: fractionator T98 runs on the model estimate vs set point + recent offset (lab every 8 h)
+        assert a["expected_source"] in ("set point", "regime surrogate")
         assert a["residual_now"] is not None and a["sigma_now"] > 0
         assert isinstance(a["breach_open"], bool) and a["minutes_before_next_lab"] == 240
         assert a["summary"]["en"] and a["summary"]["hinglish"] and a["summary"]["hi"] and prim in a["summary"]["en"]
@@ -59,8 +60,11 @@ def test_workbench_four_zones_every_unit():
 
 def test_workbench_fractionator_specifics():
     w = workbench("unit_4_fractionator", "random_s147", 300)  # recipe ISSUED minute since the 2 Oct retrain
-    assert w["analysis"]["expected_source"] == "committee"
+    assert w["analysis"]["expected_source"] == "set point"
     q = next(p for p in w["panels"] if p["panel_id"] == "quality")
+    # T98 panel: model estimate + its 90 % band + lab results, never a per-minute "measured" T98 line
+    labels = [tr["label"] for tr in q["traces"]]
+    assert "Model estimate" in labels and not any("truth" in x.lower() for x in labels)
     assert any(h["role"] == "spec" and h["value"] == 765.0 for h in q["hlines"])
     assert any(h["role"] == "plan" for h in q["hlines"])
     assert w["models"]["gate"]["w90"] is not None and w["models"]["gate"]["w90_limit"] == 14.0

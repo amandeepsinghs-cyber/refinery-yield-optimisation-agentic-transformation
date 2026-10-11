@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 
-from app.engines.detect import TAG_LABEL, events_for_run, next_lab_min
+from app.engines.detect import TAG_LABEL, est_label, events_for_run, next_lab_min
 from app.engines.recipe import _label_unit, _row_at, plausibility_issue, recipe_for, whatif
 from app.engines import scripted
 from app.engines.regime import regime_at
@@ -52,7 +52,7 @@ USE_CASES = {
     "UC-08": ("High-value #8", "Filter / hydraulic breakthrough prediction"),
     "UC-09": ("High-value #9", "Rotating-equipment health"),
     "UC-10": ("High-value #10", "Furnace coke build-up and hydraulic-constraint prediction"),
-    "UC-11": ("High-value #11", "Product soft sensor between lab samples"),
+    "UC-11": ("High-value #11", "Product-quality estimate between lab samples"),
 }
 # type -> question template, problems, use cases (first = primary), what changes versus today
 TYPES: dict[str, dict[str, Any]] = {
@@ -389,7 +389,7 @@ def _cut_point(run_id: str, t: int, prop: str, arrs: dict, meta: dict, j: int, a
     nl = next_lab_min(run_id, t)
     nl_txt = f"next lab {clock(nl)} (in {nl - t} min)" if nl is not None else "no lab scheduled"
     att = next((a for a in attention if a.get("tag") == prop), None)
-    observed = {"tag": prop, "label": TAG_LABEL.get(prop, prop), "estimate": e["mu"], "sigma": e["sigma"],
+    observed = {"tag": prop, "label": est_label(prop), "estimate": e["mu"], "sigma": e["sigma"],
                 "plan": _f(rec.get("sp_before")), "delta_vs_plan": _f((e["mu"] or 0) - (rec.get("sp_before") or 0)),
                 "q95": e["q95"], "spec_max": _f((e["q95"] or 0) + (rec.get("margin_before_F") or 0)), "unit": "°F",
                 "since_label": att.get("time_label") if att else None, "line": att.get("line") if att else None,
@@ -662,7 +662,7 @@ def _watch(run_id: str, t: int, attention: list[dict], covered: set[str]) -> lis
                                 else "Adjust the stabiliser overhead temperature for C5 recovery?"),
                          }.get(dtype, f"Act on the {UNIT_SHORT.get(uid, '').lower()} now, before it reaches the "
                                       f"{down.lower()}?")
-        d["observed"] = {"tag": a.get("tag"), "label": TAG_LABEL.get(a.get("tag"), a.get("tag")), "line": a.get("line"),
+        d["observed"] = {"tag": a.get("tag"), "label": est_label(a.get("tag")) or a.get("tag"), "line": a.get("line"),
                          "since_label": a.get("time_label"), "severity": a.get("severity")}
         d["urgency"] = {"rank": None, "time_to_consequence_min": a.get("horizon_min"), "consequence": a.get("consequence"),
                         "decide_by_label": None, "downstream_unit_id": a.get("downstream_unit_id"), "loop": a.get("loop")}
@@ -730,7 +730,7 @@ def act(decision_id: str, action: str, run_id: str, time_min: int, user: str = "
     aid = st.audit(user, f"decision {action}", decision_id,
                    {"note": note, "type": d["type"], "unit_id": d["unit_id"], "moves": d["proposed"]["moves"],
                     "problem": d["problem"], "use_case": d["use_case"]["platform_id"], "control_system_write": False,
-                    "move_basis": "response model" if d.get("scripted") else "soft sensor",
+                    "move_basis": "response model" if d.get("scripted") else "model estimate",
                     "gain_source": "measured" if d.get("gain_source") == "measured" else ("response model" if d.get("scripted") else None)})
     db = _db()
     db.execute("INSERT INTO decision_actions(decision_id, run_id, time_min, action, user, note, ts, audit_id, snapshot)"
@@ -772,8 +772,8 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
     if t in ("D1", "D2", "D9"):
         mem = (d.get("models") or {}).get("members") or []
         n_mix = sum(1 for m in mem if m.get("role") == "blended")
-        name = (f"Soft-sensor committee ({len(mem)} models, {n_mix} blended)" if mem and n_mix < len(mem)
-                else f"Soft-sensor committee ({len(mem) or 4} models)")
+        name = (f"Estimation models ({len(mem)}, {n_mix} blended)" if mem and n_mix < len(mem)
+                else f"Estimation models ({len(mem) or 4})")
         steps.append(_step("ml", name,
                            f"Estimates the lab value every minute: {o['estimate']:.1f} ± {(o.get('sigma') or 0):.1f} °F"
                            + ("; the linear model is shown for reference only" if mem and n_mix < len(mem) else "")
@@ -810,7 +810,7 @@ def _enabled_by(d: dict, reg: dict) -> list[dict]:
         fd = (reg or {}).get("feed") or {}
         ho = ((fd.get("model") or {}).get("heldout") or {})
         dh = ((fd.get("model") or {}).get("detector_heldout") or {})
-        steps.append(_step("ml", "Feed-property soft sensor",
+        steps.append(_step("ml", "Feed-property model",
                            f"Estimates feed API every minute from the unit's response: {o.get('api_est')} ± "
                            f"{o.get('api_band')}" + (f"; held-out error {ho.get('mae_api')} API" if ho else "")))
         steps.append(_step("agent", "Feed-change detection",
@@ -956,7 +956,7 @@ def build(run_id: str, time_min: int) -> dict:
     counts = {s: sum(d["status"] == s for d in decisions) for s in STATUSES}
     return {"run_id": run_id, "time_min": t, "clock": clock(t), "counts": counts, "decisions": decisions,
             "problems": PROBLEMS, "advisory_only": True, "never_recommended": NEVER_RECOMMENDED,
-            "provenance": {"source": "simulated", "engines": ["soft-sensor committee", "spread gate S1–S7",
+            "provenance": {"source": "simulated", "engines": ["estimation committee", "spread gate S1–S7",
                                                               "regime E1", "surrogates E2", "sentinels E3", "recipe E4"]}}
 
 

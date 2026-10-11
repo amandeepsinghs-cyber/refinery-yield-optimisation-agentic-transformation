@@ -18,7 +18,7 @@ import { useLiveVoice, type LiveVoice } from "./useLiveVoice";
 const STARTERS = [
   "Explain all graphs, curves & buttons on this page",
   "Walk me through the 7-scene demo flow",
-  "Is the soft sensor trustworthy right now?",
+  "Is the model estimate trustworthy right now?",
   "Can we raise the LCO cut point now?",
 ];
 

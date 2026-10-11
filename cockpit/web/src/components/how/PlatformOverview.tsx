@@ -22,7 +22,7 @@ const CHAIN: { n: number; name: string; job: string; here: string }[] = [
     here: "Deterministic and auditable; trained on the unit's own history." },
   { n: 2, name: "The agent checks and recommends",
     job: "Checks those numbers against SOP limits, recent history and past decisions on its unit, then gives one recommendation with its evidence, or says “Not yet”.",
-    here: "One agent per use case, reading only its own unit's data. When the feed changes, the soft sensor resets its lab bias and checks it has lab results for this feed, and the recipe and preheat target follow the new feed estimate." },
+    here: "One agent per use case, reading only its own unit's data. When the feed changes, the quality estimate resets its lab bias and checks it has lab results for this feed, and the recipe and preheat target follow the new feed estimate." },
   { n: 3, name: "Gemini orchestrates",
     job: "Calls the right agents, combines their advice, explains it in plain words and cites the SOP.",
     here: "Read-only. The numbers never come from the language model." },
@@ -33,14 +33,14 @@ const CHAIN: { n: number; name: string; job: string; here: string }[] = [
 
 // The agent that owns each use case — same names as the Architecture tab (lib/architecture.ts AGENTS).
 const AGENT: Record<string, string> = {
-  "UC-01": "Soft-sensor agent", "UC-11": "Soft-sensor agent",
+  "UC-01": "Quality-estimation agent", "UC-11": "Quality-estimation agent",
   "UC-05": "Furnace agent", "UC-10": "Furnace agent", "UC-04": "Regenerator agent",
   "UC-02": "Light-ends agent", "UC-03": "Light-ends agent", "UC-07": "Light-ends agent",
   "UC-06": "Systems agent", "UC-08": "Systems agent", "UC-09": "Systems agent",
 };
 
 // The models under each agent in this build (6 Oct: kept as the small print, not the headline).
-const SENSOR = "4-model soft sensor (incl. PINN) · trust checks";
+const SENSOR = "4 estimation models (incl. PINN) · trust checks";
 const MOVE = "Anomaly detection · response model · optimiser";
 const WATCH = "Anomaly detection · consequence check";
 const MODELS: Record<string, string> = {
@@ -151,7 +151,7 @@ export default function PlatformOverview() {
           <li className="on"><b>Predict</b><span>Models trained on the unit&apos;s data give the expected effect of a move and how sure they are. A crude never seen starts from its nearest crude family and physics, and moves smaller. When the models disagree: “Not yet”.</span></li>
           <li className="on"><b>Decide</b><span>A person accepts, holds or declines. Recorded; nothing sent to the plant.</span></li>
           <li className="on"><b>Measure</b><span>The next lab sample, or the unit&apos;s own instruments, show what really happened. Inside the predicted band = confirmed.</span></li>
-          <li className="on"><b>Learn</b><span>Each lab result re-anchors the soft sensor. Response models start from physics, then learn from moves operators already made and small planned step tests.</span></li>
+          <li className="on"><b>Learn</b><span>Each lab result re-anchors the model estimate. Response models start from physics, then learn from moves operators already made and small planned step tests.</span></li>
         </ol>
         <p className="pf-note">In the demo, on simulated data, with one recipe fed back through the simulator to test its prediction. <b>On your plant:</b> {PILOT_LINE.replace(/^On your plant, /, "")}</p>
       </section>

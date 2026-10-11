@@ -19,8 +19,8 @@ import pandas as pd
 
 from app.data.catalog import tag_meta
 from app.engines.adapt import adaptation_at
-from app.engines.detect import (TAG_LABEL, briefing, detection_series, events_for_run, next_lab_min, open_breach,
-                                root_cause)
+from app.engines.detect import (EST_TAGS, TAG_LABEL, briefing, detection_series, est_label, events_for_run,
+                                next_lab_min, open_breach, root_cause)
 from app.engines.recipe import recipe_for
 from app.engines.regime import holdout_score, regime_at
 from app.engines import scripted
@@ -32,7 +32,7 @@ from app.twin import evaluate_twin_state
 logger = logging.getLogger(__name__)
 
 MAX_POINTS = 400
-PALETTE = {"measured": "#1d4ed8", "expected": "#047857", "band": "#047857", "plan": "#6d28d9", "spec": "#b91c1c",
+PALETTE = {"measured": "#1d4ed8", "lab": "#b45309", "expected": "#047857", "band": "#047857", "plan": "#6d28d9", "spec": "#b91c1c",
            "residual": "#0e7490", "sigma3": "#be185d", "cusum": "#c2410c",
            "mv": ["#ea580c", "#0f766e", "#7c2d12", "#4338ca", "#b45309", "#0369a1"],
            "disturbance": ["#be185d", "#9333ea", "#0369a1"],
@@ -109,6 +109,8 @@ def _series(st, run_id, unit_id, tags, window: tuple[int, int], step: int) -> tu
     anchor = anchor if anchor is not None else pd.to_numeric(df[tags[0]], errors="coerce").to_numpy(float)
     sub = np.where(w)[0]
     keep = sub[_downsample_idx(t_all[sub], anchor[sub], step)]
+    if len(sub) and keep[-1] != sub[-1]:   # always end on the cursor minute: "now" values match the headline
+        keep = np.append(keep, sub[-1]) if len(keep) < MAX_POINTS else np.append(keep[:-1], sub[-1])
     keys = {}
     for tag, d in det.items():
         if d is None:
@@ -120,12 +122,33 @@ def _series(st, run_id, unit_id, tags, window: tuple[int, int], step: int) -> tu
         keys[f"residual:{tag}"] = _clean(d["residual"][keep])
         keys[f"sigma3:{tag}"] = _clean(3.0 * d["sigma"][keep])
         keys[f"cusum:{tag}"] = _clean(d["cusum"][keep])
+        if d.get("basis") == "estimate":
+            keys[f"est_sd:{tag}"] = _clean(d["est_sd"][keep])
+            keys[f"lab:{tag}"] = _lab_points(st, run_id, tag, t_all[keep], window)
     cfg = UNIT_TAGS.get(unit_id, {"mv": [], "dist": [], "yield": [], "extra": {}})
     extra_tags = [x for lst in cfg["extra"].values() for x in lst]
     for tag in cfg["mv"] + cfg["dist"] + cfg["yield"] + extra_tags:
         if tag in df.columns and tag not in keys:
             keys[tag] = _clean(pd.to_numeric(df[tag], errors="coerce").to_numpy(float)[keep])
     return {"time_min": [int(x) for x in t_all[keep]], "keys": keys}, det, cfg
+
+
+def _lab_points(st, run_id: str, tag: str, t_keep: np.ndarray, window: tuple[int, int]) -> list:
+    """Lab results (the only T98 measurements) drawn in the window and reported by its end, snapped to the nearest kept
+    series minute; None elsewhere. Rejected results are left out."""
+    out: list = [None] * len(t_keep)
+    v = st.run(run_id)
+    if v is None or not len(t_keep):
+        return out
+    for lab in (v[1] or {}).get("labs", []) or []:
+        if lab.get("property") != tag or lab.get("status") == "REJECT" or lab.get("value") is None:
+            continue
+        drawn, reported = lab.get("draw_time_min"), lab.get("lims_time_min")
+        if drawn is None or not (window[0] <= int(drawn) <= window[1]) or (reported is not None and int(reported) > window[1]):
+            continue
+        j = int(np.argmin(np.abs(t_keep.astype(float) - float(drawn))))
+        out[j] = round(float(lab["value"]), 2)
+    return out
 
 
 def _panels(unit_id, tags, det, cfg, keys, hl: dict, markers: list[dict]) -> list[dict]:
@@ -135,11 +158,35 @@ def _panels(unit_id, tags, det, cfg, keys, hl: dict, markers: list[dict]) -> lis
         if det.get(tag) is None:
             continue
         src = det[tag]["expected_source"]
+        if det[tag].get("basis") == "estimate":
+            # T98: measured only by the lab every 8 h. Draw the model estimate with its 90 % band, the lab results and
+            # the expected value (set point + the estimate's recent offset); never a per-minute T98 line.
+            traces = [{"key": tag, "label": "Model estimate", "role": "measured", "color": PALETTE["measured"]},
+                      {"key": f"band_lo:{tag}", "label": "90 % band of the estimate", "role": "band_lo", "color": PALETTE["band"]},
+                      {"key": f"band_hi:{tag}", "label": "90 % band of the estimate", "role": "band_hi", "color": PALETTE["band"]},
+                      {"key": f"expected:{tag}", "label": "Expected (set point + recent offset)", "role": "expected",
+                       "color": PALETTE["expected"]}]
+            if any(x is not None for x in keys.get(f"lab:{tag}", [])):
+                traces.append({"key": f"lab:{tag}", "label": "Lab result (measured)", "role": "lab", "color": PALETTE["lab"]})
+            panels.append({
+                "panel_id": "quality" if n == 0 else f"quality_{n + 1}", "kind": "measured_vs_expected",
+                "title": f"{_label(tag)} — model estimate (90 % band) vs expected · lab every 8 h", "unit": _unit(tag),
+                "traces": traces, "hlines": hl.get(tag, []), "markers": [m for m in markers if m.get("tag") in (tag, None)],
+                "use_case_ids": ucs})
+            panels.append({
+                "panel_id": "residual" if n == 0 else f"residual_{n + 1}", "kind": "residual",
+                "title": f"{_label(tag)} estimate − expected with ±3σ and CUSUM", "unit": _unit(tag),
+                "traces": [{"key": f"residual:{tag}", "label": "Estimate − expected", "role": "residual", "color": PALETTE["residual"]},
+                           {"key": f"sigma3:{tag}", "label": "±3σ (trailing MAD)", "role": "sigma3", "color": PALETTE["sigma3"]},
+                           {"key": f"cusum:{tag}", "label": "CUSUM (k=0.5σ, h=5σ)", "role": "cusum", "color": PALETTE["cusum"]}],
+                "hlines": [{"value": 0.0, "label": "0", "role": "plan", "color": PALETTE["plan"]}],
+                "markers": [m for m in markers if m.get("tag") == tag], "use_case_ids": ucs})
+            continue
         band_label = "5–95 % band" if src == "committee" else "±2σ band"
         panels.append({
             "panel_id": "quality" if n == 0 else f"quality_{n + 1}", "kind": "measured_vs_expected",
             "title": f"{_label(tag)} — measured vs expected ({src})", "unit": _unit(tag),
-            "traces": [{"key": tag, "label": "Measured (simulator truth)", "role": "measured", "color": PALETTE["measured"]},
+            "traces": [{"key": tag, "label": "Measured", "role": "measured", "color": PALETTE["measured"]},
                        {"key": f"expected:{tag}", "label": f"Expected ({src})", "role": "expected", "color": PALETTE["expected"]},
                        {"key": f"band_lo:{tag}", "label": band_label, "role": "band_lo", "color": PALETTE["band"]},
                        {"key": f"band_hi:{tag}", "label": band_label, "role": "band_hi", "color": PALETTE["band"]}],
@@ -230,9 +277,9 @@ def _summary(unit_id, tag, state: dict, det, nxt, time_min, rc, rcp, regime) -> 
         res, sig = state["residual_now"], state["sigma_now"]
         lab_en = f"next lab draw at t={nxt} min" if nxt else "no further lab scheduled"
         r = regime.get("regime_id", "?")
-        return {"en": f"{_label(tag)} ({tag}) tracking expected within {abs(res):.1f} {_unit(tag)} ({abs(res) / max(sig, 1e-6):.1f}σ) "
+        return {"en": f"{est_label(tag)} ({tag}) tracking expected within {abs(res):.1f} {_unit(tag)} ({abs(res) / max(sig, 1e-6):.1f}σ) "
                       f"at t={time_min} min, regime {r}; {lab_en}; recipe {gate}.",
-                "hinglish": f"{_label(tag)} ({tag}) expected ke {abs(res):.1f} {_unit(tag)} ({abs(res) / max(sig, 1e-6):.1f}σ) ke andar "
+                "hinglish": f"{est_label(tag)} ({tag}) expected ke {abs(res):.1f} {_unit(tag)} ({abs(res) / max(sig, 1e-6):.1f}σ) ke andar "
                             f"hai, t={time_min} min, regime {r}; {'agla lab t=' + str(nxt) + ' min' if nxt else 'aage koi lab nahi'}; recipe {gate}.",
                 "hi": f"{_label(tag)} ({tag}) अपेक्षित के {abs(res):.1f} {_unit(tag)} ({abs(res) / max(sig, 1e-6):.1f}σ) के भीतर है, "
                       f"t={time_min} मिनट, रेज़ीम {r}; {'अगला लैब t=' + str(nxt) + ' मिनट' if nxt else 'आगे कोई लैब नहीं'}; रेसिपी {gate}।"}
@@ -303,9 +350,10 @@ def workbench(unit_id: str, run_id: str, time_min: int, window_min: int = 720, s
                 for t in tag_list if t in row and isinstance(row[t], (int, float, np.floating)) and np.isfinite(float(row[t]))]
 
     kpi = unit.get("kpi_vs_plan") or {}
-    headline = {"label": kpi.get("label") or (_label(primary) if primary else ""), "value": kpi.get("value"),
+    headline = {"label": kpi.get("label") or (est_label(primary) if primary else ""), "value": kpi.get("value"),
                 "plan": kpi.get("plan"), "tol": kpi.get("tol"), "unit": kpi.get("unit") or (_unit(primary) if primary else ""),
-                "state": kpi.get("state"), "plan_source": kpi.get("plan_source")}
+                "state": kpi.get("state"), "plan_source": kpi.get("plan_source"),
+                "basis": kpi.get("basis") or ("estimate" if primary in EST_TAGS else "measured"), "sigma": kpi.get("sigma")}
     # Signature chart per use case (SDD-L1-04, BDD-28 "use-case entry opens the owning unit scrolled to its signature chart").
     SIGNATURE_PANEL = {"UC-03": "quality_2", "UC-04": "yield", "UC-05": "combustion", "UC-06": "mv", "UC-07": "mv",
                        "UC-08": "yield", "UC-09": "yield", "UC-10": "mv", "UC-02": "yield"}

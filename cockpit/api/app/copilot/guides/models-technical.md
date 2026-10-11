@@ -1,4 +1,4 @@
-# Technical reference: the soft-sensor models
+# Technical reference: the estimation models
 
 > **In one line:** Three admitted machine-learning models (a Gaussian process, a physics-plus-Gaussian-process hybrid and a physics-informed MLP ensemble) each give a mean and a σ for LCO and HN T98 every minute. A fourth, Bayesian ridge, is scored for reference only. The three are blended into a Gaussian mixture, shifted by a Kalman lab bias, checked by seven trust signals and a spread gate, and only then searched for a set-point move with at least 95 % chance on spec. Every number below was read from code, `config.yaml`, the served `artifacts/bundle.json` (trained 2026-10-06 18:19 UTC) or the live API.
 
@@ -9,8 +9,8 @@
 | Targets | `LCO_T98_F`, `HN_T98_F`: the temperature (°F) at which 98 % of the product has distilled, as computed by the simulator. Plant specs are usually ASTM D86 T90/T95; T98 stands in for the heavy-end cut point | `config.yaml targets`, DECISIONS T1 |
 | What is predicted | A full predictive distribution per minute: member μ and σ, mixture mean, sd, quantiles q01–q99, W90, P(on spec) | `pipeline.assemble_run` |
 | Cadence | One estimate per simulated minute (one row per minute). In this demo every run is assembled in time order at training time and served as a replay. Each step uses only rows at or before t | `train.main` → `assemble_run` |
-| Training labels (served bundle) | **Simulator truth, every 5th minute** (`truth_stride_min: 5`). Counts: **5,775 LCO / 7,072 HN** | `bundle.json label_source: truth`, `n_labels` |
-| Why truth, not labs | `label_source: auto` picks labs only if the train runs carry ≥ 100 clean labs per property. They carry 72, so it falls back to truth | `train.choose_label_source`, `bundle.n_clean_train_labs = 72` |
+| Training labels (served bundle) | **Reference values from the simulator, every 5th minute** (the simulator's per-minute T98, used only as training labels and for scoring; a real plant never has it) (`truth_stride_min: 5`). Counts: **5,775 LCO / 7,072 HN** | `bundle.json label_source: truth`, `n_labels` |
+| Why reference values, not labs | `label_source: auto` picks labs only if the train runs carry ≥ 100 clean labs per property. They carry 72, so it falls back to the reference values (`truth`) | `train.choose_label_source`, `bundle.n_clean_train_labs = 72` |
 | Specs (placeholders) | LCO T98 ≤ **765 °F**, HN T98 ≤ **540 °F**, margin 0 | `config specs` |
 | Lab reproducibility | **R = 7 °F**. σ_lab = R / 2.77 = 2.527 °F | `config lab.reproducibility_F`, `config.py sigma_lab` |
 | Operating target used by D1 | LCO 755.3 °F, HN 530.3 °F, dead band 1.0 °F | `config recommend.target_F` |
@@ -26,12 +26,12 @@
   - Targets and `SP_*` set points get no noise.
   - One injected sensor drift: `T_tray13_F` in `random_s152`, +4 °F/day from minute 300.
 - **Validity cut** (`data/validity.valid_until`): each run is used only up to the first minute where either ≥ 5 consecutive rows repeat exactly on 8 core state tags (failed solver minutes), or LCO T98 leaves [650, 820] °F, or HN T98 leaves [450, 680] °F, or a target is not finite. In this training **24 runs are whole and 30 are cut** (`train.log`).
-- **Pinned truth** (`data/pinned.py`, enabled for LCO only): LCO T98 equal to the simulator's ceiling of 770.364 ± 0.001 °F is treated as a missing label and as missing evaluation truth. That excludes 8,350 train minutes and 3,517 held-out minutes. The HN ceiling (644.767 °F) is **not** masked.
+- **Pinned reference values** (`data/pinned.py`, enabled for LCO only): a reference LCO T98 equal to the simulator's ceiling of 770.364 ± 0.001 °F is treated as a missing label and as a missing scoring value. That excludes 8,350 train minutes and 3,517 held-out minutes. The HN ceiling (644.767 °F) is **not** masked.
 - **Split by run:** train = `random_s100`–`s139` (40 runs); held-out test = `random_s140`–`s153` (14 runs). Inside train, a grouped 4-fold by run gives the out-of-fold predictions used for admission, committee weights and σ calibration.
-- **Label rows (truth mode):** valid, unpinned, non-transient minutes, then every 5th row. "Transient" means `event_code ≠ 0`, or a 30-min trailing std of any key tag > 3 × max(that tag's median rolling std, its noise σ).
-- **Synthetic labs** (`catalog.raw_labs`):
+- **Label rows (reference-value mode, `label_source: truth`):** valid, unpinned, non-transient minutes, then every 5th row. "Transient" means `event_code ≠ 0`, or a 30-min trailing std of any key tag > 3 × max(that tag's median rolling std, its noise σ).
+- **Lab results** (simulated: reference value + lab error; `catalog.raw_labs`):
   - One lab per target at each `lab_sample == 1` minute: 360 / 840 / 1320 = 06:00 / 14:00 / 22:00.
-  - Value = simulator truth + N(0, σ_lab), σ_lab = R / 2.77.
+  - Value = reference value + N(0, σ_lab), σ_lab = R / 2.77.
   - LIMS delay is uniform on 45–75 min (about 60).
   - Injected errors: 3 % gross (± 4 σ_lab) and 5 % timestamp (recorded draw time = LIMS time).
 - **Labs at run time** (`assemble_run`), in order:
@@ -47,7 +47,7 @@
 - **EWMA smoothing** (`features.add_ewma`), τ = 10 min, α = 1 − e^(−1/10) = 0.095. Every noisy column is replaced in place by its causal EWMA. The 7 key tags (`T_tray06_F, T_tray13_F, P5_frac_psia, Tr_riser_F, feed_flow_lb_s, MV_PA2, MV_PA3`) also get a `<tag>__ewma` copy, which is an EWMA of the already-smoothed column.
 - **Lagged features** (`data/lags.py`). For each (target, key tag) with lag L > 0 there are two columns: `<tag>__lag<L>` (the value at t − L) and `<tag>__lagmean<L>` (the mean over [t − L, t]). A target only sees its own lag columns.
 
-**Lag selection.** Prewhitened cross-correlation, run on train runs only. The target series is minute-by-minute simulator truth; the input series are the noisy measured values. Steps:
+**Lag selection.** Prewhitened cross-correlation, run on train runs only. The target series is the minute-by-minute reference value from the simulator; the input series are the noisy measured values. Steps:
 
 1. Take first differences of x and y in each run.
 2. Fit AR(5) to the pooled input differences by least squares, and apply the same filter to both series.
@@ -164,7 +164,7 @@ L = Σₖ [ mean_i ½(ln vₖ,i + (yᵢ − μₖ,i)² / vₖ,i)              Ga
 
 **σ calibration** (`train.calibrate_sigma_scale`):
 
-- **Data:** out-of-fold minutes from the grouped 4-fold by run, up to 6,000 sampled. Truth for LCO excludes pinned minutes.
+- **Data:** out-of-fold minutes from the grouped 4-fold by run, up to 6,000 sampled. The LCO reference values exclude pinned minutes.
 - **Search:** a factor k on the grid 0.30, 0.35, …, 1.50.
 - **Band:** each member's component sd is √((k·σᵢ)² + σ_lab²), and members are weighted by the out-of-fold weights of section 6.
 - **Choice:** the k whose mixture 5–95 % band covers closest to 90 %. Mixture quantiles use bisection with a 0.05 °F tolerance.
@@ -302,10 +302,12 @@ Advisory only: Accept / Hold / Decline write the audit record; nothing is sent t
 From `engines/detect.py`, per primary tag and per minute:
 
 ```
-expected  = committee mixture mean (fractionator: LCO/HN T98)
+expected  = LCO/HN T98 (lab-only, `EST_TAGS`): set point + the model estimate's recent offset from it
+            (one-step-lagged EWMA, half-life 45 min); the 'measured' series here is the MODEL ESTIMATE
+            (committee mixture mean), never the per-minute reference value
           | otherwise the regime response model: ŷ = ȳ_r + (x − x̄_r)·B_r, plus a one-step-lagged EWMA
             of past innovations (half-life 45 min)
-residual  r_t = measured_t − expected_t
+residual  r_t = measured_t − expected_t      (T98: estimate_t − expected_t)
 σ_t       = max(1.4826 · MAD(r over the trailing 240 min, ≥ 30 points), floor)
             floor = max(0.25 · min(resid_sd, 8), 0.2)
 CUSUM     S⁺_t = max(0, S⁺_{t−1} + r_t − kσ_t),   S⁻_t = max(0, S⁻_{t−1} − r_t − kσ_t),   k = 0.5
@@ -383,7 +385,7 @@ The D6 gain itself was fit offline (`surrogates.gap_step_response`). Each move i
 
 ## 14. Held-out accuracy and honest limits
 
-**Served bundle (2026-10-06 18:19)**, measured on 14 held-out runs at every valid minute against simulator truth. LCO pinned minutes are excluded (n = 12,391 LCO and 15,908 HN minutes):
+**Served bundle (2026-10-06 18:19)**, scored on 14 held-out runs at every valid minute against the simulator's reference values. LCO pinned minutes are excluded (n = 12,391 LCO and 15,908 HN minutes):
 
 | | MAE °F | RMSE °F | Bias °F | 90 % band coverage | CRPS | Mean W90 °F | Minutes WITHHELD |
 |---|---|---|---|---|---|---|---|
@@ -393,14 +395,14 @@ The D6 gain itself was fit offline (`surrogates.gap_step_response`). Each move i
 | HN GPR / hybrid / PINN / ridge (RMSE) | 2.78 / 2.89 / 7.19 / 7.82 | 5.16 / 5.44 / 16.74 / 12.62 | | 66 / 66 / 55 / 62 % | | | |
 
 - **LCO including pinned minutes:** MAE 6.7, RMSE 10.2, coverage 96.2 % (computed from `eval_LCO_T98_F.npz`).
-- **Earlier quoted figures** (DECISIONS P12, 3 Oct): LCO MAE 7.5 / RMSE 17.1 / coverage 79 %; HN 13.2 / 24.5 / 59 %. These belong to the **previous** model, trained on truth every 30 min (728 LCO / 697 HN labels, S-6). The LCO set matches `softsensor_v8_lco_candidate/bundle.json` exactly. The HN set was not found in any bundle on disk. The served model replaced it on 6 Oct, so quote the table above.
+- **Earlier quoted figures** (DECISIONS P12, 3 Oct): LCO MAE 7.5 / RMSE 17.1 / coverage 79 %; HN 13.2 / 24.5 / 59 %. These belong to the **previous** model, trained on reference values every 30 min (728 LCO / 697 HN labels, S-6). The LCO set matches `softsensor_v8_lco_candidate/bundle.json` exactly. The HN set was not found in any bundle on disk. The served model replaced it on 6 Oct, so quote the table above.
 - **Against the DECISIONS T3 targets:** RMSE ≤ 1.5R = 10.5 °F (both met); coverage 85–95 % (HN within; LCO 95.5 % is slightly above).
 
 **What the numbers mean and do not mean:**
 
-- **Labels are simulator truth, not labs.** No lab noise or bias, and lab-error behaviour is not tested in training. On site the models train on the refinery's lab history.
+- **Labels are reference values from the simulator, not labs.** No lab noise or bias, and lab-error behaviour is not tested in training. On site the models train on the refinery's lab history.
 - **The mixture benefits from the Kalman correction** using the run's own synthetic labs, which is legitimate online information. Its accuracy is reported on all minutes, including those the gate withheld.
-- **Weak tracking on quiet runs:** LCO correlation between estimate and truth within a run is 0.06 (s140), 0.11 (s145), 0.21 (s150) and 0.33 (s144), where truth moves by only 1–5 °F std. It reaches 0.96 on runs with large swings. HN within-run correlation is 0.79–1.00.
+- **Weak tracking on quiet runs:** LCO correlation between estimate and reference value within a run is 0.06 (s140), 0.11 (s145), 0.21 (s150) and 0.33 (s144), where the reference value moves by only 1–5 °F std. It reaches 0.96 on runs with large swings. HN within-run correlation is 0.79–1.00.
 - **T98 ceiling:** the simulator saturates LCO at 770.364 °F (20 % of valid rows); those minutes are excluded. The HN ceiling (644.767 °F) is not masked.
 - **Over-tight member σ for HN:** calibration factor 0.35, member coverage 55–66 %. The mixture reaches 86 % only through the bias variance and between-model spread. The LCO gate withholds 65 % of held-out minutes.
 - **Some inputs would not exist on a plant as-is:** `conversion_pct` (simulator-computed) and a set point (`SP_LCO_T98`) are HN features.
@@ -460,7 +462,7 @@ Paths are relative to `cockpit/api/app/`.
 |---|---|---|
 | Specs, R, σ_lab = R/2.77, gate limit | `config.py`; `../config.yaml` | `R` l.47, `sigma_lab` l.51, `w90_max` l.65 |
 | Measurement noise, synthetic labs | `data/catalog.py` | `add_measurement_noise` l.120, `raw_labs` l.429 |
-| Validity cut / pinned truth | `data/validity.py`; `data/pinned.py` | `valid_until` l.23; `mask_truth` l.76 |
+| Validity cut / pinned reference values | `data/validity.py`; `data/pinned.py` | `valid_until` l.23; `mask_truth` l.76 |
 | EWMA, selection, scaling, transient flag | `data/features.py` | `add_ewma` l.14, `select_features` l.39, `Scaler` l.64, `transient_mask` l.85 |
 | Lag identification / lag features | `data/lags.py` | `identify_lag` l.98, `apply_lags` l.184 |
 | Physics base | `models/base.py` | `PhysicsBase` l.14 |

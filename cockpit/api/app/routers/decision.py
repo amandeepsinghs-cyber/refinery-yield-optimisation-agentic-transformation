@@ -60,7 +60,7 @@ def overview(run_id: str | None = None, property: str = "LCO_T98_F", time_min: i
     note = None
     if not le:
         note = ("rmse_vs_lab is null: no accepted synthetic labs in this run (legacy scenario files carry no lab_sample "
-                "flags); rmse_vs_truth is shown against simulator truth.")
+                "flags); rmse_vs_truth is shown against the simulator reference values.")
     return {"kpis": kpis, "decisions_needed": needed, "note": note,
             "provenance": {"source": "simulated", "batch_id": meta.get("batch"), "run_id": run_id, "property": prop}}
 

@@ -34,11 +34,13 @@ Draw them as a **bell curve**: the peak sits on the best guess; narrow and tall 
 
 **Why never 100 %?** A bell curve has thin tails that go on forever. There is always a tiny sliver past the line. The app therefore shows **> 99 %** instead of 100 %, and **< 1 %** instead of 0 %. That is honesty, not a bug.
 
-## 3. The soft sensor
+## 3. The model estimate
 
 The key quality numbers are **LCO T98** and **HN T98**: the temperature at which 98 % of the product (light cycle oil, diesel range; heavy naphtha, petrol range) has boiled off. Only the lab measures them, every 8 hours, about an hour after the sample is drawn.
 
-A **soft sensor** is a model that estimates that lab number **every minute** from the instruments the plant already has: tray temperatures, flows and pressures. Like judging how done a cake is from the oven temperature and the time, without cutting it open.
+A **model estimate** is the output of a machine-learning model that estimates that lab number **every minute** from the instruments the plant already has: tray temperatures, flows and pressures (the industry calls such a model a soft sensor). Like judging how done a cake is from the oven temperature and the time, without cutting it open. It always comes with its band (± σ or a 90 % band).
+
+Two words keep this honest on screen: **Measured** is what the plant records (sensor readings every minute, lab results every 8 h); **Estimate** is what a model computes. Every T98 number between lab results is an estimate, marked **est.**
 
 **Lags.** A change at the bottom of the column takes minutes to show up in the product. So the model also reads some inputs "as they were a few minutes ago". That delay is a **lag**. The app found each lag on the training runs (searching 0 to 60 minutes). On screen, in **Full explanation** → **Columns the models read**, you see names like "Tray 13 temperature, 12 min ago" or "…, mean of the last 12 min" (numbers vary).
 
@@ -81,11 +83,11 @@ The app blends the models into one estimate, like a panel of judges where the mo
 **"4 models, 3 blended" — why one is left out.** A model must first pass an entry test on runs it did not train on:
 
 1. its error is at most **1.40 ×** the linear model's error, and
-2. its 90 % band really holds the true value between **65 % and 99 %** of the time.
+2. its 90 % band really holds the reference value (see the glossary) between **65 % and 99 %** of the time.
 
-The linear model (L) is always kept as a yardstick but is set to **weight 0** in the blend, because its band is too wide to sharpen the estimate. So you see **Soft-sensor committee (4 models, 3 blended)** in section 4, **How the move is found**.
+The linear model (L) is always kept as a yardstick but is set to **weight 0** in the blend, because its band is too wide to sharpen the estimate. So you see **Estimation models (4, 3 blended)** in section 4, **How the move is found**.
 
-**Band check.** After training, all bands are scaled (for example **×0.85**) so that the 90 % band held the truth about 90 % of the time on unseen runs.
+**Band check.** After training, all bands are scaled (for example **×0.85**) so that the 90 % band held the reference value about 90 % of the time on unseen runs.
 
 **Example (run random_s144, 10:00, LCO):** G 755.2 °F × 38 %, H 755.7 × 32 %, N 753.6 × 30 %, L 749.4 (ref.). Blend ≈ 754.9 °F. Numbers change with the scenario.
 
@@ -144,19 +146,19 @@ Screen: headline in section 3; the lever card with **Try another move** slider a
 
 This answers "is something drifting away from normal?"
 
-- **Expected value:** what the unit *should* read now, for this feed. For the fractionator it is the committee estimate; elsewhere it is a response model (section 11).
-- **Residual** = measured − expected. The "surprise".
+- **Expected value:** what the unit *should* read now, for this feed. Elsewhere it is a response model (section 11). For T98 there is no minute-by-minute measurement, so anomaly detection runs on the model estimate: expected is the set point plus the recent offset of the estimate from it (a slow 45-minute average).
+- **Residual** = measured − expected (for T98: estimate − expected). The "surprise".
 - **Rolling sigma (MAD):** how big a normal surprise is, from the last 4 hours. **MAD** (median absolute deviation) is a way to measure typical wobble that ignores one-off spikes.
 - **±3σ:** a surprise more than three normal wobbles is flagged "**outside ±3σ**".
 - **CUSUM:** a **running tally of small surprises**. Each minute it adds how far the residual is past a small allowance (half a sigma), so tiny drifts in one direction pile up. Past 5 sigma it flags a "**sustained shift**". Like small unexplained card charges every day: none alarms you alone, but the total does.
 
-Screen: section 2 **What we observe**, figures **AWAY FROM EXPECTED**, **SUSTAINED DRIFT (CUSUM)**, **LIKELY DRIVER**; chart "… residual (measured − expected) with ±3σ and CUSUM"; tile **Anomaly detection** in section 4.
+Screen: section 2 **What we observe**, figures **AWAY FROM EXPECTED**, **SUSTAINED DRIFT (CUSUM)**, **LIKELY DRIVER**; chart "… residual (measured − expected) with ±3σ and CUSUM" (for T98: "LCO T98 estimate − expected with ±3σ and CUSUM"; example at 10:00: **Away from expected +1.2 °F (0.7 σ)**, CUSUM 4.9, and the event **LCO T98 est. +1.3 °F above expected (sustained shift) since 09:06**); tile **Anomaly detection** in section 4.
 
 ## 10. The feed model
 
 The FCC is fed heavy gas oil; when the feed changes, everything shifts. The **feed model** watches for that.
 
-- **Feed-API soft sensor:** estimates the feed's **API gravity** (a lightness score; higher = lighter) every minute from how the unit responds: coke per feed, riser temperature rise, fuel per feed, regenerator temperature, conversion, tray temperature difference. Held-out error is about 0.2 API.
+- **Feed-API model:** estimates the feed's **API gravity** (a lightness score; higher = lighter) every minute from how the unit responds: coke per feed, riser temperature rise, fuel per feed, regenerator temperature, conversion, tray temperature difference. Held-out error is about 0.2 API.
 - **Feed-change detector:** smooths that estimate over 20 minutes and flags a change when it leaves its slow baseline by more than 0.7 API. "Settled" when it stops moving for 15 minutes. While the feed changes, other advice is held.
 - **Novelty:** how far the feed sits outside what the models trained on (0 = familiar, 1 = clearly beyond). At **0.5 or above**, advice is **held, not extrapolated**.
 - **Feed class:** heavy (API below 22), intermediate (22–26), light (26 and up).
@@ -203,7 +205,7 @@ It does **not** estimate T98, set weights, run the gate or choose moves. The mod
 | Gaussian process (G) | Learns from similar past moments; unsure when far from them | Estate agent using similar houses | **Gaussian process** |
 | Hybrid (H) | Physics line + learned correction | Sat-nav time + traffic fix | **Physics + correction (hybrid)** |
 | PINN ensemble (N) | Five physics-guided learners; disagreement widens the band | Five students, same rules | Row **Physics-informed models (5)** |
-| Committee | Blends by accuracy | Judges with weighted votes | **Soft-sensor committee (4 models, 3 blended)** |
+| Committee | Blends by accuracy | Judges with weighted votes | **Estimation models (4, 3 blended)** |
 | Lab correction | Nudges estimate toward each lab | Setting a watch by the radio | **lab correction** |
 | Trust checks S1–S7 | Seven sanity checks | Pre-flight checklist | **CHECKS BEFORE ADVISING** |
 | Spread gate | Withholds when too unsure | "I'd rather not guess" | **Not yet** |

@@ -241,7 +241,7 @@ class State:
             "trust": {"level": str(P("trust")[i]), "reason": str(P("trust_reason")[i]), "signals": signals},
             **self._source(P, i),
             "truth": None if not np.isfinite(truth) else round(truth, 2),
-            "truth_label": "simulator truth",
+            "truth_label": "reference value (model scoring only; not a measurement)",
             "spec_max": self.s.spec_max(prop), "w90_limit": self.s.w90_max,
         }
 

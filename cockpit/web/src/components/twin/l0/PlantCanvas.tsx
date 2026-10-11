@@ -19,7 +19,8 @@ export const UNIT_X: Record<string, number> = {
 const NAME: Record<string, string> = Object.fromEntries(Object.entries(UNIT_INFO).map(([id, u]) => [id, u.name]));
 const KPI: Record<string, string> = {
   T2_preheat_F: "preheat", conversion_pct: "conversion", dT_cyc_reg_F: "afterburn ΔT", Treg_F: "bed T",
-  LCO_T98_F: "LCO T98", HN_T98_F: "HN T98", MV_cw_flow: "CW flow", eff_C5: "C5 recovery",
+  // T98 is measured only by the lab (every 8 h): the drawing shows the model estimate, labelled "est."
+  LCO_T98_F: "LCO T98 est.", HN_T98_F: "HN T98 est.", MV_cw_flow: "CW flow", eff_C5: "C5 recovery",
 };
 
 type State = "OK" | "WATCH" | "ACT";

@@ -48,7 +48,7 @@ The FCC drawn as line art, in the order the oil flows, left to right:
 | **Feed furnace** | Preheats the heavy gas oil feed | **preheat 615.6 −0.4** (°F) |
 | **Riser reactor** | Feed and hot catalyst crack into lighter products in seconds | **conversion 93.89 +0.1 ?** (%) |
 | **Regenerator** | Burns coke off the catalyst; that heat drives the cracking | **afterburn ΔT 5.20 +0.2** (°F) |
-| **Main fractionator** | Separates the cracked vapour by boiling range | **LCO T98 750.9 −1.8** (°F) |
+| **Main fractionator** | Separates the cracked vapour by boiling range | **LCO T98 est. 753.1 +0.4** (°F; a model estimate, deviation vs set point) |
 | **Gas plant** | Cools and condenses the overhead; a compressor recovers light gases | **CW flow 296.9 −1.7** (cooling water) |
 | **Stabiliser** | Splits LPG from light naphtha (petrol) | **C5 recovery 19.81 −0.1 ?** |
 
@@ -56,7 +56,7 @@ How to read it:
 
 - **Solid lines with arrows** carry oil and vapour. Labels name products leaving: **HN** (heavy naphtha), **LCO** (light cycle oil, diesel range), **LPG**, **Light naphtha**.
 - The **dotted curve** between riser and regenerator is the **catalyst loop**. Catalyst is a fine powder that speeds up cracking. It goes round and round: it cracks oil in the riser, gets coated in coke, is burned clean in the regenerator, and returns hot.
-- **Under each section**: its main measure, then the gap from expected (grey = fine, amber = drifting, red = act).
+- **Under each section**: its main measure, then the gap from expected (grey = fine, amber = drifting, red = act). The fractionator's number is marked **est.**: T98 is measured only by the lab every 8 h, so between lab results the drawing shows the model estimate, and its gap is taken against the set point.
 - **Glow.** A section glows **amber** when it drifts, **red** when it needs action, and gets a **blue halo** when it carries an open decision. The section you picked has a blue name and a slowly pulsing halo. At 10:00 in the default run nothing glows: all six are in band.
 - **?** after a number means "simulator value under review": the simulator's number is outside what a real FCC shows. Hover it for the reason.
 
@@ -89,15 +89,15 @@ Four steps run left to right. Each has a coloured tag naming the piece of AI doi
 ### Step 1 · Data in and out — HISTORIAN · 1-MIN
 
 - **In** and **Out**: the streams entering and leaving (regenerator: in **Spent catalyst**, **Combustion air**; out **Regenerated catalyst → riser**, **Flue gas**).
-- A short table of live readings (regenerator: **Bed temperature 1249.8 °F**, **Afterburn ΔT 5.21 °F**, **Carbon on catalyst 0.30 wt %**). The **historian** is the plant's database of sensor readings, here one value per minute. **sim. units · under review** means the simulator's scale does not match a real plant unit.
+- A short table of live readings (on the fractionator the T98 row reads **LCO T98, last lab 749.5 °F**, the 06:00 lab result; regenerator: **Bed temperature 1249.8 °F**, **Afterburn ΔT 5.21 °F**, **Carbon on catalyst 0.30 wt %**). The **historian** is the plant's database of sensor readings, here one value per minute. **sim. units · under review** means the simulator's scale does not match a real plant unit.
 - **All 14 tags and curves →** opens the full [unit page](/explainer/unit-page).
 
-### Step 2 · What we observe — ANOMALY DETECTION, plus SOFT SENSOR or RESPONSE MODEL
+### Step 2 · What we observe — ANOMALY DETECTION, plus ML ESTIMATE or RESPONSE MODEL
 
-- **MEASURED NOW** and a big number, its unit and its gap: regenerator **5.20 °F +0.2**, "**Regenerator cyclone ΔT (afterburn) · expected 4.99**".
-- Anomaly lines with start time: **09:11 Regenerator cyclone ΔT (afterburn) −1.6 °F below expected (sustained shift)**, or "Tracking expected — nothing unusual."
+- **MEASURED NOW** and a big number, its unit and its gap: regenerator **5.20 °F +0.2**, "**Regenerator cyclone ΔT (afterburn) · expected 4.99**". On the fractionator (D1) it reads **Estimate now 753.1 ± 3.2 °F** instead, because T98 has no minute-by-minute measurement.
+- Anomaly lines with start time: **09:11 Regenerator cyclone ΔT (afterburn) −1.6 °F below expected (sustained shift)**, or "Tracking expected — nothing unusual." On the fractionator the line is about the estimate: **LCO T98 est. +1.3 °F above expected (sustained shift) since 09:06**.
 - A **bell curve**: the model's estimate drawn as a hill. The peak is the best guess; the width is the uncertainty. "5.2 ± 0.6 °F" means "about 5.2, give or take 0.6".
-- A note: **Response model: measured 5.2 ± 0.6 °F, chance in band 31%**. On the fractionator it reads **Soft-sensor estimate (the lab comes every 8 h)** with a **chance on spec**. A **soft sensor** estimates a lab result every minute from live readings. A **response model** predicts how a reading answers a change in a setting. See [the models guide](/explainer/models).
+- A note: **Response model: measured 5.2 ± 0.6 °F, chance in band 31%**. On the fractionator it reads **Model estimate (the lab comes every 8 h): 753.1 ± 3.2 °F, chance on spec > 99 %**. A **model estimate** comes from machine-learning models that estimate a lab result every minute from live readings (the industry calls such a model a soft sensor). A **response model** predicts how a reading answers a change in a setting. See [the models guide](/explainer/models).
 
 ### Step 3 · Decision and lever
 
@@ -130,7 +130,7 @@ For **Not yet**, this step says "**Not run, on purpose:**" and why (gas plant: "
 
 ## 8. Timeline, footer and scenario
 
-**Shift timeline** (bottom). A 12-hour strip with hour labels. Each tick is an event: red = alarm, amber = warning, blue = information. Hover a tick to read it. The white triangle is the current time. **Drag** along the strip to move the whole screen to another minute. **▶** replays: the clock moves one simulated minute every 0.4 seconds. The text reads "**10:00 · 21 events in the last 12 h — drag to scrub, ▶ to replay**".
+**Shift timeline** (bottom). A 12-hour strip with hour labels. Each tick is an event: red = alarm, amber = warning, blue = information. Hover a tick to read it. The white triangle is the current time. **Drag** along the strip to move the whole screen to another minute. **▶** replays: the clock moves one simulated minute every 0.4 seconds. The text reads "**10:00 · 18 events in the last 12 h — drag to scrub, ▶ to replay**". T98 events are about the model estimate (T98 is measured only by the lab), for example **07:04 LCO T98 est. +5.3 °F (outside ±3σ and sustained shift)**, **07:32 HN T98 est. +5.1 °F (sustained shift)** and **09:06 LCO T98 est. +1.3 °F (sustained shift)**.
 
 **Footer:** "Simulated data · full_v1 · random_s144 · advisory only — nothing here writes to a control system".
 

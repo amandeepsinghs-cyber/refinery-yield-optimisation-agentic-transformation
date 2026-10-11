@@ -190,7 +190,8 @@ def calibration(property: str | None = None):
             "index": {"run_id": z["run_id"][idx].tolist(), "time_min": z["time_min"][idx].tolist()},
             "crps": {mid: st.bundle["evaluation"][prop]["members"][mid]["crps"] for mid in MODEL_IDS} |
                     {"mixture": st.bundle["evaluation"][prop]["mixture"]["crps"]},
-            "note": "Held-out minutes vs simulator truth. " + st.bundle["note"]})
+            "note": ("Held-out minutes vs the simulator reference values. "
+                     + str(st.bundle["note"]).replace("simulator-truth", "simulator reference").replace("simulator truth", "simulator reference values"))})
 
 
 def _finite(o):

@@ -2,7 +2,8 @@
 
 /**
  * Unit page — the five items agreed on 2 Oct (11:01, "yes on both") that were still open after the crash:
- *   ② EstimateTrack    the soft-sensor estimate over the shift, its 90 % band, and the lab points on it
+ *   ② EstimateTrack    the model estimate over the shift, its 90 % band, and the lab results on it (T98 is measured
+ *                      only by the lab every 8 h, so there is no per-minute T98 line)
  *   ③ EarlierDecisions what was accepted / held / declined earlier on this decision
  *   ④ WhatSetsTheMove  which limit actually sizes the move, and which check is closest to stopping the advice
  *   ④ MissingData      for a "Not yet" decision: exactly what data is missing and how it gets fixed
@@ -23,7 +24,7 @@ import { probPct } from "@/lib/prob";
 const fx = (v: number | null | undefined, d = 1) => (v == null || !Number.isFinite(v) ? "—" : v.toFixed(d));
 
 /* ------------------------------------------------------------------------------------------------------------ */
-/* ② soft-sensor estimate over time with the lab points                                                          */
+/* ② model estimate over time with the lab results                                                               */
 
 interface LabPoint { time_min: number; value: number; status: string; status_reason?: string }
 
@@ -41,9 +42,9 @@ export function EstimateTrack({ runId, prop, t, label }: { runId: string | null;
     const t0 = Math.max(0, t - 720);
     const idx = e.time_min.map((x, i) => [x, i] as const).filter(([x]) => x >= t0 && x <= t).map(([, i]) => i);
     if (idx.length < 2) return null;
-    const pts = idx.map((i) => ({ x: e.time_min[i], m: e.mixture.mean[i], lo: e.mixture.q05[i], hi: e.mixture.q95[i], tr: e.truth[i] }));
+    const pts = idx.map((i) => ({ x: e.time_min[i], m: e.mixture.mean[i], lo: e.mixture.q05[i], hi: e.mixture.q95[i] }));
     const lab = (labs.data?.labs ?? []).filter((l) => l.time_min >= t0 && l.time_min <= t);
-    const ys = [...pts.flatMap((p) => [p.lo, p.hi, p.tr]), ...lab.map((l) => l.value), e.spec_max ?? null].filter((v): v is number => v != null && Number.isFinite(v));
+    const ys = [...pts.flatMap((p) => [p.lo, p.hi]), ...lab.map((l) => l.value), e.spec_max ?? null].filter((v): v is number => v != null && Number.isFinite(v));
     let y0 = Math.min(...ys), y1 = Math.max(...ys);
     const pad = Math.max(1, (y1 - y0) * 0.08); y0 -= pad; y1 += pad;
     return { pts, lab, t0, y0, y1, spec: e.spec_max ?? null };
@@ -53,7 +54,7 @@ export function EstimateTrack({ runId, prop, t, label }: { runId: string | null;
   const W = 900, H = 200, L = 44, R = 12, T = 10, B = 24;
   const sx = (x: number) => L + ((x - view.t0) / Math.max(1, t - view.t0)) * (W - L - R);
   const sy = (y: number) => T + (1 - (y - view.y0) / (view.y1 - view.y0)) * (H - T - B);
-  const path = (k: "m" | "tr") => view.pts.filter((p) => p[k] != null).map((p, i) => `${i ? "L" : "M"}${sx(p.x).toFixed(1)} ${sy(p[k] as number).toFixed(1)}`).join(" ");
+  const path = (k: "m") => view.pts.filter((p) => p[k] != null).map((p, i) => `${i ? "L" : "M"}${sx(p.x).toFixed(1)} ${sy(p[k] as number).toFixed(1)}`).join(" ");
   const band = view.pts.filter((p) => p.lo != null && p.hi != null);
   const area = band.length ? `M${band.map((p) => `${sx(p.x).toFixed(1)} ${sy(p.hi as number).toFixed(1)}`).join(" L")} L${band.slice().reverse().map((p) => `${sx(p.x).toFixed(1)} ${sy(p.lo as number).toFixed(1)}`).join(" L")} Z` : "";
   const ticks = Array.from({ length: 4 }, (_, i) => view.y0 + ((i + 0.5) * (view.y1 - view.y0)) / 4);
@@ -62,19 +63,17 @@ export function EstimateTrack({ runId, prop, t, label }: { runId: string | null;
   return (
     <figure className="us-track">
       <figcaption>
-        <b>{label} — soft-sensor estimate between lab samples</b>
-        <span className="lg"><i className="k-est" />estimate</span>
+        <b>{label} — model estimate between lab results</b>
+        <span className="lg"><i className="k-est" />model estimate</span>
         <span className="lg"><i className="k-band" />90 % band</span>
-        <span className="lg"><i className="k-truth" />measured (simulator truth)</span>
-        <span className="lg"><i className="k-lab" />lab sample</span>
+        <span className="lg"><i className="k-lab" />Lab result (measured)</span>
         {view.spec != null ? <span className="lg"><i className="k-spec" />spec {fx(view.spec, 0)}</span> : null}
       </figcaption>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label} estimate, band and lab samples over the shift`}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label} model estimate, band and lab results over the shift`}>
         {ticks.map((y) => <g key={y}><line x1={L} x2={W - R} y1={sy(y)} y2={sy(y)} className="g" /><text x={L - 6} y={sy(y) + 4} className="ax" textAnchor="end">{y.toFixed(0)}</text></g>)}
         {hours.map((x) => <text key={x} x={sx(x)} y={H - 6} className="ax" textAnchor="middle">{clock(x)}</text>)}
         {view.spec != null ? <line x1={L} x2={W - R} y1={sy(view.spec)} y2={sy(view.spec)} className="spec" /> : null}
         <path d={area} className="band" />
-        <path d={path("tr")} className="truth" />
         <path d={path("m")} className="est" />
         {view.lab.map((l) => (
           <g key={l.time_min} className={`lab s-${l.status}`}>
@@ -86,8 +85,8 @@ export function EstimateTrack({ runId, prop, t, label }: { runId: string | null;
       <p className="us-note subtle">
         {view.lab.length
           ? view.lab.map((l) => `Lab ${clock(l.time_min)}: ${fx(l.value)}${l.status === "REJECT" ? " — rejected, not used" : l.status === "HOLD" ? " — on hold" : " — accepted"}`).join(" · ")
-          : "No lab sample in this window."}
-        {" "}Between samples the estimate is the only reading of product quality.
+          : "No lab result in this window."}
+        {" "}T98 is measured only by the lab; between lab results the model estimate is the only reading of product quality.
       </p>
     </figure>
   );

@@ -124,7 +124,7 @@ def identify_lags(frames: dict[str, pd.DataFrame], s, runs: list[str] | None = N
     runs = sorted(frames) if runs is None else list(runs)
     table = {"enabled": C["enabled"], "method": METHOD, "max_lag_min": C["max_lag_min"], "ar_order": C["ar_order"],
              "min_abs_ccf": C["min_abs_ccf"], "rolling_mean": C["rolling_mean"], "identified_on": runs,
-             "target_source": "simulator truth (minute-by-minute); site: high-rate analyser or step tests",
+             "target_source": "simulator reference values (minute-by-minute); site: high-rate analyser or step tests",
              "input_source": "measured (process-measurement noise, DECISIONS L6)", "targets": {}}
     if not C["enabled"]:
         return table
