@@ -4,10 +4,11 @@
 
 | | |
 |---|---|
-| Version | v0.5.8 (commit `3caf690`, model release v0.5.6) |
-| Cloud Run | service `fcc-cockpit`, revision `fcc-cockpit-00014-6f9`, project `fcc-soft-sensor`, region `us-central1` |
+| Version | v0.5.9 (commit `6b1252f`, model release v0.5.6) |
+| Cloud Run | service `fcc-cockpit`, revision `fcc-cockpit-00015-69x`, project `fcc-soft-sensor`, region `us-central1` |
 | Access | Behind Identity-Aware Proxy: sign in with an allowed Google account |
 | Deployed | 11 Oct 2026 (decision record reset to its seed on deploy) |
+| New in v0.5.9 | Gemini voice fixed (compact voice instructions) |
 | New in v0.5.8 | Explainer hub with one beginner guide per page + technical models reference (`/explainer`); header "Explainer" opens the guide for the current page |
 | New in v0.5.7 | Architecture → "How your data comes in" (Cortex Framework), "act first" pin, D3 on the riser |
 
