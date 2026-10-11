@@ -1350,7 +1350,7 @@ table.t th button {
   align-items: center;
   gap: 5px;
   font-size: 10.5px;
-  color: var(--red);
+  color: var(--green);  /* 11 Oct: green = voice connected and working (red read as "broken") */
   font-family: var(--font-num);
 }
 .launcher .live-ind::before {
@@ -1358,7 +1358,7 @@ table.t th button {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--red);
+  background: var(--green);
   animation: pulse 1.2s ease-in-out infinite;
 }
 @keyframes pulse {

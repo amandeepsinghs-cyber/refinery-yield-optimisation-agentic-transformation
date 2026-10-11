@@ -346,8 +346,15 @@ export function useLiveVoice() {
         teardownMic();
         stopPlayback();
         if (!closingRef.current) {
-          setState("error");
-          setError((prev) => prev ?? `Voice connection closed${ev.reason ? `: ${ev.reason}` : ` (code ${ev.code})`}.`);
+          if (settled && (ev.code === 1000 || ev.code === 1001)) {
+            // 11 Oct: Gemini ended the Live session normally (session time limit / cancelled upstream). Not an error:
+            // go back to idle; the next mic press opens a new session (connect() runs on every start).
+            setState("idle");
+            setError("Voice session ended. Press the mic to start a new one.");
+          } else {
+            setState("error");
+            setError((prev) => prev ?? `Voice connection closed${ev.reason ? `: ${ev.reason}` : ` (code ${ev.code})`}.`);
+          }
         }
         if (!settled) {
           settled = true;
