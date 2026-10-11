@@ -68,6 +68,8 @@ export default function PlantCanvas({ units, decisions, selectedId, onSelect, se
   const byId = Object.fromEntries(units.map((u) => [u.unit_id, u]));
   const openUnits = new Set(decisions.filter((d) => d.status === "open").map((d) => d.unit_id));
   const x = UNIT_X;
+  // The most urgent open decision (ranked by the API: open first, then by time to consequence).
+  const firstId = decisions.filter((d) => d.status === "open").sort((a, b) => (a.urgency.rank ?? 99) - (b.urgency.rank ?? 99))[0]?.id ?? null;
   const pins: Record<string, Decision[]> = {};
   for (const d of decisions) (pins[d.unit_id] ??= []).push(d);
 
@@ -130,8 +132,10 @@ export default function PlantCanvas({ units, decisions, selectedId, onSelect, se
         <div key={uid} className="pc-pins" style={{ left: `${(x[uid] / VB_W) * 100}%` }}>
           {ds.map((d) => (
             <button key={d.id} type="button" className={`pc-pin p-${d.status} ${d.id === selectedId ? "sel" : ""}`} onClick={() => onSelect(d.id)}
-              title={d.scripted ? `${d.question} (scripted outcome)` : d.question} data-testid="plant-pin" data-status={d.status}>
-              {d.status === "open" ? <><b className="num">{d.urgency.rank}</b> Decide{d.scripted ? <i className="pc-pin-s"> · scripted</i> : null}</> : d.status === "withheld" ? "Not yet" : d.status === "watch" ? "Watch" : d.status}
+              title={d.question} data-testid="plant-pin" data-status={d.status}>
+              {/* 11 Oct: no priority number on the pins (it read as a random order on a left-to-right drawing); the most urgent
+                  open decision says "act first". The full order is explained on /explainer. */}
+              {d.status === "open" ? <>Decide{d.id === firstId ? <b className="pc-pin-first"> · act first</b> : null}</> : d.status === "withheld" ? "Not yet" : d.status === "watch" ? "Watch" : d.status}
             </button>
           ))}
         </div>

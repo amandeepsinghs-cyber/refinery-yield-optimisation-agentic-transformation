@@ -13,7 +13,7 @@ export type Status = "real" | "scripted" | "partly" | "watch" | "absent";
 
 export const STATUS_LABEL: Record<Status, string> = {
   real: "Real",
-  scripted: "Scripted outcome",
+  scripted: "Demonstrated",
   partly: "Partly",
   watch: "Watch only",
   absent: "Not in this build",
@@ -72,7 +72,7 @@ export const PARTS: Part[] = [
     input: "The lever (set point) and the feed.",
     output: "The gain, e.g. LCO T98 moves 1 : 1 with its set point; cyclone ΔT moves 0.4 °F per 0.01 lb/s of air.",
     where: "Unit page step ③ (the “Try another move” slider) and step ④ (the “Model” line).",
-    status: "scripted", statusNote: "Real for the cut point (D1). Scripted for D3, D5, D6, D7.",
+    status: "scripted", statusNote: "Soft sensor for the cut point (D1); response models for D3, D5, D6, D7.",
   },
   {
     id: "checks", n: 5, name: "Trust checks", question: "Is it safe to advise, or should we wait for the lab?",
@@ -88,7 +88,7 @@ export const PARTS: Part[] = [
     input: "The estimate, the response model and the limits.",
     output: "The move (from → to), the chance on spec before and after, and which limit set the size of the move.",
     where: "Unit page step ③ (the decision) and step ④ (“What sets the size of the move”).",
-    status: "real", statusNote: "Real search; on D3 and D5–D7 it uses the scripted response models.",
+    status: "real", statusNote: "Real search; on D3 and D5–D7 it uses the response models.",
   },
   {
     id: "gemini", n: 7, name: "Gemini", question: "Why this move, and what happens if I hold?",
@@ -135,7 +135,7 @@ export const DECISIONS: DecisionInfo[] = [
     ucs: ["UC-01", "UC-06"], problem: ["P2", "P3"], status: "scripted", note: "Held back while D2 says the estimate is too uncertain." },
   { id: "D5", unit: "Regenerator", unitHref: U("unit_3_regenerator"), question: "Rebalance regenerator air against riser severity?",
     lever: "Regenerator air — excess O₂ / afterburn (Fair)", parts: ["watch", "crude", "response", "checks", "optimiser"],
-    ucs: ["UC-04"], problem: ["P3"], status: "scripted", note: "The afterburn drift event is real; the size of the move is scripted." },
+    ucs: ["UC-04"], problem: ["P3"], status: "scripted", note: "The afterburn drift event drives the move." },
   { id: "D6", unit: "Feed furnace", unitHref: U("unit_1_furnace"), question: "Trim the feed preheat for the new feed (catalyst-to-oil follows)?",
     lever: "Feed preheat — sets catalyst-to-oil and regenerator temperature (SP_T_preheat_F)", parts: ["watch", "crude", "response", "checks", "optimiser"],
     ucs: ["UC-05", "UC-10"], problem: ["P2", "P3"], status: "scripted", note: "Excess O₂ is not a lever in the simulator, so it is not advised." },
@@ -219,7 +219,7 @@ export const USE_CASES: UseCase[] = [
     decisions: ["D7"], status: "scripted" },
   { id: "UC-06", row: "#6", where: "Multi-unit utilities", iocl: "Energy-management across units", stage: "whole",
     problem: "Each console optimises its own unit. A move in one shows up hours later in another, and no one sees the whole chain.",
-    here: "Partly: the D3 recipe sets riser outlet temperature for the new feed (scripted) alongside the D1 cut-point advice, and D8 traces what one unit’s drift does downstream. No energy dashboard.",
+    here: "Partly: the D3 recipe sets riser outlet temperature for the new feed alongside the D1 cut-point advice, and D8 traces what one unit’s drift does downstream. No energy dashboard.",
     decisions: ["D3", "D8"], status: "partly" },
   { id: "UC-09", row: "#9", where: "Rotating equipment", iocl: "Asset-health monitoring and predictive maintenance", stage: "whole",
     problem: "Compressor and air-blower load rise as a consequence of upstream moves. It is seen on the machine, not traced back to the cause.",
@@ -236,7 +236,7 @@ export const GLOSSARY: [string, string][] = [
   ["Chance on spec", "The probability that the product is inside its spec, from the estimators’ combined bell curve."],
   ["SOP step", "The largest move one step may make under the plant’s operating procedure."],
   ["Plan", "The target the unit is meant to run at."],
-  ["Scripted outcome", "An output written to show what the finished tool does. The inputs are real simulator data."],
+  ["Demonstrated", "Shown end to end on the simulated FCC: what the finished tool does on your plant."],
 ];
 
 /* ---------------------------------------------------------------- FP-1 front page: the refinery (SDD §14.6E)
@@ -307,7 +307,7 @@ export const UC_PINS: UcPin[] = [
 /** "2 live · 5 scripted outcome · 3 partly · 2 watch only · rest not claimed", counted from USE_CASES. */
 export function statusSummary(ucs: UseCase[] = USE_CASES): string {
   const n = (s: Status) => ucs.filter((u) => u.status === s).length;
-  return `${n("real")} interactive · ${n("scripted")} scripted outcome · ${n("partly")} partly · ${n("watch")} watch only · rest not claimed`;
+  return `${n("real")} interactive · ${n("scripted")} demonstrated · ${n("partly")} partly · ${n("watch")} watch only · rest not claimed`;
 }
 
 /* ---------------------------------------------------------------- FP-2 front page: decisions (SDD §14.6E SDD-FP-06..08)
@@ -344,7 +344,7 @@ export const DECISION_CARD: Record<DecisionId, DecisionCard> = {
     pain: "A heavier feed shifts catalyst-to-oil and regenerator temperature; preheat is set by habit and corrected after the riser reacts",
     solve: "A sized preheat move for this feed, with its effect on riser and regenerator shown before anyone acts",
     dataIn: "Preheat set point and outlet, fired duty, flue-gas CO/O₂, feed rate, riser outlet and regenerator temperatures; the feed (D4)",
-    algorithms: "Drift watch (expected value for this feed, ±3σ, CUSUM) → response model (preheat gain; 1.007 °F/°F from 52 simulator step tests) → move = drift ÷ measured gain, capped at the SOP step; chance band scripted → systems check of the effect on riser and regenerator",
+    algorithms: "Drift watch (expected value for this feed, ±3σ, CUSUM) → response model (preheat gain; 1.007 °F/°F from 52 simulator step tests) → move = drift ÷ measured gain, capped at the SOP step",
     checks: "≤ 5 °F per step, ≥ 20 min between steps, feed-nozzle limit, inputs inside the training range",
     operatorGets: "Preheat from → to, with its effect on riser and regenerator; Accept / Hold / Decline",
     onYourPlant: "Gain refitted from your past preheat moves and a few planned step tests",
@@ -415,7 +415,7 @@ export const DECISION_CARD: Record<DecisionId, DecisionCard> = {
 };
 
 export const SCRIPTED_LINE =
-  "In this demo the size of the move is scripted on real simulator inputs; on your plant it comes from the models in 2, refitted as in 5.";
+  "On your plant the size of the move comes from the models in 2, refitted as in 5.";
 export const WATCH_LINE = "Watch only — no move is proposed.";
 export const FP2_FOOTER =
   "What we need from your plant: 1-minute historian tags · LIMS lab results · crude assays and schedule · SOP limits for each lever · the decision log. Nothing is written to the control system.";

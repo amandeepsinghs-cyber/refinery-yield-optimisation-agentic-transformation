@@ -471,7 +471,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
         <div className="us-grid observe">
           <div className="us-chart"><ChartStack data={data} panels={obsPanels} hoverMin={null} onHover={() => undefined} /></div>
           <div className="us-side">
-            <h3>{isU4 ? "What the 4 models believe now" : d?.scripted ? "What the response model expects now (scripted)" : "What the response model expects now"}</h3>
+            <h3>{isU4 ? "What the 4 models believe now" : "What the response model expects now"}</h3>
             {members.length ? <GaussianPdf members={members} spec={spec} target={d?.predicted?.target != null ? { value: d.predicted.target, label: "target" } : k ? { value: k.plan, label: k.plan_source === "set point" ? "set point" : "expected" } : null} measured={null} unit={k?.unit ?? ""} height={150} compact showP={false} ariaLabel="soft-sensor bell curves" /> : <p className="subtle">No estimate for this unit.</p>}
             {isU4 && d?.models?.members?.length ? (
               <>
@@ -530,7 +530,7 @@ function UnitStoryInner({ unitId }: { unitId: string }) {
             <div className="us-lever-panel">
               {move && wi ? (
                 <>
-                  <div className="us-lever-h"><span>Lever</span><b>{d.levers?.find((l) => l.tag === move.tag)?.label ?? move.label}</b>{d.scripted ? <em className="us-scripted">{d.gain_source === "measured" ? "gain measured · chance scripted" : "scripted outcome"}</em> : null}</div>
+                  <div className="us-lever-h"><span>Lever</span><b>{d.levers?.find((l) => l.tag === move.tag)?.label ?? move.label}</b></div>
                   <div className="us-lever-big num">{fx(move.from, nd)} <i>→</i> <b>{fx(wi.s, nd)}</b> <small>{move.unit}</small><span className="us-lever-d">{wi.d >= 0 ? "+" : "−"}{Math.abs(wi.d).toFixed(nd)}</span></div>
                   <label className="us-slider">
                     <span>Try another move</span>

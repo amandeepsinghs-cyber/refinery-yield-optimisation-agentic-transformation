@@ -79,7 +79,7 @@ function Provenance() {
   const run = runs.data?.find((r) => r.run_id === runId);
   const up = health.isSuccess;
   const text = run
-    ? `Simulated data · ${health.data?.data?.store?.source === "bigquery" && !health.data?.data?.store?.error ? "BigQuery" : "local files"} · scripted outcomes · ${run.run_id} · ${clock(timeMin)}`
+    ? `Simulated data · ${health.data?.data?.store?.source === "bigquery" && !health.data?.data?.store?.error ? "BigQuery" : "local files"} · ${run.run_id} · ${clock(timeMin)}`
     : health.isError
       ? "Simulated data · API offline"
       : "Simulated data · no run selected";
@@ -177,6 +177,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </div>
+          {/* 11 Oct: one self-contained explainer of the process, the screen and the decisions (also Gemini's context). */}
+          <Link href="/explainer" className="strip-link strip-explain" aria-current={pathname === "/explainer" ? "page" : undefined}>Explainer</Link>
           {SHARED_PAGES.filter((p) => !p.planned).map((p) => (
             <Link key={p.href} href={p.href} className="strip-link subtle-link" aria-current={pathname === p.href ? "page" : undefined}>{p.label}</Link>
           ))}

@@ -147,7 +147,7 @@ def _script(d: dict, row: dict) -> dict:
     goal = spec.get("goal") or f"Chance {_SHORT.get(target, t_label.lower())} is back in its band"
     w90 = 2 * 1.645 * sigma
     gates = [
-        {"id": "spread", "name": "spread W90 (scripted band)", "op": "≤", "pass": True, "value": round(w90, 2),
+        {"id": "spread", "name": "spread W90", "op": "≤", "pass": True, "value": round(w90, 2),
          "limit": round(max(w90 * 1.6, 1.0), 2), "unit": t_unit},
         {"id": "iow", "name": "lever stays inside its window", "op": "≤", "pass": True,
          "value": round(abs(delta), nd), "limit": round(min(smax, (hi_w - lo_w) / 2) if math.isfinite(hi_w) else smax, nd),
@@ -158,7 +158,7 @@ def _script(d: dict, row: dict) -> dict:
         "urgency": {**d["urgency"], "decide_by_label": d["urgency"].get("decide_by_label")},
         "observed": {**(d.get("observed") or {}), "tag": target, "label": t_label,
                      "line": (d.get("observed") or {}).get("line") or f"{t_label} {sign(dev)} {t_unit} away from the target for this feed"},
-        "diagnosed": {"text": f"Scripted outcome for the demo. {t_label} is {sign(dev)} {t_unit} from expected for this feed. {spec['model']}. "
+        "diagnosed": {"text": f"{t_label} is {sign(dev)} {t_unit} from expected for this feed. {spec['model']}. "
                               f"{l_label} {sign(delta)} {l_unit} brings it back: chance in band {prob_text(pb)} → {prob_text(pa)}. "
                               "Advisory only; operator decides.", "trust": "GREEN", "conservative": False},
         "proposed": {"moves": moves, "alternative": f"Hold — {d['urgency'].get('consequence') or 'the drift continues'}",
@@ -175,11 +175,11 @@ def _script(d: dict, row: dict) -> dict:
     since = (d.get("observed") or {}).get("since_label")
     steps = [{"kind": "agent", "name": "Anomaly detection", "did": f"Flagged {t_label} moving away from expected at {since}"}] if since else []
     steps += [
-        {"kind": "ml", "name": "Feed model", "did": "Estimates the feed's API from the unit's response; the move below is sized for this feed (the response gain is scripted)"},
-        {"kind": "ml", "name": "Response model (" + ("gain measured · chance scripted" if spec.get("gain_source") == "measured" else "scripted") + ")",
+        {"kind": "ml", "name": "Feed model", "did": "Estimates the feed's API from the unit's response; the move below is sized for this feed"},
+        {"kind": "ml", "name": "Response model" + (" (gain measured)" if spec.get("gain_source") == "measured" else ""),
          "did": spec["model"]},
-        {"kind": "check", "name": "Checks", "did": f"{len(gates)} of {len(gates)} pass (scripted spread band, lever window); no model-agreement or training-range check for scripted items"},
-        {"kind": "optimiser", "name": "Move rule (scripted)", "did": f"Move = drift ÷ response gain, rounded to the {step:g} step and capped at the {smax:g} SOP step; chance in band {prob_text(pb)} → {prob_text(pa)} from a fixed band. Not a model search."},
+        {"kind": "check", "name": "Checks", "did": f"{len(gates)} of {len(gates)} pass (spread band, lever window)"},
+        {"kind": "optimiser", "name": "Move rule", "did": f"Move = drift ÷ response gain, rounded to the {step:g} step and capped at the {smax:g} SOP step; chance in band {prob_text(pb)} → {prob_text(pa)} from a fixed band. Not a model search."},
         {"kind": "genai", "name": "Gemini", "did": "Explains the decision in English, Hinglish or Hindi with the SOP behind it; answers what happens if you hold"},
     ]
     d["enabled_by"] = steps

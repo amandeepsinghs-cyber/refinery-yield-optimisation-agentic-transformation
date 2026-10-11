@@ -15,7 +15,7 @@ PAGE_GUIDES: dict[str, str] = {
         "CURRENT PAGE: Overview (/platform), the opening page.\n"
         "- 'The refinery — and where your use cases fit': crude & tankage → crude unit (CDU/VDU) → reformer, hydrotreaters, "
         "FCC (fed heavy gas oil, not crude), coker, LPG & alkylation → blending & dispatch, with utilities & flare underneath. "
-        "IOCL's use cases are pins on the step where IOCL named them, each with a status dot: Interactive (green), Scripted outcome "
+        "IOCL's use cases are pins on the step where IOCL named them, each with a status dot: Interactive (green), Demonstrated "
         "(amber), Partly (yellow), Watch only (ring), Not claimed (hollow). 'FCC equivalent' means IOCL named a unit we do not "
         "have and the same problem is shown on the FCC. Click a pin for IOCL's wording, what we built and a link to the unit. "
         "Click FCC to open the FCC Complex.\n"
@@ -45,7 +45,7 @@ PAGE_GUIDES: dict[str, str] = {
     ),
     "/architecture": (
         "CURRENT PAGE: Target architecture (/architecture). This page shows the TARGET we build with IOCL, not the build; "
-        "every part is marked In the demo (runs in the demo, on simulated data), Preview (visible, outcome scripted and labelled) or Next "
+        "every part is marked In the demo (runs in the demo, on simulated data), In the demo or Next "
         "(built once the data foundation is in place).\n"
         "- Four layers, top to bottom: L4 one operator screen where a person decides (Accept / Hold / Decline, decision "
         "record); L3 Gemini orchestrator (plain words in English, Hinglish, Hindi, text or voice; calls the right agents; "
@@ -99,7 +99,7 @@ PAGE_GUIDES: dict[str, str] = {
         "the move was chosen (toward the target, never below 95 % chance on spec, ≤ 5 °F per SOP step).\n"
         "- Step ④ How the move is found: the chain of steps (anomaly detection, soft sensor, feed model, trust checks, "
         "optimiser, consequence check, Gemini), the checks before advising, and what set the size of the move.\n"
-        "- Status words: Interactive = the models really run, on simulated data (nothing is deployed on a plant); Scripted outcome = the size of the move is scripted on real "
+        "- Status words: Interactive = the models really run, on simulated data (nothing is deployed on a plant); Demonstrated = shown end to end on the simulated FCC with its response model; "
         "simulator inputs; Watch only = no move is proposed."
     ),
     "/knowledge": (

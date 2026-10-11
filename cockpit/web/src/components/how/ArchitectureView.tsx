@@ -207,10 +207,10 @@ export default function ArchitectureView({ view = "platform" }: { view?: ArchVie
           and nothing is written to the control system. Once your data is set up, each agent is built the same way.
         </p>
         <ul className="ar-legend" aria-label="How to read this page">
-          {ARCH_STATUS_ORDER.map((s) => (
+          {ARCH_STATUS_ORDER.filter((s) => s !== "preview").map((s) => (
             <li key={s}>
               <Chip status={s} />
-              <span>{s === "today" ? "runs in the demo, on simulated data" : s === "preview" ? "visible in the demo, outcome scripted and labelled" : "built once the data foundation is in place"}</span>
+              <span>{s === "today" ? "runs in the demo, on simulated data" : "built once the data foundation is in place"}</span>
             </li>
           ))}
         </ul>

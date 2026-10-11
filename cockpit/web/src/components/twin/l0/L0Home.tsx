@@ -9,6 +9,7 @@
  * Data: GET /api/twin, /api/decisions, /api/decisions-coverage.
  */
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useCockpit } from "@/lib/store";
 import { useRuns, useHealth } from "@/lib/api";
@@ -123,6 +124,7 @@ export default function L0Home() {
           {queue?.counts.withheld ? <span className="subtle"> · {queue.counts.withheld} waiting for data</span> : null}
           {queue?.counts.watch ? <span className="subtle"> · {queue.counts.watch} watching</span> : null}
         </p>
+        <Link href="/explainer" className="home-explain">How to read this screen →</Link>
         <LangToggle />
       </header>
       <p className="home-scope" data-testid="scope-note">{SCOPE_NOTE}</p>
@@ -162,9 +164,14 @@ export default function L0Home() {
 
 /** Where the rows on screen are actually read from (GET /api/health → data.store). */
 function DataStore() {
-  const st = useHealth().data?.data?.store;
+  const health = useHealth().data?.data;
+  const st = health?.store;
   if (!st) return null;
   const ok = st.source === "bigquery" && !st.error;
+  if (st.source !== "bigquery") {
+    // Local mode reads the same simulator rows that are loaded to the lakehouse; show what is loaded, not lake counts.
+    return <p className="dpath-src subtle">Read from: <b>{st.label}</b>{health?.runs != null ? ` · ${health.runs} runs` : ""} · the same simulated rows as the lakehouse copy</p>;
+  }
   return (
     <p className={`dpath-src subtle${ok ? "" : " warn"}`}>
       Read from: <b>{st.label}</b>

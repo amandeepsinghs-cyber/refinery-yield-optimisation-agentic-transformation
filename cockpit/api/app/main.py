@@ -9,11 +9,11 @@ import logging
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .copilot.chat import chat_stream
+from .copilot.chat import EXPLAINER_PATH, chat_stream
 from .copilot.live import live_ws, probe_all
 from .routers import agents, decision, decisions, knowledge, meta, modelling, recipe, regime, timeseries, twin
 from .state import get_state
@@ -68,6 +68,12 @@ class ChatBody(BaseModel):
 async def copilot_chat(body: ChatBody):
     return StreamingResponse(chat_stream(body.messages, body.context), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/api/explainer", response_class=PlainTextResponse)
+async def explainer():
+    """The FCC explainer (markdown): shown on the web /explainer page and given to Gemini as context (one source)."""
+    return PlainTextResponse(EXPLAINER_PATH.read_text(encoding="utf-8"), media_type="text/markdown; charset=utf-8")
 
 
 @app.post("/api/admin/probe")

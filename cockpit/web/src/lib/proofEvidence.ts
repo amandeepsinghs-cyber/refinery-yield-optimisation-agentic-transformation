@@ -24,7 +24,7 @@ export interface ProofCheck {
 export const RECIPE_CHECK: ProofCheck = {
   id: "recipe_check_v1",
   title: "Recipe fed back through the simulator",
-  predicted: "Riser outlet temperature +3.5 °F (scripted): conversion up about 0.4 % (0.12 % per °F); cut points advised separately in D1",
+  predicted: "Riser outlet temperature +3.5 °F: conversion up about 0.4 % (0.12 % per °F); cut points advised separately in D1",
   observed:
     "Conversion +0.44 % after 1 hour (+0.53 % on average over hours 1–3) against +0.42 % predicted — inside the band. Cut points: with their controllers in manual the riser move pushed both up (LCO at least +19 °F, heavy naphtha +48 °F); once the controllers went back to auto both returned to within 0.2 °F of the run without the recipe. The −1 / +1 °F trims are too small to see against the ±8 °F spread. Once the trim pulled the LCO cut back, the conversion gain settled at +0.11 % — about a quarter of the prediction, at the bottom edge of the band. So the riser-temperature gain is confirmed. The cut-point trims tested here are no longer part of the recipe: the cut points stay with D1, so there is one piece of advice per set point.",
   status: "inconclusive",
@@ -36,7 +36,7 @@ export const LEVER_FIT: ProofCheck = {
   id: "lever_gap_fit",
   title: "Lever test moves measured in the data",
   predicted: "Each lever moves its target in the direction plant practice expects",
-  observed: "Feed preheat: measured — the outlet follows the set point 1 : 1 (held-out R² 1.0) and lower preheat raised catalyst circulation in every test; a fresh batch of runs gives the same answer. Regenerator air: the response rarely settles and the test moves also changed its temperature target, so it stays scripted. Condenser: no basis in the simulator, so it stays scripted.",
+  observed: "Feed preheat: measured — the outlet follows the set point 1 : 1 (held-out R² 1.0) and lower preheat raised catalyst circulation in every test; a fresh batch of runs gives the same answer. Regenerator air: the response rarely settles and the test moves also changed its temperature target, so it runs on a response model. Condenser: no basis in the simulator, so it runs on a response model.",
   status: "inconclusive",
   how: "About 436 designed lever moves across 80 simulated runs (3 Oct 2026); 37–56 usable per lever, checked on held-out runs.",
 };

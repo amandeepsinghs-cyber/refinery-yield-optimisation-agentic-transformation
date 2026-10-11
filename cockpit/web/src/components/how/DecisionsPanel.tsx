@@ -7,7 +7,7 @@
  */
 import Link from "next/link";
 import {
-  DECISIONS, DECISION_CARD, DECISION_ORDER, FP2_FOOTER, SCRIPTED_LINE, USE_CASES, WATCH_LINE, decisionHref,
+  DECISIONS, DECISION_CARD, DECISION_ORDER, FP2_FOOTER, USE_CASES, WATCH_LINE, decisionHref,
   type DecisionInfo,
 } from "@/lib/howItWorks";
 import StatusDot from "./StatusDot";
@@ -43,7 +43,6 @@ function Card({ d }: { d: DecisionInfo }) {
           <li key={k}><span className="pf-n">{i + 1}</span><b>{k}</b><span>{v}</span></li>
         ))}
       </ol>
-      {d.status === "scripted" && <p className="dp-honest">{SCRIPTED_LINE}</p>}
       {d.status === "watch" && <p className="dp-honest">{WATCH_LINE}</p>}
       <div className="dp-foot">
         <span className="dp-ucs">

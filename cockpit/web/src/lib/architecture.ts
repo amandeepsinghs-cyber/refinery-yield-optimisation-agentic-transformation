@@ -9,7 +9,7 @@ export type ArchStatus = "today" | "preview" | "next";
 
 export const ARCH_STATUS_WORD: Record<ArchStatus, string> = {
   today: "In the demo",
-  preview: "Preview",
+  preview: "In the demo",
   next: "Next",
 };
 
@@ -67,14 +67,14 @@ export const AGENTS: Agent[] = [
     decisions: "D1 move the cut point now or wait for the lab · D2 can the estimate be trusted · D9 pull an extra sample",
     status: "today", note: "Interactive" },
   { name: "Furnace agent", useCases: "#5 Fired-heater combustion · #10 Crude-furnace coke & hydraulics",
-    decisions: "D6 preheat for this feed", status: "preview", note: "Gain measured, outcome scripted (move shown on run s107 at 10:00)" },
+    decisions: "D6 preheat for this feed", status: "preview", note: "Gain measured (move shown on run s107 at 10:00)" },
   { name: "Regenerator agent", useCases: "#4 Regeneration-cycle tracking",
-    decisions: "D5 regenerator air against afterburn", status: "preview", note: "Scripted" },
+    decisions: "D5 regenerator air against afterburn", status: "preview", note: "Response model" },
   { name: "Light-ends agent", useCases: "#2 Stabiliser C5 recovery · #3 LPG / naphtha split · #7 Exchanger fouling",
-    decisions: "D7 overhead temperature target", status: "preview", note: "Scripted" },
+    decisions: "D7 overhead temperature target", status: "preview", note: "Response model" },
   { name: "Systems agent", useCases: "#6 Multi-unit energy · #8 Filter breakthrough · #9 Rotating equipment",
-    decisions: "D8 riser drift and its downstream consequence (watch) · D3 riser move for the new feed (scripted; cut points stay with D1)",
-    status: "preview", note: "Watch only / scripted" },
+    decisions: "D8 riser drift and its downstream consequence (watch) · D3 riser move for the new feed (cut points stay with D1)",
+    status: "preview", note: "Watch and response model" },
   { name: "Coker, CDU / VDU, alkylation, utilities & flare agents", useCases: "The rest of IOCL's list",
     decisions: "Same pattern on other units", status: "next", note: "After the data foundation" },
 ];

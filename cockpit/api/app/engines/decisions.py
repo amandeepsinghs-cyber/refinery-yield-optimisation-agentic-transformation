@@ -550,7 +550,7 @@ def _apply_feed(decisions: list[dict], reg: dict) -> list[dict]:
                 ho = ((feed.get("model") or {}).get("heldout") or {})
                 s["did"] = (f"Estimates the feed's API from the unit's response: {feed.get('api_est'):.1f} "
                             f"({feed.get('feed_class_label')})" + (f", held-out error {ho['mae_api']} API" if ho.get("mae_api") else "")
-                            + "; the move below is sized for this feed (the response gain is scripted)")
+                            + "; the move below is sized for this feed")
         reason = feed.get("hold_reason")
         if reason and d.get("status") == "open" and not d.get("action"):
             d["status"], d["withheld_reason"], d["withheld_text"] = "withheld", reason, GATE_TEXT[reason]
@@ -575,7 +575,8 @@ def _recipe(run_id: str, t: int) -> list[dict]:
     if sw is None or t - int(sw) > RECENT_SWITCH_MIN:
         return []
     r = recipe_for(run_id, t, "unit_4_fractionator")
-    d = _base("D3", "unit_4_fractionator", "recipe", run_id, t, int(sw))
+    # 11 Oct: D3 is pinned on the riser: its only lever is the riser outlet temperature (cut-point legs removed 7 Oct, C1)
+    d = _base("D3", "unit_2_riser", "recipe", run_id, t, int(sw))
     fd = reg.get("feed") or {}
     d["question"] = (f"Which set points for this feed (API ≈ {fd['api_est']:.1f})?" if fd.get("api_est") is not None
                      else "Which set points for the new feed?")

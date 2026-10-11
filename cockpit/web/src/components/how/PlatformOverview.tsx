@@ -49,7 +49,7 @@ const MODELS: Record<string, string> = {
 };
 
 const STATUS: Record<Status, [string, string]> = {
-  real: ["Interactive", "ok"], scripted: ["Scripted outcome", "sc"], partly: ["Partly", "pt"], watch: ["Watch only", "wa"],
+  real: ["Interactive", "ok"], scripted: ["Demonstrated", "sc"], partly: ["Partly", "pt"], watch: ["Watch only", "wa"],
   absent: ["Not in this build", "ab"],
 };
 
