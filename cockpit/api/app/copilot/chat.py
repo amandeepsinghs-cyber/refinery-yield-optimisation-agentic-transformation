@@ -193,7 +193,9 @@ def screen_block(ctx: dict) -> str:
     return head + body
 
 
-def system_instruction(ctx: dict) -> str:
+def system_instruction(ctx: dict, with_guides: bool = True) -> str:
+    """with_guides=False for voice (11 Oct): the Live native-audio model rejects a long system instruction (WebSocket
+    close 1007), so voice keeps the rules, screen blocks and the quick tour, without the per-page beginner guides."""
     s = get_settings()
     ui_context = page_guide_for(ctx.get("page"))
     lang = (ctx.get("lang") or "en").lower()
@@ -229,7 +231,7 @@ and point the operator to the Explainer page for more; live numbers still come o
 
 BEGINNER GUIDES FOR THIS PAGE (the in-app guide for the screen the operator is on, plus 'The models, from zero'; the operator may have
 no technical background: explain terms simply, with an everyday analogy when it helps, and suggest the guide at /explainer/<slug>):
-{gemini_context(ctx.get('page'))}
+{gemini_context(ctx.get('page')) if with_guides else '(not loaded in voice sessions; the in-app guide is at /explainer)'}
 
 GUARDRAILS (mandatory):
 1. Read-only advisor (DECISIONS S3). You have no write tools. Accept/Decline is a human action in the UI. Refuse any request to write to,

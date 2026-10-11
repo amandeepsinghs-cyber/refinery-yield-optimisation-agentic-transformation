@@ -43,7 +43,7 @@ def live_config(ctx: dict, with_tools: bool = True):
     from google.genai import types
     g = get_settings()["gemini"]
     kw = dict(response_modalities=[types.Modality.AUDIO],
-              system_instruction=system_instruction(ctx) + VOICE_EXTRA,
+              system_instruction=system_instruction(ctx, with_guides=False) + VOICE_EXTRA,
               input_audio_transcription=types.AudioTranscriptionConfig(),
               output_audio_transcription=types.AudioTranscriptionConfig())
     speech = {"language_code": live_language_code(ctx)}
