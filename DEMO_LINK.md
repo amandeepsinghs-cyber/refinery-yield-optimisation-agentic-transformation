@@ -4,10 +4,11 @@
 
 | | |
 |---|---|
-| Version | v0.5.5 (commit `0b31ede`) |
-| Cloud Run | service `fcc-cockpit`, revision `fcc-cockpit-00011-2hn`, project `fcc-soft-sensor`, region `us-central1` |
+| Version | v0.5.7 (commit `3e286bc`, model release v0.5.6) |
+| Cloud Run | service `fcc-cockpit`, revision `fcc-cockpit-00013-8vd`, project `fcc-soft-sensor`, region `us-central1` |
 | Access | Behind Identity-Aware Proxy: sign in with an allowed Google account |
-| Deployed | 7 Oct 2026 |
+| Deployed | 11 Oct 2026 (decision record reset to its seed on deploy) |
+| New in v0.5.7 | Explainer page (`/explainer`), Architecture → "How your data comes in" (Cortex Framework), "act first" pin, D3 on the riser |
 
 ## Demo minutes
 - **Follow the oil:** run `random_s107`, 10:00. On U4 the D1 card reads "Lower heavy-naphtha cut point −5.0 °F (530.3 → 525.3)", chance on spec 90 % → > 99 %.
