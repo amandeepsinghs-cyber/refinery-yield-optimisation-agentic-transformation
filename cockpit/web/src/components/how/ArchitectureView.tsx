@@ -11,6 +11,7 @@ import {
   ACCESS, AGENTS, ARCH_STATUS_ORDER, ARCH_STATUS_WORD, GLOSSARY, INGEST, LAYERS, LINKS, OPEN_PARTS, ROLES, SERVICES, ZONES,
   type ArchStatus, type Layer, type ServiceId,
 } from "@/lib/architecture";
+import DataInView from "./DataInView";
 
 function Chip({ status, label, note }: { status: ArchStatus; label?: string; note?: string }) {
   return (
@@ -120,14 +121,15 @@ function LayerBody({ layer }: { layer: Layer }) {
         </div>
       </div>
       <div className="ar-gov"><Service id="dataplex" /><span>Checks silver against its rules after every load, and catalogues every table with its lineage.</span></div>
+      <Link href="/architecture?view=data#views" className="ar-zoom">See how your plant data comes in — Cortex Framework →</Link>
     </>
   );
 }
 
 function Glossary() {
   return (
-    <section className="ar-gloss" aria-labelledby="ar-gloss-h">
-      <h2 id="ar-gloss-h">What each service does <small>logo · name · purpose</small></h2>
+    <details className="ar-gloss">
+      <summary>What each service does <small>logo · name · purpose</small></summary>
       <ul>
         {GLOSSARY.map((id) => {
           const s = SERVICES[id];
@@ -152,7 +154,7 @@ function Glossary() {
           );
         })}
       </ul>
-    </section>
+    </details>
   );
 }
 
@@ -186,7 +188,14 @@ function AccessColumn() {
   );
 }
 
-export default function ArchitectureView() {
+export type ArchView = "platform" | "data";
+
+const VIEWS: { id: ArchView; n: string; label: string; hint: string }[] = [
+  { id: "platform", n: "①", label: "Platform & agents", hint: "lakehouse → agents → Gemini → one screen" },
+  { id: "data", n: "②", label: "How your data comes in", hint: "Cortex Framework · plant to lakehouse" },
+];
+
+export default function ArchitectureView({ view = "platform" }: { view?: ArchView }) {
   return (
     <main id="main" className="pf ar">
       <header className="pf-head">
@@ -207,54 +216,68 @@ export default function ArchitectureView() {
         </ul>
       </header>
 
-      <section className="ar-diagram" aria-label="Target architecture, four layers">
-        <div className="ar-stack">
-          {LAYERS.map((l) => (
-            <div key={l.n} className="ar-block">
-              <article className={`ar-layer ar-layer-${l.n}`} aria-labelledby={`ar-l${l.n}`}>
-                <header className="ar-lhead">
-                  <span className="ar-n">L{l.n}</span>
-                  <h2 id={`ar-l${l.n}`}>{l.name}</h2>
-                  <Chip status={l.status} label={l.badge} />
-                </header>
-                <p className="ar-job">{l.job}</p>
-                <LayerBody layer={l} />
-                <small className="ar-now">{l.today}</small>
-              </article>
-              {LINKS[l.n] ? <div className="ar-link"><i aria-hidden>↓</i>{LINKS[l.n]}</div> : null}
+      <nav id="views" className="ar-views" aria-label="Architecture views">
+        {VIEWS.map((v) => (
+          <Link key={v.id} href={`/architecture?view=${v.id}#views`} scroll={false}
+            className={`ar-view${v.id === view ? " on" : ""}`} aria-current={v.id === view ? "page" : undefined}>
+            <b><span aria-hidden>{v.n}</span> {v.label}</b>
+            <small>{v.hint}</small>
+          </Link>
+        ))}
+      </nav>
+
+      {view === "data" ? <DataInView /> : (
+        <>
+          <section className="ar-diagram" aria-label="Target architecture, four layers">
+            <div className="ar-stack">
+              {LAYERS.map((l) => (
+                <div key={l.n} className="ar-block">
+                  <article className={`ar-layer ar-layer-${l.n}`} aria-labelledby={`ar-l${l.n}`}>
+                    <header className="ar-lhead">
+                      <span className="ar-n">L{l.n}</span>
+                      <h2 id={`ar-l${l.n}`}>{l.name}</h2>
+                      <Chip status={l.status} label={l.badge} />
+                    </header>
+                    <p className="ar-job">{l.job}</p>
+                    <LayerBody layer={l} />
+                    <small className="ar-now">{l.today}</small>
+                  </article>
+                  {LINKS[l.n] ? <div className="ar-link"><i aria-hidden>↓</i>{LINKS[l.n]}</div> : null}
+                </div>
+              ))}
+              <p className="ar-meity" aria-label="MeitY data boundary">
+                <b>MeitY-compliant boundary</b>
+                <span>Your data stays in India, under keys you hold. Control and safety systems stay on site, and nothing is written to them.</span>
+              </p>
             </div>
-          ))}
-          <p className="ar-meity" aria-label="MeitY data boundary">
-            <b>MeitY-compliant boundary</b>
-            <span>Your data stays in India, under keys you hold. Control and safety systems stay on site, and nothing is written to them.</span>
-          </p>
-        </div>
 
-        <AccessColumn />
-      </section>
+            <AccessColumn />
+          </section>
 
-      <Glossary />
+          <Glossary />
 
-      <details className="ar-detail">
-        <summary>Agent ↔ use case detail <small>which IOCL use cases each agent answers, and the decision it brings</small></summary>
-        <table className="ar-table">
-          <thead><tr><th>Agent</th><th>IOCL use cases</th><th>Decision it brings to the operator</th><th>Status</th></tr></thead>
-          <tbody>
-            {AGENTS.map((a) => (
-              <tr key={a.name} className={a.status === "today" ? "on" : undefined}>
-                <td><b>{a.name}</b></td>
-                <td>{a.useCases}</td>
-                <td>{a.decisions}</td>
-                <td><Chip status={a.status} note={a.note} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="pf-note">
-          The <b>soft-sensor agent</b> is interactive in the demo: four models estimate product quality every minute and
-          say “Not yet” when they disagree. When the feed changes after a crude switch, the soft sensor resets its lab bias and checks it has lab results for this feed, and the recipe and preheat target follow the new feed estimate.
-        </p>
-      </details>
+          <details className="ar-detail">
+            <summary>Agent ↔ use case detail <small>which IOCL use cases each agent answers, and the decision it brings</small></summary>
+            <table className="ar-table">
+              <thead><tr><th>Agent</th><th>IOCL use cases</th><th>Decision it brings to the operator</th><th>Status</th></tr></thead>
+              <tbody>
+                {AGENTS.map((a) => (
+                  <tr key={a.name} className={a.status === "today" ? "on" : undefined}>
+                    <td><b>{a.name}</b></td>
+                    <td>{a.useCases}</td>
+                    <td>{a.decisions}</td>
+                    <td><Chip status={a.status} note={a.note} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="pf-note">
+              The <b>soft-sensor agent</b> is interactive in the demo: four models estimate product quality every minute and
+              say “Not yet” when they disagree. When the feed changes after a crude switch, the soft sensor resets its lab bias and checks it has lab results for this feed, and the recipe and preheat target follow the new feed estimate.
+            </p>
+          </details>
+        </>
+      )}
 
       <p className="pf-cta"><Link href="/twin" className="btn primary">See it on the FCC →</Link></p>
     </main>

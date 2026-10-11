@@ -201,3 +201,207 @@ export const GLOSSARY: ServiceId[] = [
   "run", "gemini", "vertex", "pubsub", "dataflow", "bigtable", "composer", "docai", "embed", "storage", "bigquery", "dataplex",
   "iam", "iap", "kms", "vpcsc", "registry", "logging",
 ];
+
+/* ------------------------------------------------------------------------------------------------------------------
+ * View ② "How your data comes in" — Google Cloud Cortex Framework, Manufacturing Connect & Data Engine, "Overall
+ * Architecture Overview" (Cortex deck slide 26). Owner, 11 Oct 2026: keep the slide's own structure and keywords
+ * (Factory shop floor, L4–L0, MES / HMI / SCADA / DCS / PLC's / Field device / Actuator / Sensor; Data Engine Pipelines,
+ * Storage and Services inside the Manufacturing Data Engine); add the refinery reading only as a quiet second line.
+ * Target architecture only: no cloud region named. Logos are the slide's own (public/icons/cortex) or the official
+ * Google Cloud icons (public/icons/gcp). Status words are the page's own: "today" = shown in the demo on simulated
+ * data, "next" = design, built with the client.
+ * ------------------------------------------------------------------------------------------------------------------ */
+
+/** Real-time stream (every reading, seconds) vs batch (scheduled loads and history). */
+export type DataFlow = "stream" | "batch" | "both";
+
+export const FLOW_WORD: Record<DataFlow, string> = {
+  stream: "Real-time stream",
+  batch: "Batch",
+  both: "Real-time stream and batch",
+};
+
+/** One clickable part of the diagram. `logo` = an image path under /public. */
+export interface DataBox {
+  id: string;
+  name: string;
+  /** Second line, always visible (optional). */
+  sub?: string;
+  /** Opened on click: what the part does. */
+  does: string;
+  /** Opened on click: the same part in refinery terms. */
+  refinery: string;
+  status: ArchStatus;
+  /** Which data it carries: the real-time stream, batch loads, or both. Omitted for config-only parts. */
+  flow?: DataFlow;
+  /** Opened on click: what the demo shows today. */
+  demo: string;
+  logo?: string;
+}
+
+const GCP = (n: string) => `/icons/gcp/${n}.svg`;
+const CTX = (n: string) => `/icons/cortex/${n}.png`;
+
+/** How a level's data leaves the plant: streamed through the edge, exported as tables on a schedule, or not at all. */
+export type LevelRoute = "edge" | "batch" | "stays";
+
+export const ROUTE_WORD: Record<LevelRoute, string> = {
+  edge: "Real-time stream, through the edge",
+  batch: "Batch, scheduled table exports",
+  stays: "Not connected directly: reaches the historian in seconds",
+};
+
+/** Slide 26 left panel, "Factory shop floor": ISA-95 levels as drawn, with the slide's own system chips. */
+export interface ShopFloorLevel {
+  label: string;
+  chips: string[];
+  /** Quiet second line: the same level at a refinery. */
+  refinery: string;
+  /** Detail panel: what lives at this level in a refinery, in full. */
+  systems: string;
+  /** Detail panel: how often its data changes. */
+  rate: string;
+  /** Detail panel, light text: the standard ISA-95 definition of the level (presenter memory aid). */
+  defn: string;
+  route: LevelRoute;
+}
+
+export const SHOP_FLOOR: ShopFloorLevel[] = [
+  { label: "L4 Enterprise", chips: ["MQTT (optional)", "alternative"], refinery: "ERP · planning & scheduling · crude assays",
+    systems: "ERP (maintenance, crude purchase) · planning & scheduling · crude assays", rate: "daily", route: "batch",
+    defn: "Enterprise / Business Logistics: corporate IT systems that manage business-related activities, such as ERP (Enterprise Resource Planning)." },
+  { label: "L3 Operations Systems", chips: ["MES", "MQTT (optional)"], refinery: "Plant historian · LIMS · oil movement & blending",
+    systems: "Plant historian · LIMS (lab results) · oil movement & blending", rate: "seconds · every 8 h for the lab", route: "edge",
+    defn: "Manufacturing Operations: systems managing production workflows on the plant floor, like MES (Manufacturing Execution Systems)." },
+  { label: "L2 Supervisory Control", chips: ["HMI", "SCADA", "DCS"], refinery: "Operator consoles · advanced process control",
+    systems: "Operator consoles · advanced process control", rate: "seconds", route: "edge",
+    defn: "Supervisory Control: systems that monitor and control the physical processes, such as SCADA (Supervisory Control and Data Acquisition) or HMIs (Human-Machine Interfaces)." },
+  { label: "L1 Basic Control", chips: ["PLC’s", "PLC’s", "PLC’s"], refinery: "DCS controllers · safety systems",
+    systems: "DCS controllers · safety systems (stay isolated)", rate: "sub-second", route: "stays",
+    defn: "Basic Control: intelligent devices that read sensors and drive actuators, like Programmable Logic Controllers (PLCs)." },
+  { label: "L0 Field I/O Devices", chips: ["Field device", "Actuator", "Sensor"], refinery: "Transmitters · online analysers · valves",
+    systems: "Transmitters · online analysers · valves", rate: "sub-second", route: "stays",
+    defn: "Field Level / Physical Process: the actual physical equipment, sensors and actuators on the shop floor." },
+];
+
+export const SHOP_FLOOR_NOTE = "L1 and L0 are read through the historian; nothing is written back to any level.";
+
+export const MC_EDGE: DataBox = {
+  id: "mc-edge", flow: "stream", name: "Manufacturing Connect Edge", sub: "by Litmus Automation", logo: CTX("manufacturing-connect-edge"),
+  does: "Edge gateway that reads the plant systems over industrial protocols (OPC UA, MQTT and others), buffers if the link drops and sends the data out one way.",
+  refinery: "Sits in the plant DMZ with read access to the historian; no write path to the DCS.",
+  status: "next", demo: "Not in the demo: the simulator writes its tags straight to files.",
+};
+
+export const VPN_LINK = "VPN & Private service endpoints";
+
+/** Detail panel, "Leaves the plant": the edge, the private link, and the scheduled route for table data. */
+export const LEAVE_ROUTES: DataBox[] = [
+  MC_EDGE,
+  { id: "vpn", flow: "stream", name: "VPN & Private service endpoints", sub: "private link to Google Cloud, never the public internet", logo: CTX("mqtt"),
+    does: "Carries the edge's messages over an encrypted, private connection (Cloud VPN or Interconnect with Private Service Connect).",
+    refinery: "Your network team keeps control of the only path out of the plant.",
+    status: "next", demo: "Not in the demo." },
+  { id: "exports", flow: "batch", name: "Scheduled table exports", sub: "LIMS, assays, ERP and schedules as files", logo: GCP("storage"),
+    does: "Records that already sit in tables leave as scheduled exports or through a connector, into the batch importer; ERP can use the Cortex Data Foundation connectors.",
+    refinery: "Lab results every few minutes, assays and plans daily, maintenance orders from ERP.",
+    status: "today", demo: "Simulated lab draws and crude segments, loaded in batches." },
+];
+
+/** Data Engine Pipelines, as drawn: batch importer and transforms on top, Pub/Sub → transformation at the base. */
+export const PIPELINES: DataBox[] = [
+  { id: "batch", flow: "batch", name: "Batch importer", logo: CTX("gcp-service"),
+    does: "Loads history and exported tables through the same pipeline, so history and live data look the same.",
+    refinery: "Years of historian data for training; LIMS results and crude assays.",
+    status: "today", demo: "Lakehouse loader (bronze → silver) does this job." },
+  { id: "window", flow: "stream", name: "Transforms & Window aggregations", logo: CTX("gcp-service"),
+    does: "Builds 1-minute summaries and derived signals as the data streams.",
+    refinery: "Riser temperature rise, coke per unit feed, tray-to-tray differences.",
+    status: "next", demo: "Not in the demo as a pipeline: the simulator already writes 1-minute rows." },
+  { id: "pubsub-in", flow: "stream", name: "Cloud Pub/Sub", logo: GCP("pubsub"),
+    does: "Receives every message from the edge and hands it to the pipelines; nothing is filtered here.",
+    refinery: "Every historian tag as it arrives: tag, time, value, quality.",
+    status: "next", demo: "Not in the demo: readings are loaded in batches." },
+  { id: "context", flow: "both", name: "Data Format Transformation & Contextualization", logo: GCP("dataflow"),
+    does: "Turns raw messages into one standard shape and attaches the metadata: which asset, which unit of measure, whether the reading is good.",
+    refinery: "For example, tag TI-2041 becomes FCC › Main fractionator › Tray 18 temperature, °F, good.",
+    status: "next", demo: "Not in the demo as a pipeline: the simulator's tags already carry names and units from the tag catalogue." },
+];
+
+/** Data Engine Storage, as drawn: Cloud Storage and BigTable on top, BigQuery, Cloud Pub/Sub. */
+export const STORAGE: DataBox[] = [
+  { id: "gcs", flow: "batch", name: "Cloud Storage", sub: "raw archive, long retention", logo: GCP("storage"),
+    does: "Durable file storage for raw and high-frequency data and long retention.",
+    refinery: "Every message as received, kept unchanged (bronze).",
+    status: "today", demo: "Bronze Parquet and silver Iceberg files." },
+  { id: "bigtable", flow: "stream", name: "BigTable", sub: "live store, millisecond reads", logo: GCP("bigtable"),
+    does: "Low-latency store: the last weeks of readings, read in milliseconds.",
+    refinery: "What each agent reads every minute to give advice.",
+    status: "next", demo: "Not in the demo: the app reads BigQuery once and caches it." },
+  { id: "bigquery", flow: "batch", name: "BigQuery", sub: "history: training & analytics", logo: GCP("bigquery"),
+    does: "Feature-rich, highly scalable analytics store; keeps the full history the models train on.",
+    refinery: "Every tag every minute for years, joined to lab results.",
+    status: "today", demo: "Silver and gold tables, plus vector search over documents." },
+  { id: "pubsub-out", flow: "stream", name: "Cloud Pub/Sub", sub: "real-time output stream to ML", logo: GCP("pubsub"),
+    does: "Streams processed data straight to models that score live.",
+    refinery: "Anomaly detection on the live stream.",
+    status: "next", demo: "Not in the demo." },
+];
+
+/** Data Engine Services, as drawn: Configuration · Metadata · Data Access, exposed through one API. */
+export const SERVICES_MDE: DataBox[] = [
+  { id: "config", name: "Configuration", logo: CTX("gcp-service"),
+    does: "Declares which tags to collect and how each message type is processed.",
+    refinery: "The FCC tag list first; other units are added by configuration, not code.",
+    status: "next", demo: "A config file in the app stands in for it today." },
+  { id: "metadata", name: "Metadata", logo: CTX("gcp-service"),
+    does: "Holds the asset hierarchy and tag dictionary used to contextualise every reading.",
+    refinery: "Refinery › unit › equipment › tag, with units and operating limits.",
+    status: "today", demo: "Tag catalogue behind the unit pages." },
+  { id: "access", name: "Data Access", logo: CTX("gcp-service"),
+    does: "One governed way for applications and agents to read the contextualised data.",
+    refinery: "Each agent reads only its own unit's tags.",
+    status: "next", demo: "Today the agent reads the lakehouse directly." },
+  { id: "api", name: "API", logo: CTX("gcp-service"),
+    does: "The interface the services expose to apps, agents and the edge configuration.",
+    refinery: "The operator screen and the agents call it; the edge receives its configuration through it.",
+    status: "next", demo: "Not in the demo." },
+];
+
+/** Under the Data Engine on the slide: the cloud side of Manufacturing Connect (config flow). */
+export const MC_CLOUD: DataBox = {
+  id: "mc", name: "Manufacturing Connect", sub: "Optional, by Litmus Automation", logo: CTX("manufacturing-connect"),
+  does: "Manages the edge devices centrally: which plant systems they read, and how. Optional: data can also arrive over MQTT.",
+  refinery: "Your OT team configures the edge from one console; nothing is configured from inside the DCS.",
+  status: "next", demo: "Not in the demo.",
+};
+
+/** Right-hand column of the Cortex Framework box on the slide. */
+export const APPS: DataBox[] = [
+  { id: "reporting", flow: "batch", name: "Reporting Accelerators & Partner Solutions", sub: "Looker · Cortex KPI models",
+    logo: CTX("cortex-framework"),
+    does: "Ready-made semantic models, KPI dashboards and partner solutions on the same contextualised data.",
+    refinery: "Unit KPIs and data-quality views for engineers and management.",
+    status: "next", demo: "Not in the demo." },
+  { id: "vertex-app", flow: "both", name: "Vertex AI, App Layer", sub: "live: soft-sensor insight every minute · batch: model training", logo: GCP("vertex-ai"),
+    does: "Where the models are trained and served and where the applications run.",
+    refinery: "One specialist agent per use case; Gemini answers the operator; one screen where a person decides.",
+    status: "today", demo: "FCC agent, Gemini and this cockpit." },
+];
+
+/** Bottom of the Cortex Framework box: enterprise and outside data that joins through Cortex Data Foundation. */
+export const PARTNER_SOURCES: { name: string; logo: string }[] = [
+  { name: "ERP", logo: CTX("erp-sap") },
+  { name: "CRM", logo: CTX("crm-salesforce") },
+  { name: "Public", logo: CTX("public-weather") },
+  { name: "Sustainability", logo: CTX("sustainability") },
+  { name: "Partners", logo: CTX("partners") },
+];
+
+/** Four rules the presenter closes the view on. */
+export const DATA_RULES: string[] = [
+  "Read-only and one-way out of the plant; nothing is written to the DCS.",
+  "Each kind of data takes the route that suits it: tags stream, tables load on a schedule.",
+  "Contextualised once, at the door — every agent reads the same asset model.",
+  "A new unit is added by configuration, not a new project.",
+];
