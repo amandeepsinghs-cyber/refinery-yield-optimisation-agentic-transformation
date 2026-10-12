@@ -6,7 +6,7 @@ import Chart from "@/components/charts/Chart";
 import { useEstimate } from "@/lib/api";
 import { clock, propLabel } from "@/lib/format";
 import { baseLayout } from "@/lib/plotTheme";
-import { useCockpit, type ChatMessage } from "@/lib/store";
+import { useCockpit, type ChatMessage, type Lang } from "@/lib/store";
 import { Citations } from "@/components/ui/primitives";
 import { IconAlert, IconMinimise, IconMic, IconSend, IconSpark, IconStop, IconTrash } from "@/components/ui/icons";
 import Markdown from "./Markdown";
@@ -15,13 +15,28 @@ import { useCopilotChat, usePageContext } from "./useCopilotChat";
 import { TWIN_UNITS } from "@/lib/nav";
 import { useLiveVoice, type LiveVoice } from "./useLiveVoice";
 
-// 11 Oct (owner): the two demo moments first: refinery status, then "why" with the math.
-const STARTERS = [
-  "What's the status in the refinery? What needs attention?",
-  "Why is this action needed? Show the math.",
-  "Explain all graphs, curves & buttons on this page",
-  "Is the model estimate trustworthy right now?",
-];
+// 12 Oct (owner): the demo order: a casual greeting, the refinery status, then "why" with the math. Shown in the
+// language picked on the page (EN / Hinglish / हिंदी); Gemini answers in that language or in the one the user writes.
+const STARTERS: Record<Lang, string[]> = {
+  en: [
+    "Hi Gemini, good morning!",
+    "What's the status in the refinery? What needs attention?",
+    "Why is this action needed? Show the math.",
+    "Explain all graphs, curves & buttons on this page",
+  ],
+  hinglish: [
+    "Hi Gemini, good morning! Kaise ho?",
+    "Refinery ka status kya hai? Kis cheez pe dhyaan dena hai?",
+    "Yeh action kyun zaroori hai? Math dikhao.",
+    "Is page ke graphs aur buttons samjhao",
+  ],
+  hi: [
+    "नमस्ते Gemini, सुप्रभात!",
+    "रिफाइनरी की स्थिति क्या है? किस पर ध्यान देना है?",
+    "यह कदम क्यों ज़रूरी है? गणित दिखाइए।",
+    "इस पेज के ग्राफ़ और बटन समझाइए",
+  ],
+};
 
 function InlineChart({ figure }: { figure: unknown }) {
   const theme = useCockpit((s) => s.theme);
@@ -217,6 +232,7 @@ function Panel({ voice, onClose }: { voice: LiveVoice; onClose: () => void }) {
   const pending = useCockpit((s) => s.pendingPrompt);
   const clearPending = useCockpit((s) => s.clearPending);
   const tab = useCockpit((s) => s.copilotTab);
+  const lang = useCockpit((s) => s.lang);
   const source = useCockpit((s) => s.sourcePreview);
   const setTab = useCockpit((s) => s.setCopilotTab);
   const ctx = usePageContext();
@@ -298,7 +314,7 @@ function Panel({ voice, onClose }: { voice: LiveVoice; onClose: () => void }) {
                 tools over simulated data and cite documents as <span className="mono">[DOC-ID rN §x.y]</span>.
               </p>
               <div className="sugg">
-                {STARTERS.map((s) => (
+                {(STARTERS[lang] ?? STARTERS.en).map((s) => (
                   <button key={s} type="button" onClick={() => void send(s)}>
                     {s}
                   </button>
