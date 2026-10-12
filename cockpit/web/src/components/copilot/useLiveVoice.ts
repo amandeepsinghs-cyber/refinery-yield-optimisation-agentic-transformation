@@ -14,6 +14,8 @@ import {
 import { useCockpit, type ChatMessage } from "@/lib/store";
 import type { Citation } from "@/lib/types";
 import { uid, usePageContext } from "./useCopilotChat";
+import { useRouter } from "next/navigation";
+import { screenPathFor } from "@/lib/screens";
 
 export type VoiceState = "idle" | "connecting" | "ready" | "listening" | "speaking" | "error";
 export type VoiceMode = "ptt" | "handsfree";
@@ -43,6 +45,9 @@ export function mergeTranscript(prev: string, next: string): string {
  * scheduled gaplessly on an AudioContext and cut on `interrupted`.
  */
 export function useLiveVoice() {
+  const router = useRouter();
+  const routerRef = useRef(router);
+  useEffect(() => { routerRef.current = router; }, [router]);
   const ctx = usePageContext();
   const ctxRef = useRef(ctx);
   useEffect(() => {
@@ -312,7 +317,9 @@ export function useLiveVoice() {
             );
             break;
           }
-          case "tool_call":
+          case "tool_call": {
+            const go = screenPathFor(msg.name, msg.args);
+            if (go) routerRef.current.push(go);   // Gemini's open_screen in voice
             if (curMsgRef.current.model) {
               const target = curMsgRef.current.model;
               setMessages((ms) =>
@@ -320,6 +327,7 @@ export function useLiveVoice() {
               );
             }
             break;
+          }
           case "interrupted":
             stopPlayback();
             setState(capturingRef.current ? "listening" : "ready");

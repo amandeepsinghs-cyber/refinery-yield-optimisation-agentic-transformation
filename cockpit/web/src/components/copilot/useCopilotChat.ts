@@ -1,10 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { parseData, streamSSE } from "@/lib/sse";
 import { useCockpit, type ChatMessage } from "@/lib/store";
 import type { Citation } from "@/lib/types";
+import { screenPathFor } from "@/lib/screens";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -47,6 +48,9 @@ export function useCopilotChat() {
   const setMessages = useCockpit((s) => s.setMessages);
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const router = useRouter();
+  const routerRef = useRef(router);
+  useEffect(() => { routerRef.current = router; }, [router]);
 
   const patch = useCallback(
     (id: string, fn: (m: ChatMessage) => ChatMessage) =>
@@ -82,13 +86,16 @@ export function useCopilotChat() {
               case "thought":
                 patch(aId, (m) => ({ ...m, status: String(d.text ?? "Thinking…") }));
                 break;
-              case "tool_call":
+              case "tool_call": {
+                const go = screenPathFor(d.name, d.args);
+                if (go) routerRef.current.push(go);   // Gemini's open_screen: take the operator to the relevant screen
                 patch(aId, (m) => ({
                   ...m,
                   status: `Calling ${String(d.name)}…`,
                   tools: [...(m.tools ?? []), String(d.name)],
                 }));
                 break;
+              }
               case "final":
                 patch(aId, (m) => ({ ...m, content: m.content + String(d.delta ?? ""), status: m.status }));
                 break;

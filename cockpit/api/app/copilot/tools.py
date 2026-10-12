@@ -82,7 +82,28 @@ def _jsonable(o):
 
 ALLOWED_TRACES = {"scatter", "scattergl", "bar", "histogram", "box", "heatmap", "indicator"}
 
+# 12 Oct (owner): Gemini can take the operator to the relevant screen. A UI action only (like clicking a tab); it reads
+# and writes nothing in the plant. The browser performs the navigation when it sees this tool call.
+SCREEN_PATHS = {
+    "whole_unit": "/twin", "furnace": "/twin/unit/unit_1_furnace", "riser": "/twin/unit/unit_2_riser",
+    "regenerator": "/twin/unit/unit_3_regenerator", "fractionator": "/twin/unit/unit_4_fractionator",
+    "gas_plant": "/twin/unit/unit_5_condenser", "stabiliser": "/twin/unit/unit_6_stabiliser",
+    "architecture": "/architecture", "data_in": "/architecture?view=data", "decision_record": "/audit",
+    "explainer": "/explainer",
+}
+UNIT_SCREEN = {"unit_1_furnace": "furnace", "unit_2_riser": "riser", "unit_3_regenerator": "regenerator",
+               "unit_4_fractionator": "fractionator", "unit_5_condenser": "gas_plant", "unit_6_stabiliser": "stabiliser"}
+
 DECLS = [
+    ("get_refinery_status", "Whole-FCC status at the page minute, regardless of which page is open: open decisions ranked by urgency "
+     "(first = 'act first') with unit, question and headline; decisions held back ('Not yet') and watched items; and what needs "
+     "attention (anomaly lines per unit). Use it for 'what is the status' / 'anything that needs my attention'.",
+     {"run_id": ("STRING", "optional run_id"), "time_min": ("INTEGER", "optional simulated minute; default = page minute")}, []),
+    ("open_screen", "Take the operator to the most relevant screen (a UI navigation only; reads and writes nothing in the plant). "
+     "Use it when they ask what needs attention / the refinery status (whole_unit), when the talk is about one unit or its "
+     "decision (that unit), how data comes in (data_in), the architecture, the decision record, or the guides (explainer).",
+     {"screen": ("STRING", "whole_unit | furnace | riser | regenerator | fractionator | gas_plant | stabiliser | architecture | data_in | decision_record | explainer"), "reason": ("STRING", "one short phrase, e.g. 'open decisions on the drawing'")},
+     ["screen"]),
     ("get_current_state", "Latest estimate message (SDD §6.2) for a property at the current page minute: members, mixture quantiles, W90, bias, gate, trust, and the reference value (used only to score the model; T98 is measured by the lab every 8 h).",
      {"property": ("STRING", "LCO_T98_F or HN_T98_F")}, []),
     ("get_distribution", "Member and mixture summary at a minute: mu, sigma, weight, admitted/shadow, q05/q50/q95, W90, bimodality D, P(on-spec).",
@@ -166,6 +187,33 @@ class ToolBox:
             return {"error": str(e)[:300]}
 
     # ---- tools
+    def t_get_refinery_status(self, run_id=None, time_min=None):
+        from ..engines.decisions import build
+        r, tm = self._rt(run_id, time_min)
+        q = build(r, int(tm if tm is not None else 0))
+        ds = q.get("decisions", [])
+        short = lambda d: {"unit": UNIT_SCREEN.get(d.get("unit_id"), d.get("unit_id")), "type": d.get("type"),
+                           "question": d.get("question"), "headline": d.get("headline")}
+        opened = [d for d in ds if d.get("status") == "open"]
+        snap = self.t_get_scope_snapshot(run_id=r, time_min=tm)
+        attention = ((snap or {}).get("snapshot") or {}).get("needs_attention", [])
+        return {"run_id": r, "time_min": tm, "clock": q.get("clock"), "counts": q.get("counts"),
+                "act_first": short(opened[0]) if opened else None,
+                "open_decisions": [short(d) for d in opened],
+                "not_yet": [short(d) for d in ds if d.get("status") == "withheld"],
+                "watch": [short(d) for d in ds if d.get("status") == "watch"],
+                "needs_attention": attention,
+                "note": "Lead with the number of open decisions and the act-first one; then what needs attention."}
+
+    def t_open_screen(self, screen=None, reason=None):
+        s = (screen or "").strip().lower().replace(" ", "_").replace("-", "_")
+        s = UNIT_SCREEN.get(s, s)
+        path = SCREEN_PATHS.get(s)
+        if not path:
+            return {"error": f"unknown screen '{screen}'; use one of: {', '.join(SCREEN_PATHS)}"}
+        return {"ok": True, "screen": s, "path": path, "reason": reason,
+                "note": "The screen is opening for the operator now; say which screen you opened in one short phrase."}
+
     def t_get_current_state(self, property=None):
         m = get_state().estimate_message(self.run_id, self._p(property), self.time_min)
         return m or {"error": "run not scored"}

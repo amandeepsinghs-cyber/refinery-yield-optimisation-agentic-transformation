@@ -4,10 +4,12 @@
 
 | | |
 |---|---|
-| Version | v0.5.13 (model release v0.5.6) |
+| Version | v0.5.15 (model release v0.5.6) |
 | Cloud Run | service `fcc-cockpit`, revision: see `gcloud run services describe fcc-cockpit`, project `fcc-soft-sensor`, region `us-central1` |
 | Access | Behind Identity-Aware Proxy: sign in with an allowed Google account |
 | Deployed | 11 Oct 2026 (decision record reset to its seed on deploy) |
+| New in v0.5.15 | Gemini moves the screen: status / "needs attention" opens the Whole unit; "why this action" opens that unit; new get_refinery_status tool (whole FCC whatever page) |
+| New in v0.5.14 | Architecture data view: L2 (live view) vs L3 (historian/LIMS, the read-only tap) |
 | New in v0.5.13 | Gemini starters follow the page language (EN / Hinglish / हिंदी): greeting → refinery status → why, with the math; Gemini greets briefly and answers in the language the user writes or speaks |
 | New in v0.5.12 | Gemini starter prompts: "What's the status in the refinery?" and "Why is this action needed? Show the math."; Architecture: update one agent without touching the rest |
 | New in v0.5.11 | Measured vs Estimate everywhere: T98 shows the model estimate (± band), lab results are the only measured T98; per-minute T98 removed; T98 anomaly detection runs on the estimate |
