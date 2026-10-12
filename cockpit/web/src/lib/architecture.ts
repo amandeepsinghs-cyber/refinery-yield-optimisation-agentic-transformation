@@ -264,17 +264,21 @@ export interface ShopFloorLevel {
   /** Detail panel, light text: the standard ISA-95 definition of the level (presenter memory aid). */
   defn: string;
   route: LevelRoute;
+  /** Detail panel: how this level's data actually reaches the edge, when it differs from the generic route word. */
+  routeNote?: string;
 }
 
 export const SHOP_FLOOR: ShopFloorLevel[] = [
   { label: "L4 Enterprise", chips: ["MQTT (optional)", "alternative"], refinery: "ERP · planning & scheduling · crude assays",
     systems: "ERP (maintenance, crude purchase) · planning & scheduling · crude assays", rate: "daily", route: "batch",
     defn: "Enterprise / Business Logistics: corporate IT systems that manage business-related activities, such as ERP (Enterprise Resource Planning)." },
-  { label: "L3 Operations Systems", chips: ["MES", "MQTT (optional)"], refinery: "Plant historian · LIMS · oil movement & blending",
-    systems: "Plant historian · LIMS (lab results) · oil movement & blending", rate: "seconds · every 8 h for the lab", route: "edge",
+  { label: "L3 Operations Systems", chips: ["MES", "MQTT (optional)"], refinery: "Plant historian (the plant's memory) · LIMS · oil movement & blending",
+    systems: "Plant historian (stores every tag, time-stamped) · LIMS (lab results) · oil movement & blending", rate: "stored history every few seconds · lab every 8 h", route: "edge",
+    routeNote: "Real-time stream through the edge: the main read-only tap",
     defn: "Manufacturing Operations: systems managing production workflows on the plant floor, like MES (Manufacturing Execution Systems)." },
-  { label: "L2 Supervisory Control", chips: ["HMI", "SCADA", "DCS"], refinery: "Operator consoles · advanced process control",
-    systems: "Operator consoles · advanced process control", rate: "seconds", route: "edge",
+  { label: "L2 Supervisory Control", chips: ["HMI", "SCADA", "DCS"], refinery: "Operator consoles · advanced process control · live view, not stored",
+    systems: "Operator consoles (DCS HMI) · advanced process control: the control room's live view", rate: "seconds · live view and control, not stored", route: "edge",
+    routeNote: "Real time, via the historian (or read-only OPC UA)",
     defn: "Supervisory Control: systems that monitor and control the physical processes, such as SCADA (Supervisory Control and Data Acquisition) or HMIs (Human-Machine Interfaces)." },
   { label: "L1 Basic Control", chips: ["PLC’s", "PLC’s", "PLC’s"], refinery: "DCS controllers · safety systems",
     systems: "DCS controllers · safety systems (stay isolated)", rate: "sub-second", route: "stays",

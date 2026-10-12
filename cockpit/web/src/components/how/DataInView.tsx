@@ -190,7 +190,7 @@ export default function DataInView() {
                 </span>
                 <span className="dx-dlvl-m">
                   <em>{l.rate}</em>
-                  <span className={`dx-route dx-route-${l.route}`}>{ROUTE_WORD[l.route]}</span>
+                  <span className={`dx-route dx-route-${l.route}`}>{l.routeNote ?? ROUTE_WORD[l.route]}</span>
                 </span>
               </li>
             ))}

@@ -167,3 +167,5 @@ A wider panel repeats the five levels with full systems, how often data changes 
 **Why both Bigtable and BigQuery?** Bigtable is the fast notepad for recent weeks, read every minute. BigQuery is the full archive for training models.
 
 **Do we have to use Litmus?** No. Manufacturing Connect is optional; data can also arrive over MQTT.
+
+**L2 and L3 both look real time. What is the difference?** Both carry live data, but they do different jobs. **L2 Supervisory Control** is the control room's live view: operator consoles (DCS HMI), SCADA and advanced process control show values every second so operators can steer the process now; it is not a store. **L3 Operations Systems** is the plant's memory and management: the **plant historian** records every tag, time-stamped, within seconds, and **LIMS** holds the lab results (every 8 h), alongside oil movement, blending and scheduling. In a refinery the edge gateway reads the live data read-only **from the historian at L3**, so it never touches the control systems; that is why L3 is marked as the main tap and L2 as "real time, via the historian (or read-only OPC UA)".
