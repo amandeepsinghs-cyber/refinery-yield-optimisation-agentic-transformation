@@ -15,7 +15,7 @@ import { useCockpit, type ChatMessage } from "@/lib/store";
 import type { Citation } from "@/lib/types";
 import { uid, usePageContext } from "./useCopilotChat";
 import { useRouter } from "next/navigation";
-import { screenPathFor } from "@/lib/screens";
+import { intentPathFor, screenPathFor } from "@/lib/screens";
 
 export type VoiceState = "idle" | "connecting" | "ready" | "listening" | "speaking" | "error";
 export type VoiceMode = "ptt" | "handsfree";
@@ -47,6 +47,7 @@ export function mergeTranscript(prev: string, next: string): string {
 export function useLiveVoice() {
   const router = useRouter();
   const routerRef = useRef(router);
+  const operatorChoseRef = useRef(false);
   useEffect(() => { routerRef.current = router; }, [router]);
   const ctx = usePageContext();
   const ctxRef = useRef(ctx);
@@ -295,9 +296,16 @@ export function useLiveVoice() {
           case "context_ack":
             setSeen({ page: String(msg.page ?? ""), time_min: (msg.time_min as number | null) ?? null, regions: Array.isArray(msg.regions) ? (msg.regions as string[]) : [], at: Date.now() });
             break;
-          case "transcript":
+          case "transcript": {
             upsertTranscript(msg.role === "user" ? "user" : "model", String(msg.text ?? ""), Boolean(msg.final));
+            // Spoken request complete: move to the screen it asks about (Gemini's open_screen is the second path).
+            if (msg.role === "user" && msg.final) {
+              const want = intentPathFor(String(msg.text ?? ""));
+              if (want && want !== window.location.pathname + window.location.search) routerRef.current.push(want);
+              operatorChoseRef.current = want != null;   // the operator's own request wins this turn
+            }
             break;
+          }
           case "citation": {
             const cit = msg as unknown as Citation;
             let id = curMsgRef.current.model;
@@ -319,7 +327,7 @@ export function useLiveVoice() {
           }
           case "tool_call": {
             const go = screenPathFor(msg.name, msg.args);
-            if (go) routerRef.current.push(go);   // Gemini's open_screen in voice
+            if (go && !operatorChoseRef.current) routerRef.current.push(go);   // Gemini's open_screen in voice
             if (curMsgRef.current.model) {
               const target = curMsgRef.current.model;
               setMessages((ms) =>
@@ -333,6 +341,7 @@ export function useLiveVoice() {
             setState(capturingRef.current ? "listening" : "ready");
             break;
           case "turn_complete":
+            operatorChoseRef.current = false;
             if (curMsgRef.current.model) {
               const target = curMsgRef.current.model;
               setMessages((ms) => ms.map((m) => (m.id === target ? { ...m, final: true } : m)));

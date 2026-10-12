@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { parseData, streamSSE } from "@/lib/sse";
 import { useCockpit, type ChatMessage } from "@/lib/store";
 import type { Citation } from "@/lib/types";
-import { screenPathFor } from "@/lib/screens";
+import { intentPathFor, screenPathFor } from "@/lib/screens";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -61,7 +61,12 @@ export function useCopilotChat() {
   const send = useCallback(
     async (prompt: string) => {
       const text = prompt.trim();
+      // Move to the screen the operator asked about right away, even while Gemini is still answering
+      // (Gemini's open_screen is the second path).
+      const want = text ? intentPathFor(text) : null;
+      if (want && want !== window.location.pathname + window.location.search) routerRef.current.push(want);
       if (!text || busy) return;
+      const operatorChoseScreen = want != null;   // the operator's own request wins over Gemini's open_screen this turn
       const history = useCockpit.getState().messages.filter((m) => !m.error && m.content);
       const userMsg: ChatMessage = { id: uid(), role: "user", content: text };
       const aId = uid();
@@ -88,7 +93,7 @@ export function useCopilotChat() {
                 break;
               case "tool_call": {
                 const go = screenPathFor(d.name, d.args);
-                if (go) routerRef.current.push(go);   // Gemini's open_screen: take the operator to the relevant screen
+                if (go && !operatorChoseScreen) routerRef.current.push(go);   // Gemini's open_screen: take the operator to the relevant screen
                 patch(aId, (m) => ({
                   ...m,
                   status: `Calling ${String(d.name)}…`,
