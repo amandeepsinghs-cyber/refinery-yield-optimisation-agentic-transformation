@@ -99,7 +99,7 @@ export const LAYERS: Layer[] = [
     job: "Answers the operator in plain words (English, Hinglish, Hindi; text or voice), calls the right agents, combines their answers across units, cites the SOP. Read-only.",
     today: "In the demo: Gemini 2.5 Flash calls the platform's tools.", status: "today", badge: "In the demo", services: ["gemini"] },
   { n: 2, name: "Specialist agents — one per use case",
-    job: "Each agent: its own models, checks and decision; runs as its own service.",
+    job: "Each agent: its own models, checks and decision; runs as its own service. Update, patch or roll back one agent without touching the rest.",
     today: "Today the demo runs them as separate modules inside one service.", status: "today",
     badge: "Quality-estimation agent interactive in the demo", services: ["vertex", "run"] },
   { n: 1, name: "One refinery data lakehouse",

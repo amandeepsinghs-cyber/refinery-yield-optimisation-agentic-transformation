@@ -15,11 +15,12 @@ import { useCopilotChat, usePageContext } from "./useCopilotChat";
 import { TWIN_UNITS } from "@/lib/nav";
 import { useLiveVoice, type LiveVoice } from "./useLiveVoice";
 
+// 11 Oct (owner): the two demo moments first: refinery status, then "why" with the math.
 const STARTERS = [
+  "What's the status in the refinery? What needs attention?",
+  "Why is this action needed? Show the math.",
   "Explain all graphs, curves & buttons on this page",
-  "Walk me through the 7-scene demo flow",
   "Is the model estimate trustworthy right now?",
-  "Can we raise the LCO cut point now?",
 ];
 
 function InlineChart({ figure }: { figure: unknown }) {
