@@ -12,10 +12,10 @@ describe("target architecture", () => {
     expect(LAYERS.map((l) => l.n)).toEqual([4, 3, 2, 1]);
   });
 
-  it("gives every agent a status, with the soft-sensor agent interactive in the demo", () => {
+  it("gives every agent a status, with the quality-estimation agent interactive in the demo", () => {
     for (const a of AGENTS) expect(Object.keys(ARCH_STATUS_WORD)).toContain(a.status);
-    expect(AGENTS.filter((a) => a.status === "today").map((a) => a.name)).toEqual(["Soft-sensor agent"]);
-    expect(AGENTS.find((a) => a.name === "Soft-sensor agent")?.note).toBe("Interactive");
+    expect(AGENTS.filter((a) => a.status === "today").map((a) => a.name)).toEqual(["Quality-estimation agent"]);
+    expect(AGENTS.find((a) => a.name === "Quality-estimation agent")?.note).toBe("Interactive");
   });
 
   it("does not claim streaming, governance or Vertex AI as built today", () => {
@@ -46,7 +46,7 @@ describe("target architecture", () => {
   });
 
   it("layer badges never claim more than the layer shows", () => {
-    expect(LAYERS.find((l) => l.n === 2)?.badge).toBe("Soft-sensor agent interactive in the demo");
+    expect(LAYERS.find((l) => l.n === 2)?.badge).toBe("Quality-estimation agent interactive in the demo");
     expect(LAYERS.find((l) => l.n === 1)?.badge).toMatch(/streaming next/);
     expect(AGENTS).toHaveLength(6);
   });

@@ -26,3 +26,7 @@ cockpit/web/dev.log
 cockpit/web/artifacts/
 cockpit/web/test-results/
 cockpit/web/playwright-report/
+/*.pptx
+/*.pdf
+/*.ipynb
+/FCC-Fractionator/

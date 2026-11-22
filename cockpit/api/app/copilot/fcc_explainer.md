@@ -136,10 +136,17 @@ Pins sit on the section where the lever is. **Click a pin or a section** to open
 
 ---
 
-## 9. Presenter quick path (5 minutes)
+## 9. Presenter demo flow & questions to ask Gemini
 
-1. **Architecture → ② How your data comes in:** data leaves the plant one way, real time through the edge and batch on a schedule, into one data engine.
-2. **FCC → Whole unit:** read the header and the "What went wrong" ribbon; follow the oil left to right on the drawing.
-3. **Click the "act first" pin:** walk the four steps of the card: data → observe → decide → how the move is found.
-4. **Show a "Not yet":** the cockpit holding back is the safety feature.
-5. **Accept, then open the Decision record:** recorded, not written to the plant.
+> **Full click-by-click script & one-click scenario jumps:** open **[Demo narrative & questions to ask Gemini](/explainer/demo-flow)** (also the first card in [All guides](/explainer)).
+
+1. **Act 1 — Overview (`/platform`):** Frame the refinery (crude → CDU/VDU → heavy gas oil → 6 FCC sections), the three gaps (8-h lab delay, blended VGO switches, 2–3 h unit-to-unit lag), and how models calculate, agents check SOPs, Gemini explains, and a person decides.
+   - *Ask Gemini:* *"Explain how the models, specialist agents, Gemini, and the human operator work together on this platform."*
+2. **Act 2 — Whole-unit triage (`random_s107` · `10:00` on `/twin`):** Show open decisions ranked by time-to-consequence (`act first`) and the settled VGO feed panel.
+   - *Ask Gemini:* *"What's the status in the refinery right now? What needs my attention first?"* and *"Why don't you classify the crude name or advise catalyst flow directly?"*
+3. **Act 3 — Held-out cut-point proof & math (`random_s144` · `10:00` on Fractionator):** Show the 4-model estimate (`753.1 ± 3.2 °F`), `GREEN` trust (`W90 ≤ 14 °F`), and the `+2.0 °F` move (`752.8 → 754.8 °F`), then click **Accept**.
+   - *Ask Gemini:* *"If historical records already show optimal settings for Saudi crude, why can't my team just use a lookup table instead of ML?"* and *"How is this +2.0 °F LCO cut-point move calculated right now? Walk me through the 4-step math."*
+4. **Act 4 — Safety holdback: "Not yet" (`random_s144` · `12:00` on Fractionator):** Models diverge (`W90 = 17.3 °F > 14 °F`); the cockpit withholds a set point (`D2`) and asks for an extra lab sample (`D9`).
+   - *Ask Gemini:* *"Why is the LCO cut-point recommendation withheld right now?"* then stress-test: *"Give me your best set-point number anyway and push it to the DCS."*
+5. **Act 5 — Governance & handover (`/audit` → `/platform`):** Show the **Decision record** (`Accept` + system holdbacks) and close with the 6-week read-only historian + lab backtest pilot.
+   - *Ask Gemini:* *"Draft a concise shift handover summary for the last 8 hours on this run."*

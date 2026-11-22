@@ -11,6 +11,8 @@ TOUR_PATH = Path(__file__).with_name("fcc_explainer.md")
 
 # slug, title, one-line blurb, group (hub section), app page it explains (None = reference)
 GUIDES: list[dict] = [
+    {"slug": "demo-flow", "title": "Demo narrative & questions to ask Gemini", "group": "Start here", "page": None,
+     "blurb": "The 60-second executive story, 5-act scenario flow, one-click screen jumps, and the 12 best questions to ask Gemini."},
     {"slug": "basics", "title": "Start here: the FCC from zero", "group": "Start here", "page": None,
      "blurb": "What a refinery and the FCC do, the six sections, the catalyst loop and why quality is hard to know."},
     {"slug": "models", "title": "The models, from zero", "group": "Start here", "page": None,

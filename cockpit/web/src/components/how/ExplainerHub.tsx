@@ -38,8 +38,10 @@ export default function ExplainerHub() {
         <div className="xp-lede">
           <p>
             One guide per page, written for someone with no chemical-engineering, statistics or machine-learning background.
-            Start with <b>the FCC from zero</b> and <b>the models from zero</b>, then open the guide for any screen. The
-            <b> Explainer</b> link in the header always opens the guide for the page you are on, and Gemini reads the same guides.
+            Presenting to stakeholders? Start with{" "}
+            <Link href="/explainer/demo-flow"><b>Demo narrative &amp; questions to ask Gemini →</b></Link>, or read{" "}
+            <b>the FCC from zero</b> and <b>the models from zero</b>. The <b>Explainer</b> link in the header always opens the
+            guide for the page you are on, and Gemini reads the same guides.
           </p>
         </div>
       </header>

@@ -93,3 +93,43 @@ def test_screen_carries_visible_panels_and_highlight_on_l1_only():
     # L0 never carries panels, even if a stale client sends them
     sc0 = screen_of({"page": "/twin", "screen": {"level": "L0", "panel_ids": ["quality"]}})
     assert "panel_ids" not in sc0
+
+
+def test_decision_math_lookup_rebuttal_and_live_voice_rules():
+    """current_feedback.md regression checks: anti-sycophancy on crude lookup tables, 4-step math, adaptive voice depth,
+    ambient-chatter guard, and /api/live lang query parameter forwarding."""
+    import inspect
+    from app.copilot.live import VOICE_EXTRA, live_config
+    from app.main import live as live_endpoint
+
+    si = system_instruction({"page": "/twin/unit/unit_4_fractionator", "run_id": "random_s144", "time_min": 600})
+    assert "NEVER agree if the user suggests that crude or feed classification sets the initial cut point" in si
+    assert "15. End-to-end decision math & why ML beats a static crude lookup table" in si
+    assert "tank-blended VGO" in si and "8-hour lab blind spot" in si
+    assert "Do NOT call open_screen for greetings, conceptual questions" in si
+    g14_onward = si.split("14. Feed and heat balance")[1]
+    assert not FIN.search(g14_onward), "no financial wording in guardrails 14–15"
+
+    # Voice mode lifts the 3-sentence cap for how/math/why-ML/story questions and guards against background chatter
+    assert "4–6 sentence step-by-step spoken walkthrough" in VOICE_EXTRA
+    assert "off-topic background speech" in VOICE_EXTRA
+    assert not FIN.search(VOICE_EXTRA), "no financial wording in VOICE_EXTRA"
+
+    cfg_hi = live_config({"page": "/twin", "lang": "hinglish"}, with_tools=False)
+    assert cfg_hi.speech_config.language_code == "hi-IN"
+    assert "4–6 sentence step-by-step spoken walkthrough" in cfg_hi.system_instruction
+
+    # /api/live endpoint accepts `lang` query param so browser language reaches live_ws()
+    sig = inspect.signature(live_endpoint)
+    assert "lang" in sig.parameters
+
+    # Explainer demo-flow guide is first in 'Start here', served by guide_docs, linked from fcc_explainer.md, and money-free
+    from app.copilot import guide_docs
+    from app.copilot.chat import EXPLAINER_MD
+    idx = guide_docs.index()
+    assert idx[0]["slug"] == "demo-flow" and idx[0]["group"] == "Start here"
+    demo_md = guide_docs.guide_md("demo-flow")
+    assert demo_md and "lookup table" in demo_md and "random_s144" in demo_md
+    assert "/explainer/demo-flow" in EXPLAINER_MD
+    assert not FIN.search(demo_md), "no financial wording in demo-flow.md"
+    assert not FIN.search(EXPLAINER_MD), "no financial wording in fcc_explainer.md"

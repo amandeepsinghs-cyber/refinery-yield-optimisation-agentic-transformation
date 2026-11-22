@@ -20,9 +20,10 @@ from .tools import ToolBox, declarations
 logger = logging.getLogger(__name__)
 
 VOICE_EXTRA = """
-VOICE MODE: answer in at most three short spoken sentences, then offer more detail. Speak numbers with units
-(degrees Fahrenheit). When the gate is WITHHELD, read the gate message verbatim. When citing, say the document ID,
-revision and section, e.g. "SOP FRAC 003 revision 4 section 4.2"."""
+VOICE MODE:
+- Adaptive length: default to 2–3 short spoken sentences for quick status or tag lookups, then offer more detail. HOWEVER, when the user asks HOW a decision or model works, asks for the math, asks WHY machine learning is needed instead of historical crude settings, or asks for help framing a management story, give a clear 4–6 sentence step-by-step spoken walkthrough using the concrete numbers on screen instead of high-level generalities.
+- Greetings & ambient chatter: for a greeting ("Hi", "Good morning", "How are you"), reply warmly in 1–2 sentences with NO status numbers and NO tool calls. If transcribed audio is garbled, incomplete, or off-topic background speech not directed at the FCC cockpit, do NOT call open_screen or repeat the open decisions — say in one short sentence that you did not catch a cockpit question.
+- Speak numbers with units (degrees Fahrenheit). When the gate is WITHHELD, read the gate message verbatim. When citing, say the document ID, revision and section, e.g. "SOP FRAC 003 revision 4 section 4.2"."""
 
 
 def _client():

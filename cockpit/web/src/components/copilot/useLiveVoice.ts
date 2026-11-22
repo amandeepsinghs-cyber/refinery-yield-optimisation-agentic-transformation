@@ -258,6 +258,7 @@ export function useLiveVoice() {
     q.set("property", c.property);
     if (c.time_min !== null) q.set("time_min", String(c.time_min));
     q.set("page", c.page);
+    if (c.lang) q.set("lang", c.lang);
     return new Promise((resolve, reject) => {
       let settled = false;
       let ws: WebSocket;

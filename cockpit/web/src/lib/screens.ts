@@ -47,7 +47,7 @@ const INTENTS: [string, RegExp][] = [
   ["fractionator", /(fractionator|main column|cut ?point|\blco\b|heavy naphtha|\bhn\b|t98|lab sample|फ्रैक्शनेटर|फ्रेक्शनेटर|कट पॉइंट|कट प्वाइंट)/i],
   ["gas_plant", /(gas plant|condenser|cooling water|overhead temperature|गैस प्लांट|कंडेंसर)/i],
   ["stabiliser", /(stabili[sz]er|\bc5\b|\blpg\b|स्टेबलाइज़र|स्टेबलाइजर)/i],
-  ["whole_unit", /(status|needs? (my )?attention|anything (that )?needs|what('?s| is) (going on|happening)|whole unit|fcc complex|overview of the fcc|स्थिति|ध्यान|क्या हो रहा|haal|dhyaan|kya chal raha)/i],
+  ["whole_unit", /(status|needs? (my )?attention|anything (that )?needs|(?:^|[?.!]\s*|(?:tell|show) me )what('?s| is) (going on|happening)(?: (?:in|on|at|with|here)\b|\s*[?.!]|$)|whole unit|fcc complex|overview of the fcc|स्थिति|ध्यान|क्या हो रहा|haal|dhyaan|kya chal raha)/i],
 ];
 
 /** The path for what the operator asked, or null if the message is not about a particular screen (e.g. a greeting). */

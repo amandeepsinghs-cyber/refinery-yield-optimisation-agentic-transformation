@@ -8,15 +8,49 @@
  * the one-line summary, a "follow the oil" strip, then one numbered card per "## " section of the markdown.
  */
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ComponentProps } from "react";
+import { useCockpit } from "@/lib/store";
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 function A({ href, children, ...rest }: ComponentProps<"a">) {
-  if (href?.startsWith("/")) return <Link href={href}>{children}</Link>;
+  const router = useRouter();
+  if (href?.startsWith("/")) {
+    const u = new URL(href, "http://fcc.local");
+    const run = u.searchParams.get("demo_run");
+    const t = u.searchParams.get("demo_t");
+    const prop = u.searchParams.get("demo_prop");
+    const ask = u.searchParams.get("ask");
+    if (run || t || prop || ask) {
+      u.searchParams.delete("demo_run");
+      u.searchParams.delete("demo_t");
+      u.searchParams.delete("demo_prop");
+      u.searchParams.delete("ask");
+      const cleanHref = u.pathname + (u.search ? u.search : "") + u.hash;
+      return (
+        <a
+          href={cleanHref}
+          {...rest}
+          onClick={(e) => {
+            e.preventDefault();
+            const st = useCockpit.getState();
+            if (run) st.setRun(run, t !== null ? Number(t) : undefined);
+            else if (t !== null) st.setTimeMin(Number(t));
+            if (prop === "LCO_T98_F" || prop === "HN_T98_F") st.setProperty(prop);
+            router.push(cleanHref);
+            if (ask) setTimeout(() => useCockpit.getState().askCopilot(ask), 150);
+          }}
+        >
+          {children}
+        </a>
+      );
+    }
+    return <Link href={href}>{children}</Link>;
+  }
   return <a href={href} target="_blank" rel="noreferrer" {...rest}>{children}</a>;
 }
 
@@ -81,7 +115,7 @@ export default function ExplainerView({ slug = "tour" }: { slug?: string }) {
         <p className="pf-kicker"><Link href="/explainer" className="xp-back">← All guides</Link> · Explainer</p>
         <h1>{doc.title}</h1>
         <div className="xp-lede"><MD>{doc.lede}</MD></div>
-        {slug === "tour" || slug === "basics" ? <>
+        {slug === "demo-flow" || slug === "tour" || slug === "basics" ? <>
         <ol className="xp-oil" aria-label="Follow the oil through the six sections">
           {OIL.map((u, i) => (
             <li key={u.n}>

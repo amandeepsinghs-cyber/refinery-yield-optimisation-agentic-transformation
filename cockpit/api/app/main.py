@@ -100,5 +100,5 @@ async def probe():
 
 @app.websocket("/api/live")
 async def live(ws: WebSocket, run_id: str | None = None, property: str | None = None, time_min: int | None = None,
-               page: str | None = None):
-    await live_ws(ws, {"run_id": run_id, "property": property, "time_min": time_min, "page": page})
+               page: str | None = None, lang: str | None = None):
+    await live_ws(ws, {"run_id": run_id, "property": property, "time_min": time_min, "page": page, "lang": lang})

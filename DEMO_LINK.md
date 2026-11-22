@@ -4,10 +4,11 @@
 
 | | |
 |---|---|
-| Version | v0.5.16 (model release v0.5.6) |
+| Version | v0.5.17 (model release v0.5.6) |
 | Cloud Run | service `fcc-cockpit`, revision: see `gcloud run services describe fcc-cockpit`, project `fcc-soft-sensor`, region `us-central1` |
 | Access | Behind Identity-Aware Proxy: sign in with an allowed Google account |
-| Deployed | 11 Oct 2026 (decision record reset to its seed on deploy) |
+| Deployed | 22 Nov 2026 (decision record reset to its seed on deploy) |
+| New in v0.5.17 | Explainer demo-flow guide (`/explainer/demo-flow` + §9 in tour) with 60-s narrative, 12 questions & one-click scenario/Ask Gemini jumps; Copilot 4-step math & lookup-table rebuttal; Live voice adaptive depth, chatter guard & `lang` query param |
 | New in v0.5.16 | Screen commands move instantly (EN / Hinglish / Hindi, typed or spoken), even while Gemini is answering; the operator's request wins over Gemini's choice |
 | New in v0.5.15 | Gemini moves the screen: status / "needs attention" opens the Whole unit; "why this action" opens that unit; new get_refinery_status tool (whole FCC whatever page) |
 | New in v0.5.14 | Architecture data view: L2 (live view) vs L3 (historian/LIMS, the read-only tap) |
