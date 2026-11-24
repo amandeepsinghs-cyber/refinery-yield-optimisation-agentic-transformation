@@ -95,6 +95,8 @@ export function useLiveVoice() {
   const curMsgRef = useRef<{ user: string | null; model: string | null }>({ user: null, model: null });
   const modeRef = useRef<VoiceMode>("ptt");
   const closingRef = useRef(false);
+  const manualOffRef = useRef(false);
+  const connectPromiseRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -189,7 +191,9 @@ export function useLiveVoice() {
   }, []);
 
   const disconnect = useCallback(() => {
+    manualOffRef.current = true;
     closingRef.current = true;
+    connectPromiseRef.current = null;
     teardownMic();
     stopPlayback();
     wsRef.current?.close();
@@ -247,10 +251,13 @@ export function useLiveVoice() {
     nodeRef.current = node;
   }, [flush]);
 
-  const connect = useCallback((): Promise<void> => {
-    if (wsRef.current && wsRef.current.readyState <= WebSocket.OPEN) return Promise.resolve();
+  const connect = useCallback((silent = false): Promise<void> => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && connectPromiseRef.current === null) {
+      return Promise.resolve();
+    }
+    if (connectPromiseRef.current) return connectPromiseRef.current;
     closingRef.current = false;
-    setError(null);
+    if (!silent) setError(null);
     setState("connecting");
     const c = ctxRef.current;
     const q = new URLSearchParams();
@@ -259,14 +266,19 @@ export function useLiveVoice() {
     if (c.time_min !== null) q.set("time_min", String(c.time_min));
     q.set("page", c.page);
     if (c.lang) q.set("lang", c.lang);
-    return new Promise((resolve, reject) => {
+    const p = new Promise<void>((resolve, reject) => {
       let settled = false;
       let ws: WebSocket;
       try {
         ws = new WebSocket(`${wsBase()}/api/live?${q.toString()}`);
       } catch (e) {
-        setState("error");
-        setError(`Could not open the voice connection: ${(e as Error).message}`);
+        connectPromiseRef.current = null;
+        if (silent) {
+          setState("idle");
+        } else {
+          setState("error");
+          setError(`Could not open the voice connection: ${(e as Error).message}`);
+        }
         reject(e);
         return;
       }
@@ -283,6 +295,7 @@ export function useLiveVoice() {
         }
         switch (msg.type) {
           case "ready":
+            connectPromiseRef.current = null;
             setModel((msg.model as string) ?? null);
             sendContext(true);
             setState(capturingRef.current ? "listening" : "ready");
@@ -357,10 +370,13 @@ export function useLiveVoice() {
         }
       };
       ws.onerror = () => {
-        setError("Voice connection failed. Is the cockpit API running on port 8010 with Gemini Live enabled?");
+        if (!silent) {
+          setError("Voice connection failed. Is the cockpit API running on port 8010 with Gemini Live enabled?");
+        }
       };
       ws.onclose = (ev) => {
         wsRef.current = null;
+        connectPromiseRef.current = null;
         teardownMic();
         stopPlayback();
         if (!closingRef.current) {
@@ -369,6 +385,8 @@ export function useLiveVoice() {
             // go back to idle; the next mic press opens a new session (connect() runs on every start).
             setState("idle");
             setError("Voice session ended. Press the mic to start a new one.");
+          } else if (silent && !settled) {
+            setState("idle");
           } else {
             setState("error");
             setError((prev) => prev ?? `Voice connection closed${ev.reason ? `: ${ev.reason}` : ` (code ${ev.code})`}.`);
@@ -380,13 +398,26 @@ export function useLiveVoice() {
         }
       };
     });
-  }, [playChunk, setMessages, stopPlayback, teardownMic, upsertTranscript]);
+    connectPromiseRef.current = p;
+    return p;
+  }, [playChunk, sendContext, setMessages, stopPlayback, teardownMic, upsertTranscript]);
+
+  /** Background WebSocket pre-connect (Urvi/Yukti pattern) — opens Gemini Live without prompting for mic permission. */
+  const prewarm = useCallback(() => {
+    if (manualOffRef.current) return;
+    if (wsRef.current && wsRef.current.readyState <= WebSocket.OPEN) return;
+    void connect(true).catch(() => undefined);
+  }, [connect]);
+
+  const resetManualOff = useCallback(() => {
+    manualOffRef.current = false;
+  }, []);
 
   /** Begin capturing (push-to-talk press, or hands-free on). */
   const startTalking = useCallback(async () => {
+    manualOffRef.current = false;
     try {
-      await connect();
-      await setupMic();
+      await Promise.all([connect(false), setupMic()]);
       await micCtxRef.current?.resume();
       stopPlayback(); // barge-in: local playback stops as the user speaks
       capturingRef.current = true;
@@ -413,7 +444,7 @@ export function useLiveVoice() {
 
   const sendText = useCallback(
     async (text: string) => {
-      await connect();
+      await connect(false);
       wsRef.current?.send(JSON.stringify({ type: "text", text }));
       upsertTranscript("user", text, true);
     },
@@ -430,6 +461,8 @@ export function useLiveVoice() {
     setMode,
     model,
     seen,
+    prewarm,
+    resetManualOff,
     startTalking,
     stopTalking,
     disconnect,

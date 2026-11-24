@@ -4,6 +4,7 @@ Plain google-genai (not ADK) with a manual tool loop; the session is stateless o
 the message history each turn, SDD-COP-04 simplified)."""
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from pathlib import Path
@@ -193,11 +194,26 @@ def screen_block(ctx: dict) -> str:
     return head + body
 
 
-def system_instruction(ctx: dict, with_guides: bool = True) -> str:
-    """with_guides=False for voice (11 Oct): the Live native-audio model rejects a long system instruction (WebSocket
-    close 1007), so voice keeps the rules, screen blocks and the quick tour, without the per-page beginner guides."""
+VOICE_TOUR_SUMMARY = (
+    "SIX FCC SECTIONS (left to right): U1 Feed furnace (preheat °F) -> U2 Riser reactor (conversion %) <-> U3 Regenerator "
+    "(coke burn, afterburn dT) -> U4 Main fractionator (LCO T98 & HN T98 cut-point estimates between 8-h labs) -> U5 Gas plant "
+    "(condenser cooling duty) -> U6 Stabiliser (LPG vs C5 recovery). PAGES: /platform (Overview), /architecture, /twin (Whole unit), "
+    "/twin/unit/<unit_id> (steps 1 Data, 2 Observe, 3 Decision & lever, 4 How move is found), /audit (Decision record), /explainer. "
+    "Advisory only: Accept / Hold / Decline logs to the Decision record, never writes to any control system."
+)
+
+
+_GREETING_ONLY_RE = re.compile(
+    r"^\s*(?:(?:hi|hello|hey|good\s+(?:morning|afternoon|evening)|namaste|नमस्ते|सुप्रभात|kaise\s+ho|"
+    r"how\s+are\s+you|how's\s+it\s+going|gemini|aman|sir|ji|जी)(?:[\s,!?.]+|$))+$",
+    re.I,
+)
+
+
+def system_instruction(ctx: dict, with_guides: bool = True, query: str | None = None) -> str:
+    """with_guides=False for voice: keeps the live screen blocks, compact process/page map, and all guardrails (~8 KB instead of
+    ~35 KB) so Gemini Live connects in <1 s and avoids WebSocket 1007 instruction-length limits."""
     s = get_settings()
-    ui_context = page_guide_for(ctx.get("page"))
     lang = (ctx.get("lang") or "en").lower()
     lang_directive = ""
     if lang == "hinglish":
@@ -213,6 +229,20 @@ def system_instruction(ctx: dict, with_guides: bool = True) -> str:
             "numeric values and °F/psig units exact; copy any SOP citation exactly as a tool returned it, and never write "
             "a citation you were not given."
         )
+    if with_guides:
+        ui_context = page_guide_for(ctx.get("page"))
+        ref_section = f"""APPLICATION UI, GRAPHS, CURVES, BUTTONS & DEMO FLOW REFERENCE:
+{ui_context}
+
+FCC EXPLAINER (the in-app "Explainer" quick tour; use it to explain the process, the screen, the pins and the decisions in plain words,
+and point the operator to the Explainer page for more; live numbers still come only from tools and the screen blocks):
+{EXPLAINER_MD}
+
+BEGINNER GUIDES FOR THIS PAGE (the in-app guide for the screen the operator is on, plus 'The models, from zero'; the operator may have
+no technical background: explain terms simply, with an everyday analogy when it helps, and suggest the guide at /explainer/<slug>):
+{gemini_context(ctx.get('page'), query=query)}"""
+    else:
+        ref_section = f"PROCESS & UI SUMMARY (voice mode; full guides at /explainer):\n{VOICE_TOUR_SUMMARY}"
     return f"""You are the FCC Decision Cockpit copilot for a TECHNICAL DEMO on SIMULATED data (Octave FCC +
 fractionator simulator). You help operators and engineers understand LCO T98 (LCO_T98_F) and heavy-naphtha T98 (HN_T98_F)
 estimates, their uncertainty, the Distribution Spread Gate, cut-point recommendations, feed-change detection and feed-quality estimates, unit residuals, multi-set-point recipes, and every screen, graph, curve, button, and scene in this application.{lang_directive}
@@ -222,16 +252,7 @@ Page context: page={ctx.get('page')}, run_id={ctx.get('run_id')}, property={ctx.
 Models: {model_labels()}. Spec (placeholders): LCO T98 <= {s.spec_max('LCO_T98_F'):.0f} °F, HN T98 <= {s.spec_max('HN_T98_F'):.0f} °F;
 R = {s.R:.0f} °F; W90 limit = {s.w90_max:.0f} °F.
 
-APPLICATION UI, GRAPHS, CURVES, BUTTONS & DEMO FLOW REFERENCE:
-{ui_context}
-
-FCC EXPLAINER (the in-app "Explainer" quick tour; use it to explain the process, the screen, the pins and the decisions in plain words,
-and point the operator to the Explainer page for more; live numbers still come only from tools and the screen blocks):
-{EXPLAINER_MD}
-
-BEGINNER GUIDES FOR THIS PAGE (the in-app guide for the screen the operator is on, plus 'The models, from zero'; the operator may have
-no technical background: explain terms simply, with an everyday analogy when it helps, and suggest the guide at /explainer/<slug>):
-{gemini_context(ctx.get('page')) if with_guides else '(not loaded in voice sessions; the in-app guide is at /explainer)'}
+{ref_section}
 
 GUARDRAILS (mandatory):
 1. Read-only advisor (DECISIONS S3). You have no write tools. Accept/Decline is a human action in the UI. Refuse any request to write to,
@@ -351,38 +372,55 @@ def suggestions(ctx: dict) -> list[str]:
     return base
 
 
-def _client():
+_CLIENTS: dict[tuple[str, str], object] = {}
+
+
+def get_genai_client():
+    """Singleton Vertex AI client per (project, location) — avoids TLS/gRPC pool & auth setup on every turn."""
     from google import genai
     g = get_settings()["gemini"]
-    return genai.Client(vertexai=True, project=g["project"], location=g["location"])
+    key = (str(g["project"]), str(g["location"]))
+    cli = _CLIENTS.get(key)
+    if cli is None:
+        cli = genai.Client(vertexai=True, project=key[0], location=key[1])
+        _CLIENTS[key] = cli
+    return cli
+
+
+_client = get_genai_client
 
 
 async def chat_stream(messages: list[dict], ctx: dict) -> AsyncIterator[str]:
     from google.genai import types
     st = get_state()
     if st.knowledge.mode == "empty":
-        st.knowledge.load(embed=True, background=False)
+        await asyncio.to_thread(st.knowledge.load, False, False)
     ctx = dict(ctx or {})
     tb = ToolBox(ctx)
     ctx.setdefault("run_id", tb.run_id)
     ctx.setdefault("property", tb.prop)
     contents = []
+    last_q = ""
     for m in messages or []:
         role = "model" if m.get("role") in ("assistant", "model") else "user"
         txt = m.get("content") or ""
         if txt:
             contents.append(types.Content(role=role, parts=[types.Part(text=txt)]))
+            if role == "user":
+                last_q = txt
     if not contents:
         yield _sse("error", {"message": "empty message"})
         yield _sse("done", {})
         return
+    is_greeting = len(last_q.strip()) < 60 and bool(_GREETING_ONLY_RE.match(last_q))
+    sys_inst = await asyncio.to_thread(system_instruction, ctx, True, last_q)
     cfg = types.GenerateContentConfig(
-        system_instruction=system_instruction(ctx), tools=declarations(), temperature=0.2,
-        thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=1024),
+        system_instruction=sys_inst, tools=[] if is_greeting else declarations(), temperature=0.2,
+        thinking_config=types.ThinkingConfig(include_thoughts=not is_greeting, thinking_budget=0 if is_greeting else 128),
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))
     final_text = ""
     try:
-        client = _client()
+        client = get_genai_client()
         model = st.s["gemini"]["text_model"]
         for _round in range(MAX_TOOL_ROUNDS + 1):
             parts_acc, calls = [], []
@@ -410,7 +448,7 @@ async def chat_stream(messages: list[dict], ctx: dict) -> AsyncIterator[str]:
                 args = dict(fc.args or {})
                 yield _sse("tool_call", {"name": fc.name, "args": args})
                 n_charts = len(tb.charts)
-                result = tb.call(fc.name, args)
+                result = await asyncio.to_thread(tb.call, fc.name, args)
                 if "error" in result:
                     yield _sse("thought", {"text": f"Tool {fc.name} returned an error: {result['error']}"})
                 for fig in tb.charts[n_charts:]:

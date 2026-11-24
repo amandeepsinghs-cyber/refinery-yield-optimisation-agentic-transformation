@@ -4,7 +4,15 @@ and /explainer/<slug> pages read them through GET /api/explainer/..., and Gemini
 operator is on (plus the models guide), so the page and Gemini explain things in the same words."""
 from __future__ import annotations
 
+from functools import lru_cache
+import re
 from pathlib import Path
+
+_MODEL_DETAIL_RE = re.compile(
+    r"\b(model|models|gpr|gaussian|pinn|hybrid|ridge|kalman|kernel|crps|rmse|calibrat|formula|equation|math|"
+    r"weight|weights|bimodal|ashman|lag|lags|ewma|cusum|hyperparameter|architecture|library|libraries)\b",
+    re.I,
+)
 
 GUIDES_DIR = Path(__file__).with_name("guides")
 TOUR_PATH = Path(__file__).with_name("fcc_explainer.md")
@@ -57,6 +65,7 @@ def guide_path(slug: str) -> Path | None:
     return GUIDES_DIR / f"{slug}.md"
 
 
+@lru_cache(maxsize=32)
 def guide_md(slug: str) -> str | None:
     p = guide_path(slug)
     if p is None or not p.exists():
@@ -87,10 +96,15 @@ def slugs_for_page(page: str | None) -> list[str]:
     return [g["slug"] for g in GUIDES if g["page"] == p] or (["tour"] if p in ("/", "/explainer") else [])
 
 
-def gemini_context(page: str | None) -> str:
-    """The guide(s) for this page plus the models guide, for the system prompt. Empty if no files are present."""
+def gemini_context(page: str | None, query: str | None = None) -> str:
+    """The guide(s) for this page plus the models guide when relevant, for the system prompt.
+    When `query` is supplied and does not ask about model internals/math, skips the 54 KB `models` + `models-technical`
+    reference docs to halve text prefill latency."""
+    slugs = [*slugs_for_page(page), "models"]
+    if query is not None and not _MODEL_DETAIL_RE.search(query) and not str(page or "").startswith("/explainer/models"):
+        slugs = [s for s in slugs if s not in ("models", "models-technical")]
     parts = []
-    for s in [*slugs_for_page(page), "models"]:
+    for s in slugs:
         md = guide_md(s)
         if md and s not in [x for x, _ in parts]:
             parts.append((s, md))

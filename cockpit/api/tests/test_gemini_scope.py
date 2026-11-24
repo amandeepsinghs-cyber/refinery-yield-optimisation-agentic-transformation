@@ -133,3 +133,28 @@ def test_decision_math_lookup_rebuttal_and_live_voice_rules():
     assert "/explainer/demo-flow" in EXPLAINER_MD
     assert not FIN.search(demo_md), "no financial wording in demo-flow.md"
     assert not FIN.search(EXPLAINER_MD), "no financial wording in fcc_explainer.md"
+
+
+def test_live_voice_slim_prompt_tools_and_singleton_client():
+    """Urvi/Yukti latency parity checks: compact voice prompt (<12 KB), slim voice toolset, session resumption &
+    sliding-window compression, and singleton genai.Client reuse."""
+    from app.copilot.chat import VOICE_TOUR_SUMMARY, get_genai_client
+    from app.copilot.live import live_config
+    from app.copilot.tools import VOICE_TOOL_NAMES, declarations, voice_declarations
+
+    full_si = system_instruction({"page": "/twin/unit/unit_4_fractionator", "run_id": "random_s144", "time_min": 600}, with_guides=True)
+    voice_si = system_instruction({"page": "/twin/unit/unit_4_fractionator", "run_id": "random_s144", "time_min": 600}, with_guides=False)
+    assert len(voice_si) < len(full_si) * 0.45, f"voice prompt should be <45% of full prompt ({len(voice_si)} vs {len(full_si)})"
+    assert "SCOPE SNAPSHOT" in voice_si and "15. End-to-end decision math" in voice_si
+    assert not FIN.search(VOICE_TOUR_SUMMARY), "no financial wording in VOICE_TOUR_SUMMARY"
+
+    all_decls = declarations()[0].function_declarations
+    v_decls = voice_declarations()[0].function_declarations
+    assert len(v_decls) == len(VOICE_TOOL_NAMES) < len(all_decls)
+
+    cfg = live_config({"page": "/twin", "lang": "en"}, with_tools=True)
+    assert cfg.session_resumption is not None
+    assert cfg.context_window_compression is not None
+    assert len(cfg.tools[0].function_declarations) == len(VOICE_TOOL_NAMES)
+
+    assert get_genai_client() is get_genai_client()

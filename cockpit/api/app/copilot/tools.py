@@ -149,15 +149,37 @@ DECLS = [
 ]
 
 
-def declarations():
+VOICE_TOOL_NAMES = frozenset({
+    "get_refinery_status",
+    "open_screen",
+    "get_gate_status",
+    "get_current_state",
+    "get_distribution",
+    "explain_estimate",
+    "get_scope_snapshot",
+    "get_regime",
+    "search_documents",
+    "find_similar_events",
+    "draft_handover",
+})
+
+
+def declarations(names: frozenset[str] | set[str] | None = None):
     from google.genai import types
     out = []
     for name, desc, props, req in DECLS:
+        if names is not None and name not in names:
+            continue
         schema = {"type": "OBJECT", "properties": {k: {"type": t, "description": d} for k, (t, d) in props.items()}}
         if req:
             schema["required"] = req
         out.append(types.FunctionDeclaration(name=name, description=desc, parameters=schema))
     return [types.Tool(function_declarations=out)]
+
+
+def voice_declarations():
+    """Slimmer tool schema for Gemini Live voice (Urvi/Yukti pattern: avoids compiling 22 tool schemas on connect)."""
+    return declarations(VOICE_TOOL_NAMES)
 
 
 class ToolBox:

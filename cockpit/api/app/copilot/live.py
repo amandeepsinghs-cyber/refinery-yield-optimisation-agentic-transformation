@@ -14,8 +14,8 @@ from fastapi import WebSocket, WebSocketDisconnect
 from ..config import get_settings
 from ..knowledge.index import CITE_RE
 from ..state import get_state
-from .chat import system_instruction
-from .tools import ToolBox, declarations
+from .chat import get_genai_client, screen_block, screen_of, system_instruction, visible_block
+from .tools import ToolBox, voice_declarations
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +26,7 @@ VOICE MODE:
 - Speak numbers with units (degrees Fahrenheit). When the gate is WITHHELD, read the gate message verbatim. When citing, say the document ID, revision and section, e.g. "SOP FRAC 003 revision 4 section 4.2"."""
 
 
-def _client():
-    from google import genai
-    g = get_settings()["gemini"]
-    return genai.Client(vertexai=True, project=g["project"], location=g["location"])
+_client = get_genai_client
 
 
 LIVE_LANGUAGE = {"hi": "hi-IN", "hindi": "hi-IN", "hinglish": "hi-IN", "en": "en-IN"}
@@ -43,16 +40,20 @@ def live_language_code(ctx: dict) -> str:
 def live_config(ctx: dict, with_tools: bool = True):
     from google.genai import types
     g = get_settings()["gemini"]
-    kw = dict(response_modalities=[types.Modality.AUDIO],
-              system_instruction=system_instruction(ctx, with_guides=False) + VOICE_EXTRA,
-              input_audio_transcription=types.AudioTranscriptionConfig(),
-              output_audio_transcription=types.AudioTranscriptionConfig())
+    kw = dict(
+        response_modalities=[types.Modality.AUDIO],
+        system_instruction=system_instruction(ctx, with_guides=False) + VOICE_EXTRA,
+        input_audio_transcription=types.AudioTranscriptionConfig(),
+        output_audio_transcription=types.AudioTranscriptionConfig(),
+        session_resumption=types.SessionResumptionConfig(),
+        context_window_compression=types.ContextWindowCompressionConfig(sliding_window=types.SlidingWindow()),
+    )
     speech = {"language_code": live_language_code(ctx)}
     if g.get("voice"):
         speech["voice_config"] = types.VoiceConfig(prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=g["voice"]))
     kw["speech_config"] = types.SpeechConfig(**speech)
     if with_tools:
-        kw["tools"] = declarations()
+        kw["tools"] = voice_declarations()
     return types.LiveConnectConfig(**kw)
 
 
@@ -120,8 +121,9 @@ async def live_ws(ws: WebSocket, ctx: dict) -> None:
     ctx = {**ctx, "run_id": tb.run_id, "property": tb.prop}
     model = st.gemini.get("live_model") or st.s["gemini"]["live_model"]
     try:
-        client = _client()            # keep a reference for the whole session
-        session_cm = client.aio.live.connect(model=model, config=live_config(ctx))
+        client = _client()
+        cfg = await asyncio.to_thread(live_config, ctx)
+        session_cm = client.aio.live.connect(model=model, config=cfg)
         session = await session_cm.__aenter__()
     except Exception as e:  # noqa: BLE001
         await ws.send_json({"type": "error", "message": f"Live connect failed for {model}: {str(e)[:300]}"})
@@ -129,9 +131,9 @@ async def live_ws(ws: WebSocket, ctx: dict) -> None:
         return
     await ws.send_json({"type": "ready", "model": model})
     user_tx, model_tx = [], []
+    last_snap_key = [ctx.get("page"), ctx.get("run_id"), ctx.get("time_min")]
 
     async def upstream():
-        from .chat import screen_block
         while True:
             msg = await ws.receive_json()
             typ = msg.get("type")
@@ -143,16 +145,22 @@ async def live_ws(ws: WebSocket, ctx: dict) -> None:
                                                   turn_complete=True)
             elif typ == "context" and isinstance(msg.get("screen"), dict):
                 # SDD-GEM-04: the UI pushes what is rendered (and the route) after `ready` and whenever it changes.
-                # Injected as user content without completing the turn, so the model has it for the next question
-                # but does not answer the update itself.
+                # If (page, run_id, time_min) matches what was just placed in system_instruction (or the prior update),
+                # send only the lightweight client DOM digest instead of recomputing scope_snapshot + decisions.build.
                 try:
                     cctx = {**ctx, "page": msg.get("page") or ctx.get("page"), "time_min": msg.get("time_min", ctx.get("time_min")),
                             "screen": msg["screen"], "lang": msg.get("lang") or ctx.get("lang")}
-                    block = screen_block(cctx)
-                    await session.send_client_content(
-                        turns=types.Content(role="user", parts=[types.Part(text=f"[SCREEN CONTEXT UPDATE — do not reply to this message; "
-                                                                                 f"use it for the operator's next question]\n{block}")]),
-                        turn_complete=False)
+                    snap_key = [cctx.get("page"), cctx.get("run_id"), cctx.get("time_min")]
+                    if snap_key == last_snap_key:
+                        block = visible_block(screen_of(cctx)).strip()
+                    else:
+                        block = await asyncio.to_thread(screen_block, cctx)
+                        last_snap_key[:] = snap_key
+                    if block:
+                        await session.send_client_content(
+                            turns=types.Content(role="user", parts=[types.Part(text=f"[SCREEN CONTEXT UPDATE — do not reply to this message; "
+                                                                                     f"use it for the operator's next question]\n{block}")]),
+                            turn_complete=False)
                     vis = msg["screen"].get("visible") or {}
                     regions = sorted(vis.keys()) if isinstance(vis, dict) else []
                     logger.info("live context: page=%s t=%s regions=%d chars=%d", cctx["page"], cctx["time_min"], len(regions), len(block))

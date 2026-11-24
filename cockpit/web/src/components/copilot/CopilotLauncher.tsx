@@ -351,7 +351,14 @@ function Panel({ voice, onClose }: { voice: LiveVoice; onClose: () => void }) {
               aria-pressed={tab === "voice"}
               aria-label={tab === "voice" ? "Hide voice controls" : "Talk to Gemini Live"}
               title="Gemini Live voice"
-              onClick={() => setTab(tab === "voice" ? "text" : "voice")}
+              onClick={() => {
+                const next = tab === "voice" ? "text" : "voice";
+                if (next === "voice") {
+                  voice.resetManualOff();
+                  voice.prewarm();
+                }
+                setTab(next);
+              }}
             >
               <IconMic />
             </button>
@@ -383,6 +390,7 @@ function Panel({ voice, onClose }: { voice: LiveVoice; onClose: () => void }) {
 /** Floating launcher (bottom-right, every page) + overlay panel. Voice session survives collapse. */
 export default function CopilotLauncher() {
   const open = useCockpit((s) => s.copilotOpen);
+  const tab = useCockpit((s) => s.copilotTab);
   const setOpen = useCockpit((s) => s.setCopilotOpen);
   const voiceActive = useCockpit((s) => s.voiceActive);
   const runId = useCockpit((s) => s.runId);
@@ -392,6 +400,17 @@ export default function CopilotLauncher() {
   const withheld = est.data?.gate?.status === "WITHHELD";
   const voice = useLiveVoice();
   const launcherRef = useRef<HTMLButtonElement>(null);
+
+  // Urvi/Yukti pattern: pre-open the Gemini Live WebSocket in the background as soon as the drawer opens (or Voice tab
+  // is selected from a unit card) so pressing the mic is instant (0 ms handshake wait), without requesting mic access yet.
+  useEffect(() => {
+    if (open) {
+      if (tab === "voice") voice.resetManualOff();
+      voice.prewarm();
+    } else {
+      voice.resetManualOff();
+    }
+  }, [open, tab, voice]);
 
   const close = useCallback(() => {
     setOpen(false);
